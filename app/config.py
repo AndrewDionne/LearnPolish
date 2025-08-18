@@ -4,11 +4,11 @@ import os
 if os.getenv("RENDER"):
     # Running on Render
     RENDER_URL = os.getenv("RENDER_EXTERNAL_URL", "https://flashcards-5c95.onrender.com")
-    GITHUB_PAGES_URL = "https://github.com/AndrewDionne/flashcards"
+    GITHUB_PAGES_URL = "https://github.com/AndrewDionne/LearnPolish"
 elif os.getenv("GITHUB_ACTIONS"):
     # Building for GitHub Pages
     RENDER_URL = ""
-    GITHUB_PAGES_URL = "https://github.com/AndrewDionne/flashcards"
+    GITHUB_PAGES_URL = "https://github.com/AndrewDionne/LearnPolish"
 else:
     # Local development
     RENDER_URL = "http://localhost:5000"
