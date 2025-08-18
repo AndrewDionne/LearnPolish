@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Choose Your Learning Mode</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: #f0f2f5;
+    }
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 1.5rem;
+    }
+    .mode-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1rem;
+    }
+    .mode-button {
+      padding: 1rem 1.5rem;
+      background: #007bff;
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      transition: background 0.3s;
+    }
+    .mode-button:hover {
+      background: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <h1>Choose Your Learning Mode</h1>
+  <div class="mode-buttons">
+    <a class="mode-button" href="/flashcards_home">📚 Flashcards</a>
+    <a class="mode-button" href="/practice_home">🎤 Practice</a>
+    <a class="mode-button" href="/reading_home">📖 Reading</a>
+    <a class="mode-button" href="/listening_home">🎧 Listening</a>
+    <a class="mode-button" href="/test_home">🎓 Test Yourself</a>
+  </div>
+</body>
+</html>

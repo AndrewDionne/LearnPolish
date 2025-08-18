@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Manage Flashcard Sets</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f8f9fa;
+      padding: 2rem 1rem 6rem;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+
+    .tabs {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+
+    .tab-button {
+      background: #e0e0e0;
+      border: none;
+      border-radius: 8px;
+      padding: 0.5rem 1rem;
+      margin: 0.25rem;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .tab-button.active {
+      background: #007bff;
+      color: white;
+    }
+
+    .search-bar {
+      margin-bottom: 1rem;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      max-width: 400px;
+      padding: 0.5rem;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+    }
+
+    th, td {
+      padding: 0.5rem;
+      border: 1px solid #ddd;
+      text-align: center;
+    }
+
+    th {
+      background: #f1f1f1;
+    }
+
+    .floating-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #28a745;
+      color: white;
+      border: none;
+      border-radius: 50px;
+      padding: 12px 20px;
+      font-size: 1rem;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+
+    .delete-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.2rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Manage Flashcard Sets</h1>
+    <a href="/" 
+    style="position: absolute; top: 1rem; right: 1rem; 
+            background: #007bff; color: white; padding: 0.4rem 0.8rem; 
+            border-radius: 8px; text-decoration: none; font-size: 1rem;">
+    🏠 Home
+    </a>
+  <!-- Mode Tabs -->
+  <div class="tabs">
+    <button class="tab-button active" data-mode="all">All</button>
+    <button class="tab-button" data-mode="flashcards">Flashcards</button>
+    <button class="tab-button" data-mode="practice">Practice</button>
+    <button class="tab-button" data-mode="reading">Reading</button>
+    <button class="tab-button" data-mode="listening">Listening</button>
+    <button class="tab-button" data-mode="test">Test</button>
+  </div>
+
+  <!-- Search -->
+  <div class="search-bar">
+    <input type="text" id="searchInput" placeholder="Search sets..." />
+  </div>
+
+  <!-- Sets Table -->
+  <table id="setsTable">
+    <thead>
+      <tr>
+        <th>Set Name</th>
+        <th>Card Count</th>
+        <th>Flashcards</th>
+        <th>Practice</th>
+        <th>Reading</th>
+        <th>Listening</th>
+        <th>Test</th>
+        <th>Delete</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for set in sets %}
+      <tr data-name="{{ set.name }}" data-modes="{{ set.modes | join(',') }}">
+        <td>{{ set.name }}</td>
+        <td>{{ set.count }}</td>
+        {% for mode in ["flashcards", "practice", "reading", "listening", "test"] %}
+        <td>
+          <input type="checkbox" data-set="{{ set.name }}" data-mode="{{ mode }}"
+                 {% if mode in set.modes %}checked{% endif %}>
+        </td>
+        {% endfor %}
+        <td>
+          <form method="POST" action="/delete_set/{{ set.name }}">
+            <button type="submit" class="delete-btn">🗑️</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <!-- Create Button -->
+  <a href="/create"><button class="floating-btn">＋ NEW CARD SET</button></a>
+  <!-- Save Changes -->
+  <button id="saveChanges" 
+    style="position:fixed; bottom:80px; right:20px; background:#007bff; color:white;
+          border:none; padding:12px 20px; border-radius:50px; font-size:1rem;
+          box-shadow:0 4px 8px rgba(0,0,0,0.15);">
+    💾 Save Changes
+  </button>
+
+  <!-- Floating feedback message -->
+  <div id="saveMessage" 
+    style="display:none; position:fixed; bottom:140px; right:20px; 
+          background:#28a745; color:white; padding:8px 14px; border-radius:8px;">
+    ✅ Saved!
+  </div>
+
+  <script>
+    // Filtering by mode & search
+    function filterTable() {
+      const activeMode = document.querySelector(".tab-button.active").dataset.mode;
+      const query = document.getElementById("searchInput").value.toLowerCase();
+
+      document.querySelectorAll("#setsTable tbody tr").forEach(row => {
+        const setName = row.dataset.name.toLowerCase();
+        const modes = row.dataset.modes.split(",");
+        const matchesMode = activeMode === "all" || modes.includes(activeMode);
+        const matchesQuery = setName.includes(query);
+        row.style.display = (matchesMode && matchesQuery) ? "" : "none";
+      });
+    }
+
+    document.querySelectorAll(".tab-button").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab-button").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        filterTable();
+      });
+    });
+
+    document.getElementById("searchInput").addEventListener("input", filterTable);
+
+    // Save Changes
+    document.getElementById("saveChanges").addEventListener("click", () => {
+      const updates = {};
+
+      // Prepare in mode->set list format
+      ["flashcards", "practice", "reading", "listening", "test"].forEach(mode => {
+        updates[mode] = [];
+      });
+
+      document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        const setName = cb.dataset.set;
+        const mode = cb.dataset.mode;
+        if (cb.checked) updates[mode].push(setName);
+      });
+
+      fetch("/update_set_modes", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(updates)
+      })
+      .then(res => res.json())
+      .then(() => {
+        const msg = document.getElementById("saveMessage");
+        msg.style.display = "block";
+        setTimeout(() => msg.style.display = "none", 1500);
+      });
+    });
+</script>
+<script>
+document.getElementById("saveChanges").addEventListener("click", function () {
+    const btn = this;
+    const msg = document.getElementById("saveMessage");
+
+    // Disable button and show spinner
+    btn.disabled = true;
+    btn.innerHTML = "💾 Saving... <span class='spinner'></span>";
+
+    // Prepare data in { setName: [modes...] } format
+    const modesData = {};
+    document.querySelectorAll("#setsTable tbody tr").forEach(row => {
+        const setName = row.dataset.name;
+        const checkedModes = [];
+        row.querySelectorAll("input[type=checkbox]").forEach(cb => {
+            if (cb.checked) checkedModes.push(cb.dataset.mode);
+        });
+        modesData[setName] = checkedModes;
+    });
+
+    // Send request
+    fetch("/update_set_modes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(modesData)
+    })
+    .then(res => res.json())
+    .then(() => {
+        // Show floating success message
+        msg.style.display = "block";
+        btn.textContent = "✅ Saved!";
+        setTimeout(() => {
+            msg.style.display = "none";
+            btn.textContent = "💾 Save Changes";
+            btn.disabled = false;
+        }, 1500);
+    })
+    .catch(() => {
+        // Error UI
+        btn.textContent = "⚠️ Error";
+        setTimeout(() => {
+            btn.textContent = "💾 Save Changes";
+            btn.disabled = false;
+        }, 2000);
+    });
+});
+
+// Spinner CSS
+const style = document.createElement("style");
+style.textContent = `
+.spinner {
+    display:inline-block;
+    width:14px;
+    height:14px;
+    border:2px solid #fff;
+    border-top-color:transparent;
+    border-radius:50%;
+    animation:spin 0.8s linear infinite;
+}
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}`;
+document.head.appendChild(style);
+</script>
+</body>
+</html>

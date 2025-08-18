@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Welcome to Polish Flashcards</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f8f9fa;
+      padding: 3rem 1rem;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 2rem;
+    }
+    .button-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      width: 100%;
+      max-width: 600px;
+    }
+
+    .mode-btn {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 18px;
+      font-size: 1.1em;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      text-align: center;
+    }
+    .mode-btn:hover {
+      background-color: #0056b3;
+    }
+    .mode-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1.5rem;
+    }
+
+    .mode-link {
+      display: inline-block;
+      padding: 1rem 2rem;
+      background-color: #007bff;
+      color: white;
+      text-decoration: none;
+      border-radius: 10px;
+      font-size: 1.2rem;
+      transition: background 0.3s ease;
+    }
+
+    .mode-link:hover {
+      background-color: #0056b3;
+    }
+
+    .footer {
+      margin-top: 3rem;
+      font-size: 0.9rem;
+      color: #777;
+    }
+  </style>
+</head>
+<body>
+  <h1>{{ set_name }}</h1>
+  <p>Select a learning mode for this set:</p>
+  <div class="mode-grid">
+    {% for mode in modes %}
+      <a href="{{ mode }}.html" class="mode-link">{{ mode.capitalize() }}</a>
+    {% endfor %}
+  </div>
+  <div class="footer">
+    <p><a href="/">← Back to Main Menu</a></p>
+  </div>
+</body>
+</html>

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Flashcard Set Generator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 40px auto;
+            max-width: 700px;
+            padding: 0 20px;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        label {
+            font-weight: bold;
+            display: block;
+            margin-top: 15px;
+            margin-bottom: 8px;
+        }
+        input[type="text"], textarea {
+            width: 100%;
+            font-size: 1em;
+            padding: 10px;
+            box-sizing: border-box;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            resize: vertical;
+        }
+        textarea {
+            min-height: 200px;
+        }
+        button {
+            margin-top: 20px;
+            padding: 12px 20px;
+            font-size: 1em;
+            border: none;
+            border-radius: 8px;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .note {
+            font-size: 0.9em;
+            color: #555;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Delete Sets</h1>
+<form method="POST">
+    {% for set in all_sets %}
+    <label>
+        <input type="checkbox" name="sets_to_delete" value="{{ set }}">
+        {{ set }}
+    </label><br>
+    {% endfor %}
+    <button type="submit">🗑 Delete Selected</button>
+</form>
+</body>
+</html>
+

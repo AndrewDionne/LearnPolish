@@ -1,0 +1,15 @@
+# Ignore Python stuff
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Ignore source code folders
+app/
+sets/
+output/
+templates/
+
+# Only publish this
+!.gitignore
+docs/
