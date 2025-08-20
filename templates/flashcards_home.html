@@ -27,7 +27,7 @@
   <h1>🧠 Flashcards – Choose a Set</h1>
     {% for set in sets %}
       <div class="card-link">
-        <a href="{{ url_for('serve_output_file', filename=set.name ~ '/flashcards.html') }}">
+        <a href="/flashcards/{{ set.name }}/">
           ▶ {{ set.name }} {% if set.count != "?" %}({{ set.count }} cards){% endif %}
         </a>
       </div>
