@@ -165,19 +165,24 @@ def handle_flashcard_creation(form):
    
 def delete_set(set_name: str):
     """Delete set folders from all locations."""
-    for path in [
-        Path("docs/output") / set_name,
-        Path("docs/static") / set_name,
-        SETS_DIR / set_name
-    ]:
-        if path.exists():
-            shutil.rmtree(path)
-            print(f"🧹 Deleted folder: {path}")
-        else:
-            print(f"⚠️ Folder not found: {path}")
+    # delete JSON data
+    if (SETS_DIR / set_name).exists():
+        shutil.rmtree(SETS_DIR / set_name)
+
+    # delete audio
+    audio_dir = Path("docs/static") / set_name
+    if audio_dir.exists():
+        shutil.rmtree(audio_dir)
+
+    # delete each mode folder
+    for mode in MODES:
+        mode_dir = Path("docs") / mode / set_name
+        if mode_dir.exists():
+            shutil.rmtree(mode_dir)
 
     commit_and_push_changes(f"🗑️ Deleted set: {set_name}")
     print(f"✅ Deleted set: {set_name}")
+
 
 def delete_set_and_push(set_name: str):
     delete_set(set_name)
