@@ -72,10 +72,7 @@
   <p>Select a learning mode for this set:</p>
   <div class="mode-grid">
     {% for mode in modes %}
-      <a href="/{{ mode }}/{{ set_name }}/" class="mode-link">
-        {{ mode.capitalize() }}
-      </a>
-
+      <a href="{{ mode }}.html" class="mode-link">{{ mode.capitalize() }}</a>
     {% endfor %}
   </div>
   <div class="footer">

@@ -78,7 +78,15 @@ def init_routes(app):
             return "Audio file not found", 404
         return send_file(full_path)
 
-    
+    @app.route("/output/<path:filename>")
+    def serve_output_file(filename):
+        project_root = Path(__file__).resolve().parent.parent
+        full_path = project_root / "docs" / "output" / filename  # don't wrap in Path() again
+        if not full_path.exists():
+            print("❌ File not found:", full_path)
+            return "File not found", 404
+        return send_file(full_path)
+
     @app.route("/docs")
     def serve_docs_home():
         docs_index = Path("docs/index.html")
@@ -108,10 +116,6 @@ def init_routes(app):
     @app.route("/delete_set/<set_name>", methods=["POST"])
     def delete_set(set_name):
         shutil.rmtree(SETS_DIR / set_name, ignore_errors=True)
-        shutil.rmtree(Path("docs/static") / set_name, ignore_errors=True)
-        for mode in MODES:
-            shutil.rmtree(Path("docs") / mode / set_name, ignore_errors=True)
-            
         commit_and_push_changes(f"🗑️ Deleted set {set_name}")
         return redirect(url_for("manage_sets"))
 

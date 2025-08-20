@@ -145,16 +145,21 @@ def handle_flashcard_creation(form):
         json.dump(data, f, ensure_ascii=False, indent=2)
 
     # === Generate HTML for all modes ===
+    MODE_GENERATORS = {
+        "flashcards": generate_flashcard_html,
+        "practice": generate_practice_html,
+        "reading": generate_reading_html,
+        "listening": generate_listening_html,
+        "test": generate_test_html
+    }
+
     for mode in MODES:
         generator = MODE_GENERATORS.get(mode)
         if generator:
-            # write into docs/<mode>/<set_name>/index.html
-            output_dir = Path("docs") / mode / set_name
-            output_dir.mkdir(parents=True, exist_ok=True)
-
-            html_path = output_dir / "index.html"
+            html_path = output_dir / f"{mode}.html"
             html_content = generator(set_name, data)
-            html_path.write_text(html_content, encoding="utf-8")
+            with open(html_path, "w", encoding="utf-8") as f:
+                f.write(html_content)
 
     # Commit changes
     commit_and_push_changes(f"✨ Created/updated set {set_name}")
@@ -164,15 +169,16 @@ def handle_flashcard_creation(form):
    
 def delete_set(set_name: str):
     """Delete set folders from all locations."""
-    # Delete JSON data
-    shutil.rmtree(SETS_DIR / set_name, ignore_errors=True)
-
-    # Delete audio
-    shutil.rmtree(Path("docs/static") / set_name, ignore_errors=True)
-
-    # Delete per-mode HTML
-    for mode in MODES:
-        shutil.rmtree(Path("docs") / mode / set_name, ignore_errors=True)
+    for path in [
+        Path("docs/output") / set_name,
+        Path("docs/static") / set_name,
+        SETS_DIR / set_name
+    ]:
+        if path.exists():
+            shutil.rmtree(path)
+            print(f"🧹 Deleted folder: {path}")
+        else:
+            print(f"⚠️ Folder not found: {path}")
 
     commit_and_push_changes(f"🗑️ Deleted set: {set_name}")
     print(f"✅ Deleted set: {set_name}")
