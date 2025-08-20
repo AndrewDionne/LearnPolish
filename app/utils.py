@@ -52,6 +52,37 @@ def export_homepage_static():
     rendered = template.render(sets=sets, set_modes=set_modes)
     (Path("docs") / "index.html").write_text(rendered, encoding="utf-8")
 
+def export_mode_pages():
+    """Export each mode landing page to docs/<mode>/index.html for GitHub Pages."""
+    env = Environment(loader=FileSystemLoader("templates"))
+    sets = get_all_sets()
+    set_modes = load_set_modes()
+
+    mode_templates = {
+        "flashcards": "flashcards_home.html",
+        "practice": "practice_home.html",
+        "reading": "reading_home.html",
+        "listening": "listening_home.html",
+        "test": "test_home.html",
+        "manage_sets": "manage_sets.html"
+    }
+
+    for mode, template_name in mode_templates.items():
+        try:
+            template = env.get_template(template_name)
+        except Exception as e:
+            print(f"⚠️ Skipping {mode}: template {template_name} missing ({e})")
+            continue
+
+        rendered = template.render(sets=sets, set_modes=set_modes)
+
+        outdir = Path("docs") / mode
+        outdir.mkdir(parents=True, exist_ok=True)
+        outfile = outdir / "index.html"
+        outfile.write_text(rendered, encoding="utf-8")
+
+        print(f"✅ Exported {outfile}")
+        
 # === Azure Speech ===
 def get_azure_token():
     """Request a temporary Azure speech token."""
