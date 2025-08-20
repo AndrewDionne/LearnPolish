@@ -127,9 +127,8 @@ def handle_flashcard_creation(form):
 
     # Prepare folders
     audio_dir = Path("docs/static") / set_name / "audio"
-    output_dir = Path("docs/output") / set_name
     set_dir = SETS_DIR / set_name
-    for path in (audio_dir, output_dir, set_dir):
+    for path in (audio_dir, set_dir):
         path.mkdir(parents=True, exist_ok=True)
 
     # Generate audio files

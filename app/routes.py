@@ -111,7 +111,7 @@ def init_routes(app):
         shutil.rmtree(Path("docs/static") / set_name, ignore_errors=True)
         for mode in MODES:
             shutil.rmtree(Path("docs") / mode / set_name, ignore_errors=True)
-            
+
         commit_and_push_changes(f"🗑️ Deleted set {set_name}")
         return redirect(url_for("manage_sets"))
 
@@ -120,6 +120,10 @@ def init_routes(app):
         if request.method == "POST":
             for set_name in request.form.getlist("sets_to_delete"):
                 shutil.rmtree(SETS_DIR / set_name, ignore_errors=True)
+                shutil.rmtree(Path("docs/static") / set_name, ignore_errors=True)
+                for mode in MODES:
+                    shutil.rmtree(Path("docs") / mode / set_name, ignore_errors=True)
+
             commit_and_push_changes("🗑️ Bulk delete sets")
             return redirect(url_for("manage_sets"))
 
