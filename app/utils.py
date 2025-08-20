@@ -128,9 +128,8 @@ def handle_flashcard_creation(form):
 
     # Prepare folders
     audio_dir = Path("docs/static") / set_name / "audio"
-    output_dir = Path("docs/output") / set_name
     set_dir = SETS_DIR / set_name
-    for path in (audio_dir, output_dir, set_dir):
+    for path in (audio_dir, set_dir):
         path.mkdir(parents=True, exist_ok=True)
 
     # Generate audio files
@@ -145,19 +144,23 @@ def handle_flashcard_creation(form):
     with open(set_dir / "data.json", "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
-    # Generate HTML for each mode
+    # === Generate HTML for all modes ===
     for mode in MODES:
         generator = MODE_GENERATORS.get(mode)
         if generator:
-            html_path = output_dir / f"{mode}.html"
+            # export to docs/<mode>/<set_name>/index.html
+            output_dir = Path("docs") / mode / set_name
+            output_dir.mkdir(parents=True, exist_ok=True)
+
+            html_path = output_dir / "index.html"
             html_content = generator(set_name, data)
-            with open(html_path, "w", encoding="utf-8") as f:
-                f.write(html_content)
+            html_path.write_text(html_content, encoding="utf-8")
 
     # Commit changes
     commit_and_push_changes(f"✨ Created/updated set {set_name}")
 
     return None  # success
+
 
    
 def delete_set(set_name: str):
