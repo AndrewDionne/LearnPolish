@@ -82,7 +82,7 @@ def export_mode_pages():
         outfile.write_text(rendered, encoding="utf-8")
 
         print(f"✅ Exported {outfile}")
-        
+
 # === Azure Speech ===
 def get_azure_token():
     """Request a temporary Azure speech token."""
@@ -145,15 +145,7 @@ def handle_flashcard_creation(form):
     with open(set_dir / "data.json", "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
-    # === Generate HTML for all modes ===
-    MODE_GENERATORS = {
-        "flashcards": generate_flashcard_html,
-        "practice": generate_practice_html,
-        "reading": generate_reading_html,
-        "listening": generate_listening_html,
-        "test": generate_test_html
-    }
-
+    # Generate HTML for each mode
     for mode in MODES:
         generator = MODE_GENERATORS.get(mode)
         if generator:
