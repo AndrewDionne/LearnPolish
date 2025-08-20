@@ -82,7 +82,6 @@ def export_mode_pages():
         outfile.write_text(rendered, encoding="utf-8")
 
         print(f"✅ Exported {outfile}")
-
 # === Azure Speech ===
 def get_azure_token():
     """Request a temporary Azure speech token."""
@@ -128,8 +127,9 @@ def handle_flashcard_creation(form):
 
     # Prepare folders
     audio_dir = Path("docs/static") / set_name / "audio"
+    output_dir = Path("docs/output") / set_name
     set_dir = SETS_DIR / set_name
-    for path in (audio_dir, set_dir):
+    for path in (audio_dir, output_dir, set_dir):
         path.mkdir(parents=True, exist_ok=True)
 
     # Generate audio files
@@ -145,44 +145,43 @@ def handle_flashcard_creation(form):
         json.dump(data, f, ensure_ascii=False, indent=2)
 
     # === Generate HTML for all modes ===
+    MODE_GENERATORS = {
+        "flashcards": generate_flashcard_html,
+        "practice": generate_practice_html,
+        "reading": generate_reading_html,
+        "listening": generate_listening_html,
+        "test": generate_test_html
+    }
+
     for mode in MODES:
         generator = MODE_GENERATORS.get(mode)
         if generator:
-            # export to docs/<mode>/<set_name>/index.html
-            output_dir = Path("docs") / mode / set_name
-            output_dir.mkdir(parents=True, exist_ok=True)
-
-            html_path = output_dir / "index.html"
+            html_path = output_dir / f"{mode}.html"
             html_content = generator(set_name, data)
-            html_path.write_text(html_content, encoding="utf-8")
+            with open(html_path, "w", encoding="utf-8") as f:
+                f.write(html_content)
 
     # Commit changes
     commit_and_push_changes(f"✨ Created/updated set {set_name}")
 
     return None  # success
 
-
    
 def delete_set(set_name: str):
     """Delete set folders from all locations."""
-    # delete JSON data
-    if (SETS_DIR / set_name).exists():
-        shutil.rmtree(SETS_DIR / set_name)
-
-    # delete audio
-    audio_dir = Path("docs/static") / set_name
-    if audio_dir.exists():
-        shutil.rmtree(audio_dir)
-
-    # delete each mode folder
-    for mode in MODES:
-        mode_dir = Path("docs") / mode / set_name
-        if mode_dir.exists():
-            shutil.rmtree(mode_dir)
+    for path in [
+        Path("docs/output") / set_name,
+        Path("docs/static") / set_name,
+        SETS_DIR / set_name
+    ]:
+        if path.exists():
+            shutil.rmtree(path)
+            print(f"🧹 Deleted folder: {path}")
+        else:
+            print(f"⚠️ Folder not found: {path}")
 
     commit_and_push_changes(f"🗑️ Deleted set: {set_name}")
     print(f"✅ Deleted set: {set_name}")
-
 
 def delete_set_and_push(set_name: str):
     delete_set(set_name)

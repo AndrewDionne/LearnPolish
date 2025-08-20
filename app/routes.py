@@ -115,42 +115,20 @@ def init_routes(app):
 
     @app.route("/delete_set/<set_name>", methods=["POST"])
     def delete_set(set_name):
-        """Delete a single set (data, audio, and mode pages)."""
-        # Delete JSON data
         shutil.rmtree(SETS_DIR / set_name, ignore_errors=True)
-
-        # Delete audio
-        shutil.rmtree(Path("docs/static") / set_name, ignore_errors=True)
-
-        # Delete mode pages
-        for mode in MODES:
-            shutil.rmtree(Path("docs") / mode / set_name, ignore_errors=True)
-
         commit_and_push_changes(f"🗑️ Deleted set {set_name}")
         return redirect(url_for("manage_sets"))
 
-
     @app.route("/delete_sets", methods=["GET", "POST"])
     def delete_sets():
-        """Bulk delete multiple sets at once."""
         if request.method == "POST":
             for set_name in request.form.getlist("sets_to_delete"):
-                # Delete JSON data
                 shutil.rmtree(SETS_DIR / set_name, ignore_errors=True)
-
-                # Delete audio
-                shutil.rmtree(Path("docs/static") / set_name, ignore_errors=True)
-
-                # Delete mode pages
-                for mode in MODES:
-                    shutil.rmtree(Path("docs") / mode / set_name, ignore_errors=True)
-
             commit_and_push_changes("🗑️ Bulk delete sets")
             return redirect(url_for("manage_sets"))
 
         all_sets = get_all_sets()
         return render_template("delete_sets.html", all_sets=all_sets)
-
 
     # === Create New Sets ===
     @app.route("/create", methods=["GET", "POST"])
