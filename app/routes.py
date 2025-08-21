@@ -36,6 +36,33 @@ def init_routes(app):
         set_modes = load_set_modes()
         return render_template("index.html", sets=sets, set_modes=set_modes)
 
+        # === Per-Set Routes (serve generated HTML from docs/<mode>/<set_name>/index.html) ===
+    def serve_mode_set(mode, set_name):
+        set_path = Path("docs") / mode / set_name / "index.html"
+        if not set_path.exists():
+            return f"❌ {mode.capitalize()} set '{set_name}' not found", 404
+        return send_file(set_path)
+
+    @app.route("/flashcards/<set_name>/")
+    def flashcards_set(set_name):
+        return serve_mode_set("flashcards", set_name)
+
+    @app.route("/practice/<set_name>/")
+    def practice_set(set_name):
+        return serve_mode_set("practice", set_name)
+
+    @app.route("/reading/<set_name>/")
+    def reading_set(set_name):
+        return serve_mode_set("reading", set_name)
+
+    @app.route("/listening/<set_name>/")
+    def listening_set(set_name):
+        return serve_mode_set("listening", set_name)
+
+    @app.route("/test/<set_name>/")
+    def test_set(set_name):
+        return serve_mode_set("test", set_name)
+
 
     # === Learning Mode Pages ===
     @app.route("/flashcards")
