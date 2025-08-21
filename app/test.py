@@ -9,9 +9,10 @@ def generate_test_html(set_name, data):
         print(f"⏭️ Skipping test for '{set_name}' (not in test mode).")
         return None
 
+    # ✅ Ensure output dir exists (docs/test/<set_name>/index.html)
     output_dir = Path("docs/test") / set_name
     output_dir.mkdir(parents=True, exist_ok=True)
-    html_path = output_dir / "index.html"
+    test_path = output_dir / "index.html"
 
     for idx, entry in enumerate(data):
         filename = f"{idx}_{sanitize_filename(entry['phrase'])}.mp3"
@@ -67,5 +68,9 @@ def generate_test_html(set_name, data):
 """
 
 
-    print(f"✅ test.html generated for: {set_name}")
-    return test_html
+    # Write to file
+    with open(test_path, "w", encoding="utf-8") as f:
+        f.write(test_html)
+
+    print(f"✅ test/index.html generated for: {set_name}")
+    return test_path

@@ -9,9 +9,10 @@ def generate_reading_html(set_name, data):
         print(f"⏭️ Skipping reading for '{set_name}' (not in reading mode).")
         return None
 
+    # ✅ Ensure output dir exists (docs/reading/<set_name>/index.html)
     output_dir = Path("docs/reading") / set_name
     output_dir.mkdir(parents=True, exist_ok=True)
-    html_path = output_dir / "index.html"
+    reading_path = output_dir / "index.html"
 
     for idx, entry in enumerate(data):
         filename = f"{idx}_{sanitize_filename(entry['phrase'])}.mp3"
@@ -75,5 +76,9 @@ def generate_reading_html(set_name, data):
 
 
 
-    print(f"✅ reading.html generated for: {set_name}")
-    return reading_html
+        # Write to file
+    with open(reading_path, "w", encoding="utf-8") as f:
+        f.write(reading_html)
+
+    print(f"✅ reading/index.html generated for: {set_name}")
+    return reading_path

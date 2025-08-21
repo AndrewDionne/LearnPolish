@@ -147,13 +147,8 @@ def handle_flashcard_creation(form):
     for mode in MODES:
         generator = MODE_GENERATORS.get(mode)
         if generator:
-            # write into docs/<mode>/<set_name>/index.html
-            output_dir = Path("docs") / mode / set_name
-            output_dir.mkdir(parents=True, exist_ok=True)
-
-            html_path = output_dir / "index.html"
-            html_content = generator(set_name, data)
-            html_path.write_text(html_content, encoding="utf-8")
+            html_path = generator(set_name, data)  # generator already writes and returns a Path
+            print(f"✅ Generated {html_path}")
 
     # Commit changes
     commit_and_push_changes(f"✨ Created/updated set {set_name}")

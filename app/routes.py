@@ -38,7 +38,8 @@ def init_routes(app):
 
         # === Per-Set Routes (serve generated HTML from docs/<mode>/<set_name>/index.html) ===
     def serve_mode_set(mode, set_name):
-        set_path = Path("docs") / mode / set_name / "index.html"
+        project_root = Path(__file__).resolve().parent.parent
+        set_path = project_root / "docs" / mode / set_name / "index.html"
         if not set_path.exists():
             return f"❌ {mode.capitalize()} set '{set_name}' not found", 404
         return send_file(set_path)

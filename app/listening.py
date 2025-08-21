@@ -9,9 +9,10 @@ def generate_listening_html(set_name, data):
         print(f"⏭️ Skipping listening for '{set_name}' (not in listening mode).")
         return None
 
+    # ✅ Ensure output dir exists (docs/listening/<set_name>/index.html)
     output_dir = Path("docs/listening") / set_name
     output_dir.mkdir(parents=True, exist_ok=True)
-    html_path = output_dir / "index.html"
+    listening_path = output_dir / "index.html"
 
     for idx, entry in enumerate(data):
         filename = f"{idx}_{sanitize_filename(entry['phrase'])}.mp3"
@@ -67,5 +68,9 @@ def generate_listening_html(set_name, data):
 """
 
     
-    print(f"✅ listening.html generated for: {set_name}")
-    return listening_html
+    # Write to file
+    with open(listening_path, "w", encoding="utf-8") as f:
+        f.write(listening_html)
+
+    print(f"✅ listening/index.html generated for: {set_name}")
+    return listening_path
