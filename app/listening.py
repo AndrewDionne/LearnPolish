@@ -1,13 +1,22 @@
 import os
 import json
 from pathlib import Path
+from .sets_utils import load_set_modes, sanitize_filename
 
 def generate_listening_html(set_name, data):
-    """Generate the listening.html page for a flashcard set."""
-    output_dir = Path("docs/output") / set_name
-    output_dir.mkdir(parents=True, exist_ok=True)
+    set_modes = load_set_modes()
+    if "listening" in set_modes and set_name not in set_modes["listening"]:
+        print(f"⏭️ Skipping listening for '{set_name}' (not in listening mode).")
+        return None
 
-    listening_path = output_dir / "listening.html"
+    output_dir = Path("docs/listening") / set_name
+    output_dir.mkdir(parents=True, exist_ok=True)
+    html_path = output_dir / "index.html"
+
+    for idx, entry in enumerate(data):
+        filename = f"{idx}_{sanitize_filename(entry['phrase'])}.mp3"
+        entry["audio_file"] = f"/static/{set_name}/audio/{filename}"
+
     cards_json = json.dumps(data, ensure_ascii=False)
 
     listening_html = f"""<!DOCTYPE html>

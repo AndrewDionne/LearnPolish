@@ -189,33 +189,6 @@
 
     document.getElementById("searchInput").addEventListener("input", filterTable);
 
-    // Save Changes
-    document.getElementById("saveChanges").addEventListener("click", () => {
-      const updates = {};
-
-      // Prepare in mode->set list format
-      ["flashcards", "practice", "reading", "listening", "test"].forEach(mode => {
-        updates[mode] = [];
-      });
-
-      document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-        const setName = cb.dataset.set;
-        const mode = cb.dataset.mode;
-        if (cb.checked) updates[mode].push(setName);
-      });
-
-      fetch("/update_set_modes", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(updates)
-      })
-      .then(res => res.json())
-      .then(() => {
-        const msg = document.getElementById("saveMessage");
-        msg.style.display = "block";
-        setTimeout(() => msg.style.display = "none", 1500);
-      });
-    });
 </script>
 <script>
 document.getElementById("saveChanges").addEventListener("click", function () {

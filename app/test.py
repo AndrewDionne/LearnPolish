@@ -1,18 +1,22 @@
 import os
 import json
 from pathlib import Path
+from .sets_utils import load_set_modes, sanitize_filename
 
 def generate_test_html(set_name, data):
-    """Generate the test.html page for a flashcard set!"""
+    set_modes = load_set_modes()
+    if "test" in set_modes and set_name not in set_modes["test"]:
+        print(f"⏭️ Skipping test for '{set_name}' (not in test mode).")
+        return None
 
-    # Ensure output directory
-    output_dir = os.path.join("docs", "output", set_name)
-    os.makedirs(output_dir, exist_ok=True)
+    output_dir = Path("docs/test") / set_name
+    output_dir.mkdir(parents=True, exist_ok=True)
+    html_path = output_dir / "index.html"
 
-    # Define file paths
-    test_path = os.path.join(output_dir, "test.html")
-   
-    # Prepare data
+    for idx, entry in enumerate(data):
+        filename = f"{idx}_{sanitize_filename(entry['phrase'])}.mp3"
+        entry["audio_file"] = f"/static/{set_name}/audio/{filename}"
+
     cards_json = json.dumps(data, ensure_ascii=False)
 
     test_html = f"""<!DOCTYPE html>
