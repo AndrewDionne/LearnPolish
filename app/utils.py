@@ -151,6 +151,10 @@ def handle_flashcard_creation(form):
             html_path = generator(set_name, data)  # generator already writes and returns a Path
             print(f"✅ Generated {html_path}")
 
+    # === Rebuild landing pages (docs/<mode>/index.html) ===
+    export_mode_pages()        
+    export_homepage_static()
+
     # Commit changes
     commit_and_push_changes(f"✨ Created/updated set {set_name}")
 
@@ -172,7 +176,7 @@ def generate_mode_html(set_name: str, mode: str) -> None:
 
     (output_dir / "index.html").write_text(rendered, encoding="utf-8")
     print(f"✅ Generated {output_dir}/index.html")
-       
+
 def delete_set(set_name: str):
     """Delete set folders from all locations."""
     # Delete JSON data
@@ -185,6 +189,10 @@ def delete_set(set_name: str):
     for mode in MODES:
         shutil.rmtree(Path("docs") / mode / set_name, ignore_errors=True)
 
+    # Rebuild landing pages after deletion
+    export_mode_pages()
+    export_homepage_static()
+    
     commit_and_push_changes(f"🗑️ Deleted set: {set_name}")
     print(f"✅ Deleted set: {set_name}")
 
