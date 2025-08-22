@@ -4,7 +4,7 @@ import json
 import shutil
 import requests
 from pathlib import Path
-from flask import jsonify, redirect, url_for
+from flask import jsonify, redirect, url_for, render_template, send_file
 from gtts import gTTS
 from jinja2 import Environment, FileSystemLoader
 
@@ -156,7 +156,23 @@ def handle_flashcard_creation(form):
 
     return None  # success
 
-   
+def generate_mode_html(set_name: str, mode: str) -> None:
+    """
+    Generate an index.html for a set in the given mode and save it under docs/<mode>/<set_name>/index.html
+    """
+    output_dir = Path("docs") / mode / set_name
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Render the HTML using your Jinja template for that mode
+    template_name = f"{mode}.html" if mode in ["flashcards", "practice", "reading", "listening", "test"] else None
+    if not template_name:
+        raise ValueError(f"Unknown mode: {mode}")
+
+    rendered = render_template(template_name, set_name=set_name)
+
+    (output_dir / "index.html").write_text(rendered, encoding="utf-8")
+    print(f"✅ Generated {output_dir}/index.html")
+       
 def delete_set(set_name: str):
     """Delete set folders from all locations."""
     # Delete JSON data

@@ -13,7 +13,12 @@ from .sets_utils import (
 )
 from .utils import (
     generate_flashcard_html,
+    generate_practice_html,
+    generate_reading_html,
+    generate_listening_html,
+    generate_test_html,
     handle_flashcard_creation,
+    generate_mode_html,
     get_azure_token
 )
 from .git_utils import commit_and_push_changes
@@ -66,27 +71,27 @@ def init_routes(app):
 
 
     # === Learning Mode Pages ===
-    @app.route("/flashcards")
+    @app.route("/flashcards/")
     def flashcards_home():
         sets = load_sets_for_mode("flashcards")
         return render_template("flashcards_home.html", sets=sets)
 
-    @app.route("/practice")
+    @app.route("/practice/")
     def practice_home():
         sets = load_sets_for_mode("practice")
         return render_template("practice_home.html", sets=sets)
 
-    @app.route("/reading")
+    @app.route("/reading/")
     def reading_home():
         sets = load_sets_for_mode("reading")
         return render_template("reading_home.html", sets=sets)
 
-    @app.route("/listening")
+    @app.route("/listening/")
     def listening_home():
         sets = load_sets_for_mode("listening")
         return render_template("listening_home.html", sets=sets)
 
-    @app.route("/test")
+    @app.route("/test/")
     def test_home():
         sets = load_sets_for_mode("test")
         return render_template("test_home.html", sets=sets)
@@ -186,6 +191,13 @@ def init_routes(app):
             json_path = set_dir / "data.json"
             if not json_path.exists():
                 json_path.write_text("[]", encoding="utf-8")
+
+            # ✅ Generate per-set HTML pages for GitHub Pages
+            generate_flashcard_html(name)
+            generate_practice_html(name)
+            generate_reading_html(name)
+            generate_listening_html(name)
+            generate_test_html(name)
 
             print(f"✅ Created set: {name}")
             commit_and_push_changes(f"✅ Created set {name}")
