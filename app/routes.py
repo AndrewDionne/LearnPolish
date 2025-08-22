@@ -124,7 +124,7 @@ def init_routes(app):
             "manage_sets.html",
             sets=sets,
             sets_data=sets  # if template still uses sets_data
-    )
+        )
 
     @app.route("/update_set_modes", methods=["POST"])
     def update_set_modes():
