@@ -84,23 +84,26 @@ def export_mode_pages():
         print(f"✅ Exported {outfile}")
 # === Azure Speech ===
 def get_azure_token():
-    """Request a temporary Azure speech token."""
+    """Request a temporary Azure speech token. Returns raw token and region."""
+    import os, requests
+
     AZURE_SPEECH_KEY = os.getenv("AZURE_SPEECH_KEY")
-    AZURE_REGION = os.getenv("AZURE_REGION", "canadaeast")  # 👈 renamed
+    AZURE_REGION = os.getenv("AZURE_REGION", "canadaeast")
 
     if not AZURE_SPEECH_KEY:
-        return jsonify({"error": "AZURE_SPEECH_KEY missing"}), 500
+        raise ValueError("AZURE_SPEECH_KEY missing")
     if not AZURE_REGION:
-        return jsonify({"error": "AZURE_REGION missing"}), 500
+        raise ValueError("AZURE_REGION missing")
 
     url = f"https://{AZURE_REGION}.api.cognitive.microsoft.com/sts/v1.0/issueToken"
     headers = {"Ocp-Apim-Subscription-Key": AZURE_SPEECH_KEY, "Content-Length": "0"}
+
     try:
         res = requests.post(url, headers=headers, timeout=6)
         res.raise_for_status()
-        return jsonify({"token": res.text, "region": AZURE_REGION})
+        return res.text, AZURE_REGION  # <- return raw strings
     except requests.RequestException as e:
-        return jsonify({"error": "token_request_failed", "detail": str(e)}), 502
+        raise RuntimeError(f"token_request_failed: {e}")
 
 # === Set Creation / Deletion ===
 def handle_flashcard_creation(form):
@@ -192,7 +195,7 @@ def delete_set(set_name: str):
     # Rebuild landing pages after deletion
     export_mode_pages()
     export_homepage_static()
-    
+
     commit_and_push_changes(f"🗑️ Deleted set: {set_name}")
     print(f"✅ Deleted set: {set_name}")
 

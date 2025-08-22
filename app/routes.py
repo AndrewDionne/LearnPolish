@@ -1,4 +1,5 @@
 from flask import render_template, request, redirect, send_file, jsonify, url_for
+from flask_cors import CORS
 import os, json, shutil
 from pathlib import Path
 from .config import RENDER_URL, GITHUB_PAGES_URL, MODES
@@ -100,8 +101,11 @@ def init_routes(app):
     @app.route("/api/token", methods=["GET"])
     def get_token():
         try:
-            # Just return the response from utils.py directly
-            return get_azure_token()
+            # get_azure_token() should now return (token, region) as plain strings
+            token, region = get_azure_token()
+            if not token or not region:
+                return jsonify({"error": "Azure token or region missing"}), 500
+            return jsonify({"token": token, "region": region})
         except Exception as e:
             app.logger.error(f"Azure token error: {e}")
             return jsonify({"error": str(e)}), 500
