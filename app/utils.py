@@ -87,39 +87,30 @@ def export_mode_pages():
         print(f"✅ Exported {outfile}")
 # === Azure Speech ===
 def get_azure_token():
-    """Request a temporary Azure speech token, with detailed debugging."""
+    import logging
+    logging.debug(f"AZURE_SPEECH_KEY: {os.getenv('AZURE_SPEECH_KEY')}")
+    logging.debug(f"AZURE_REGION: {os.getenv('AZURE_REGION', 'canadaeast')}")
+
     AZURE_SPEECH_KEY = os.getenv("AZURE_SPEECH_KEY")
     AZURE_REGION = os.getenv("AZURE_REGION", "canadaeast")
 
-    logging.info(f"[DEBUG] AZURE_SPEECH_KEY: {'SET' if AZURE_SPEECH_KEY else 'MISSING'}")
-    logging.info(f"[DEBUG] AZURE_REGION: {AZURE_REGION}")
-
     if not AZURE_SPEECH_KEY:
         logging.error("❌ AZURE_SPEECH_KEY missing")
-        return jsonify({"error": "AZURE_SPEECH_KEY missing"}), 500
+        return {"error": "AZURE_SPEECH_KEY missing"}, 500
     if not AZURE_REGION:
         logging.error("❌ AZURE_REGION missing")
-        return jsonify({"error": "AZURE_REGION missing"}), 500
+        return {"error": "AZURE_REGION missing"}, 500
 
     url = f"https://{AZURE_REGION}.api.cognitive.microsoft.com/sts/v1.0/issueToken"
     headers = {"Ocp-Apim-Subscription-Key": AZURE_SPEECH_KEY, "Content-Length": "0"}
-
-    logging.info(f"[DEBUG] Requesting Azure token from: {url}")
-
     try:
-        res = requests.post(url, headers=headers, timeout=10)
+        import requests
+        res = requests.post(url, headers=headers, timeout=6)
         res.raise_for_status()
-        logging.info("[DEBUG] Azure token request successful")
-        return jsonify({"token": res.text, "region": AZURE_REGION})
-    except requests.HTTPError as e:
-        logging.error(f"❌ Azure HTTPError: {e} | Response: {e.response.text if e.response else 'No response'}")
-        return jsonify({"error": "token_request_failed", "detail": str(e)}), 502
+        return {"token": res.text, "region": AZURE_REGION}
     except requests.RequestException as e:
-        logging.error(f"❌ Azure RequestException: {e}")
-        return jsonify({"error": "token_request_failed", "detail": str(e)}), 502
-    except Exception as e:
-        logging.error(f"❌ Unexpected error: {e}")
-        return jsonify({"error": "unexpected_error", "detail": str(e)}), 500
+        logging.error(f"❌ token_request_failed: {e}")
+        return {"error": "token_request_failed", "detail": str(e)}, 502
 
 # === Set Creation / Deletion ===
 def handle_flashcard_creation(form):

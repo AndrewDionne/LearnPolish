@@ -101,10 +101,14 @@ def init_routes(app):
     @app.route("/api/token", methods=["GET"])
     def get_token():
         try:
-            return get_azure_token()
+            data = get_azure_token()
+            if isinstance(data, tuple):
+                # utils returned (dict, status)
+                return jsonify(data[0]), data[1]
+            return jsonify(data)
         except Exception as e:
-            app.logger.error(f"Azure token endpoint unexpected error: {e}", exc_info=True)
-            return jsonify({"error": "endpoint_failed", "detail": str(e)}), 500
+            app.logger.error(f"Azure token error: {e}")
+            return jsonify({"error": str(e)}), 500
 
 
     # === Static/Output File Serving ===
