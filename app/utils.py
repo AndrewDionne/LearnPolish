@@ -107,6 +107,7 @@ def handle_flashcard_creation(form):
     """Create new set from form data and generate HTML/audio."""
     set_name = form.get("set_name", "").strip()
     json_input = form.get("json_input", "").strip()
+    selected_modes = form.getlist("modes")  # Flask turns checkboxes into a list
 
     # Safety checks
     if not set_name:
