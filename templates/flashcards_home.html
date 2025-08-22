@@ -24,14 +24,14 @@
   </style>
 </head>
 <body>
-  <h1>🧠 Flashcards – Choose a Set</h1>
-    {% for set in sets %}
-      <div class="card-link">
-        <a href="/flashcards/{{ set.name }}/">
-          ▶ {{ set.name }} {% if set.count != "?" %}({{ set.count }} cards){% endif %}
-        </a>
-      </div>
-    {% endfor %}
+<h1>🧠 Flashcards – Choose a Set</h1>
+{% for set in sets %}
+  <div class="card-link">
+    <a href="{{ set.name }}/">
+      ▶ {{ set.name }} {% if set.count != "?" %}({{ set.count }} cards){% endif %}
+    </a>
+  </div>
+{% endfor %}
     <div style="text-align: center; margin-top: 2rem;">
       <a href="/">← Back to Learning Modes</a>
     </div>

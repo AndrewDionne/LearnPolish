@@ -25,9 +25,10 @@
 </head>
 <body>
   <h1>🎤 Practice – Choose a Set</h1>
+  <h1>🎤 Pronunciation Practice – Choose a Set</h1>
   {% for set in sets %}
     <div class="card-link">
-      <a href="/practice/{{ set.name }}/">
+      <a href="{{ set.name }}/">
         ▶ {{ set.name }} {% if set.count != "?" %}({{ set.count }} cards){% endif %}
       </a>
     </div>

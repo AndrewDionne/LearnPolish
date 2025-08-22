@@ -115,7 +115,7 @@ def init_routes(app):
         return send_file(docs_index)
 
     # === Set Management System ===
-    @app.route("/manage_sets", methods=["GET"])
+    @app.route("/manage_sets/", methods=["GET"])
     def manage_sets():
         # Get all sets with counts and modes from sets_utils
         sets = get_all_sets()  # already returns [{"name": ..., "count": ..., "modes": [...]}, ...]

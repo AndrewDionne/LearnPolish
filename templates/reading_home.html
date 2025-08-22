@@ -27,7 +27,7 @@
   <h1>📖 Reading – Choose a Set</h1>
   {% for set in sets %}
     <div class="card-link">
-      <a href="/reading/{{ set.name }}/">
+      <a href="{{ set.name }}/">
         ▶ {{ set.name }} {% if set.count != "?" %}({{ set.count }} cards){% endif %}
       </a>
     </div>

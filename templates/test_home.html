@@ -24,10 +24,10 @@
   </style>
 </head>
 <body>
-  <h1>🧪 Test Yourself – Choose a Set</h1>
+  <h1>🎓 Test Yourself – Choose a Set</h1>
   {% for set in sets %}
     <div class="card-link">
-      <a href="/test/{{ set.name }}/">
+      <a href="{{ set.name }}/">
         ▶ {{ set.name }} {% if set.count != "?" %}({{ set.count }} cards){% endif %}
       </a>
     </div>
