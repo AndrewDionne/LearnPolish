@@ -100,8 +100,8 @@ def init_routes(app):
     @app.route("/api/token", methods=["GET"])
     def get_token():
         try:
-            token, region = get_azure_token()
-            return jsonify({"token": token, "region": region})
+            # Just return the response from utils.py directly
+            return get_azure_token()
         except Exception as e:
             app.logger.error(f"Azure token error: {e}")
             return jsonify({"error": str(e)}), 500
