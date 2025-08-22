@@ -1,6 +1,11 @@
+from dotenv import load_dotenv
 from app import create_app
 import os
 
+# Load environment variables from .env locally
+if os.environ.get("RENDER") != "true":  # Only load .env when NOT on Render
+    load_dotenv()  # This reads .env in the project root
+    
 app = create_app()
 
 if __name__ == "__main__":

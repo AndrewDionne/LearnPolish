@@ -9,7 +9,8 @@ app/
 sets/
 output/
 templates/
-
+# Ignore Azure key
+.env
 # Only publish this
 !.gitignore
 docs/
