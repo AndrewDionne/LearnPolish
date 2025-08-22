@@ -52,6 +52,18 @@
             color: #555;
             margin-top: 10px;
         }
+        .modes {
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            background: #f9f9f9;
+        }
+        .modes label {
+            font-weight: normal;
+            display: inline-block;
+            margin-right: 15px;
+        }
     </style>
 </head>
 <body>
@@ -74,6 +86,15 @@
 ]
         '></textarea>
 
+        <label>Apply to Modes:</label>
+        <div class="modes">
+            <label><input type="checkbox" name="modes" value="flashcards" checked> Flashcards</label>
+            <label><input type="checkbox" name="modes" value="practice" checked> Practice</label>
+            <label><input type="checkbox" name="modes" value="reading"> Reading</label>
+            <label><input type="checkbox" name="modes" value="listening"> Listening</label>
+            <label><input type="checkbox" name="modes" value="test"> Test</label>
+        </div>
+
         <button type="submit">Generate Flashcards</button>
     </form>
 
@@ -82,4 +103,5 @@
     </p>
 </body>
 </html>
+
 
