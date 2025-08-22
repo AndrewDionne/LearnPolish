@@ -96,10 +96,15 @@ def init_routes(app):
         sets = load_sets_for_mode("test")
         return render_template("test_home.html", sets=sets)
 
-    # === Azure Token Endpoint ===
+# === Azure Token Endpoint ===
     @app.route("/api/token", methods=["GET"])
     def get_token():
-        return get_azure_token()
+        try:
+            token, region = get_azure_token()
+            return jsonify({"token": token, "region": region})
+        except Exception as e:
+            app.logger.error(f"Azure token error: {e}")
+            return jsonify({"error": str(e)}), 500
 
     # === Static/Output File Serving ===
     @app.route("/custom_static/<path:filename>")
