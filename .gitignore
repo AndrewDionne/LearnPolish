@@ -5,8 +5,12 @@ __pycache__/
 
 # Ignore virtual environments
 venv/
+.env.txt
+# Ignore env files
 .env
-
+.env.*
+*.env
+*.env.*
 # Ignore generated files
 output/
 *.mp3
