@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>22-12 Practice</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+
+      body {
+          font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+          background-color: #f9f9f9;
+          padding: 2rem;
+          text-align: center;
+        }
+
+        h1 {
+          font-size: 1.6rem;
+          margin-bottom: 1rem;
+        }
+
+        .home-btn {
+            position: absolute;
+            right: 0px;
+            top: 0;
+            font-size: 1.4em;
+            background: none;
+            border: none;
+            cursor: pointer;
+            }
+
+        .result {
+          font-size: 1.2rem;
+          color: #333;
+          margin-top: 2rem;
+          min-height: 2em;
+        }
+
+        .flash {
+          margin: 10px;
+          padding: 12px 20px;
+          font-size: 1rem;
+          background-color: #007bff;
+          color: white;
+          border: none;
+          border-radius: 8px;
+          cursor: pointer;
+          display: inline-block;
+        }
+
+        .flash:hover {
+          background-color: #0056b3;
+        }
+
+        .back {
+          display: block;
+          margin-top: 2rem;
+          font-size: 0.9rem;
+          color: #555;
+          text-decoration: none;
+        }
+
+        .back:hover {
+          text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+<h1>22-12 practice 
+
+  <button class="home-btn" onclick="goHome()">🏠</button></h1>
+  <button id="startBtn" class="flash">▶️ Start Practice</button>
+  <button id="pauseBtn" class="flash" style="margin-left: 1rem; display: none;">⏸ Pause</button>
+  <button id="restartBtn" class="flash" style="display:none;">🔁 Restart</button>
+ <div id="result" class="result">🎙 Get ready...</div>
+
+<script src="https://aka.ms/csspeech/jsbrowserpackageraw"></script>
+<script>
+let hasStarted = false;
+let paused = false;
+let index = 0;
+let attempts = 0;
+let isRunning = false;
+let cachedSpeechConfig = null;
+let preloadedAudio = {};
+
+const cards = [{"phrase": "Dziękuję", "pronunciation": "jen-KOO-yeh", "meaning": "Thank you", "audio_file": "/static/22-12/audio/0_Dziekuje.mp3"}, {"phrase": "Przepraszam", "pronunciation": "psheh-PRAH-shahm", "meaning": "Sorry/Excuse me", "audio_file": "/static/22-12/audio/1_Przepraszam.mp3"}, {"phrase": "Proszę powtórzyć!", "pronunciation": "PROH-sheh pohv-TOO-zheetch", "meaning": "Please repeat!", "audio_file": "/static/22-12/audio/2_Prosze_powtorzyc.mp3"}, {"phrase": "Co to znaczy", "pronunciation": "tso toh ZNAH-chee", "meaning": "What does it mean?", "audio_file": "/static/22-12/audio/3_Co_to_znaczy.mp3"}, {"phrase": "Tak", "pronunciation": "tahk", "meaning": "Yes", "audio_file": "/static/22-12/audio/4_Tak.mp3"}, {"phrase": "Nie", "pronunciation": "nyeh", "meaning": "No", "audio_file": "/static/22-12/audio/5_Nie.mp3"}, {"phrase": "Nie wiem", "pronunciation": "nyeh VYEM", "meaning": "I don't know", "audio_file": "/static/22-12/audio/6_Nie_wiem.mp3"}, {"phrase": "Proszę napisać!", "pronunciation": "PROH-sheh nah-PEE-sahtch", "meaning": "Please write it down!", "audio_file": "/static/22-12/audio/7_Prosze_napisac.mp3"}, {"phrase": "Gdzie jest toaleta", "pronunciation": "g-jeh yest toh-ah-LEH-tah", "meaning": "Where is the toilet?", "audio_file": "/static/22-12/audio/8_Gdzie_jest_toaleta.mp3"}, {"phrase": "Proszę mówić wolniej", "pronunciation": "PROH-sheh MOO-veech VOL-nyeh", "meaning": "Please speak more slowly", "audio_file": "/static/22-12/audio/9_Prosze_mowic_wolniej.mp3"}, {"phrase": "Mam pytanie", "pronunciation": "mahm pih-TAH-nyeh", "meaning": "I have a question", "audio_file": "/static/22-12/audio/10_Mam_pytanie.mp3"}, {"phrase": "Nie rozumiem", "pronunciation": "nyeh roh-ZOO-myem", "meaning": "I don't understand", "audio_file": "/static/22-12/audio/11_Nie_rozumiem.mp3"}];
+const setName = "22-12";
+
+function sanitizeFilename(text) {
+    return text
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")  // strip accents
+    .replace(/[^a-zA-Z0-9]+/g, "_")   // replace non-alphanumeric
+    .replace(/^_+|_+$/g, "");         // trim leading/trailing _
+}
+
+function playSystemAudio(name, callback) {
+  const path = window.location.hostname === "andrewdionne.github.io"
+  ? `/${window.location.pathname.split("/")[1]}/static/system_audio/${name}.mp3`
+  : `/custom_static/system_audio/${name}.mp3`;
+
+  const audio = new Audio(path);
+  audio.onended = callback;
+  audio.onerror = () => {
+    console.warn(`⚠️ Failed to play system audio: ${name}`);
+    callback();
+  };
+
+  audio.play().catch(err => {
+    console.warn("🔇 Autoplay blocked:", err);
+    callback();
+  });
+}
+function playAudio(filename, callback) {
+  const audio = preloadedAudio[filename];
+  if (!audio) {
+    console.warn("⚠️ Audio not preloaded:", filename);
+    callback();
+    return;
+  }
+
+  const newAudio = new Audio(audio.src);
+
+  newAudio.onended = callback;
+  newAudio.onerror = () => {
+    console.warn("⚠️ Audio failed to play:", filename);
+    document.getElementById("result").textContent = "⚠️ Audio failed to play.";
+    callback();
+  };
+   // Important: reset playback to start
+  newAudio.currentTime = 0;
+
+  const playPromise = newAudio.play();
+  if (playPromise !== undefined) {
+  playPromise
+    .then(() => {
+      console.log("🔊 iOS-safe audio playing:", filename);
+    })
+    .catch(err => {
+      console.warn("🔇 iOS-safe audio blocked:", err);
+      callback();  // move on anyway
+    });
+  }
+}
+
+async function assessPronunciation(phrase) {
+  const resultDiv = document.getElementById("result");
+  if (!window.SpeechSDK) {
+    resultDiv.textContent = "❌ Azure SDK not loaded.";
+    return 0;
+  }
+  try {
+    const speechConfig = await getSpeechConfig();
+    const audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
+    const recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
+
+    const config = new SpeechSDK.PronunciationAssessmentConfig(
+      phrase,
+      SpeechSDK.PronunciationAssessmentGradingSystem.HundredMark,
+      SpeechSDK.PronunciationAssessmentGranularity.FullText,
+      false
+    );
+    config.applyTo(recognizer);
+    resultDiv.innerHTML = `🎙 Speak: <strong>${phrase}</strong>`;
+
+    return new Promise(resolve => {
+      recognizer.recognized = (s, e) => {
+        try {
+          const data = JSON.parse(e.result.json);
+          const score = data?.NBest?.[0]?.PronunciationAssessment?.AccuracyScore || 0;
+          const feedback = score >= 100
+            ? `🌟 Excellent! ${score.toFixed(1)}%`
+            : score >= 70
+            ? `✅ Good! ${score.toFixed(1)}%`
+            : `⚠️ Needs work: ${score.toFixed(1)}%`;
+          resultDiv.innerHTML = feedback;
+          recognizer.stopContinuousRecognitionAsync();
+
+          const audioCue =
+            score >= 70 ? "good" : "try_again";
+          playSystemAudio(audioCue, () => {
+            resolve(score);
+          });
+
+        } catch (err) {
+          resultDiv.innerHTML = "⚠️ Parsing error.";
+          recognizer.stopContinuousRecognitionAsync();
+          resolve(0);
+        }
+      };
+      recognizer.startContinuousRecognitionAsync();
+    });
+  } catch (err) {
+    console.error("Azure error:", err);
+    document.getElementById("result").textContent = "❌ Azure config error.";
+    return 0;
+  }
+}
+
+async function getSpeechConfig() {
+  if (cachedSpeechConfig) return cachedSpeechConfig;
+
+  const baseUrl = window.location.hostname === "andrewdionne.github.io"
+    ? "https://flashcards-5c95.onrender.com"
+    : "";
+
+  const res = await fetch(`${baseUrl}/api/token`);
+  if (!res.ok) throw new Error("Token fetch failed: " + res.status);
+  const data = await res.json();
+
+  const speechConfig = SpeechSDK.SpeechConfig.fromAuthorizationToken(data.token, data.region);
+  speechConfig.speechRecognitionLanguage = "pl-PL";
+  speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, "1500");
+  speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "1000");
+
+  cachedSpeechConfig = speechConfig;
+  return speechConfig;
+}
+
+async function runPractice() {
+  if (paused || isRunning || index >= cards.length) return;
+  isRunning = true;
+
+  const resultDiv = document.getElementById("result");
+  const entry = cards[index];
+  const filename = `${index}_${sanitizeFilename(entry.phrase)}.mp3`;
+
+  await new Promise(resolve => playAudio(filename, resolve));
+  if (paused) { isRunning = false; return; }
+
+  const score = await assessPronunciation(entry.phrase);
+  if (paused) { isRunning = false; return; }
+
+  if (score >= 70 || attempts >= 2) {
+    index++;
+    attempts = 0;
+  } else {
+    attempts++;
+    resultDiv.innerHTML += "<br>🔁 Try again!";
+  }
+
+  isRunning = false;
+
+  setTimeout(() => {
+    if (!paused) runPractice();
+  }, 1800);
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const startBtn = document.getElementById("startBtn");
+  const pauseBtn = document.getElementById("pauseBtn");
+  const restartBtn = document.getElementById("restartBtn");
+  preloadAudioFiles();
+
+  function preloadAudioFiles() {
+    cards.forEach((entry, i) => {
+      const filename = `${i}_${sanitizeFilename(entry.phrase)}.mp3`;
+      const audio = new Audio(getAudioPath(filename));
+      preloadedAudio[filename] = audio;
+    });
+  }
+  
+  function getAudioPath(filename) {
+    const repo = window.location.hostname === "andrewdionne.github.io"
+      ? window.location.pathname.split("/")[1]
+      : "";
+    return window.location.hostname === "andrewdionne.github.io"
+      ? `/${repo}/static/${setName}/audio/${filename}`
+      : `/custom_static/${setName}/audio/${filename}`;
+  }
+
+  startBtn.addEventListener("click", () => {
+    if (!hasStarted) {
+      hasStarted = true;
+      paused = false;
+      startBtn.style.display = "none";
+      pauseBtn.style.display = "inline-block";
+      restartBtn.style.display = "inline-block";
+      playSystemAudio("repeat_after_me", () => runPractice());
+    }
+  });
+
+  pauseBtn.addEventListener("click", () => {
+    if (!hasStarted) return;
+    paused = !paused;
+    pauseBtn.textContent = paused ? "▶️ Resume" : "⏸ Pause";
+    if (!paused && !isRunning) {
+      playSystemAudio("repeat_after_me", () => runPractice());
+    }
+  });
+
+  restartBtn.addEventListener("click", () => {
+    paused = false;
+    index = 0;
+    attempts = 0;
+    isRunning = false;
+    document.getElementById("pauseBtn").textContent = "⏸ Pause";
+    playSystemAudio("repeat_after_me", () => runPractice());
+  });
+});
+
+function goHome() {
+  const pathParts = window.location.pathname.split("/");
+  const repo = pathParts[1];
+  window.location.href = window.location.hostname === "andrewdionne.github.io"
+    ? `/${repo}/`
+    : "/";
+}
+
+</script>
+
+</body>
+</html>
