@@ -1,16 +1,13 @@
-# Ignore Python stuff
-venv/
+# Ignore Python cache
 __pycache__/
 *.pyc
 *.pyo
 
-# Ignore source code folders
-app/
-sets/
-output/
-templates/
-# Ignore Azure key
+# Ignore virtual environments
+venv/
 .env
-# Only publish this
-!.gitignore
-docs/
+
+# Ignore build/output folders if not needed
+output/
+
+# Allow everything else (app, templates, docs, etc.)
