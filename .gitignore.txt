@@ -7,7 +7,8 @@ __pycache__/
 venv/
 .env
 
-# Ignore build/output folders if not needed
+# Ignore generated files
 output/
+*.mp3
 
-# Allow everything else (app, templates, docs, etc.)
+# Keep everything else (including app/, templates/, docs/)
