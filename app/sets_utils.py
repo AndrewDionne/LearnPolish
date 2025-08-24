@@ -67,8 +67,8 @@ def load_sets_for_mode(mode: str) -> list:
         return all_sets
     return [s for s in all_sets if mode in s["modes"]]
 
-def regenerate_set_page(set_name: str, mode: str):
-    """Regenerate HTML for a given set and mode."""
+def regenerate_set_pages(set_name: str):
+    """Regenerate HTML for a given set for all modes."""
     set_dir = SETS_DIR / set_name
     data_file = set_dir / "data.json"
     if not data_file.exists():
@@ -77,11 +77,9 @@ def regenerate_set_page(set_name: str, mode: str):
     with open(data_file, "r", encoding="utf-8") as f:
         data = json.load(f)
 
-    generator = MODE_GENERATORS.get(mode)
-    if not generator:
-        raise ValueError(f"Unknown mode '{mode}'")
+    for mode, generator in MODE_GENERATORS.items():
+        if generator:
+            html_path = generator(set_name, data)
+            print(f"🔄 Regenerated {mode} page for set '{set_name}': {html_path}")
 
-    html_path = generator(set_name, data)  # generator writes the file and returns its path
-    print(f"🔄 Regenerated {mode} page for set '{set_name}': {html_path}")
-
-    return html_path
+    return True
