@@ -101,14 +101,10 @@ def init_routes(app):
     @app.route("/api/token", methods=["GET"])
     def get_token():
         try:
-            data = get_azure_token()
-            if isinstance(data, tuple):
-                # utils returned (dict, status)
-                return jsonify(data[0]), data[1]
-            return jsonify(data)
+            return get_azure_token()
         except Exception as e:
-            app.logger.error(f"Azure token error: {e}")
-            return jsonify({"error": str(e)}), 500
+            app.logger.error(f"Azure token endpoint unexpected error: {e}", exc_info=True)
+            return jsonify({"error": "endpoint_failed", "detail": str(e)}), 500
 
 
     # === Static/Output File Serving ===
@@ -177,19 +173,43 @@ def init_routes(app):
     @app.route("/create", methods=["GET", "POST"])
     def create_set_page():
         if request.method == "POST":
+            # Extract submitted data
+            set_name = request.form.get("set_name", "").strip()
+            json_input = request.form.get("json_input", "").strip()
+            selected_modes = request.form.getlist("modes")  # ✅ Capture modes from checkboxes
+
+            # Call your existing creation logic
             result = handle_flashcard_creation(request.form)
 
-            # If the function returns something truthy (HTML, Response, etc.),
-            # it's likely an error message/page, so just return it
             if result:
                 return result
 
-            # If no error, go to Manage Sets
+            # ✅ Save modes for this set
+            if set_name and selected_modes:
+                set_modes = load_set_modes()
+                set_modes[set_name] = selected_modes
+                save_set_modes(set_modes)
+
+            # ✅ Generate HTML pages only for selected modes
+            if set_name:
+                if "flashcards" in selected_modes:
+                    generate_flashcard_html(set_name)
+                if "practice" in selected_modes:
+                    generate_practice_html(set_name)
+                if "reading" in selected_modes:
+                    generate_reading_html(set_name)
+                if "listening" in selected_modes:
+                    generate_listening_html(set_name)
+                if "test" in selected_modes:
+                    generate_test_html(set_name)
+
+            commit_and_push_changes(f"✅ Created set {set_name} with modes {selected_modes}")
             return redirect(url_for("manage_sets"))
 
         # GET request → show empty creation page
         set_name = request.args.get("set_name", "")
         return render_template("create.html", set_name=set_name)
+
 
     @app.route("/create_set", methods=["POST"])
     def create_set_with_data():
