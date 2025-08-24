@@ -175,33 +175,21 @@ def init_routes(app):
         if request.method == "POST":
             # Extract submitted data
             set_name = request.form.get("set_name", "").strip()
-            json_input = request.form.get("json_input", "").strip()
-            selected_modes = request.form.getlist("modes")  # ✅ Capture modes from checkboxes
+            selected_modes = request.form.getlist("modes")
 
             # Call your existing creation logic
             result = handle_flashcard_creation(request.form)
-
             if result:
                 return result
 
-            # ✅ Save modes for this set
+            # Save modes for this set
             if set_name and selected_modes:
                 set_modes = load_set_modes()
                 set_modes[set_name] = selected_modes
                 save_set_modes(set_modes)
 
-            # ✅ Generate HTML pages only for selected modes
-            if set_name:
-                if "flashcards" in selected_modes:
-                    generate_flashcard_html(set_name)
-                if "practice" in selected_modes:
-                    generate_practice_html(set_name)
-                if "reading" in selected_modes:
-                    generate_reading_html(set_name)
-                if "listening" in selected_modes:
-                    generate_listening_html(set_name)
-                if "test" in selected_modes:
-                    generate_test_html(set_name)
+            # ✅ Regenerate all HTML pages for this set (auto-loads JSON)
+            regenerate_set_pages(set_name)
 
             commit_and_push_changes(f"✅ Created set {set_name} with modes {selected_modes}")
             return redirect(url_for("manage_sets"))
@@ -222,12 +210,8 @@ def init_routes(app):
             if not json_path.exists():
                 json_path.write_text("[]", encoding="utf-8")
 
-            # ✅ Generate per-set HTML pages for GitHub Pages
-            generate_flashcard_html(name)
-            generate_practice_html(name)
-            generate_reading_html(name)
-            generate_listening_html(name)
-            generate_test_html(name)
+            # ✅ Regenerate all pages for this set
+            regenerate_set_pages(name)
 
             print(f"✅ Created set: {name}")
             commit_and_push_changes(f"✅ Created set {name}")
