@@ -9,6 +9,7 @@ from .sets_utils import (
     load_set_modes,
     save_set_modes,
     get_all_sets,
+    regenerate_set_page,
     SETS_DIR,
     MODES  
 )
@@ -189,7 +190,7 @@ def init_routes(app):
                 save_set_modes(set_modes)
 
             # ✅ Regenerate all HTML pages for this set (auto-loads JSON)
-            regenerate_set_pages(set_name)
+            regenerate_set_page(set_name)
 
             commit_and_push_changes(f"✅ Created set {set_name} with modes {selected_modes}")
             return redirect(url_for("manage_sets"))
@@ -211,7 +212,7 @@ def init_routes(app):
                 json_path.write_text("[]", encoding="utf-8")
 
             # ✅ Regenerate all pages for this set
-            regenerate_set_pages(name)
+            regenerate_set_page(name)
 
             print(f"✅ Created set: {name}")
             commit_and_push_changes(f"✅ Created set {name}")
