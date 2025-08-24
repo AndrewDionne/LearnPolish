@@ -1,9 +1,10 @@
 import os
 import json
 from pathlib import Path
-from .sets_utils import load_set_modes, sanitize_filename
+
 
 def generate_test_html(set_name, data):
+    from .sets_utils import load_set_modes, sanitize_filename
     set_modes = load_set_modes()
     if "test" in set_modes and set_name not in set_modes["test"]:
         print(f"⏭️ Skipping test for '{set_name}' (not in test mode).")

@@ -8,6 +8,7 @@ from pathlib import Path
 from flask import jsonify, redirect, url_for, render_template, send_file
 from gtts import gTTS
 from jinja2 import Environment, FileSystemLoader
+from .modes import MODE_GENERATORS
 
 from .config import MODES  # <-- now imported from config.py
 from .git_utils import commit_and_push_changes

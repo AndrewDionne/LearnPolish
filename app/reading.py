@@ -1,9 +1,9 @@
 import os
 import json
 from pathlib import Path
-from .sets_utils import load_set_modes, sanitize_filename
 
 def generate_reading_html(set_name, data):
+    from .sets_utils import load_set_modes, sanitize_filename
     set_modes = load_set_modes()
     if "reading" in set_modes and set_name not in set_modes["reading"]:
         print(f"⏭️ Skipping reading for '{set_name}' (not in reading mode).")

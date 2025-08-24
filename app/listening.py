@@ -1,9 +1,10 @@
 import os
 import json
 from pathlib import Path
-from .sets_utils import load_set_modes, sanitize_filename
+
 
 def generate_listening_html(set_name, data):
+    from .sets_utils import load_set_modes, sanitize_filename
     set_modes = load_set_modes()
     if "listening" in set_modes and set_name not in set_modes["listening"]:
         print(f"⏭️ Skipping listening for '{set_name}' (not in listening mode).")

@@ -1,8 +1,8 @@
 import json
 from pathlib import Path
-from .config import MODES
 import re
 import unicodedata
+from .modes import MODE_GENERATORS
 
 # === Constants ===
 SETS_DIR = Path("docs/sets")
