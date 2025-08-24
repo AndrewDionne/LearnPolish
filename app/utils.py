@@ -122,6 +122,17 @@ def get_azure_token():
         return jsonify({"error": "unexpected_error", "detail": str(e)}), 500
 
 # === Set Creation / Deletion ===
+def save_set_modes(set_modes: dict):
+    """Save the set modes configuration to docs/sets/modes.json."""
+    config_path = SETS_DIR / "modes.json"
+    try:
+        with open(config_path, "w", encoding="utf-8") as f:
+            json.dump(set_modes, f, indent=2, ensure_ascii=False)
+        print(f"💾 Saved set modes to {config_path}")
+    except Exception as e:
+        print(f"❌ Error saving set modes: {e}")
+
+
 def handle_flashcard_creation(form):
     """Create new set from form data and generate HTML/audio."""
     set_name = form.get("set_name", "").strip()
