@@ -21,7 +21,8 @@ from .utils import (
     generate_test_html,
     handle_flashcard_creation,
     generate_mode_html,
-    get_azure_token
+    get_azure_token,
+    handle_reading_creation
 )
 from .git_utils import commit_and_push_changes
 
@@ -219,7 +220,19 @@ def init_routes(app):
             return redirect(url_for("create_set_page", set_name=name))
 
         return redirect(url_for("manage_sets"))
+    
+    @app.route("/create_reading", methods=["GET", "POST"])
+    def create_reading_page():
+        if request.method == "POST":
+            set_name = request.form.get("set_name", "").strip()
+            error = handle_reading_creation(request.form)
+            if error:
+                return error  # shows validation errors if any
+            # Redirect to the newly created reading set page
+            return redirect(url_for("create_reading_page", set_name=set_name))
 
+        return render_template("create_reading.html")
+    
     # === Legacy Config Update (Form POST) ===
     @app.route("/update_set_config", methods=["POST"])
     def update_set_config():

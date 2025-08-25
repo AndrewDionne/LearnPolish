@@ -234,3 +234,66 @@ def delete_set(set_name: str):
 
 def delete_set_and_push(set_name: str):
     delete_set(set_name)
+
+def handle_reading_creation(form):
+    set_name = form.get("set_name", "").strip()
+    json_input = form.get("json_input", "").strip()
+    selected_modes = form.getlist("modes")  # usually ["reading", ...]
+
+    if not set_name:
+        return "<h2 style='color:red;'>❌ Set name is required.</h2>", 400
+    if (SETS_DIR / set_name).exists() and not (SETS_DIR / set_name / "reading.json").exists():
+        # If set exists but not reading.json, we still allow adding reading.json to same set.
+        pass
+
+    # Parse JSON
+    try:
+        data = json.loads(json_input)
+        if not isinstance(data, list):
+            raise ValueError("JSON must be an array of passages.")
+        for item in data:
+            if "polish" not in item:
+                raise ValueError("Each passage must include 'polish'. 'english' is optional.")
+            item.setdefault("title", "Untitled")
+            item.setdefault("english", "")
+    except Exception as e:
+        return f"<h2 style='color:red;'>❌ Invalid JSON: {e}</h2>", 400
+
+    # Prepare folders
+    set_dir = SETS_DIR / set_name
+    audio_dir = Path("docs/static") / set_name / "reading"
+    set_dir.mkdir(parents=True, exist_ok=True)
+    audio_dir.mkdir(parents=True, exist_ok=True)
+
+    # Save reading data
+    with open(set_dir / "reading.json", "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+    # Generate TTS audio for each passage
+    for i, item in enumerate(data):
+        out_mp3 = audio_dir / f"{i}.mp3"
+        if not out_mp3.exists():
+            gTTS(text=item["polish"], lang="pl").save(out_mp3)
+
+    # Save modes (merge)
+    modes_map = load_set_modes()
+    modes_map.setdefault(set_name, [])
+    for m in selected_modes:
+        if m not in modes_map[set_name]:
+            modes_map[set_name].append(m)
+    save_set_modes(modes_map)
+
+    # Generate reading HTML (uses reading.json)
+    generator = MODE_GENERATORS.get("reading")
+    if generator:
+        html_path = generator(set_name, data=None)  # generator can load reading.json if data is None
+        print(f"✅ Generated {html_path}")
+
+    # Rebuild landing pages
+    export_mode_pages()
+    export_homepage_static()
+
+    # Commit/push
+    commit_and_push_changes(f"📖 Created/updated reading set {set_name} in modes {selected_modes}")
+
+    return None

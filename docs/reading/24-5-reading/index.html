@@ -1,61 +1,35 @@
-import os
-import json
-from pathlib import Path
-from .config import MODES
-
-def generate_reading_html(set_name, data=None):
-    from .sets_utils import load_set_modes, sanitize_filename, SETS_DIR
-    
-    """
-    Build docs/reading/<set_name>/index.html using reading.json.
-    If `data` is None, auto-load docs/sets/<set_name>/reading.json.
-    """
-    set_dir = SETS_DIR / set_name
-    data_file = set_dir / "reading.json"
-    if data is None:
-        if not data_file.exists():
-            raise FileNotFoundError(f"No reading.json for set '{set_name}'")
-        data = json.loads(data_file.read_text(encoding="utf-8"))
-
-    out_dir = Path("docs/reading") / set_name
-    out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = out_dir / "index.html"
-
-    # Embed just enough info; audio paths are predictable
-    passages_json = json.dumps(data, ensure_ascii=False)
-
-    html = f"""<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pl">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Reading · {set_name}</title>
+<title>Reading · 24-5-reading</title>
 <link rel="preconnect" href="https://aka.ms">
 <style>
-  body {{ font-family: system-ui, sans-serif; margin: 24px; max-width: 900px; }}
-  .toolbar {{ display:flex; gap:8px; flex-wrap: wrap; align-items:center; margin-bottom: 12px; }}
-  button {{ padding:8px 12px; border-radius: 10px; border:0; background:#007bff; color:#fff; cursor:pointer; }}
-  button.secondary {{ background:#6c757d; }}
-  .passage {{ font-size: 1.35rem; line-height: 1.8; margin: 16px 0; }}
-  .word {{ padding: 2px 4px; border-radius: 6px; margin: 0 1px; display:inline-block; }}
-  .word.active {{ outline: 2px solid #007bff; }}
-  .w-good {{ background: rgba(0,180,0,.12); }}
-  .w-mid  {{ background: rgba(255,165,0,.15); }}
-  .w-bad  {{ background: rgba(255,0,0,.12); }}
-  .meta {{ color:#666; font-size: .9rem; margin-top: -4px; }}
-  .stats {{ margin-top: 12px; padding: 10px; border: 1px solid #eee; border-radius: 10px; background:#fafafa; }}
-  .translation {{ margin-top: 12px; color:#333; display:none; }}
-  .translation.visible {{ display:block; }}
-  .row {{ display:flex; align-items:center; gap:8px; flex-wrap: wrap; }}
-  select {{ padding:6px; border-radius:8px; }}
-  audio {{ display:none; }}
+  body { font-family: system-ui, sans-serif; margin: 24px; max-width: 900px; }
+  .toolbar { display:flex; gap:8px; flex-wrap: wrap; align-items:center; margin-bottom: 12px; }
+  button { padding:8px 12px; border-radius: 10px; border:0; background:#007bff; color:#fff; cursor:pointer; }
+  button.secondary { background:#6c757d; }
+  .passage { font-size: 1.35rem; line-height: 1.8; margin: 16px 0; }
+  .word { padding: 2px 4px; border-radius: 6px; margin: 0 1px; display:inline-block; }
+  .word.active { outline: 2px solid #007bff; }
+  .w-good { background: rgba(0,180,0,.12); }
+  .w-mid  { background: rgba(255,165,0,.15); }
+  .w-bad  { background: rgba(255,0,0,.12); }
+  .meta { color:#666; font-size: .9rem; margin-top: -4px; }
+  .stats { margin-top: 12px; padding: 10px; border: 1px solid #eee; border-radius: 10px; background:#fafafa; }
+  .translation { margin-top: 12px; color:#333; display:none; }
+  .translation.visible { display:block; }
+  .row { display:flex; align-items:center; gap:8px; flex-wrap: wrap; }
+  select { padding:6px; border-radius:8px; }
+  audio { display:none; }
 </style>
 <script src="https://aka.ms/csspeech/jsbrowserpackageraw"></script>
 </head>
 <body>
   <a href="/" style="position:absolute; right:16px; top:16px; text-decoration:none; background:#007bff; color:#fff; padding:6px 10px; border-radius:8px;">🏠 Home</a>
 
-  <h1>Reading · {set_name}</h1>
+  <h1>Reading · 24-5-reading</h1>
 
   <div class="toolbar">
     <div class="row">
@@ -80,8 +54,8 @@ def generate_reading_html(set_name, data=None):
   <audio id="replayAudio"></audio>
 
 <script>
-const passages = {passages_json};
-const setName = "{set_name}";
+const passages = [{"title": "Sample Passage", "polish": "Cześć! To jest przykładowy tekst do czytania.", "english": "Hello! This is a sample text for reading."}, {"title": "Second Passage", "polish": "Uczę się polskiego codziennie, aby poprawić swoje umiejętności.", "english": "I study Polish every day to improve my skills."}];
+const setName = "24-5-reading";
 const baseUrl = window.location.hostname === "andrewdionne.github.io"
   ? "https://flashcards-5c95.onrender.com"
   : "";
@@ -93,24 +67,24 @@ let mediaRecorder = null;
 let recordedChunks = [];
 let startTime = 0;
 let wordsSpans = [];
-let wordsMeta = []; // {{ text, idx, score }}
+let wordsMeta = []; // { text, idx, score }
 let totalRecognized = 0;
 
-function byId(id) {{ return document.getElementById(id); }}
+function byId(id) { return document.getElementById(id); }
 
-function populateSelect() {{
+function populateSelect() {
   const sel = byId("passageSelect");
   sel.innerHTML = "";
-  passages.forEach((p, i) => {{
+  passages.forEach((p, i) => {
     const opt = document.createElement("option");
     opt.value = i;
     opt.textContent = p.title || ("Passage " + (i+1));
     sel.appendChild(opt);
-  }});
+  });
   sel.value = "0";
-}}
+}
 
-function renderPassage(i) {{
+function renderPassage(i) {
   const p = passages[i];
   byId("title").textContent = p.title || "";
   byId("translation").textContent = p.english || "";
@@ -120,41 +94,41 @@ function renderPassage(i) {{
   wordsMeta = [];
 
   // Simple tokenization: split on spaces, keep punctuation attached visually
-  const tokens = p.polish.split(/\\s+/).filter(Boolean);
-  tokens.forEach((w, idx) => {{
+  const tokens = p.polish.split(/\s+/).filter(Boolean);
+  tokens.forEach((w, idx) => {
     const span = document.createElement("span");
     span.className = "word";
     span.dataset.idx = String(idx);
     span.textContent = w;
     container.appendChild(span);
     wordsSpans.push(span);
-    wordsMeta.push({{ text: w, idx, score: null }});
+    wordsMeta.push({ text: w, idx, score: null });
     container.appendChild(document.createTextNode(" "));
-  }});
-}}
+  });
+}
 
-function colorByScore(s) {{
+function colorByScore(s) {
   if (s === null || isNaN(s)) return "";
   if (s >= 80) return "w-good";
   if (s >= 60) return "w-mid";
   return "w-bad";
-}}
+}
 
-function highlightWord(idx, cls="active") {{
+function highlightWord(idx, cls="active") {
   wordsSpans.forEach(s => s.classList.remove("active"));
-  if (idx >=0 && idx < wordsSpans.length) {{
+  if (idx >=0 && idx < wordsSpans.length) {
     wordsSpans[idx].classList.add(cls);
-    wordsSpans[idx].scrollIntoView({{ block:"center", inline:"nearest", behavior:"smooth" }});
-  }}
-}}
+    wordsSpans[idx].scrollIntoView({ block:"center", inline:"nearest", behavior:"smooth" });
+  }
+}
 
-async function fetchToken() {{
-  const res = await fetch(`${{baseUrl}}/api/token`);
+async function fetchToken() {
+  const res = await fetch(`${baseUrl}/api/token`);
   if (!res.ok) throw new Error("token http " + res.status);
   return await res.json();
-}}
+}
 
-async function setupRecognizer(referenceText) {{
+async function setupRecognizer(referenceText) {
   const tk = await fetchToken();
   const speechConfig = SpeechSDK.SpeechConfig.fromAuthorizationToken(tk.token, tk.region);
   speechConfig.speechRecognitionLanguage = "pl-PL";
@@ -172,59 +146,59 @@ async function setupRecognizer(referenceText) {{
     true  // enable miscue
   );
   pa.applyTo(recognizer);
-}}
+}
 
-function startRecordingMyAudio() {{
+function startRecordingMyAudio() {
   recordedChunks = [];
-  navigator.mediaDevices.getUserMedia({{ audio: true }}).then(stream => {{
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
     mediaRecorder = new MediaRecorder(stream);
-    mediaRecorder.ondataavailable = e => {{ if (e.data.size > 0) recordedChunks.push(e.data); }};
+    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
     mediaRecorder.start();
-  }}).catch(() => {{}});
-}}
+  }).catch(() => {});
+}
 
-function stopRecordingMyAudio() {{
-  return new Promise(resolve => {{
+function stopRecordingMyAudio() {
+  return new Promise(resolve => {
     if (!mediaRecorder) return resolve(null);
-    mediaRecorder.onstop = () => {{
-      const blob = new Blob(recordedChunks, {{ type: "audio/webm" }});
+    mediaRecorder.onstop = () => {
+      const blob = new Blob(recordedChunks, { type: "audio/webm" });
       const url = URL.createObjectURL(blob);
       resolve(url);
-    }};
-    try {{ mediaRecorder.stop(); }} catch(e) {{ resolve(null); }}
-  }});
-}}
+    };
+    try { mediaRecorder.stop(); } catch(e) { resolve(null); }
+  });
+}
 
-function computeWPM(elapsedMs, wordsCount) {{
+function computeWPM(elapsedMs, wordsCount) {
   if (elapsedMs <= 0) return 0;
   return Math.round((wordsCount / (elapsedMs/1000)) * 60);
-}}
+}
 
-function updateStats(final=false) {{
+function updateStats(final=false) {
   const done = wordsMeta.filter(w => typeof w.score === "number");
   const avg = done.length ? (done.reduce((a,b)=>a+b.score,0) / done.length) : 0;
   const elapsed = Date.now() - startTime;
   const wpm = computeWPM(elapsed, done.length);
   const status = final ? "Finished" : "Listening…";
   byId("stats").innerHTML = `
-    <div><strong>Status:</strong> ${{status}}</div>
-    <div><strong>Pronunciation (avg of scored words):</strong> ${{avg.toFixed(1)}}%</div>
-    <div><strong>Words recognized:</strong> ${{done.length}} / ${{wordsMeta.length}}</div>
-    <div><strong>WPM:</strong> ${{wpm}}</div>
+    <div><strong>Status:</strong> ${status}</div>
+    <div><strong>Pronunciation (avg of scored words):</strong> ${avg.toFixed(1)}%</div>
+    <div><strong>Words recognized:</strong> ${done.length} / ${wordsMeta.length}</div>
+    <div><strong>WPM:</strong> ${wpm}</div>
   `;
-}}
+}
 
-function attachRecognitionHandlers() {{
-  recognizer.recognized = (s, e) => {{
+function attachRecognitionHandlers() {
+  recognizer.recognized = (s, e) => {
     if (!e || !e.result || !e.result.json) return;
-    try {{
+    try {
       const j = JSON.parse(e.result.json);
       const nbest = (j.NBest && j.NBest[0]) ? j.NBest[0] : null;
       if (!nbest) return;
 
       // Word-level results with timings and scores
       const words = nbest.Words || [];
-      words.forEach(w => {{
+      words.forEach(w => {
         // Map recognized to our token index via simple forward consumption
         // (You can improve alignment later if needed)
         const text = w.Word;
@@ -233,50 +207,50 @@ function attachRecognitionHandlers() {{
         // Find the first unscored matching token (case-insensitive, basic punctuation tolerance)
         const norm = (t) => t.toLowerCase().replace(/[.,!?;:()"]/g, "");
         const matchIdx = wordsMeta.findIndex(m => m.score === null && norm(m.text) === norm(text));
-        if (matchIdx !== -1) {{
+        if (matchIdx !== -1) {
           wordsMeta[matchIdx].score = score;
           const span = wordsSpans[matchIdx];
           span.classList.remove("w-good","w-mid","w-bad");
           const cls = colorByScore(score);
           if (cls) span.classList.add(cls);
           highlightWord(matchIdx);
-        }}
-      }});
+        }
+      });
 
       updateStats(false);
-    }} catch(err) {{
+    } catch(err) {
       console.warn("parse error", err);
-    }}
-  }};
+    }
+  };
 
-  recognizer.sessionStarted = () => {{
+  recognizer.sessionStarted = () => {
     byId("status").textContent = "Session started. Speak now…";
     startTime = Date.now();
     updateStats(false);
-  }};
+  };
 
-  recognizer.sessionStopped = async () => {{
+  recognizer.sessionStopped = async () => {
     byId("status").textContent = "Session stopped.";
     const url = await stopRecordingMyAudio();
-    if (url) {{
+    if (url) {
       const a = byId("replayAudio");
       a.src = url;
       a.load();
-    }}
+    }
     updateStats(true);
-  }};
+  };
 
-  recognizer.canceled = () => {{
+  recognizer.canceled = () => {
     byId("status").textContent = "Canceled.";
-  }};
-}}
+  };
+}
 
-async function startReading() {{
+async function startReading() {
   const p = passages[currentIndex];
-  if (!window.SpeechSDK) {{
+  if (!window.SpeechSDK) {
     byId("status").textContent = "❌ Azure SDK not loaded.";
     return;
-  }}
+  }
   await setupRecognizer(p.polish);
   attachRecognitionHandlers();
   // Small delay so UI can update
@@ -284,53 +258,50 @@ async function startReading() {{
   byId("status").textContent = "🎤 Speak now…";
   startRecordingMyAudio();
   recognizer.startContinuousRecognitionAsync();
-}}
+}
 
-function stopReading() {{
-  if (recognizer) {{
+function stopReading() {
+  if (recognizer) {
     recognizer.stopContinuousRecognitionAsync();
-  }}
-}}
+  }
+}
 
-function listenPolish() {{
+function listenPolish() {
   const a = byId("ttsAudio");
-  a.src = `/static/${{setName}}/reading/${{currentIndex}}.mp3`;
+  a.src = `/static/${setName}/reading/${currentIndex}.mp3`;
   a.load();
-  a.play().catch(()=>{{}});
-}}
+  a.play().catch(()=>{});
+}
 
-function replayMe() {{
-  byId("replayAudio").play().catch(()=>{{}});
-}}
+function replayMe() {
+  byId("replayAudio").play().catch(()=>{});
+}
 
-function toggleEN() {{
+function toggleEN() {
   const el = byId("translation");
   el.classList.toggle("visible");
   byId("btnToggleEN").textContent = el.classList.contains("visible") ? "🇬🇧 Hide Translation" : "🇬🇧 Show Translation";
-}}
+}
 
-function wireUI() {{
-  byId("passageSelect").addEventListener("change", (e) => {{
+function wireUI() {
+  byId("passageSelect").addEventListener("change", (e) => {
     currentIndex = parseInt(e.target.value, 10) || 0;
     renderPassage(currentIndex);
     byId("stats").textContent = "Ready.";
     byId("status").textContent = "";
-  }});
+  });
   byId("btnStart").addEventListener("click", startReading);
   byId("btnStop").addEventListener("click", stopReading);
   byId("btnListen").addEventListener("click", listenPolish);
   byId("btnReplay").addEventListener("click", replayMe);
   byId("btnToggleEN").addEventListener("click", toggleEN);
-}}
+}
 
-(function init() {{
+(function init() {
   populateSelect();
   renderPassage(0);
   wireUI();
-}})();
+})();
 </script>
 </body>
 </html>
-"""
-    out_path.write_text(html, encoding="utf-8")
-    return out_path

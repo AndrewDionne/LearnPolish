@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Flashcard Set Generator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 40px auto;
+            max-width: 700px;
+            padding: 0 20px;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        label {
+            font-weight: bold;
+            display: block;
+            margin-top: 15px;
+            margin-bottom: 8px;
+        }
+        input[type="text"], textarea {
+            width: 100%;
+            font-size: 1em;
+            padding: 10px;
+            box-sizing: border-box;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            resize: vertical;
+        }
+        textarea {
+            min-height: 200px;
+        }
+        button {
+            margin-top: 20px;
+            padding: 12px 20px;
+            font-size: 1em;
+            border: none;
+            border-radius: 8px;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .note {
+            font-size: 0.9em;
+            color: #555;
+            margin-top: 10px;
+        }
+        .modes {
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            background: #f9f9f9;
+        }
+        .modes label {
+            font-weight: normal;
+            display: inline-block;
+            margin-right: 15px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Create Reading Set</h1>
+
+  {% if error %}
+    <div style="color: red; font-weight: bold; margin-bottom: 1em;">
+      {{ error|safe }}
+    </div>
+  {% endif %}
+
+  <form method="POST" action="/create_reading">
+    <label for="set_name">Set Name (no spaces/specials):</label>
+    <input type="text" id="set_name" name="set_name" required pattern="[A-Za-z0-9_-]+" placeholder="e.g. ReadingBasics">
+
+    <label for="json_input">Paste Reading JSON Array:</label>
+    <textarea id="json_input" name="json_input" required placeholder='[
+  {
+    "title": "Story 1",
+    "polish": "Ala ma kota. Kot lubi mleko.",
+    "english": "Ala has a cat. The cat likes milk."
+  },
+  {
+    "title": "Spacer",
+    "polish": "Dzisiaj idziemy do parku. Pogoda jest piękna.",
+    "english": "Today we are going to the park. The weather is beautiful."
+  }
+]'></textarea>
+
+    <label>Apply to Modes:</label>
+    <div>
+      <label><input type="checkbox" name="modes" value="reading" checked> Reading</label>
+      <label><input type="checkbox" name="modes" value="practice"> Practice (optional later)</label>
+    </div>
+
+    <button type="submit">Create Reading Set</button>
+  </form>
+
+    <p class="note">
+        Your JSON input must be an array of objects with keys: <code>phrase</code>, <code>pronunciation</code>, and <code>meaning</code>.
+    </p>
+</body>
+</html>
+
+
