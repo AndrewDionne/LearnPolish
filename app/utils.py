@@ -238,7 +238,7 @@ def delete_set_and_push(set_name: str):
 def handle_reading_creation(form):
     set_name = form.get("set_name", "").strip()
     json_input = form.get("json_input", "").strip()
-    selected_modes = form.getlist("modes")  # usually ["reading", ...]
+    selected_modes = form.getlist("modes")  # usually ["reading"]
 
     if not set_name:
         return "<h2 style='color:red;'>❌ Set name is required.</h2>", 400
@@ -270,23 +270,19 @@ def handle_reading_creation(form):
         json.dump(data, f, ensure_ascii=False, indent=2)
 
     # Generate TTS audio for each passage
+    from gtts import gTTS
     for i, item in enumerate(data):
         out_mp3 = audio_dir / f"{i}.mp3"
         if not out_mp3.exists():
             gTTS(text=item["polish"], lang="pl").save(out_mp3)
 
-    # Save modes (merge)
-    modes_map = load_set_modes()
-    modes_map.setdefault(set_name, [])
-    for m in selected_modes:
-        if m not in modes_map[set_name]:
-            modes_map[set_name].append(m)
-    save_set_modes(modes_map)
+    # Save modes
+    update_set_modes(set_name, add_modes=["reading"])
 
-    # Generate reading HTML (uses reading.json)
+    # Generate reading HTML
     generator = MODE_GENERATORS.get("reading")
     if generator:
-        html_path = generator(set_name, data=None)  # generator can load reading.json if data is None
+        html_path = generator(set_name, data=None)
         print(f"✅ Generated {html_path}")
 
     # Rebuild landing pages

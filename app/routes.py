@@ -228,9 +228,10 @@ def init_routes(app):
             error = handle_reading_creation(request.form)
             if error:
                 return error  # shows validation errors if any
-            # Redirect to the newly created reading set page
-            return redirect(url_for("create_reading_page", set_name=set_name))
+            # After successful creation, go back to manage_sets
+            return redirect(url_for("manage_sets"))
 
+        # GET request → show the create_reading form
         return render_template("create_reading.html")
     
     # === Legacy Config Update (Form POST) ===
