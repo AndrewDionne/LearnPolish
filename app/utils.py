@@ -276,14 +276,20 @@ def handle_reading_creation(form):
         if not out_mp3.exists():
             gTTS(text=item["polish"], lang="pl").save(out_mp3)
 
-    # Save modes
-    update_set_modes(set_name, add_modes=["reading"])
+    # Save modes (merge)
+    modes_map = load_set_modes()
+    modes_map.setdefault(set_name, [])
+    for m in selected_modes + ["reading"]:  # ensure "reading" always applied
+        if m not in modes_map[set_name]:
+            modes_map[set_name].append(m)
+    save_set_modes(modes_map)
 
-    # Generate reading HTML
+    # Generate reading HTML (uses reading.json)
     generator = MODE_GENERATORS.get("reading")
     if generator:
-        html_path = generator(set_name, data=None)
+        html_path = generator(set_name, data=None)  # generator can load reading.json if data is None
         print(f"✅ Generated {html_path}")
+
 
     # Rebuild landing pages
     export_mode_pages()
