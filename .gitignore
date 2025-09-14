@@ -1,18 +1,33 @@
-# Ignore Python cache
+# -------------------------
+# Python cache & bytecode
+# -------------------------
 __pycache__/
 *.pyc
 *.pyo
 
-# Ignore virtual environments
+# -------------------------
+# Virtual environments
+# -------------------------
 venv/
 .env.txt
-# Ignore env files
+
+# -------------------------
+# Environment files (keep secrets out of git)
+# -------------------------
 .env
 .env.*
 *.env
 *.env.*
-# Ignore generated files
-output/
-*.mp3
 
-# Keep everything else (including app/, templates/, docs/)
+# -------------------------
+# Temporary output
+# (Safe to ignore)
+# -------------------------
+output/
+output/*.mp3
+
+# -------------------------
+# Project assets
+# -------------------------
+# DO NOT ignore audio in docs/static (these must be published!)
+# -------------------------
