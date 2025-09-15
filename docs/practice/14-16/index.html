@@ -1,48 +1,24 @@
-import os
-import json
-from pathlib import Path
-
-
-def generate_practice_html(set_name, data):
-    from .sets_utils import load_set_modes, sanitize_filename
-    set_modes = load_set_modes()
-    if "practice" in set_modes and set_name not in set_modes["practice"]:
-        print(f"⏭️ Skipping practice for '{set_name}' (not in practice mode).")
-        return None
-
-     # ✅ Ensure output dir exists (docs/practice/<set_name>/index.html)
-    output_dir = Path("docs/practice") / set_name
-    output_dir.mkdir(parents=True, exist_ok=True)
-    practice_path = output_dir / "index.html"
-
-    for idx, entry in enumerate(data):
-        filename = f"{idx}_{sanitize_filename(entry['phrase'])}.mp3"
-        entry["audio_file"] = f"/static/{set_name}/audio/{filename}"
-
-    cards_json = json.dumps(data, ensure_ascii=False)
-
-    # Practice HTML
-    practice_html = f"""<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>{set_name} Practice</title>
+  <title>14-16 Practice</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <style>
 
-      body {{
+      body {
           font-family: -apple-system, BlinkMacSystemFont, sans-serif;
           background-color: #f9f9f9;
           padding: 2rem;
           text-align: center;
-        }}
+        }
 
-        h1 {{
+        h1 {
           font-size: 1.6rem;
           margin-bottom: 1rem;
-        }}
+        }
 
-        .home-btn {{
+        .home-btn {
             position: absolute;
             right: 0px;
             top: 0;
@@ -50,16 +26,16 @@ def generate_practice_html(set_name, data):
             background: none;
             border: none;
             cursor: pointer;
-            }}
+            }
 
-        .result {{
+        .result {
           font-size: 1.2rem;
           color: #333;
           margin-top: 2rem;
           min-height: 2em;
-        }}
+        }
 
-        .flash {{
+        .flash {
           margin: 10px;
           padding: 12px 20px;
           font-size: 1rem;
@@ -69,27 +45,27 @@ def generate_practice_html(set_name, data):
           border-radius: 8px;
           cursor: pointer;
           display: inline-block;
-        }}
+        }
 
-        .flash:hover {{
+        .flash:hover {
           background-color: #0056b3;
-        }}
+        }
 
-        .back {{
+        .back {
           display: block;
           margin-top: 2rem;
           font-size: 0.9rem;
           color: #555;
           text-decoration: none;
-        }}
+        }
 
-        .back:hover {{
+        .back:hover {
           text-decoration: underline;
-        }}
+        }
     </style>
 </head>
 <body>
-<h1>{set_name} practice 
+<h1>14-16 practice 
 
   <button class="home-btn" onclick="goHome()">🏠</button></h1>
   <button id="startBtn" class="flash">▶️ Start Practice</button>
@@ -105,78 +81,78 @@ let index = 0;
 let attempts = 0;
 let isRunning = false;
 let cachedSpeechConfig = null;
-let preloadedAudio = {{}};
+let preloadedAudio = {};
 
-const cards = {cards_json};
-const setName = "{set_name}";
+const cards = [{"phrase": "Dziękuję", "pronunciation": "jen-KOO-yeh", "meaning": "Thank you", "audio_file": "/static/14-16/audio/0_Dziekuje.mp3"}, {"phrase": "Przepraszam", "pronunciation": "psheh-PRAH-shahm", "meaning": "Sorry/Excuse me", "audio_file": "/static/14-16/audio/1_Przepraszam.mp3"}, {"phrase": "Proszę powtórzyć!", "pronunciation": "PROH-sheh pohv-TOO-zheetch", "meaning": "Please repeat!", "audio_file": "/static/14-16/audio/2_Prosze_powtorzyc.mp3"}, {"phrase": "Co to znaczy", "pronunciation": "tso toh ZNAH-chee", "meaning": "What does it mean?", "audio_file": "/static/14-16/audio/3_Co_to_znaczy.mp3"}, {"phrase": "Tak", "pronunciation": "tahk", "meaning": "Yes", "audio_file": "/static/14-16/audio/4_Tak.mp3"}, {"phrase": "Nie", "pronunciation": "nyeh", "meaning": "No", "audio_file": "/static/14-16/audio/5_Nie.mp3"}, {"phrase": "Nie wiem", "pronunciation": "nyeh VYEM", "meaning": "I don't know", "audio_file": "/static/14-16/audio/6_Nie_wiem.mp3"}, {"phrase": "Proszę napisać!", "pronunciation": "PROH-sheh nah-PEE-sahtch", "meaning": "Please write it down!", "audio_file": "/static/14-16/audio/7_Prosze_napisac.mp3"}, {"phrase": "Gdzie jest toaleta", "pronunciation": "g-jeh yest toh-ah-LEH-tah", "meaning": "Where is the toilet?", "audio_file": "/static/14-16/audio/8_Gdzie_jest_toaleta.mp3"}, {"phrase": "Proszę mówić wolniej", "pronunciation": "PROH-sheh MOO-veech VOL-nyeh", "meaning": "Please speak more slowly", "audio_file": "/static/14-16/audio/9_Prosze_mowic_wolniej.mp3"}, {"phrase": "Mam pytanie", "pronunciation": "mahm pih-TAH-nyeh", "meaning": "I have a question", "audio_file": "/static/14-16/audio/10_Mam_pytanie.mp3"}, {"phrase": "Nie rozumiem", "pronunciation": "nyeh roh-ZOO-myem", "meaning": "I don't understand", "audio_file": "/static/14-16/audio/11_Nie_rozumiem.mp3"}];
+const setName = "14-16";
 
-function sanitizeFilename(text) {{
+function sanitizeFilename(text) {
     return text
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")  // strip accents
+    .replace(/[̀-ͯ]/g, "")  // strip accents
     .replace(/[^a-zA-Z0-9]+/g, "_")   // replace non-alphanumeric
     .replace(/^_+|_+$/g, "");         // trim leading/trailing _
-}}
+}
 
-function playSystemAudio(name, callback) {{
+function playSystemAudio(name, callback) {
   const path = window.location.hostname === "andrewdionne.github.io"
-  ? `/${{window.location.pathname.split("/")[1]}}/static/system_audio/${{name}}.mp3`
-  : `/custom_static/system_audio/${{name}}.mp3`;
+  ? `/${window.location.pathname.split("/")[1]}/static/system_audio/${name}.mp3`
+  : `/custom_static/system_audio/${name}.mp3`;
 
   const audio = new Audio(path);
   audio.onended = callback;
-  audio.onerror = () => {{
-    console.warn(`⚠️ Failed to play system audio: ${{name}}`);
+  audio.onerror = () => {
+    console.warn(`⚠️ Failed to play system audio: ${name}`);
     callback();
-  }};
+  };
 
-  audio.play().catch(err => {{
+  audio.play().catch(err => {
     console.warn("🔇 Autoplay blocked:", err);
     callback();
-  }});
-}}
-function playAudio(filename, callback) {{
+  });
+}
+function playAudio(filename, callback) {
   const audio = preloadedAudio[filename];
-  if (!audio) {{
+  if (!audio) {
     console.warn("⚠️ Audio not preloaded:", filename);
     callback();
     return;
-  }}
+  }
 
   const newAudio = new Audio(audio.src);
 
   newAudio.onended = callback;
-  newAudio.onerror = () => {{
+  newAudio.onerror = () => {
     console.warn("⚠️ Audio failed to play:", filename);
     document.getElementById("result").textContent = "⚠️ Audio failed to play.";
     callback();
-  }};
+  };
    // Important: reset playback to start
   newAudio.currentTime = 0;
 
   const playPromise = newAudio.play();
-  if (playPromise !== undefined) {{
+  if (playPromise !== undefined) {
   playPromise
-    .then(() => {{
+    .then(() => {
       console.log("🔊 iOS-safe audio playing:", filename);
-    }})
-    .catch(err => {{
+    })
+    .catch(err => {
       console.warn("🔇 iOS-safe audio blocked:", err);
       callback();  // move on anyway
-    }});
-  }}
-}}
+    });
+  }
+}
 
-async function assessPronunciation(phrase, isFirst=false) {{
+async function assessPronunciation(phrase, isFirst=false) {
   const resultDiv = document.getElementById("result");
   resultDiv.innerHTML = "⏳ Preparing microphone…";
 
-  if (!window.SpeechSDK) {{
+  if (!window.SpeechSDK) {
     resultDiv.textContent = "❌ Azure SDK not loaded.";
     return 0;
-  }}
+  }
 
-  try {{
+  try {
     const speechConfig = await getSpeechConfig();
     const audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
     const recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
@@ -191,68 +167,68 @@ async function assessPronunciation(phrase, isFirst=false) {{
 
     // Mic warmup: 1200ms on first word, 400ms on others
     const warmup = isFirst ? 1200 : 400;
-    setTimeout(() => {{
-      resultDiv.innerHTML = `🎤 Say: <strong>${{phrase}}</strong>`;
-    }}, warmup);
+    setTimeout(() => {
+      resultDiv.innerHTML = `🎤 Say: <strong>${phrase}</strong>`;
+    }, warmup);
 
-    return new Promise(resolve => {{
-      recognizer.recognizeOnceAsync(result => {{
-        if (!result || !result.json) {{
+    return new Promise(resolve => {
+      recognizer.recognizeOnceAsync(result => {
+        if (!result || !result.json) {
           resultDiv.innerHTML = "⚠️ No speech detected.";
           recognizer.close();
           return resolve(0);
-        }}
-        try {{
+        }
+        try {
           const resJson = JSON.parse(result.json);
           const words = resJson.NBest?.[0]?.Words || [];
-          const wordHtml = words.map(w => {{
+          const wordHtml = words.map(w => {
             const score = w.PronunciationAssessment.AccuracyScore;
             const color = score >= 85 ? "green" : score >= 70 ? "orange" : "red";
-            return `<span style="color:${{color}}; margin:0 4px;">${{w.Word}}</span>`;
-          }}).join(" ");
+            return `<span style="color:${color}; margin:0 4px;">${w.Word}</span>`;
+          }).join(" ");
 
           const avgScore = words.length
             ? (words.reduce((a, b) => a + b.PronunciationAssessment.AccuracyScore, 0) / words.length).toFixed(1)
             : "0";
 
           resultDiv.innerHTML = `
-            <div><strong>Overall:</strong> ${{avgScore}}%</div>
-            <div style="margin-top:5px; font-size:1.1em;">${{wordHtml}}</div>
+            <div><strong>Overall:</strong> ${avgScore}%</div>
+            <div style="margin-top:5px; font-size:1.1em;">${wordHtml}</div>
           `;
 
           recognizer.close();
           resolve(parseFloat(avgScore));
-        }} catch (err) {{
+        } catch (err) {
           console.error("Parse error:", err);
           resultDiv.innerHTML = "⚠️ Error parsing result.";
           recognizer.close();
           resolve(0);
-        }}
-      }}, err => {{
+        }
+      }, err => {
         console.error("Azure error:", err);
         resultDiv.innerHTML = "❌ Recognition failed.";
         recognizer.close();
         resolve(0);
-      }});
-    }});
-  }} catch (err) {{
+      });
+    });
+  } catch (err) {
     console.error("Azure error:", err);
     resultDiv.textContent = "❌ Azure config error.";
     return 0;
-  }}
-}}
+  }
+}
 
 
 
 
-async function getSpeechConfig() {{
+async function getSpeechConfig() {
   if (cachedSpeechConfig) return cachedSpeechConfig;
 
   const baseUrl = window.location.hostname === "andrewdionne.github.io"
     ? "https://flashcards-5c95.onrender.com"
     : "";
 
-  const res = await fetch(`${{baseUrl}}/api/token`);
+  const res = await fetch(`${baseUrl}/api/token`);
   if (!res.ok) throw new Error("Token fetch failed: " + res.status);
   const data = await res.json();
 
@@ -263,111 +239,101 @@ async function getSpeechConfig() {{
 
   cachedSpeechConfig = speechConfig;
   return speechConfig;
-}}
+}
 
-  async function runPractice() {{
+  async function runPractice() {
     if (paused || isRunning || index >= cards.length) return;
     isRunning = true;
 
     const resultDiv = document.getElementById("result");
     const entry = cards[index];
-    const filename = `${{index}}_${{sanitizeFilename(entry.phrase)}}.mp3`;
+    const filename = `${index}_${sanitizeFilename(entry.phrase)}.mp3`;
 
     // 1. Play Polish audio
     await new Promise(resolve => playAudio(filename, resolve));
-    if (paused) {{ isRunning = false; return; }}
+    if (paused) { isRunning = false; return; }
 
     // 2. Assess pronunciation (handles its own delay + stop timing)
     const score = await assessPronunciation(entry.phrase, index === 0);
-    if (paused) {{ isRunning = false; return; }}
+    if (paused) { isRunning = false; return; }
 
     // 3. Decide next action
-    if (score >= 70 || attempts >= 2) {{
+    if (score >= 70 || attempts >= 2) {
       index++;
       attempts = 0;
-    }} else {{
+    } else {
       attempts++;
       resultDiv.innerHTML += "<br>🔁 Try again!";
-    }}
+    }
 
     isRunning = false;
-    setTimeout(() => {{
+    setTimeout(() => {
       if (!paused) runPractice();
-    }}, 1000);
-  }}
+    }, 1000);
+  }
 
-document.addEventListener("DOMContentLoaded", () => {{
+document.addEventListener("DOMContentLoaded", () => {
   const startBtn = document.getElementById("startBtn");
   const pauseBtn = document.getElementById("pauseBtn");
   const restartBtn = document.getElementById("restartBtn");
   preloadAudioFiles();
 
-  function preloadAudioFiles() {{
-    cards.forEach((entry, i) => {{
-      const filename = `${{i}}_${{sanitizeFilename(entry.phrase)}}.mp3`;
+  function preloadAudioFiles() {
+    cards.forEach((entry, i) => {
+      const filename = `${i}_${sanitizeFilename(entry.phrase)}.mp3`;
       const audio = new Audio(getAudioPath(filename));
       preloadedAudio[filename] = audio;
-    }});
-  }}
+    });
+  }
   
-  function getAudioPath(filename) {{
+  function getAudioPath(filename) {
     const repo = window.location.hostname === "andrewdionne.github.io"
       ? window.location.pathname.split("/")[1]
       : "";
     return window.location.hostname === "andrewdionne.github.io"
-      ? `/${{repo}}/static/${{setName}}/audio/${{filename}}`
-      : `/custom_static/${{setName}}/audio/${{filename}}`;
-  }}
+      ? `/${repo}/static/${setName}/audio/${filename}`
+      : `/custom_static/${setName}/audio/${filename}`;
+  }
 
-  startBtn.addEventListener("click", () => {{
-    if (!hasStarted) {{
+  startBtn.addEventListener("click", () => {
+    if (!hasStarted) {
       hasStarted = true;
       paused = false;
       startBtn.style.display = "none";
       pauseBtn.style.display = "inline-block";
       restartBtn.style.display = "inline-block";
       playSystemAudio("repeat_after_me", () => runPractice());
-    }}
-  }});
+    }
+  });
 
-  pauseBtn.addEventListener("click", () => {{
+  pauseBtn.addEventListener("click", () => {
     if (!hasStarted) return;
     paused = !paused;
     pauseBtn.textContent = paused ? "▶️ Resume" : "⏸ Pause";
-    if (!paused && !isRunning) {{
+    if (!paused && !isRunning) {
       playSystemAudio("repeat_after_me", () => runPractice());
-    }}
-  }});
+    }
+  });
 
-  restartBtn.addEventListener("click", () => {{
+  restartBtn.addEventListener("click", () => {
     paused = false;
     index = 0;
     attempts = 0;
     isRunning = false;
     document.getElementById("pauseBtn").textContent = "⏸ Pause";
     playSystemAudio("repeat_after_me", () => runPractice());
-  }});
-}});
+  });
+});
 
-function goHome() {{
+function goHome() {
   const pathParts = window.location.pathname.split("/");
   const repo = pathParts[1];
   window.location.href = window.location.hostname === "andrewdionne.github.io"
-    ? `/${{repo}}/`
+    ? `/${repo}/`
     : "/";
-}}
+}
 
 </script>
 
 </body>
 </html>
-"""
-
-
-    # Write to file
-    with open(practice_path, "w", encoding="utf-8") as f:
-        f.write(practice_html)
-
-    print(f"✅ practice/index.html generated for: {set_name}")
-    return practice_path
-   
