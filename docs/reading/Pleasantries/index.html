@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reading · Pleasantries</title>
+<link rel="preconnect" href="https://aka.ms">
+<style>
+  body { font-family: system-ui, sans-serif; margin: 24px; max-width: 900px; }
+  .toolbar { display:flex; gap:8px; flex-wrap: wrap; align-items:center; margin-bottom: 12px; }
+  button { padding:8px 12px; border-radius: 10px; border:0; background:#007bff; color:#fff; cursor:pointer; }
+  button.secondary { background:#6c757d; }
+  .passage { font-size: 1.35rem; line-height: 1.8; margin: 16px 0; }
+  .word { padding: 2px 4px; border-radius: 6px; margin: 0 1px; display:inline-block; }
+  .word.active { outline: 2px solid #007bff; }
+  .w-good { background: rgba(0,180,0,.12); }
+  .w-mid  { background: rgba(255,165,0,.15); }
+  .w-bad  { background: rgba(255,0,0,.12); }
+  .meta { color:#666; font-size: .9rem; margin-top: -4px; }
+  .stats { margin-top: 12px; padding: 10px; border: 1px solid #eee; border-radius: 10px; background:#fafafa; }
+  .translation { margin-top: 12px; color:#333; display:none; }
+  .translation.visible { display:block; }
+  .row { display:flex; align-items:center; gap:8px; flex-wrap: wrap; }
+  select { padding:6px; border-radius:8px; }
+  audio { display:none; }
+</style>
+<script src="https://aka.ms/csspeech/jsbrowserpackageraw"></script>
+</head>
+<body>
+  <a href="/" style="position:absolute; right:16px; top:16px; text-decoration:none; background:#007bff; color:#fff; padding:6px 10px; border-radius:8px;">🏠 Home</a>
+
+  <h1>Reading · Pleasantries</h1>
+
+  <div class="toolbar">
+    <div class="row">
+      <label for="passageSelect"><strong>Passage:</strong></label>
+      <select id="passageSelect"></select>
+    </div>
+    <button id="btnStart">🎤 Start Reading</button>
+    <button id="btnStop" class="secondary">⏹ Stop</button>
+    <button id="btnListen" class="secondary">🔊 Listen (Polish)</button>
+    <button id="btnReplay" class="secondary">🎧 Replay Me</button>
+    <button id="btnToggleEN" class="secondary">🇬🇧 Show Translation</button>
+  </div>
+
+  <div id="title" class="meta"></div>
+  <div id="passage" class="passage"></div>
+  <div id="translation" class="translation"></div>
+  <div id="stats" class="stats">Ready.</div>
+  <div id="status" class="meta"></div>
+
+  <!-- Hidden audios -->
+  <audio id="ttsAudio"></audio>
+  <audio id="replayAudio"></audio>
+
+<script>
+const passages = [{"phrase": "Dzień dobry", "pronunciation": "jen DOH-brih", "meaning": "Good morning / Good day", "audio_file": "0_Dzien_dobry.mp3"}, {"phrase": "Dobry wieczór", "pronunciation": "DOH-brih VYEH-choor", "meaning": "Good evening", "audio_file": "1_Dobry_wieczor.mp3"}, {"phrase": "Cześć", "pronunciation": "cheshch", "meaning": "Hi / Hello", "audio_file": "2_Czesc.mp3"}, {"phrase": "Hej", "pronunciation": "hey", "meaning": "Hey", "audio_file": "3_Hej.mp3"}, {"phrase": "Do widzenia", "pronunciation": "doh veed-ZEN-ya", "meaning": "Goodbye", "audio_file": "4_Do_widzenia.mp3"}, {"phrase": "Na razie", "pronunciation": "nah RAH-zhyeh", "meaning": "See you (soon)", "audio_file": "5_Na_razie.mp3"}, {"phrase": "Pa", "pronunciation": "pah", "meaning": "Bye (informal)", "audio_file": "6_Pa.mp3"}, {"phrase": "Miłego dnia", "pronunciation": "mee-WEH-goh DNIA", "meaning": "Have a nice day", "audio_file": "7_Mi_ego_dnia.mp3"}, {"phrase": "Dziękuję", "pronunciation": "jen-KOO-yeh", "meaning": "Thank you", "audio_file": "8_Dziekuje.mp3"}, {"phrase": "Dzięki", "pronunciation": "JEN-kee", "meaning": "Thanks (informal)", "audio_file": "9_Dzieki.mp3"}, {"phrase": "Proszę", "pronunciation": "PROH-sheh", "meaning": "Please / Here you go", "audio_file": "10_Prosze.mp3"}, {"phrase": "Nie ma za co", "pronunciation": "NYEH mah ZAH tsoh", "meaning": "You’re welcome", "audio_file": "11_Nie_ma_za_co.mp3"}, {"phrase": "Przepraszam", "pronunciation": "psheh-PRAH-shahm", "meaning": "Excuse me / I’m sorry", "audio_file": "12_Przepraszam.mp3"}, {"phrase": "Sorki", "pronunciation": "SOR-kee", "meaning": "Sorry (informal)", "audio_file": "13_Sorki.mp3"}, {"phrase": "Tak", "pronunciation": "tahk", "meaning": "Yes", "audio_file": "14_Tak.mp3"}, {"phrase": "Nie", "pronunciation": "nyeh", "meaning": "No", "audio_file": "15_Nie.mp3"}, {"phrase": "Może", "pronunciation": "MOH-zheh", "meaning": "Maybe", "audio_file": "16_Moze.mp3"}, {"phrase": "Jasne", "pronunciation": "YAS-neh", "meaning": "Sure / Of course", "audio_file": "17_Jasne.mp3"}, {"phrase": "Oczywiście", "pronunciation": "oh-chih-VEE-shcheh", "meaning": "Of course", "audio_file": "18_Oczywiscie.mp3"}, {"phrase": "Mam pytanie", "pronunciation": "mahm pih-TAH-nyeh", "meaning": "I have a question", "audio_file": "19_Mam_pytanie.mp3"}, {"phrase": "Nie rozumiem", "pronunciation": "nyeh roh-ZOO-myem", "meaning": "I don’t understand", "audio_file": "20_Nie_rozumiem.mp3"}, {"phrase": "Mówi pan po angielsku?", "pronunciation": "MOO-vee pahn poh an-GYEL-skoo", "meaning": "Do you (sir) speak English?", "audio_file": "21_Mowi_pan_po_angielsku.mp3"}, {"phrase": "Mówi pani po angielsku?", "pronunciation": "MOO-vee pah-nee poh an-GYEL-skoo", "meaning": "Do you (ma’am) speak English?", "audio_file": "22_Mowi_pani_po_angielsku.mp3"}, {"phrase": "Jak masz na imię?", "pronunciation": "yahk mahsh nah EE-myeh", "meaning": "What’s your name? (informal)", "audio_file": "23_Jak_masz_na_imie.mp3"}, {"phrase": "Jak ma pan/pani na imię?", "pronunciation": "yahk mah pahn/pah-nee nah EE-myeh", "meaning": "What’s your name? (formal)", "audio_file": "24_Jak_ma_pan_pani_na_imie.mp3"}, {"phrase": "Mam na imię…", "pronunciation": "mahm nah EE-myeh…", "meaning": "My name is…", "audio_file": "25_Mam_na_imie.mp3"}];
+const setName = "Pleasantries";
+const baseUrl = window.location.hostname === "andrewdionne.github.io"
+  ? "https://flashcards-5c95.onrender.com"
+  : "";
+
+let currentIndex = 0;
+let SpeechSDK = window.SpeechSDK;
+let recognizer = null;
+let mediaRecorder = null;
+let recordedChunks = [];
+let startTime = 0;
+let wordsSpans = [];
+let wordsMeta = []; // { text, idx, score }
+let totalRecognized = 0;
+
+function byId(id) { return document.getElementById(id); }
+
+function populateSelect() {
+  const sel = byId("passageSelect");
+  sel.innerHTML = "";
+  passages.forEach((p, i) => {
+    const opt = document.createElement("option");
+    opt.value = i;
+    opt.textContent = p.title || ("Passage " + (i+1));
+    sel.appendChild(opt);
+  });
+  sel.value = "0";
+}
+
+function renderPassage(i) {
+  const p = passages[i];
+  byId("title").textContent = p.title || "";
+  byId("translation").textContent = p.english || "";
+  const container = byId("passage");
+  container.innerHTML = "";
+  wordsSpans = [];
+  wordsMeta = [];
+
+  // Simple tokenization: split on spaces, keep punctuation attached visually
+  const tokens = p.polish.split(/\s+/).filter(Boolean);
+  tokens.forEach((w, idx) => {
+    const span = document.createElement("span");
+    span.className = "word";
+    span.dataset.idx = String(idx);
+    span.textContent = w;
+    container.appendChild(span);
+    wordsSpans.push(span);
+    wordsMeta.push({ text: w, idx, score: null });
+    container.appendChild(document.createTextNode(" "));
+  });
+}
+
+function colorByScore(s) {
+  if (s === null || isNaN(s)) return "";
+  if (s >= 80) return "w-good";
+  if (s >= 60) return "w-mid";
+  return "w-bad";
+}
+
+function highlightWord(idx, cls="active") {
+  wordsSpans.forEach(s => s.classList.remove("active"));
+  if (idx >=0 && idx < wordsSpans.length) {
+    wordsSpans[idx].classList.add(cls);
+    wordsSpans[idx].scrollIntoView({ block:"center", inline:"nearest", behavior:"smooth" });
+  }
+}
+
+async function fetchToken() {
+  const res = await fetch(`${baseUrl}/api/token`);
+  if (!res.ok) throw new Error("token http " + res.status);
+  return await res.json();
+}
+
+async function setupRecognizer(referenceText) {
+  const tk = await fetchToken();
+  const speechConfig = SpeechSDK.SpeechConfig.fromAuthorizationToken(tk.token, tk.region);
+  speechConfig.speechRecognitionLanguage = "pl-PL";
+  // Give user some breathing room
+  speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, "5000");
+  speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "1200");
+
+  const audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
+  recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
+
+  const pa = new SpeechSDK.PronunciationAssessmentConfig(
+    referenceText,
+    SpeechSDK.PronunciationAssessmentGradingSystem.HundredMark,
+    SpeechSDK.PronunciationAssessmentGranularity.Word,
+    true  // enable miscue
+  );
+  pa.applyTo(recognizer);
+}
+
+function startRecordingMyAudio() {
+  recordedChunks = [];
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+    mediaRecorder = new MediaRecorder(stream);
+    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+    mediaRecorder.start();
+  }).catch(() => {});
+}
+
+function stopRecordingMyAudio() {
+  return new Promise(resolve => {
+    if (!mediaRecorder) return resolve(null);
+    mediaRecorder.onstop = () => {
+      const blob = new Blob(recordedChunks, { type: "audio/webm" });
+      const url = URL.createObjectURL(blob);
+      resolve(url);
+    };
+    try { mediaRecorder.stop(); } catch(e) { resolve(null); }
+  });
+}
+
+function computeWPM(elapsedMs, wordsCount) {
+  if (elapsedMs <= 0) return 0;
+  return Math.round((wordsCount / (elapsedMs/1000)) * 60);
+}
+
+function updateStats(final=false) {
+  const done = wordsMeta.filter(w => typeof w.score === "number");
+  const avg = done.length ? (done.reduce((a,b)=>a+b.score,0) / done.length) : 0;
+  const elapsed = Date.now() - startTime;
+  const wpm = computeWPM(elapsed, done.length);
+  const status = final ? "Finished" : "Listening…";
+  byId("stats").innerHTML = `
+    <div><strong>Status:</strong> ${status}</div>
+    <div><strong>Pronunciation (avg of scored words):</strong> ${avg.toFixed(1)}%</div>
+    <div><strong>Words recognized:</strong> ${done.length} / ${wordsMeta.length}</div>
+    <div><strong>WPM:</strong> ${wpm}</div>
+  `;
+}
+
+function attachRecognitionHandlers() {
+  recognizer.recognized = (s, e) => {
+    if (!e || !e.result || !e.result.json) return;
+    try {
+      const j = JSON.parse(e.result.json);
+      const nbest = (j.NBest && j.NBest[0]) ? j.NBest[0] : null;
+      if (!nbest) return;
+
+      // Word-level results with timings and scores
+      const words = nbest.Words || [];
+      words.forEach(w => {
+        // Map recognized to our token index via simple forward consumption
+        // (You can improve alignment later if needed)
+        const text = w.Word;
+        const score = (w.PronunciationAssessment && w.PronunciationAssessment.AccuracyScore) || null;
+
+        // Find the first unscored matching token (case-insensitive, basic punctuation tolerance)
+        const norm = (t) => t.toLowerCase().replace(/[.,!?;:()"]/g, "");
+        const matchIdx = wordsMeta.findIndex(m => m.score === null && norm(m.text) === norm(text));
+        if (matchIdx !== -1) {
+          wordsMeta[matchIdx].score = score;
+          const span = wordsSpans[matchIdx];
+          span.classList.remove("w-good","w-mid","w-bad");
+          const cls = colorByScore(score);
+          if (cls) span.classList.add(cls);
+          highlightWord(matchIdx);
+        }
+      });
+
+      updateStats(false);
+    } catch(err) {
+      console.warn("parse error", err);
+    }
+  };
+
+  recognizer.sessionStarted = () => {
+    byId("status").textContent = "Session started. Speak now…";
+    startTime = Date.now();
+    updateStats(false);
+  };
+
+  recognizer.sessionStopped = async () => {
+    byId("status").textContent = "Session stopped.";
+    const url = await stopRecordingMyAudio();
+    if (url) {
+      const a = byId("replayAudio");
+      a.src = url;
+      a.load();
+    }
+    updateStats(true);
+  };
+
+  recognizer.canceled = () => {
+    byId("status").textContent = "Canceled.";
+  };
+}
+
+async function startReading() {
+  const p = passages[currentIndex];
+  if (!window.SpeechSDK) {
+    byId("status").textContent = "❌ Azure SDK not loaded.";
+    return;
+  }
+  await setupRecognizer(p.polish);
+  attachRecognitionHandlers();
+  // Small delay so UI can update
+  await new Promise(r => setTimeout(r, 500));
+  byId("status").textContent = "🎤 Speak now…";
+  startRecordingMyAudio();
+  recognizer.startContinuousRecognitionAsync();
+}
+
+function stopReading() {
+  if (recognizer) {
+    recognizer.stopContinuousRecognitionAsync();
+  }
+}
+
+function listenPolish() {
+  const a = byId("ttsAudio");
+  a.src = `/static/${setName}/reading/${currentIndex}.mp3`;
+  a.load();
+  a.play().catch(()=>{});
+}
+
+function replayMe() {
+  byId("replayAudio").play().catch(()=>{});
+}
+
+function toggleEN() {
+  const el = byId("translation");
+  el.classList.toggle("visible");
+  byId("btnToggleEN").textContent = el.classList.contains("visible") ? "🇬🇧 Hide Translation" : "🇬🇧 Show Translation";
+}
+
+function wireUI() {
+  byId("passageSelect").addEventListener("change", (e) => {
+    currentIndex = parseInt(e.target.value, 10) || 0;
+    renderPassage(currentIndex);
+    byId("stats").textContent = "Ready.";
+    byId("status").textContent = "";
+  });
+  byId("btnStart").addEventListener("click", startReading);
+  byId("btnStop").addEventListener("click", stopReading);
+  byId("btnListen").addEventListener("click", listenPolish);
+  byId("btnReplay").addEventListener("click", replayMe);
+  byId("btnToggleEN").addEventListener("click", toggleEN);
+}
+
+(function init() {
+  populateSelect();
+  renderPassage(0);
+  wireUI();
+})();
+</script>
+</body>
+</html>
