@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Pleasantries Practice</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+
+      body {
+          font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+          background-color: #f9f9f9;
+          padding: 2rem;
+          text-align: center;
+        }
+
+        h1 {
+          font-size: 1.6rem;
+          margin-bottom: 1rem;
+        }
+
+        .home-btn {
+            position: absolute;
+            right: 0px;
+            top: 0;
+            font-size: 1.4em;
+            background: none;
+            border: none;
+            cursor: pointer;
+            }
+
+        .result {
+          font-size: 1.2rem;
+          color: #333;
+          margin-top: 2rem;
+          min-height: 2em;
+        }
+
+        .flash {
+          margin: 10px;
+          padding: 12px 20px;
+          font-size: 1rem;
+          background-color: #007bff;
+          color: white;
+          border: none;
+          border-radius: 8px;
+          cursor: pointer;
+          display: inline-block;
+        }
+
+        .flash:hover {
+          background-color: #0056b3;
+        }
+
+        .back {
+          display: block;
+          margin-top: 2rem;
+          font-size: 0.9rem;
+          color: #555;
+          text-decoration: none;
+        }
+
+        .back:hover {
+          text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+<h1>Pleasantries practice 
+
+  <button class="home-btn" onclick="goHome()">🏠</button></h1>
+  <button id="startBtn" class="flash">▶️ Start Practice</button>
+  <button id="pauseBtn" class="flash" style="margin-left: 1rem; display: none;">⏸ Pause</button>
+  <button id="restartBtn" class="flash" style="display:none;">🔁 Restart</button>
+ <div id="warmupContainer" style="display:none; margin-top:1rem; width:80%; max-width:400px; margin-left:auto; margin-right:auto;">
+  <div style="background:#ddd; border-radius:8px; overflow:hidden; height:20px;">
+    <div id="warmupBar" style="background:#28a745; width:0%; height:100%; transition:width 0.2s;"></div>
+  </div>
+  <p id="warmupText" style="margin-top:0.5rem; font-size:0.9rem; color:#555;">Preparing microphone…</p>
+</div>
+ <div id="result" class="result">🎙 Get ready...</div>
+
+<script src="https://aka.ms/csspeech/jsbrowserpackageraw"></script>
+<script>
+let hasStarted = false;
+let paused = false;
+let index = 0;
+let attempts = 0;
+let isRunning = false;
+let cachedSpeechConfig = null;
+let globalRecognizer = null;
+let isRecognizerActive = false;
+let preloadedAudio = {};
+
+const cards = [{"phrase": "Dzień dobry", "pronunciation": "jen DOH-brih", "meaning": "Good morning / Good day", "audio_file": "/static/Pleasantries/audio/0_Dzien_dobry.mp3"}, {"phrase": "Dobry wieczór", "pronunciation": "DOH-brih VYEH-choor", "meaning": "Good evening", "audio_file": "/static/Pleasantries/audio/1_Dobry_wieczor.mp3"}, {"phrase": "Cześć", "pronunciation": "cheshch", "meaning": "Hi / Hello", "audio_file": "/static/Pleasantries/audio/2_Czesc.mp3"}, {"phrase": "Hej", "pronunciation": "hey", "meaning": "Hey", "audio_file": "/static/Pleasantries/audio/3_Hej.mp3"}, {"phrase": "Do widzenia", "pronunciation": "doh veed-ZEN-ya", "meaning": "Goodbye", "audio_file": "/static/Pleasantries/audio/4_Do_widzenia.mp3"}, {"phrase": "Na razie", "pronunciation": "nah RAH-zhyeh", "meaning": "See you (soon)", "audio_file": "/static/Pleasantries/audio/5_Na_razie.mp3"}, {"phrase": "Pa", "pronunciation": "pah", "meaning": "Bye (informal)", "audio_file": "/static/Pleasantries/audio/6_Pa.mp3"}, {"phrase": "Miłego dnia", "pronunciation": "mee-WEH-goh DNIA", "meaning": "Have a nice day", "audio_file": "/static/Pleasantries/audio/7_Mi_ego_dnia.mp3"}, {"phrase": "Dziękuję", "pronunciation": "jen-KOO-yeh", "meaning": "Thank you", "audio_file": "/static/Pleasantries/audio/8_Dziekuje.mp3"}, {"phrase": "Dzięki", "pronunciation": "JEN-kee", "meaning": "Thanks (informal)", "audio_file": "/static/Pleasantries/audio/9_Dzieki.mp3"}, {"phrase": "Proszę", "pronunciation": "PROH-sheh", "meaning": "Please / Here you go", "audio_file": "/static/Pleasantries/audio/10_Prosze.mp3"}, {"phrase": "Nie ma za co", "pronunciation": "NYEH mah ZAH tsoh", "meaning": "You’re welcome", "audio_file": "/static/Pleasantries/audio/11_Nie_ma_za_co.mp3"}, {"phrase": "Przepraszam", "pronunciation": "psheh-PRAH-shahm", "meaning": "Excuse me / I’m sorry", "audio_file": "/static/Pleasantries/audio/12_Przepraszam.mp3"}, {"phrase": "Sorki", "pronunciation": "SOR-kee", "meaning": "Sorry (informal)", "audio_file": "/static/Pleasantries/audio/13_Sorki.mp3"}, {"phrase": "Tak", "pronunciation": "tahk", "meaning": "Yes", "audio_file": "/static/Pleasantries/audio/14_Tak.mp3"}, {"phrase": "Nie", "pronunciation": "nyeh", "meaning": "No", "audio_file": "/static/Pleasantries/audio/15_Nie.mp3"}, {"phrase": "Może", "pronunciation": "MOH-zheh", "meaning": "Maybe", "audio_file": "/static/Pleasantries/audio/16_Moze.mp3"}, {"phrase": "Jasne", "pronunciation": "YAS-neh", "meaning": "Sure / Of course", "audio_file": "/static/Pleasantries/audio/17_Jasne.mp3"}, {"phrase": "Oczywiście", "pronunciation": "oh-chih-VEE-shcheh", "meaning": "Of course", "audio_file": "/static/Pleasantries/audio/18_Oczywiscie.mp3"}, {"phrase": "Mam pytanie", "pronunciation": "mahm pih-TAH-nyeh", "meaning": "I have a question", "audio_file": "/static/Pleasantries/audio/19_Mam_pytanie.mp3"}, {"phrase": "Nie rozumiem", "pronunciation": "nyeh roh-ZOO-myem", "meaning": "I don’t understand", "audio_file": "/static/Pleasantries/audio/20_Nie_rozumiem.mp3"}, {"phrase": "Mówi pan po angielsku?", "pronunciation": "MOO-vee pahn poh an-GYEL-skoo", "meaning": "Do you (sir) speak English?", "audio_file": "/static/Pleasantries/audio/21_Mowi_pan_po_angielsku.mp3"}, {"phrase": "Mówi pani po angielsku?", "pronunciation": "MOO-vee pah-nee poh an-GYEL-skoo", "meaning": "Do you (ma’am) speak English?", "audio_file": "/static/Pleasantries/audio/22_Mowi_pani_po_angielsku.mp3"}, {"phrase": "Jak masz na imię?", "pronunciation": "yahk mahsh nah EE-myeh", "meaning": "What’s your name? (informal)", "audio_file": "/static/Pleasantries/audio/23_Jak_masz_na_imie.mp3"}, {"phrase": "Jak ma pan/pani na imię?", "pronunciation": "yahk mah pahn/pah-nee nah EE-myeh", "meaning": "What’s your name? (formal)", "audio_file": "/static/Pleasantries/audio/24_Jak_ma_pan_pani_na_imie.mp3"}, {"phrase": "Mam na imię…", "pronunciation": "mahm nah EE-myeh…", "meaning": "My name is…", "audio_file": "/static/Pleasantries/audio/25_Mam_na_imie.mp3"}];
+const setName = "Pleasantries";
+
+function sanitizeFilename(text) {
+    return text
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")  // strip accents
+    .replace(/[^a-zA-Z0-9]+/g, "_")   // replace non-alphanumeric
+    .replace(/^_+|_+$/g, "");         // trim leading/trailing _
+}
+
+function playSystemAudio(name, callback) {
+  const path = window.location.hostname === "andrewdionne.github.io"
+  ? `/${window.location.pathname.split("/")[1]}/static/system_audio/${name}.mp3`
+  : `/custom_static/system_audio/${name}.mp3`;
+
+  const audio = new Audio(path);
+  audio.onended = callback;
+  audio.onerror = () => {
+    console.warn(`⚠️ Failed to play system audio: ${name}`);
+    callback();
+  };
+
+  audio.play().catch(err => {
+    console.warn("🔇 Autoplay blocked:", err);
+    callback();
+  });
+}
+
+function playAudio(filename, callback) {
+  const audio = preloadedAudio[filename];
+  if (!audio) {
+    console.warn("⚠️ Audio not preloaded:", filename);
+    callback();
+    return;
+  }
+
+  audio.currentTime = 0;
+  audio.onended = callback;
+  audio.onerror = () => {
+    console.warn("⚠️ Audio failed:", filename);
+    callback();
+  };
+
+  const playPromise = audio.play();
+  if (playPromise !== undefined) {
+    playPromise.catch(err => {
+      console.warn("🔇 Autoplay blocked:", err);
+      callback();
+    });
+  }
+}
+
+async function warmupMic() {
+  const container = document.getElementById("warmupContainer");
+  const bar = document.getElementById("warmupBar");
+  const text = document.getElementById("warmupText");
+
+  container.style.display = "block";
+  bar.style.width = "0%";
+  text.textContent = "Preparing microphone…";
+
+  let progress = 0;
+  const interval = setInterval(() => {
+    progress += 5;
+    bar.style.width = progress + "%";
+    if (progress >= 100) clearInterval(interval);
+  }, 100);
+
+  try {
+    const speechConfig = await getSpeechConfig();
+    cachedSpeechConfig = speechConfig;
+
+    const audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
+    globalRecognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
+
+    // Dummy warm-up (short listen)
+    return new Promise(resolve => {
+      globalRecognizer.recognizeOnceAsync(() => {
+        clearInterval(interval);
+        bar.style.width = "100%";
+        text.textContent = "Ready!";
+        setTimeout(() => container.style.display = "none", 500);
+        console.log("🎤 Mic warm-up complete.");
+        resolve();
+      });
+    });
+  } catch (err) {
+    console.warn("⚠️ Warm-up failed:", err);
+    clearInterval(interval);
+    text.textContent = "⚠️ Mic warm-up failed.";
+  }
+}
+
+async function initRecognizer() {
+  if (globalRecognizer) return globalRecognizer;
+
+  const speechConfig = await getSpeechConfig();
+  const audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
+  const recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
+  globalRecognizer = recognizer;
+  return recognizer;
+}
+
+async function assessPronunciation(phrase, isFirst=false) {
+  const resultDiv = document.getElementById("result");
+  resultDiv.innerHTML = "⏳ Preparing microphone…";
+
+  if (!window.SpeechSDK) {
+    resultDiv.textContent = "❌ Azure SDK not loaded.";
+    return 0;
+  }
+
+  try {
+    const recognizer = await initRecognizer();
+
+    // 📝 Pronunciation config per word
+    const config = new SpeechSDK.PronunciationAssessmentConfig(
+      phrase,
+      SpeechSDK.PronunciationAssessmentGradingSystem.HundredMark,
+      SpeechSDK.PronunciationAssessmentGranularity.Word,
+      true
+    );
+    config.applyTo(recognizer);
+
+    // Warm-up only for the first word
+    const warmup = isFirst ? 1200 : 400;
+    setTimeout(() => {
+      resultDiv.innerHTML = `🎤 Say: <strong>${phrase}</strong>`;
+    }, warmup);
+
+    return new Promise(resolve => {
+      let resolved = false;
+
+      // Add recognized event handler
+      recognizer.recognized = (s, e) => {
+        if (resolved) return;
+        if (!e.result || !e.result.json) return;
+
+        try {
+          const resJson = JSON.parse(e.result.json);
+          const words = resJson.NBest?.[0]?.Words || [];
+
+          const wordHtml = words.map(w => {
+            const score = w.PronunciationAssessment.AccuracyScore;
+            const color = score >= 85 ? "green" : score >= 70 ? "orange" : "red";
+            return `<span style="color:${color}; margin:0 4px;">${w.Word}</span>`;
+          }).join(" ");
+
+          const avgScore = words.length
+            ? (words.reduce((a, b) => a + b.PronunciationAssessment.AccuracyScore, 0) / words.length).toFixed(1)
+            : "0";
+
+          resultDiv.innerHTML = `
+            <div><strong>Overall:</strong> ${avgScore}%</div>
+            <div style="margin-top:5px; font-size:1.1em;">${wordHtml}</div>
+          `;
+
+          const audioCue = avgScore >= 70 ? "good" : "try_again";
+          playSystemAudio(audioCue, () => resolve(parseFloat(avgScore)));
+
+        } catch (err) {
+          console.error("Parse error:", err);
+          resultDiv.innerHTML = "⚠️ Error parsing result.";
+          resolve(0);
+        }
+        resolved = true;
+      };
+
+      // Start continuous mode only once
+      if (!isRecognizerActive) {
+        recognizer.startContinuousRecognitionAsync();
+        isRecognizerActive = true;
+      }
+
+      // Timeout safety (2s + 50ms per char)
+      const charCount = phrase.replace(/\s+/g, "").length;
+      const stopMs = 2000 + charCount * 50;
+      setTimeout(() => {
+        if (!resolved) {
+          console.log("⏹ Timeout reached, moving on.");
+          resultDiv.innerHTML = "⚠️ No speech detected.";
+          resolve(0);
+        }
+      }, stopMs);
+    });
+  } catch (err) {
+    console.error("Azure error:", err);
+    resultDiv.textContent = "❌ Azure config error.";
+    return 0;
+  }
+}
+
+async function getSpeechConfig() {
+  if (cachedSpeechConfig) return cachedSpeechConfig;
+
+  const baseUrl = window.location.hostname === "andrewdionne.github.io"
+    ? "https://flashcards-5c95.onrender.com"
+    : "";
+
+  const res = await fetch(`${baseUrl}/api/token`);
+  if (!res.ok) throw new Error("Token fetch failed: " + res.status);
+  const data = await res.json();
+
+  const speechConfig = SpeechSDK.SpeechConfig.fromAuthorizationToken(data.token, data.region);
+  speechConfig.speechRecognitionLanguage = "pl-PL";
+  speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, "2500");
+  speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "1000");
+
+  cachedSpeechConfig = speechConfig;
+  return speechConfig;
+}
+
+  async function runPractice() {
+    if (paused || isRunning || return;
+    if (index >= cards.length) {
+      if (globalRecognizer) {
+        globalRecognizer.stopContinuousRecognitionAsync(() => {
+          globalRecognizer.close();
+          globalRecognizer = null;
+          isRecognizerActive = false;
+          console.log("🎤 Recognizer closed at end of practice.");
+        });
+      }
+      return;
+    }
+
+    isRunning = true;
+
+    const resultDiv = document.getElementById("result");
+    const entry = cards[index];
+    const filename = `${index}_${sanitizeFilename(entry.phrase)}.mp3`;
+
+    // 1. Play Polish audio
+    await new Promise(resolve => playAudio(filename, resolve));
+    if (paused) { isRunning = false; return; }
+
+    // 2. Assess pronunciation (handles its own delay + stop timing)
+    const score = await assessPronunciation(entry.phrase, index === 0);
+    if (paused) { isRunning = false; return; }
+
+    // 3. Decide next action
+    if (score >= 70 || attempts >= 2) {
+      index++;
+      attempts = 0;
+    } else {
+      attempts++;
+      resultDiv.innerHTML += "<br>🔁 Try again!";
+    }
+
+    isRunning = false;
+    setTimeout(() => {
+      if (!paused) runPractice();
+    }, 1000);
+  }
+
+
+document.addEventListener("DOMContentLoaded", async () => {
+  const startBtn = document.getElementById("startBtn");
+  const pauseBtn = document.getElementById("pauseBtn");
+  const restartBtn = document.getElementById("restartBtn");
+  preloadAudioFiles();
+
+  await warmupMic();
+
+  startBtn.addEventListener("click", () => {
+    if (!hasStarted) {
+      hasStarted = true;
+      paused = false;
+      startBtn.style.display = "none";
+      pauseBtn.style.display = "inline-block";
+      restartBtn.style.display = "inline-block";
+      playSystemAudio("repeat_after_me", () => runPractice());
+    }
+  });
+
+  pauseBtn.addEventListener("click", () => {
+    if (!hasStarted) return;
+    paused = !paused;
+    pauseBtn.textContent = paused ? "▶️ Resume" : "⏸ Pause";
+    if (!paused && !isRunning) {
+      playSystemAudio("repeat_after_me", () => runPractice());
+    }
+  });
+
+  restartBtn.addEventListener("click", () => {
+    paused = false;
+    index = 0;
+    attempts = 0;
+    isRunning = false;
+    pauseBtn.textContent = "⏸ Pause";
+    playSystemAudio("repeat_after_me", () => runPractice());
+  });
+});
+
+
+function goHome() {
+  const pathParts = window.location.pathname.split("/");
+  const repo = pathParts[1];
+  window.location.href = window.location.hostname === "andrewdionne.github.io"
+    ? `/${repo}/`
+    : "/";
+}
+
+</script>
+
+</body>
+</html>
