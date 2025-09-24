@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Register - LearnPolish</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      padding: 20px;
+      background-color: #f8f9fa;
+    }
+    .container {
+      max-width: 400px;
+      margin: 0 auto;
+      background: white;
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    h2 {
+      margin-top: 0;
+      color: #007bff;
+      text-align: center;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 1em;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1em;
+      margin-top: 10px;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    .link {
+      text-align: center;
+      margin-top: 15px;
+      font-size: 0.9em;
+    }
+    .link a {
+      color: #007bff;
+      text-decoration: none;
+    }
+    .link a:hover {
+      text-decoration: underline;
+    }
+    .message {
+      margin-top: 10px;
+      text-align: center;
+      font-size: 0.95em;
+    }
+    .error { color: red; }
+    .success { color: green; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Create Account</h2>
+    <form id="signupForm">
+      <input type="text" id="name" placeholder="Full Name">
+      <input type="email" id="email" placeholder="Email" required>
+      <input type="password" id="password" placeholder="Password" required>
+      <button type="submit">Sign Up</button>
+    </form>
+    <div id="message" class="message"></div>
+    <div class="link">
+      Already have an account? <a href="login.html">Sign In</a>
+    </div>
+  </div>
+
+ <script>
+  const isGH = location.hostname.endsWith('github.io');
+  const API_BASE = isGH
+    ? 'https://flashcards-5c95.onrender.com/api'
+    : '/api';
+
+  function homeHref() {
+    if (isGH) {
+      const repo = location.pathname.split('/').filter(Boolean)[0] || 'LearnPolish';
+      return '/' + repo + '/';
+    }
+    return '/';
+  }
+
+  const messageBox = document.getElementById("message");
+
+  document.getElementById("signupForm").onsubmit = async (e) => {
+    e.preventDefault();
+    const name = document.getElementById("name").value.trim();
+    const email = document.getElementById("email").value.trim().toLowerCase();
+    const password = document.getElementById("password").value;
+
+    messageBox.textContent = "";
+    messageBox.className = "message";
+
+    try {
+      console.log('[signup] POST', `${API_BASE}/signup`);
+      const res = await fetch(`${API_BASE}/signup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password })
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok) {
+        localStorage.setItem("lp_token", data.token);
+        messageBox.textContent = "✅ Registration successful! Redirecting...";
+        messageBox.classList.add("success");
+        setTimeout(() => (window.location.href = homeHref()), 800);
+      } else {
+        messageBox.textContent = "❌ " + (data.message || "Error signing up");
+        messageBox.classList.add("error");
+      }
+    } catch (err) {
+      messageBox.textContent = "❌ Network error: " + err;
+      messageBox.classList.add("error");
+    }
+  };
+</script>
+
+
+</body>
+</html>

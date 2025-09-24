@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Create Learning Set</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 40px auto; max-width: 760px; padding: 0 20px; }
+    header { display:flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    a.home { text-decoration:none; background:#007bff; color:#fff; padding:8px 12px; border-radius:8px; }
+    h1 { margin: 0; }
+    fieldset { border:1px solid #ddd; border-radius:8px; padding:12px; }
+    legend { padding:0 6px; color:#555; }
+    label { font-weight: bold; display:block; margin-top: 15px; margin-bottom: 8px; }
+    input[type="text"], textarea {
+      width: 100%; font-size: 1em; padding: 10px;
+      border-radius: 6px; border: 1px solid #ccc; resize: vertical;
+    }
+    textarea { min-height: 220px; }
+    .row { display:flex; gap:16px; align-items:center; }
+    .note { font-size: 0.9em; color: #555; margin-top: 10px; }
+    button {
+      margin-top: 20px; padding: 12px 20px; font-size: 1em;
+      border: none; border-radius: 8px; background-color: #007bff;
+      color: white; cursor: pointer; width: 100%;
+    }
+    button:hover { background-color: #0056b3; }
+    #status { font-weight: bold; margin-top: 15px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Create Learning Set</h1>
+    <a class="home" href="#" onclick="goHome();return false;">🏠 Home</a>
+  </header>
+
+  <form id="createForm">
+    <!-- Type selector (no templating; static-friendly) -->
+    <fieldset>
+      <legend>What kind of set?</legend>
+      <div class="row">
+        <label class="row" style="font-weight:normal;">
+          <input type="radio" name="setType" value="flashcards" checked>
+          <span>Flashcards</span>
+        </label>
+        <label class="row" style="font-weight:normal;">
+          <input type="radio" name="setType" value="reading">
+          <span>Reading</span>
+        </label>
+      </div>
+    </fieldset>
+
+    <label for="set_name">Set Name (letters/numbers/_- only):</label>
+    <input type="text" id="set_name" name="set_name" required pattern="[A-Za-z0-9_-]+" placeholder="e.g. Basics">
+
+    <label for="json_input">Paste JSON Array:</label>
+    <textarea id="json_input" name="json_input" required></textarea>
+
+    <p class="note" id="note"></p>
+
+    <button type="submit">Create Set</button>
+  </form>
+
+  <p id="status"></p>
+
+  <script>
+    // --- Environment routing ---
+    const API_BASE =
+      (location.hostname === "127.0.0.1" || location.hostname === "localhost")
+        ? "http://127.0.0.1:5000/api"
+        : "https://flashcards-5c95.onrender.com/api";
+
+    // --- Auth guard ---
+    const token = localStorage.getItem("lp_token");
+    if (!token) {
+      // If running under Flask locally, this works. On GH Pages, link is /login.html in the repo root.
+      location.href = "login.html";
+    }
+
+    // --- UI elements ---
+    const form = document.getElementById("createForm");
+    const jsonInput = document.getElementById("json_input");
+    const note = document.getElementById("note");
+    const status = document.getElementById("status");
+
+    // Accept ?type=reading to preselect
+    const urlParams = new URLSearchParams(location.search);
+    const initialType = (urlParams.get("type") || "flashcards").toLowerCase();
+    const typeRadios = [...document.querySelectorAll('input[name="setType"]')];
+    const setTypeEl = () => (document.querySelector('input[name="setType"]:checked')?.value || "flashcards");
+
+    // Placeholders & notes
+    const placeholders = {
+      flashcards: `[
+  {"phrase": "Cześć", "pronunciation": "cheshch", "meaning": "Hello"},
+  {"phrase": "Dziękuję", "pronunciation": "jen-koo-yeh", "meaning": "Thank you"}
+]`,
+      reading: `[
+  {"title": "Story 1", "polish": "Ala ma kota.", "english": "Ala has a cat."},
+  {"title": "Spacer", "polish": "Dzisiaj idziemy do parku.", "english": "Today we are going to the park."}
+]`
+    };
+    const notes = {
+      flashcards: `JSON must use keys: "phrase", "pronunciation", "meaning".`,
+      reading: `JSON must use keys: "polish". "title" and "english" are optional.`
+    };
+
+    function refreshScaffold() {
+      const t = setTypeEl();
+      jsonInput.value = placeholders[t];
+      note.textContent = notes[t];
+      status.textContent = "";
+      status.style.color = "";
+    }
+
+    // Set initial type choice
+    const match = typeRadios.find(r => r.value === initialType);
+    if (match) match.checked = true;
+    refreshScaffold();
+
+    // Change handlers
+    typeRadios.forEach(r => r.addEventListener("change", refreshScaffold));
+
+    // Schema checks
+    function validateFlashcards(arr) {
+      if (!Array.isArray(arr) || !arr.length) return "Must be a non-empty array.";
+      for (const [i, it] of arr.entries()) {
+        if (!it || typeof it !== "object") return `Item ${i+1} must be an object.`;
+        for (const k of ["phrase","pronunciation","meaning"]) {
+          if (!(k in it)) return `Item ${i+1} missing "${k}".`;
+        }
+      }
+      return null;
+    }
+    function validateReading(arr) {
+      if (!Array.isArray(arr) || !arr.length) return "Must be a non-empty array.";
+      for (const [i, it] of arr.entries()) {
+        if (!it || typeof it !== "object") return `Item ${i+1} must be an object.`;
+        if (!("polish" in it)) return `Item ${i+1} missing "polish".`;
+      }
+      return null;
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      status.textContent = "";
+      status.style.color = "";
+
+      const setName = document.getElementById("set_name").value.trim();
+      const setType = setTypeEl();
+
+      if (!setName) {
+        status.textContent = "❌ Set name is required.";
+        status.style.color = "red";
+        return;
+      }
+
+      let data;
+      try {
+        data = JSON.parse(jsonInput.value);
+      } catch {
+        status.textContent = "❌ Invalid JSON format.";
+        status.style.color = "red";
+        return;
+      }
+
+      // Type-specific validation
+      const err = (setType === "flashcards") ? validateFlashcards(data)
+                : (setType === "reading")    ? validateReading(data)
+                : "Unsupported set type.";
+      if (err) {
+        status.textContent = "❌ " + err;
+        status.style.color = "red";
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/create_set`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({ set_type: setType, set_name: setName, data })
+        });
+        const result = await res.json();
+        if (!res.ok) {
+          status.textContent = `❌ Error: ${result.message || result.error || res.status}`;
+          status.style.color = "red";
+          return;
+        }
+        status.textContent = `✅ Set '${setName}' created successfully!`;
+        status.style.color = "green";
+      } catch (err) {
+        status.textContent = "❌ Network error: " + err;
+        status.style.color = "red";
+      }
+    });
+
+    function goHome() {
+      if (location.hostname === "andrewdionne.github.io") {
+        // compute repo base
+        const parts = location.pathname.split("/").filter(Boolean);
+        const repo = parts.length ? parts[0] : "LearnPolish";
+        location.href = "/" + repo + "/";
+      } else {
+        location.href = "/";
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>LearnPolish – Flashcards</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background:#f8f9fa; margin:0; padding:0; }
+    header { display:flex; justify-content:space-between; align-items:center; padding:1rem 2rem; background:#fff; box-shadow:0 2px 5px rgba(0,0,0,0.05); }
+    h1 { font-size:1.8em; margin:0; }
+    nav a, nav button { margin-left:15px; font-size:1em; color:#007bff; background:none; border:none; cursor:pointer; text-decoration:none; }
+    nav a:hover, nav button:hover { text-decoration:underline; }
+    main { padding:2rem; text-align:center; }
+    .mode-grid { display:flex; flex-wrap:wrap; justify-content:center; gap:1rem; margin-top:2rem; }
+    .mode-link { display:inline-block; padding:1rem 2rem; background-color:#007bff; color:#fff; text-decoration:none; border-radius:10px; font-size:1.1rem; transition:background .3s ease; }
+    .mode-link:hover { background-color:#0056b3; }
+    footer { text-align:center; margin:2rem 0; font-size:.9rem; color:#777; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>📚 LearnPolish</h1>
+    <nav>
+      <!-- Use plain links so GH Pages works (index is at /LearnPolish/) -->
+      <a href="login.html" id="loginLink">🔑 Sign In</a>
+      <a href="register.html" id="registerLink">📝 Register</a>
+      <button id="logoutBtn" style="display:none;">🚪 Logout</button>
+    </nav>
+  </header>
+
+  <main>
+    <h2>Welcome to Polish Learning</h2>
+    <p>Select a learning mode to get started:</p>
+    <div class="mode-grid">
+      <a href="flashcards/" class="mode-link">📚 Flashcards</a>
+      <a href="practice/" class="mode-link">🎤 Pronunciation</a>
+      <a href="reading/" class="mode-link">📖 Reading</a>
+      <a href="listening/" class="mode-link">🎧 Listening</a>
+      <a href="test/" class="mode-link">🎓 Test Yourself</a>
+      <a href="manage_sets/" class="mode-link">⚙️ Manage Sets</a>
+    </div>
+  </main>
+
+  <footer>
+    Built with ❤️ for Polish learners
+  </footer>
+
+  <script>
+    // --- Auth handling ---
+    const token = localStorage.getItem("lp_token");
+    const loginLink = document.getElementById("loginLink");
+    const registerLink = document.getElementById("registerLink");
+    const logoutBtn = document.getElementById("logoutBtn");
+
+    function updateAuthUI() {
+      if (token) {
+        if (loginLink) loginLink.style.display = "none";
+        if (registerLink) registerLink.style.display = "none";
+        if (logoutBtn) logoutBtn.style.display = "inline-block";
+      } else {
+        if (loginLink) loginLink.style.display = "inline-block";
+        if (registerLink) registerLink.style.display = "inline-block";
+        if (logoutBtn) logoutBtn.style.display = "none";
+      }
+    }
+
+    updateAuthUI();
+
+    if (logoutBtn) {
+      logoutBtn.addEventListener("click", () => {
+        localStorage.removeItem("lp_token");
+        location.reload();
+      });
+    }
+  </script>
+</body>
+</html>

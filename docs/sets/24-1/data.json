@@ -1,0 +1,62 @@
+[
+  {
+    "phrase": "Dziękuję",
+    "pronunciation": "jen-KOO-yeh",
+    "meaning": "Thank you"
+  },
+  {
+    "phrase": "Przepraszam",
+    "pronunciation": "psheh-PRAH-shahm",
+    "meaning": "Sorry/Excuse me"
+  },
+  {
+    "phrase": "Proszę powtórzyć!",
+    "pronunciation": "PROH-sheh pohv-TOO-zheetch",
+    "meaning": "Please repeat!"
+  },
+  {
+    "phrase": "Co to znaczy",
+    "pronunciation": "tso toh ZNAH-chee",
+    "meaning": "What does it mean?"
+  },
+  {
+    "phrase": "Tak",
+    "pronunciation": "tahk",
+    "meaning": "Yes"
+  },
+  {
+    "phrase": "Nie",
+    "pronunciation": "nyeh",
+    "meaning": "No"
+  },
+  {
+    "phrase": "Nie wiem",
+    "pronunciation": "nyeh VYEM",
+    "meaning": "I don't know"
+  },
+  {
+    "phrase": "Proszę napisać!",
+    "pronunciation": "PROH-sheh nah-PEE-sahtch",
+    "meaning": "Please write it down!"
+  },
+  {
+    "phrase": "Gdzie jest toaleta",
+    "pronunciation": "g-jeh yest toh-ah-LEH-tah",
+    "meaning": "Where is the toilet?"
+  },
+  {
+    "phrase": "Proszę mówić wolniej",
+    "pronunciation": "PROH-sheh MOO-veech VOL-nyeh",
+    "meaning": "Please speak more slowly"
+  },
+  {
+    "phrase": "Mam pytanie",
+    "pronunciation": "mahm pih-TAH-nyeh",
+    "meaning": "I have a question"
+  },
+  {
+    "phrase": "Nie rozumiem",
+    "pronunciation": "nyeh roh-ZOO-myem",
+    "meaning": "I don't understand"
+  }
+]

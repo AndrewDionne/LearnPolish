@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Set New Password - LearnPolish</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      padding: 20px;
+      background: #f8f9fa;
+    }
+    .container {
+      max-width: 400px;
+      margin: 0 auto;
+      background: white;
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    h2 {
+      margin-top: 0;
+      color: #007bff;
+      text-align: center;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 1em;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1em;
+      margin-top: 10px;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    .msg {
+      margin-top: 10px;
+      text-align: center;
+      font-size: 0.95em;
+    }
+    .error { color: red; }
+    .success { color: green; }
+    .link {
+      text-align: center;
+      margin-top: 15px;
+      font-size: 0.9em;
+    }
+    .link a {
+      color: #007bff;
+      text-decoration: none;
+    }
+    .link a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Choose a New Password</h2>
+    <form id="confirmForm">
+      <input type="password" id="password" placeholder="New Password" required>
+      <button type="submit">Update Password</button>
+    </form>
+    <div id="message" class="msg"></div>
+    <div class="link">
+      <a href="login.html">🔑 Back to Login</a>
+    </div>
+  </div>
+
+<script>
+  const API_BASE =
+    window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost"
+      ? "http://127.0.0.1:5000/api"
+      : "https://flashcards-5c95.onrender.com/api";
+
+  // Grab token from query string
+  const urlParams = new URLSearchParams(window.location.search);
+  const token = urlParams.get("token");
+
+  document.getElementById("confirmForm").onsubmit = async (e) => {
+    e.preventDefault();
+    const password = document.getElementById("password").value;
+    const messageBox = document.getElementById("message");
+    messageBox.textContent = "";
+
+    try {
+      const res = await fetch(`${API_BASE}/reset_confirm`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, password })
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        messageBox.textContent = "✅ Password updated! Redirecting...";
+        messageBox.style.color = "green";
+        setTimeout(() => (window.location.href = "login.html"), 1500);
+      } else {
+        messageBox.textContent = "❌ " + data.message;
+        messageBox.style.color = "red";
+      }
+    } catch (err) {
+      messageBox.textContent = "❌ Network error: " + err;
+      messageBox.style.color = "red";
+    }
+  };
+</script>
+
+</body>
+</html>
+
+

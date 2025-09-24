@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Login - LearnPolish</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f8f9fa;
+      padding: 20px;
+    }
+    .container {
+      max-width: 400px;
+      margin: 0 auto;
+      background: white;
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    h2 {
+      margin-top: 0;
+      color: #007bff;
+      text-align: center;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 1em;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1em;
+      margin-top: 10px;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    .link {
+      text-align: center;
+      margin-top: 15px;
+      font-size: 0.9em;
+    }
+    .link a {
+      color: #007bff;
+      text-decoration: none;
+    }
+    .link a:hover {
+      text-decoration: underline;
+    }
+    .message {
+      margin-top: 10px;
+      text-align: center;
+      font-size: 0.95em;
+    }
+    .error { color: red; }
+    .success { color: green; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Welcome Back</h2>
+    <form id="loginForm">
+      <input type="email" id="email" placeholder="Email" required>
+      <input type="password" id="password" placeholder="Password" required>
+      <button type="submit">Login</button>
+    </form>
+    <div id="message" class="message"></div>
+    <div class="link">
+      Don’t have an account? <a href="register.html">Register</a><br>
+      <a href="reset.html">Forgot password?</a>
+    </div>
+  </div>
+
+  <script>
+  // Robust API base selection:
+  // - GH Pages → Render API
+  // - Anything else (local, LAN IP, 0.0.0.0, ::1) → same-origin /api
+  const isGH = location.hostname.endsWith('github.io');
+  const API_BASE = isGH
+    ? 'https://flashcards-5c95.onrender.com/api'
+    : '/api';
+
+  // Compute a safe “home” redirect (works on GH Pages and local)
+  function homeHref() {
+    if (isGH) {
+      const repo = location.pathname.split('/').filter(Boolean)[0] || 'LearnPolish';
+      return '/' + repo + '/';
+    }
+    return '/';
+  }
+
+  document.getElementById("loginForm").onsubmit = async (e) => {
+    e.preventDefault();
+    const email = document.getElementById("email").value.trim().toLowerCase();
+    const password = document.getElementById("password").value;
+    const messageBox = document.getElementById("message");
+
+    messageBox.textContent = "";
+    messageBox.className = "message";
+
+    try {
+      console.log('[login] POST', `${API_BASE}/login`);
+      const res = await fetch(`${API_BASE}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok) {
+        localStorage.setItem("lp_token", data.token);
+        window.location.href = homeHref();
+      } else {
+        messageBox.textContent = "❌ " + (data.message || "Invalid login");
+        messageBox.classList.add("error");
+      }
+    } catch (err) {
+      // If the URL is malformed or blocked, fetch can throw a SyntaxError in some browsers
+      messageBox.textContent = "❌ Network error: " + err;
+      messageBox.classList.add("error");
+    }
+  };
+</script>
+
+
+</body>
+</html>

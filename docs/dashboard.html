@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard • Learn Polish</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:#f7f7fb; margin:0; padding:24px; }
+    .wrap { max-width: 960px; margin: 0 auto; }
+    header { display:flex; align-items:center; justify-content:space-between; margin-bottom: 20px; }
+    h1 { margin:0; font-size: 24px; }
+    .cards { display:grid; grid-template-columns: repeat(auto-fit,minmax(260px,1fr)); gap:16px; }
+    .card { background:#fff; border:1px solid #e6e6ef; border-radius:12px; padding:16px; box-shadow: 0 1px 2px rgba(8,15,52,.04); }
+    .muted { color:#666; font-size: 14px; }
+    table { width:100%; border-collapse: collapse; }
+    th, td { text-align:left; padding:8px; border-bottom: 1px solid #eee; font-size: 14px; }
+    .btn { display:inline-block; padding:8px 12px; border-radius:8px; border:1px solid #ccc; background:#fafafa; text-decoration:none; color:#222; }
+    .btn-primary { background:#2d6cdf; color:#fff; border-color:#2d6cdf; }
+    .row { display:flex; gap:8px; flex-wrap:wrap; }
+    .tag { display:inline-block; padding:2px 8px; border-radius:999px; background:#f0f3ff; color:#2d45b6; font-size:12px; }
+    .danger { color:#b31d1d; }
+    footer { margin-top: 28px; color:#777; font-size: 13px; }
+    .hidden { display:none; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>👋 <span id="greeting">Loading…</span></h1>
+    <div class="row">
+      <a class="btn" href="/index.html">Home</a>
+      <a class="btn" href="/manage_sets/">My Library</a>
+      <button id="logoutBtn" class="btn">Log out</button>
+    </div>
+  </header>
+
+  <div class="cards">
+    <section class="card">
+      <h3>Profile</h3>
+      <div class="muted" id="profile">—</div>
+      <div id="adminBadge" class="tag hidden">Admin</div>
+    </section>
+
+    <section class="card">
+      <h3>Recent Scores</h3>
+      <div id="scoresEmpty" class="muted">No scores yet. Try a mode and come back!</div>
+      <table id="scoresTable" class="hidden">
+        <thead><tr><th>When</th><th>Set</th><th>Mode</th><th>Score</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="row" style="margin-top:10px">
+        <a class="btn" href="/flashcards/">Flashcards</a>
+        <a class="btn" href="/practice/">Practice</a>
+        <a class="btn" href="/listening/">Listening</a>
+        <a class="btn" href="/reading/">Reading</a>
+      </div>
+    </section>
+
+    <section class="card">
+      <h3>My Library</h3>
+      <ul id="libraryList" class="muted" style="padding-left:18px; margin:0;"></ul>
+      <div style="margin-top:10px">
+        <a class="btn" href="/manage_sets/">Manage Library</a>
+      </div>
+    </section>
+
+    <section class="card">
+      <h3>Groups</h3>
+      <ul id="groupsList" class="muted" style="padding-left:18px; margin:0;"></ul>
+    </section>
+  </div>
+
+  <footer>
+    If you see a login prompt, make sure your backend is reachable. For GitHub Pages set <code>localStorage.API_BASE</code> to your Render URL.
+  </footer>
+</div>
+
+<!-- load helper -->
+<script src="./static/js/api.js"></script>
+<script>
+async function requireMe() {
+  const r = await api.fetch('/api/me');
+  if (r.status === 401) {
+    location.href = '/login.html';
+    return null;
+  }
+  if (!r.ok) throw new Error('Failed /api/me');
+  return r.json();
+}
+function shortDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleString();
+}
+
+async function loadDashboard() {
+  const me = await requireMe(); if (!me) return;
+
+  // Greeting + profile
+  document.getElementById('greeting').textContent = me.name ? `Cześć, ${me.name}!` : `Cześć, ${me.email}!`;
+  document.getElementById('profile').textContent = `${me.email} • Joined ${shortDate(me.created_at)}`;
+  if (me.is_admin) document.getElementById('adminBadge').classList.remove('hidden');
+
+  // Scores
+  const sr = await api.fetch('/api/my/scores?limit=10');
+  const scores = sr.ok ? await sr.json() : [];
+  const tbody = document.querySelector('#scoresTable tbody');
+  if (scores.length) {
+    document.getElementById('scoresEmpty').classList.add('hidden');
+    document.getElementById('scoresTable').classList.remove('hidden');
+    tbody.innerHTML = scores.map(s => `
+      <tr>
+        <td>${shortDate(s.timestamp)}</td>
+        <td>${s.set_name || '-'}</td>
+        <td>${s.mode || '-'}</td>
+        <td>${(s.score ?? '').toString()}</td>
+      </tr>
+    `).join('');
+  }
+
+  // Library
+  const lr = await api.fetch('/api/my/sets');
+  const lib = lr.ok ? await lr.json() : [];
+  const list = document.getElementById('libraryList');
+  if (lib.length) {
+    list.classList.remove('muted');
+    list.innerHTML = lib.map(x => `<li>${x.set_name}${x.is_owner ? ' <span class="tag">owner</span>' : ''}</li>`).join('');
+  } else {
+    list.textContent = 'No sets in your library yet.';
+  }
+
+  // Groups
+  const gr = await api.fetch('/api/my/groups');
+  const groups = gr.ok ? await gr.json() : [];
+  const gl = document.getElementById('groupsList');
+  if (groups.length) {
+    gl.classList.remove('muted');
+    gl.innerHTML = groups.map(g => `<li>${g.group_name || 'Group ' + g.group_id} • ${g.role}</li>`).join('');
+  } else {
+    gl.textContent = 'Not in any groups yet.';
+  }
+}
+
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  const tryPaths = ['/api/logout', '/logout'];
+  for (const p of tryPaths) {
+    try { await api.fetch(p, { method: 'POST' }); } catch (e) {}
+  }
+  localStorage.removeItem('authToken');
+  localStorage.removeItem('lp_token');    // <- add this
+  location.href = '/login.html';
+});
+
+loadDashboard().catch(err => {
+  console.error(err);
+  alert('Failed to load dashboard. Is the backend running?');
+});
+</script>
+</body>
+</html>

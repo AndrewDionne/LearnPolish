@@ -1,0 +1,42 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- Virtualenv / env files ---
+venv/
+.venv/
+env/
+.env
+.env.*    # e.g., .env.local
+
+# --- Flask instance & local databases ---
+# Keep the folder, ignore contents (except a placeholder)
+instance/*
+!instance/.gitkeep
+*.sqlite
+*.db
+
+# --- Logs ---
+*.log
+
+# --- Build / dist ---
+dist/
+build/
+*.egg-info/
+
+# --- GitHub Pages (generated/output caches) ---
+docs/output/
+docs/static/cache/
+
+# (Optional) generated media — uncomment if these are auto-generated
+# docs/listening/audio/
+# docs/reading/generated/
+
+# --- OS cruft ---
+.DS_Store
+Thumbs.db
+
+# --- Editors/IDEs ---
+.vscode/
+.idea/
