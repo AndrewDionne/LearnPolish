@@ -2,6 +2,20 @@
 __pycache__/
 *.py[cod]
 *$py.class
+.python-version
+.pip-selfcheck.json
+
+# Caches / tooling
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pyright/
+.cache/
+
+# Coverage
+.coverage*
+htmlcov/
+coverage.xml
 
 # --- Virtualenv / env files ---
 venv/
@@ -15,6 +29,7 @@ env/
 instance/*
 !instance/.gitkeep
 *.sqlite
+*.sqlite3
 *.db
 
 # --- Logs ---
@@ -36,7 +51,16 @@ docs/static/cache/
 # --- OS cruft ---
 .DS_Store
 Thumbs.db
+.AppleDouble
+._*
 
 # --- Editors/IDEs ---
 .vscode/
 .idea/
+
+# --- Misc (merge/temporary) ---
+*.orig
+*.rej
+*.swp
+*.swo
+
