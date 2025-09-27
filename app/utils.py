@@ -73,85 +73,56 @@ def get_azure_token():
 
 # --- Mode landing page builders (docs/<mode>/index.html) --------------------
 from pathlib import Path
-from .sets_utils import list_global_sets
-from .modes import modes_for_type
 
-_INDEX_TMPL = """<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>{title}</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body {{ font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f8f9fa; padding: 2rem; }}
-    h1 {{ text-align: center; margin-bottom: 2rem; }}
-    .card-link a {{
-      display: block; background: #ffffff; border: 1px solid #ddd; padding: 12px;
-      margin: 10px auto; border-radius: 8px; text-decoration: none; color: #333;
-      width: 90%; max-width: 500px; transition: background 0.2s;
-    }}
-    .card-link a:hover {{ background: #eef3ff; }}
-    .back {{ text-align: center; margin-top: 2rem; }}
-  </style>
-</head>
-<body>
-  <h1>{heading}</h1>
-  {items}
-  <div class="back"><a href="/">← Back to Learning Modes</a></div>
-</body>
-</html>
-"""
+# Map classic folders → Learn page filter
+_LEARN_MODE_MAP = {
+    "flashcards": "vocab",
+    "practice":   "speak",
+    "reading":    "read",
+    "listening":  "listen",
+    "test":       "all",   # send to Learn with no specific filter
+}
 
-def _mode_title(mode: str) -> str:
+def _mode_label(mode: str) -> str:
     return {
-        "flashcards": "🧠 Flashcards – Choose a Set",
-        "practice":   "🎤 Pronunciation – Choose a Set",
-        "reading":    "📖 Reading – Choose a Set",
-        "listening":  "🎧 Listening – Choose a Set",
-        "test":       "🎓 Test – Choose a Set",
-    }.get(mode, f"{mode.capitalize()} – Choose a Set")
+        "flashcards": "Vocabulary",
+        "practice":   "Speak",
+        "reading":    "Read",
+        "listening":  "Listen",
+        "test":       "Learn",
+    }.get(mode, mode.capitalize())
 
-def _mode_heading(mode: str) -> str:
-    return _mode_title(mode)
+_REDIRECT_TMPL = """<!DOCTYPE html>
+<html><head>
+  <meta charset="utf-8">
+  <title>{title}</title>
+  <meta http-equiv="refresh" content="0; url=../learn.html?view=my&mode={mode}">
+  <script>location.replace('../learn.html?view=my&mode={mode}');</script>
+</head><body>
+  <p>Redirecting to <a href="../learn.html?view=my&mode={mode}">Learn • {label}</a>…</p>
+</body></html>
+"""
 
 def build_mode_index(mode: str) -> Path:
     """
-    Generate docs/<mode>/index.html listing all sets that imply this mode.
+    Write docs/<mode>/index.html as a redirect to the shared Learn page
+    with the appropriate filter. Keeps legacy links working.
     """
     outdir = Path("docs") / mode
     outdir.mkdir(parents=True, exist_ok=True)
     outfile = outdir / "index.html"
 
-    all_sets = list_global_sets()
-    # Filter to sets whose type implies `mode`
-    matches = []
-    for meta in all_sets:
-        implied = set(modes_for_type(meta.get("type", "unknown")))
-        if mode in implied:
-            matches.append(meta)
-
-    # Build links: /<mode>/<set_name>/
-    items_html = []
-    for m in sorted(matches, key=lambda s: s["name"].lower()):
-        name = m["name"]
-        count = m.get("count", "?")
-        items_html.append(
-            f'<div class="card-link"><a href="{name}/">▶ {name} ({count} items)</a></div>'
-        )
-
-    html = _INDEX_TMPL.format(
-        title=_mode_title(mode),
-        heading=_mode_heading(mode),
-        items="\n  ".join(items_html) if items_html else "<p>No sets yet.</p>",
-    )
+    target_mode = _LEARN_MODE_MAP.get(mode, "all")
+    html = _REDIRECT_TMPL.format(title=_mode_label(mode), mode=target_mode, label=_mode_label(mode))
     outfile.write_text(html, encoding="utf-8")
-    print(f"✅ Built mode index: {outfile}")
+    print(f"↪︎ Wrote redirect index for '{mode}' → learn.html?view=my&mode={target_mode}")
     return outfile
 
 def build_all_mode_indexes() -> None:
-    # Only include modes that actually exist in your codebase
+    # Keep the same set of modes you previously generated
     for mode in ["flashcards", "practice", "reading", "listening", "test"]:
         try:
             build_mode_index(mode)
         except Exception as e:
             print(f"⚠️ Skipped {mode} index: {e}")
+

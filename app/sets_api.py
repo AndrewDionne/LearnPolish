@@ -66,6 +66,16 @@ except Exception:
                 pass
         return {"name": name, "count": "?", "type": "unknown", "created_by": "system"}
 
+# Rebuild docs/set_modes.json when sets change (safe no-op fallback)
+try:
+    from .create_set_modes import main as rebuild_set_modes_map
+except Exception:
+    def rebuild_set_modes_map():
+        try:
+            Path("docs/set_modes.json").write_text("{}", encoding="utf-8")
+        except Exception as e:
+            print(f"⚠️ Failed to (re)write docs/set_modes.json: {e}")
+
 
 sets_api = Blueprint("sets_api", __name__)
 
@@ -80,9 +90,51 @@ def _with_deprecation_headers(resp, successor_path: str):
     Add soft deprecation hints without breaking existing consumers.
     See: RFC 8594 (Link rel="successor-version"); Deprecation header (draft).
     """
-    resp.headers["Deprecation"] = "true"
-    resp.headers["Link"] = f'<{successor_path}>; rel="successor-version"'
+    try:
+        resp.headers["Deprecation"] = "true"
+        resp.headers["Link"] = f'<{successor_path}>; rel="successor-version"'
+    except Exception:
+        # in case resp is a tuple or something unexpected
+        pass
     return resp
+
+def _apply_list_params(items: list[dict]):
+    """
+    Non-breaking optional filters for listings:
+      ?q=<substring>   (case-insensitive match on name)
+      ?limit=, ?offset=
+      ?sort=name|count  (default=name)
+      ?order=asc|desc   (default=asc)
+    """
+    q = (request.args.get("q") or "").strip().lower()
+    sort = (request.args.get("sort") or "name").lower()
+    order = (request.args.get("order") or "asc").lower()
+    try:
+        limit = int(request.args.get("limit", 0))
+    except Exception:
+        limit = 0
+    try:
+        offset = int(request.args.get("offset", 0))
+    except Exception:
+        offset = 0
+
+    out = items
+    if q:
+        out = [x for x in out if q in (x.get("name") or "").lower()]
+
+    # sort
+    keyfunc = (lambda x: (x.get("name") or "").lower())
+    if sort == "count":
+        keyfunc = (lambda x: (x.get("count") if isinstance(x.get("count"), int) else -1, (x.get("name") or "").lower()))
+    out.sort(key=keyfunc, reverse=(order == "desc"))
+
+    # slice
+    if offset > 0 or (limit and limit > 0):
+        start = max(offset, 0)
+        end = start + max(limit, 0) if limit and limit > 0 else None
+        out = out[start:end]
+
+    return out
 
 # ----------------------------
 # API
@@ -96,8 +148,10 @@ def global_sets():
       { "name": "...", "count": 123, "type": "flashcards|reading|unknown", "created_by": "system|user|me" },
       ...
     ]
+    Optional filters: ?q=&limit=&offset=&sort=name|count&order=asc|desc
     """
     glist = list_global_sets()
+    glist = _apply_list_params(glist)  # non-breaking filter/sort
     resp = jsonify(glist)
     # Point clients to the new minimal listing at /api/sets/available
     return _with_deprecation_headers(resp, "/api/sets/available")
@@ -112,6 +166,8 @@ def my_sets(current_user):
       - If UserSet.is_owner == True -> created_by = "me"
       - Else if present in global -> keep global's created_by (usually "system")
       - Else (not in global) -> treat as private -> created_by = "me"
+
+    Optional filters: ?q=&limit=&offset=&sort=name|count&order=asc|desc
     """
     rows = UserSet.query.filter_by(user_id=current_user.id).all()
     user_names = [r.set_name for r in rows]
@@ -133,6 +189,7 @@ def my_sets(current_user):
             meta["created_by"] = "me"
             out.append(meta)
 
+    out = _apply_list_params(out)  # non-breaking filter/sort
     resp = jsonify(out)
     # Suggest RESTful successor for new clients
     return _with_deprecation_headers(resp, "/api/my/sets")
@@ -179,6 +236,7 @@ def remove_set(current_user):
     # Successor: DELETE /api/my/sets/<set_name>
     return _with_deprecation_headers(resp, f"/api/my/sets/{set_name}")
 
+# 4) Create a set (owner-only on create)
 @sets_api.route("/create_set", methods=["POST"])
 @token_required
 def create_set(current_user):
@@ -220,11 +278,18 @@ def create_set(current_user):
         else:
             existing.is_owner = True
         db.session.commit()
-        # Refresh landing pages
+
+        # Refresh landing/index pages
         try:
             build_all_mode_indexes()
         except Exception as e:
             print("⚠️ Failed to rebuild mode indexes:", e)
+
+        # Keep docs/set_modes.json current
+        try:
+            rebuild_set_modes_map()
+        except Exception as e:
+            print("⚠️ Failed to rebuild set_modes.json after create:", e)
 
         meta["created_by"] = "me"
         return jsonify(meta), 201
@@ -253,5 +318,17 @@ def delete_set(current_user, set_name):
 
     UserSet.query.filter_by(set_name=safe_name).delete()
     db.session.commit()
+
+    # Keep generated indices in sync (same as create_set)
+    try:
+        build_all_mode_indexes()
+    except Exception as e:
+        print("⚠️ Failed to rebuild mode indexes after delete:", e)
+
+    # Keep docs/set_modes.json current
+    try:
+        rebuild_set_modes_map()
+    except Exception as e:
+        print("⚠️ Failed to rebuild set_modes.json after delete:", e)
 
     return jsonify({"message": f"Set '{safe_name}' deleted"}), 200

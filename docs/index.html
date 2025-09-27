@@ -2,76 +2,636 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>LearnPolish – Flashcards</title>
+  <title>Path to POLISH • Home</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background:#f8f9fa; margin:0; padding:0; }
-    header { display:flex; justify-content:space-between; align-items:center; padding:1rem 2rem; background:#fff; box-shadow:0 2px 5px rgba(0,0,0,0.05); }
-    h1 { font-size:1.8em; margin:0; }
-    nav a, nav button { margin-left:15px; font-size:1em; color:#007bff; background:none; border:none; cursor:pointer; text-decoration:none; }
-    nav a:hover, nav button:hover { text-decoration:underline; }
-    main { padding:2rem; text-align:center; }
-    .mode-grid { display:flex; flex-wrap:wrap; justify-content:center; gap:1rem; margin-top:2rem; }
-    .mode-link { display:inline-block; padding:1rem 2rem; background-color:#007bff; color:#fff; text-decoration:none; border-radius:10px; font-size:1.1rem; transition:background .3s ease; }
-    .mode-link:hover { background-color:#0056b3; }
-    footer { text-align:center; margin:2rem 0; font-size:.9rem; color:#777; }
+    :root{
+      --brand:#2d6cdf;
+      --bg:#f7f7fb; --card:#ffffff; --text:#0c0f14; --muted:#5a6472; --border:#e6e6ef;
+      --shadow:0 8px 24px rgba(0,0,0,.08);
+      --radius:14px; --pad:16px; --gap:14px; --tap:48px;
+      --focus:0 0 0 3px rgba(45,108,223,.35);
+      --gold:#c99200; --gold-soft:#ffe8a3;
+      --red:#b4232a; --green:#137a3a;
+      --blue:#1b66d6; --blue-soft:#e8f0ff;
+    }
+    @media (prefers-color-scheme: dark){
+      :root{
+        --bg:#0b0c10; --card:#121418; --text:#e7e9ee; --muted:#a7b0bf; --border:#1e2230; --shadow:0 6px 22px rgba(0,0,0,.35);
+        --gold:#ffd35a; --gold-soft:#5a4700; --blue:#6ea8ff; --blue-soft:#10203d;
+      }
+    }
+    *{ box-sizing:border-box }
+    body{ font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Ubuntu,Helvetica,Arial; background:var(--bg); color:var(--text); margin:0; }
+
+    header{ position:sticky; top:0; z-index:10; background:var(--card); border-bottom:1px solid var(--border); }
+    header .bar{ display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px 16px; }
+    .hello{ font-size:clamp(18px,4.2vw,22px); margin:0 }
+    .head-actions a, .head-actions button{ margin-left:8px; font-size:14px; color:var(--brand); background:none; border:1px solid var(--border); padding:8px 10px; border-radius:10px; text-decoration:none; cursor:pointer; }
+    .head-actions button{ color:var(--text); }
+
+    .hero{ max-width:1100px; margin:22px auto 8px; padding:0 16px; display:grid; grid-template-columns:1fr; gap:16px; }
+    @media (min-width:960px){ .hero{ grid-template-columns:1.2fr .8fr; gap:24px } }
+
+    .title{ font-size:clamp(22px,4.8vw,32px); margin:0 0 6px }
+    .subtitle{ color:var(--muted); margin:0 0 14px; font-size:clamp(14px,2.4vw,16px) }
+
+    /* chips row */
+    .chips{ display:flex; flex-wrap:wrap; gap:8px; margin:10px 0 16px }
+    .pill{ display:inline-flex; align-items:center; gap:10px; padding:6px 10px; border-radius:999px; border:1px solid var(--border); font-size:13px; color:var(--muted); background:var(--card) }
+    .mini{ display:inline-flex; align-items:center; gap:10px }
+    .miniBar{ display:inline-block; width:160px; height:8px; border-radius:999px; background:#e9ecf6; border:1px solid var(--border); overflow:hidden }
+    .miniBar > i{ display:block; height:100%; width:0%; background:var(--brand); }
+
+    .coinstack{ width:24px; height:20px; display:inline-block; vertical-align:middle }
+    .coinstack svg{ width:100%; height:100% }
+    .chest{ width:22px; height:18px; display:inline-block; vertical-align:middle; opacity:.45; }
+    .chest.achieved{ opacity:1 }
+    .chest svg{ width:100%; height:100% }
+
+    .grid{ max-width:1100px; margin:16px auto 90px; padding:0 16px; display:grid; grid-template-columns:1fr; gap:var(--gap) }
+    @media (min-width:760px){ .grid{ grid-template-columns:repeat(2,1fr) } }
+    @media (min-width:1200px){ .grid{ grid-template-columns:repeat(3,1fr) } }
+    .span-2{ grid-column:1/-1 }
+
+    .card{ background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:var(--pad); box-shadow:var(--shadow) }
+    .card h3{ margin:0 0 8px; font-size:clamp(16px,2.6vw,18px) }
+    .muted{ color:var(--muted) }
+    .small{ font-size:13px; color:var(--muted) }
+
+    .table-wrap{ overflow:auto }
+    table{ width:100%; border-collapse:collapse; display:none }
+    @media (min-width:780px){ table{ display:table } }
+    th, td{ text-align:left; padding:10px 8px; border-bottom:1px solid var(--border); font-size:14px }
+    th .head{ display:inline-flex; align-items:center; gap:8px }
+
+    /* notification bar */
+    .notice{ display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:12px; border:1px solid var(--border); background:var(--card); box-shadow:var(--shadow) }
+    .notice b{ color:var(--text) }
+    .notice .close{ margin-left:auto; background:none; border:none; cursor:pointer; color:var(--muted); }
+
+    /* bottom nav with icons */
+    nav.bottom{ position:fixed; left:0; right:0; bottom:0; background:var(--card); border-top:1px solid var(--border); display:flex; justify-content:space-around; padding:6px 8px; gap:8px; }
+    nav.bottom a{ flex:1; text-align:center; padding:8px; text-decoration:none; color:var(--text); border-radius:10px; display:flex; flex-direction:column; align-items:center; gap:4px; font-size:12px }
+    nav.bottom a svg{ width:20px; height:20px }
+    nav.bottom a.active{ background:rgba(45,108,223,.12); color:var(--brand) }
+    @supports(padding: max(0px)){ nav.bottom{ padding-bottom: max(6px, env(safe-area-inset-bottom)) } }
+
+    /* snapshot badges */
+    .badge{ padding:4px 8px; border-radius:999px; border:1px solid var(--border); font-size:12px; font-weight:600; display:inline-block }
+    .badge.green{ background:#e8f7ee; color:var(--green); border-color:#c9e8d4 }
+    .badge.red{ background:#fdecee; color:var(--red); border-color:#f5c2c7 }
+    .badge.gold{ background:#fff5d6; color:#8a5a00; border-color:#ffe08a }
+    .badge.blue{ background:var(--blue-soft); color:var(--blue); border-color:rgba(27,102,214,.25) }
+    .nowrap{ white-space:nowrap }
+    .tiny{ font-size:12px; color:var(--muted) }
+
+    .info-btn{ width:20px; height:20px; border-radius:50%; border:1px solid var(--border); background:var(--card); color:var(--muted); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; font-size:12px; }
+    .info-btn:focus{ outline:none; box-shadow:var(--focus); }
   </style>
 </head>
 <body>
   <header>
-    <h1>📚 LearnPolish</h1>
-    <nav>
-      <!-- Use plain links so GH Pages works (index is at /LearnPolish/) -->
-      <a href="login.html" id="loginLink">🔑 Sign In</a>
-      <a href="register.html" id="registerLink">📝 Register</a>
-      <button id="logoutBtn" style="display:none;">🚪 Logout</button>
-    </nav>
+    <div class="bar">
+      <h1 class="hello" id="hello">Cześć!</h1>
+      <div class="head-actions">
+        <a href="./profile.html" id="profileBtn">Profile</a>
+        <!-- Groups removed per request -->
+        <a href="./login.html" id="loginLink">Sign In</a>
+        <a href="./register.html" id="registerLink">Register</a>
+        <button id="logoutBtn" style="display:none;">Logout</button>
+      </div>
+    </div>
   </header>
 
-  <main>
-    <h2>Welcome to Polish Learning</h2>
-    <p>Select a learning mode to get started:</p>
-    <div class="mode-grid">
-      <a href="flashcards/" class="mode-link">📚 Flashcards</a>
-      <a href="practice/" class="mode-link">🎤 Pronunciation</a>
-      <a href="reading/" class="mode-link">📖 Reading</a>
-      <a href="listening/" class="mode-link">🎧 Listening</a>
-      <a href="test/" class="mode-link">🎓 Test Yourself</a>
-      <a href="manage_sets/" class="mode-link">⚙️ Manage Sets</a>
+  <section class="hero">
+    <div>
+      <h2 class="title" id="appName">Path to POLISH</h2>
+      <p class="subtitle">Learn, Speak, Read, and Listen — bite-sized collections you can create and learn from.</p>
+
+      <!-- Streak + weekly gold -->
+      <div class="chips">
+        <div id="streakPill" class="pill" style="display:none;">🔥 <span id="streakText">Streak: 0 days</span></div>
+
+        <div id="progressPill" class="pill mini" style="display:none;">
+          <span class="coinstack" aria-hidden="true">
+            <!-- 3 gold coins -->
+            <svg viewBox="0 0 64 48">
+              <ellipse cx="18" cy="18" rx="14" ry="8" fill="var(--gold-soft)" stroke="var(--gold)" stroke-width="2"/>
+              <ellipse cx="34" cy="24" rx="14" ry="8" fill="var(--gold-soft)" stroke="var(--gold)" stroke-width="2"/>
+              <ellipse cx="46" cy="16" rx="14" ry="8" fill="var(--gold-soft)" stroke="var(--gold)" stroke-width="2"/>
+            </svg>
+          </span>
+          <span id="weeklyText">0 / 500 gold this week</span>
+          <span class="miniBar"><i id="weeklyMini"></i></span>
+          <span id="chestWrap" class="chest" title="Weekly bonus">
+            <!-- Filled treasure chest -->
+            <svg viewBox="0 0 64 48" aria-hidden="true">
+              <path d="M6 16h52V9a7 7 0 0 0-7-7H13A7 7 0 0 0 6 9v7z" fill="currentColor" opacity=".12" stroke="currentColor" stroke-width="2"/>
+              <rect x="6" y="16" width="52" height="26" rx="4" ry="4" fill="currentColor" opacity=".06" stroke="currentColor" stroke-width="2"/>
+              <g>
+                <circle cx="18" cy="30" r="3" fill="var(--gold)"/>
+                <circle cx="25" cy="31" r="3" fill="var(--gold)"/>
+                <circle cx="22" cy="26" r="3" fill="var(--gold)"/>
+              </g>
+              <rect x="30" y="26" width="4" height="10" fill="currentColor"/>
+            </svg>
+          </span>
+        </div>
+      </div>
     </div>
-  </main>
 
-  <footer>
-    Built with ❤️ for Polish learners
-  </footer>
+    <!-- Learning stat snapshot -->
+    <div class="card">
+      <h3>Learning stat snapshot</h3>
 
+      <div id="statsEmpty" class="muted">No activity yet. Try an activity and come back!</div>
+
+      <div class="table-wrap">
+        <table id="statsTable">
+          <thead>
+            <tr>
+              <th>Rating</th>
+              <th>Collection</th>
+              <th>Activity</th>
+              <th>Top score</th>
+              <th>Trials</th>
+              <th>
+                <span class="head">
+                  <span>Status</span><button id="srInfoBtn" class="info-btn" title="About the repetition schedule">i</button>
+                </span>
+              </th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="small" style="margin-top:10px">
+        <a href="./dashboard.html">Go to Dashboard for full learning stats</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="grid">
+    <!-- Group learning snapshot -->
+    <div class="card span-2" id="groupCard">
+      <h3 id="groupTitle">Group learning snapshot</h3>
+      <div id="groupEmpty" class="muted">Not in any groups yet.</div>
+      <div class="table-wrap">
+        <table id="groupTable">
+          <thead>
+            <tr>
+              <th>Person</th>
+              <th>Collection</th>
+              <th>Activity</th>
+              <th>Score</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="small" style="margin-top:10px">
+        <a href="./dashboard.html">Open Groups</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Notification bar moved to bottom -->
+  <section style="max-width:1100px;margin:0 auto 74px;padding:0 16px;">
+    <div id="noticeWrap" class="notice" style="display:none;">
+      <span id="noticeText"></span>
+      <a id="noticeAction" href="./manage_sets/" class="btn">See what's new</a>
+      <button id="noticeClose" class="close" aria-label="Dismiss">✕</button>
+    </div>
+  </section>
+
+  <!-- Bottom nav -->
+  <nav class="bottom">
+    <a href="./index.html" class="active" aria-current="page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1v-10.5Z" stroke-width="1.5"/></svg>
+      <span>Home</span>
+    </a>
+    <a href="./learn.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 12h16M4 18h9" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <span>Learn</span>
+    </a>
+    <a href="./manage_sets/">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="16" rx="2" ry="2" stroke-width="1.5"/><path d="M7 8h10M7 12h10M7 16h7" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <span>Library</span>
+    </a>
+    <a href="./dashboard.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 14h6V4H4v10Zm10 6h6V4h-6v16Z" stroke-width="1.5"/></svg>
+      <span>Dashboard</span>
+    </a>
+    <a href="./groups.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <circle cx="8" cy="8" r="3" stroke-width="1.5"/>
+        <path d="M2 20v-1c0-3 3-5 6-5" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="16" cy="10" r="3" stroke-width="1.5"/>
+        <path d="M11 20v-1c0-2.5 2.5-4.5 5-5" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <span>Groups</span>
+    </a>
+  </nav>
+
+  <!-- Modal for SR info -->
+  <div id="srModal" role="dialog" aria-modal="true" aria-labelledby="srModalTitle"
+       style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); align-items:center; justify-content:center; padding:20px; z-index:50">
+    <div class="box" style="background:var(--card); color:var(--text); border:1px solid var(--border); border-radius:14px; max-width:520px; width:100%; padding:16px; box-shadow:var(--shadow)">
+      <h4 id="srModalTitle" style="margin:0 0 8px">Why repetition works</h4>
+      <p style="margin:8px 0; font-size:14px; color:var(--muted)">We use a spaced repetition pattern of <b>1–2–3–7–30 days</b>. After you learn a collection, you’ll review it when memory is most likely to fade. Pass the 30-day check to mark it <b>Mastered</b>.</p>
+      <p style="margin:8px 0; font-size:14px; color:var(--muted)"><b>Green = Complete</b> (on track). <b>Red = Repetition due</b> (time to reinforce). Final red is <b>Test your knowledge retention</b> at day 30.</p>
+      <div class="actions" style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px">
+        <button id="srClose" style="border:1px solid var(--border); background:var(--card); padding:8px 10px; border-radius:10px; cursor:pointer">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="./static/js/api.js"></script>
   <script>
-    // --- Auth handling ---
-    const token = localStorage.getItem("lp_token");
-    const loginLink = document.getElementById("loginLink");
-    const registerLink = document.getElementById("registerLink");
-    const logoutBtn = document.getElementById("logoutBtn");
+    // --- helpers ---
+    function modeLabel(mode){
+      const m = String(mode||'').toLowerCase();
+      if (m === 'flashcards' || m === 'vocab' || m === 'learn') return 'Learn';
+      if (m === 'practice' || m === 'speak') return 'Speak';
+      if (m === 'reading'  || m === 'read')  return 'Read';
+      if (m === 'listening'|| m === 'listen')return 'Listen';
+      return m ? m[0].toUpperCase()+m.slice(1) : '-';
+    }
+    function pathFor(mode, setName){
+      const enc = encodeURIComponent(setName || '');
+      if (!enc) return './learn.html';
+      if (mode === 'reading' || mode === 'read')     return './reading/'   + enc + '/';
+      if (mode === 'listening' || mode === 'listen') return './listening/' + enc + '/';
+      if (mode === 'practice'  || mode === 'speak')  return './practice/'  + enc + '/';
+      return './flashcards/' + enc + '/';
+    }
 
-    function updateAuthUI() {
-      if (token) {
-        if (loginLink) loginLink.style.display = "none";
-        if (registerLink) registerLink.style.display = "none";
-        if (logoutBtn) logoutBtn.style.display = "inline-block";
-      } else {
-        if (loginLink) loginLink.style.display = "inline-block";
-        if (registerLink) registerLink.style.display = "inline-block";
-        if (logoutBtn) logoutBtn.style.display = "none";
+    // Ratings cache (personal + global)
+    function loadLocalRatings(){ try{ return JSON.parse(localStorage.getItem('lp.setRatings') || '{}'); }catch(_){ return {}; } }
+    function saveLocalRatings(map){ try{ localStorage.setItem('lp.setRatings', JSON.stringify(map)); }catch(_){} }
+    const myRatings = loadLocalRatings(); // { [set_name]: {stars, comment, ts} }
+
+    function stars(n){
+      if (typeof n !== 'number' || isNaN(n)) return '☆☆☆☆☆';
+      const full = Math.max(0, Math.min(5, Math.round(n)));
+      return '★'.repeat(full) + '☆'.repeat(5-full);
+    }
+    function goRate(setName){
+      try{ localStorage.setItem('lp.manage.q', setName || ''); }catch(_){}
+      location.href = './manage_sets/';
+    }
+
+    // Spaced repetition constants
+    const PASS_SCORE = 100;
+    const SR_STEPS   = [1,2,3,7,30];
+    const SR_KEY     = 'lp_sr_map';
+
+    function loadSR(){ try{ return JSON.parse(localStorage.getItem(SR_KEY) || '{}'); }catch(_){ return {}; } }
+    function saveSR(map){ try{ localStorage.setItem(SR_KEY, JSON.stringify(map)); }catch(_){} }
+    function nextDueDate(lastPass, stage){
+      if (stage >= SR_STEPS.length) return null;
+      const d = new Date(lastPass);
+      d.setDate(d.getDate() + SR_STEPS[stage]);
+      return d;
+    }
+    function computeSRFromScores(events, prev){
+      let stage = Math.max(0, Math.min((prev?.stage ?? 0), SR_STEPS.length));
+      let lastPass = prev?.last_pass_ts ? new Date(prev.last_pass_ts) : null;
+      const byTime = [...events].sort((a,b)=> new Date(a.timestamp) - new Date(b.timestamp));
+      for (const e of byTime){
+        const ts = new Date(e.timestamp);
+        if (Number(e.score) >= PASS_SCORE){
+          if (!lastPass){ lastPass = ts; }
+          else{
+            const due = nextDueDate(lastPass, stage);
+            if (due && ts >= due){ stage = Math.min(stage + 1, SR_STEPS.length); }
+            lastPass = ts;
+          }
+        }
       }
+      return { stage, last_pass_ts: lastPass ? lastPass.toISOString() : null };
+    }
+    function keyFor(setName, mode){ return `${setName}│${(mode||'').toLowerCase()}`; }
+
+    // Status rules:
+    // - If row matches resumeKey => "▶ Resume" (blue, link ?resume=1)
+    // - Else if no attempts => "New" (blue)
+    // - Else if top < 100 => show score badge
+    // - Else use SR (Complete/ Repetition due/ Test/ Mastered)
+    function makeSRStatus(stage, lastPass, href){
+      if (stage >= SR_STEPS.length) return '<span class="badge gold">🏅 Mastered</span>';
+      if (!lastPass) return `<a class="badge red" href="${href}">🔴 Repetition due</a>`;
+      const due = nextDueDate(lastPass, stage);
+      const now = new Date();
+      if (now < due){ return '<span class="badge green">🟢 Complete</span>'; }
+      if (stage === SR_STEPS.length - 1){
+        return '<span class="badge red">🧪 Test your knowledge retention</span>';
+      }
+      return `<a class="badge red" href="${href}">🔴 Repetition due</a>`;
     }
 
-    updateAuthUI();
-
-    if (logoutBtn) {
-      logoutBtn.addEventListener("click", () => {
-        localStorage.removeItem("lp_token");
-        location.reload();
+    async function initHome(){
+      // Who am I?
+      let me=null;
+      try{ const r=await api.fetch('/api/me'); if(r.ok) me=await r.json(); }catch(_){}
+      const hello = document.getElementById('hello');
+      const loginLink   = document.getElementById('loginLink');
+      const registerLink= document.getElementById('registerLink');
+      const logoutBtn   = document.getElementById('logoutBtn');
+      if(me){
+        hello.textContent = 'Cześć' + (me.name ? ', ' + me.name : '') + '!';
+        loginLink.style.display = 'none'; registerLink.style.display = 'none'; logoutBtn.style.display = 'inline-block';
+      }else{
+        hello.textContent = 'Cześć!';
+        loginLink.style.display = 'inline-block'; registerLink.style.display = 'inline-block'; logoutBtn.style.display = 'none';
+      }
+      logoutBtn?.addEventListener('click', async () => {
+        try{ await api.fetch('/api/logout', {method:'POST'});}catch(_){}
+        localStorage.removeItem('lp_token'); location.href = './login.html';
       });
+
+      // Streak + weekly gold
+      try{
+        const r = await api.fetch('/api/my/stats');
+        if(r.ok){
+          const s = await r.json();
+          const streak = Number(s.streak_days || 0);
+          if(streak >= 0){
+            document.getElementById('streakText').textContent = 'Streak: ' + streak + ' ' + (streak === 1 ? 'day' : 'days');
+            document.getElementById('streakPill').style.display = 'inline-flex';
+          }
+          const weekly = Number(s.weekly_points || s.weekly_gold || 0);
+          const goal = Number(s.goal_points || s.goal_gold || 500) || 500;
+          const pct = Math.max(0, Math.min(100, Math.round((weekly/goal)*100)));
+          document.getElementById('weeklyText').textContent = `${weekly} / ${goal} gold this week`;
+          document.getElementById('weeklyMini').style.width = pct + '%';
+          document.getElementById('progressPill').style.display = 'inline-flex';
+          const chest = document.getElementById('chestWrap');
+          if (weekly >= goal) chest.classList.add('achieved'); else chest.classList.remove('achieved');
+        }
+      }catch(_){}
+
+      // --- Ratings sync (personal + global) ---
+      // Personal
+      try {
+        const rrMine = await api.fetch('/api/my/ratings'); // [{set_name, stars, comment}]
+        if (rrMine.ok) {
+          const mine = await rrMine.json();
+          (mine||[]).forEach(r => { myRatings[r.set_name] = { stars: r.stars, comment: r.comment || '', ts: Date.now() }; });
+          saveLocalRatings(myRatings);
+        }
+      } catch (_){}
+      // Global averages
+      const globalRatings = {}; // { set_name: avg }
+      try {
+        let rr = await api.fetch('/api/sets/ratings/averages');
+        if (!rr.ok) rr = await api.fetch('/api/sets/ratings');
+        if (rr.ok) {
+          const arr = await rr.json();
+          (arr || []).forEach(x=>{
+            const avg = typeof x.avg === 'number' ? x.avg
+                     : typeof x.rating === 'number' ? x.rating
+                     : (typeof x.average === 'number' ? x.average : null);
+            if (avg != null) globalRatings[x.set_name] = avg;
+          });
+        }
+      } catch (_){}
+
+      // --- Resume target (no separate button; merged into Status) ---
+      let resume = null; // { set_name, mode, href }
+      try {
+        const r = await api.fetch('/api/my/continue');
+        if (r.ok){
+          const j = await r.json();
+          if (j && j.found){
+            resume = { set_name:j.set_name, mode:String(j.mode||'').toLowerCase(), href:(j.href || pathFor(j.mode, j.set_name)) + '?resume=1' };
+          }
+        }
+      }catch(_){}
+      if (!resume){
+        try{
+          const r = await api.fetch('/api/session_state/my');
+          if (r.ok){
+            const arr = await r.json();
+            if (Array.isArray(arr) && arr.length){
+              const s = arr[0];
+              resume = { set_name:s.set_name, mode:String(s.mode||'').toLowerCase(), href:(s.href || pathFor(s.mode, s.set_name)) + '?resume=1' };
+            }
+          }
+        }catch(_){}
+      }
+      if (!resume){
+        try{
+          const local = JSON.parse(localStorage.getItem('lp_last')||'null');
+          if (local && local.set_name && local.mode){
+            resume = { set_name:local.set_name, mode:String(local.mode||'').toLowerCase(), href:pathFor(local.mode, local.set_name) + '?resume=1' };
+          }
+        }catch(_){}
+      }
+
+      // --- Learning stat snapshot (max 5 rows) ---
+      try{
+        const sr = await api.fetch('/api/my/scores?limit=200');
+        const raw = sr.ok ? await sr.json() : [];
+
+        // Group by (set, mode)
+        const groups = new Map();
+        for (const r of raw){
+          if (!r.set_name) continue;
+          const mode = (r.mode || 'flashcards').toLowerCase();
+          const key  = `${r.set_name}│${mode}`;
+          if (!groups.has(key)) groups.set(key, []);
+          groups.get(key).push(r);
+        }
+
+        // Build row objects with status logic
+        const srMap = loadSR();
+        const rows = [];
+        const seenKey = new Set();
+
+        for (const [key, evts] of groups){
+          const setName = evts[0].set_name;
+          const mode    = (evts[0].mode || 'flashcards').toLowerCase();
+          seenKey.add(key);
+
+          const trials  = evts.length;
+          const top     = evts.reduce((m,e)=> Math.max(m, Number(e.score||0)), 0);
+          const href    = pathFor(mode, setName);
+
+          // SR state (only used if top >= PASS_SCORE)
+          const prev = srMap[key] || null;
+          const srState = computeSRFromScores(evts, prev);
+          srMap[key] = srState;
+          const lastPass = srState.last_pass_ts ? new Date(srState.last_pass_ts) : null;
+
+          // Status selection
+          let statusHtml = '';
+          const isResume = resume && resume.set_name === setName && resume.mode === mode;
+          if (isResume) {
+            statusHtml = `<a class="badge blue" href="${resume.href}">▶ Resume</a>`;
+          } else if (trials === 0) {
+            statusHtml = `<span class="badge blue">New</span>`;
+          } else if (top < PASS_SCORE) {
+            statusHtml = `<span class="badge">Score ${top}</span>`;
+          } else {
+            statusHtml = makeSRStatus(srState.stage, lastPass, href);
+          }
+
+          // Rating cell: global avg stars (or 5 empty). If user hasn't rated, show "add your rating".
+          const gAvg = globalRatings[setName];
+          const mine = myRatings[setName];
+          let ratingCell = `<div class="nowrap" title="${gAvg!=null ? 'Global rating' : 'Unrated'}">${stars(gAvg)}</div>`;
+          if (!mine){
+            ratingCell += `<div class="tiny"><a href="javascript:void(0)" onclick="goRate(${JSON.stringify(setName)})">add your rating</a></div>`;
+          }
+
+          rows.push({
+            setName, mode, trials, top, href, statusHtml, ratingCell,
+            latest: Math.max(...evts.map(e=> +new Date(e.timestamp||0)))
+          });
+        }
+
+        // If we have a resume target that has no scores yet, inject a synthetic row
+        if (resume){
+          const k = `${resume.set_name}│${resume.mode}`;
+          if (!seenKey.has(k)){
+            const setName = resume.set_name, mode = resume.mode, href = pathFor(mode, setName);
+            let ratingCell = `<div class="nowrap" title="Unrated">${stars(null)}</div>`;
+            if (!myRatings[setName]){
+              ratingCell += `<div class="tiny"><a href="javascript:void(0)" onclick="goRate(${JSON.stringify(setName)})">add your rating</a></div>`;
+            }
+            rows.unshift({
+              setName, mode, trials:0, top:0, href,
+              statusHtml:`<a class="badge blue" href="${resume.href}">▶ Resume</a>`,
+              ratingCell, latest: Date.now()
+            });
+          }
+        }
+
+        saveSR(srMap);
+
+        // Sort: urgency (red/test first), then recency
+        const urgencyRank = (html)=>{
+          if (html.includes('Repetition due') || html.includes('🧪')) return 0; // highest urgency
+          if (html.includes('▶ Resume')) return 1;
+          if (html.includes('New')) return 2;
+          if (html.includes('Score')) return 3;
+          if (html.includes('🟢 Complete')) return 4;
+          if (html.includes('🏅 Mastered')) return 5;
+          return 6;
+        };
+        rows.sort((a,b)=>{
+          const ua = urgencyRank(a.statusHtml), ub = urgencyRank(b.statusHtml);
+          if (ua !== ub) return ua - ub;
+          return b.latest - a.latest;
+        });
+
+        const display = rows.slice(0,5);
+
+        // Render table
+        const t  = document.getElementById('statsTable');
+        const e  = document.getElementById('statsEmpty');
+        const tb = t.querySelector('tbody');
+
+        if (display.length){
+          e.style.display='none';
+          t.style.display='table';
+          tb.innerHTML = display.map(r => (
+            `<tr>
+              <td>${r.ratingCell}</td>
+              <td><a href="${r.href}">${r.setName}</a></td>
+              <td>${modeLabel(r.mode)}</td>
+              <td>${r.top}</td>
+              <td>${r.trials}</td>
+              <td>${r.statusHtml}</td>
+            </tr>`
+          )).join('');
+        }else{
+          t.style.display='none';
+        }
+      }catch(_){}
+
+      // Group learning snapshot
+      try{
+        const gr = await api.fetch('/api/my/groups');
+        const groups = gr.ok ? await gr.json() : [];
+        const titleEl = document.getElementById('groupTitle');
+        const emptyEl = document.getElementById('groupEmpty');
+        const table   = document.getElementById('groupTable');
+        const tbody   = table.querySelector('tbody');
+
+        if (!groups.length){
+          emptyEl.style.display = 'block';
+          table.style.display = 'none';
+        }else{
+          const g0 = groups[0];
+          titleEl.textContent = g0.group_name ? g0.group_name : 'Group learning snapshot';
+
+          let acts = [];
+          try{
+            let r = await api.fetch(`/api/groups/${g0.group_id}/recent_activity?limit=5`);
+            if (!r.ok) r = await api.fetch('/api/my/groups/recent?limit=5');
+            if (r.ok) acts = await r.json();
+          }catch(_){}
+
+          if (Array.isArray(acts) && acts.length){
+            emptyEl.style.display = 'none';
+            table.style.display = 'table';
+            tbody.innerHTML = acts.slice(0,5).map(a => (
+              `<tr>
+                 <td>${a.user_name || a.user || '—'}</td>
+                 <td>${a.set_name || '—'}</td>
+                 <td>${modeLabel(a.mode || a.activity || '')}</td>
+                 <td>${(a.score ?? '—')}</td>
+               </tr>`
+            )).join('');
+          }else{
+            emptyEl.textContent = 'No recent group activity.';
+            emptyEl.style.display = 'block';
+            table.style.display = 'none';
+          }
+        }
+      }catch(_){}
+
+      // Notification: new collections (moved to bottom; no reference to old exploreBtn)
+      try{
+        let global = [];
+        let r = await api.fetch('/api/global_sets');
+        if (r.ok) global = await r.json();
+        if (!Array.isArray(global) || !global.length){
+          r = await api.fetch('/api/sets/available');
+          if (r.ok){ const arr = await r.json(); global = Array.isArray(arr) ? arr.map(x=>({name:x.name})) : []; }
+        }
+        const count = (global || []).length;
+        const key = 'lp_seen_global_count';
+        let seen = 0; try{ seen = Number(localStorage.getItem(key) || 0); }catch(_){}
+        if (count > seen){
+          const diff = count - seen;
+          const wrap = document.getElementById('noticeWrap');
+          const text = document.getElementById('noticeText');
+          const close= document.getElementById('noticeClose');
+          text.innerHTML = '📣 <b>' + diff + '</b> new ' + (diff===1?'collection has':'collections have') + ' been added to the global library.';
+          wrap.style.display = 'flex';
+          function markSeen(){ try{ localStorage.setItem(key, String(count)); }catch(_){ } wrap.style.display='none'; }
+          close.addEventListener('click', markSeen);
+          document.getElementById('noticeAction').addEventListener('click', markSeen);
+        }
+        if (seen === 0){ try{ localStorage.setItem(key, String(count)); }catch(_){} }
+      }catch(_){}
+
+      // SR info modal wiring
+      const srBtn = document.getElementById('srInfoBtn');
+      const srModal = document.getElementById('srModal');
+      const srClose = document.getElementById('srClose');
+      srBtn?.addEventListener('click', ()=>{ srModal.style.display='flex'; });
+      srClose?.addEventListener('click', ()=>{ srModal.style.display='none'; });
+      srModal?.addEventListener('click', (e)=>{ if (e.target === srModal) srModal.style.display='none'; });
     }
+
+    initHome();
   </script>
 </body>
 </html>
+

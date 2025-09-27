@@ -4,6 +4,18 @@ import unicodedata
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 
+# Rebuild docs/set_modes.json on changes
+try:
+    # from the drop-in generator you created earlier
+    from .create_set_modes import main as rebuild_set_modes_map
+except Exception:
+    # fallback: write empty map (non-breaking for UI)
+    def rebuild_set_modes_map():
+        try:
+            Path("docs/set_modes.json").write_text("{}", encoding="utf-8")
+        except Exception as e:
+            print(f"⚠️ Failed to (re)write docs/set_modes.json: {e}")
+
 # --- Constants ---
 SETS_DIR = Path("docs/sets")
 STATIC_DIR = Path("docs/static")
@@ -254,6 +266,11 @@ def create_set(set_type: str, set_name: str, data: List[Dict[str, Any]]) -> Dict
     # Generate assets + pages
     regenerate_set_pages(safe_name)
     
+    # Keep set_modes.json up to date (so UI knows which modes are available)
+    try:
+        rebuild_set_modes_map()
+    except Exception as e:
+        print(f"⚠️ Failed to rebuild set_modes.json after create: {e}")
 
     # Metadata (created_by is set by sets_api when returning to the client)
     meta = get_set_metadata(safe_name)
@@ -299,8 +316,16 @@ def delete_set_file(set_name: str) -> bool:
             pass
 
     # Remove generated pages for all known modes
+    try:
+        # import here to avoid top-level circular imports
+        from .modes import MODE_GENERATORS as _MODE_GENERATORS
+        known_modes = list(_MODE_GENERATORS.keys())
+    except Exception:
+        # fail-safe: common mode folders
+        known_modes = ["flashcards", "practice", "reading", "listening"]
+
     docs_root = Path("docs")
-    for mode in MODE_GENERATORS.keys():
+    for mode in known_modes:
         target = docs_root / mode / safe_name
         if target.exists():
             for child in target.rglob("*"):
@@ -319,4 +344,11 @@ def delete_set_file(set_name: str) -> bool:
             except OSError:
                 pass
 
+    # Keep set_modes.json up to date (even if the file didn't exist—cheap and safe)
+    try:
+        rebuild_set_modes_map()
+    except Exception as e:
+        print(f"⚠️ Failed to rebuild set_modes.json after delete: {e}")
+
     return existed
+

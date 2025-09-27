@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>24-3 Practice</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #f9f9f9;
+      margin: 0; padding: 1.25rem;
+      text-align: center;
+    }
+    h1 {
+      font-size: 1.6rem; margin: 0 0 1rem;
+      position: relative;
+    }
+    .home-btn {
+      position: absolute; right: 0; top: 0;
+      font-size: 1.4em; background: none; border: none; cursor: pointer;
+    }
+    .result { font-size: 1.1rem; color: #333; margin-top: 1.25rem; min-height: 2em; }
+    .flash {
+      margin: .25rem; padding: 12px 20px; font-size: 1rem;
+      background-color: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer;
+      display: inline-block;
+    }
+    .flash.secondary { background-color: #6c757d; }
+    .flash:disabled { opacity: .6; cursor: default; }
+    #warmupContainer {
+      display: none; margin: 1rem auto 0; width: 90%; max-width: 420px;
+    }
+    #warmupBarWrapper {
+      background:#ddd; border-radius:8px; overflow:hidden; height:20px;
+    }
+    #warmupBar { background:#28a745; width:0%; height:100%; transition:width .2s; }
+    #warmupText { margin-top:.5rem; font-size:.9rem; color:#555; }
+  </style>
+</head>
+<body>
+  <h1>24-3 practice <button class="home-btn" onclick="goHome()">🏠</button></h1>
+
+  <div>
+    <button id="startBtn" class="flash">▶️ Start Practice</button>
+    <button id="pauseBtn" class="flash secondary" style="display:none;">⏸ Pause</button>
+    <button id="restartBtn" class="flash secondary" style="display:none;">🔁 Restart</button>
+  </div>
+
+  <div id="warmupContainer">
+    <div id="warmupBarWrapper"><div id="warmupBar"></div></div>
+    <p id="warmupText">Preparing microphone…</p>
+  </div>
+
+  <div id="result" class="result">🎙 Get ready...</div>
+
+  <!-- Azure Speech SDK -->
+  <script src="https://aka.ms/csspeech/jsbrowserpackageraw"></script>
+  <script>
+    // ===== State =====
+    let hasStarted = false;
+    let paused = false;
+    let index = 0;
+    let attempts = 0;
+    let isRunning = false;
+    let cachedSpeechConfig = null;
+    let globalRecognizer = null;
+    let isRecognizerActive = false;
+    let preloadedAudio = {};
+
+    const cards = [{"phrase": "Cześć", "pronunciation": "cheshch", "meaning": "Hello", "audio_file": "0_Czesc.mp3"}, {"phrase": "Dziękuję", "pronunciation": "jen-koo-yeh", "meaning": "Thank you", "audio_file": "1_Dziekuje.mp3"}];
+    const setName = "24-3";
+    const PASS_THRESHOLD = 70;
+
+    // Mirror of Python sanitize_filename
+    function sanitizeFilename(text) {
+      return (text || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")  // strip accents
+        .replace(/[^a-zA-Z0-9_-]+/g, "_")   // replace non-alphanumeric (allow - and _)
+        .replace(/^_+|_+$/g, "");           // trim underscores
+    }
+
+    // GitHub Pages vs local dev repo base (for static assets)
+    function repoBase() {
+      if (window.location.hostname === "andrewdionne.github.io") {
+        const parts = window.location.pathname.split("/").filter(Boolean);
+        const repo = parts.length ? parts[0] : "LearnPolish";
+        return "/" + repo;
+      }
+      return "";
+    }
+
+    // Resolve a system audio path (repeat_after_me, good, try_again)
+    function getSystemAudioPath(name) {
+      return (window.location.hostname === "andrewdionne.github.io")
+        ? repoBase() + `/static/system_audio/${name}.mp3`
+        : `/custom_static/system_audio/${name}.mp3`;
+    }
+
+    // Resolve a card audio path
+    function getCardAudioPath(filename) {
+      return (window.location.hostname === "andrewdionne.github.io")
+        ? repoBase() + `/static/${setName}/audio/${filename}`
+        : `/custom_static/${setName}/audio/${filename}`;
+    }
+
+    function playSystemAudio(name, callback) {
+      const audio = new Audio(getSystemAudioPath(name));
+      audio.onended = callback;
+      audio.onerror = () => { console.warn("⚠️ Failed system audio:", name); callback(); };
+      const p = audio.play();
+      if (p) p.catch(err => { console.warn("🔇 Autoplay blocked:", err); callback(); });
+    }
+
+    function preloadAudioFiles() {
+      preloadedAudio = {};
+      for (let i = 0; i < cards.length; i++) {
+        const entry = cards[i] || {};
+        const filename = `${i}_${sanitizeFilename(entry.phrase || "")}.mp3`;
+        const audio = new Audio(getCardAudioPath(filename));
+        preloadedAudio[filename] = audio;
+      }
+    }
+
+    function playAudio(filename, callback) {
+      const audio = preloadedAudio[filename];
+      if (!audio) { console.warn("⚠️ Audio not preloaded:", filename); callback(); return; }
+      audio.currentTime = 0;
+      audio.onended = callback;
+      audio.onerror = () => { console.warn("⚠️ Audio failed:", filename); callback(); };
+      const p = audio.play();
+      if (p) p.catch(err => { console.warn("🔇 Autoplay blocked:", err); callback(); });
+    }
+
+    async function warmupMic() {
+      const container = document.getElementById("warmupContainer");
+      const bar = document.getElementById("warmupBar");
+      const text = document.getElementById("warmupText");
+
+      container.style.display = "block";
+      bar.style.width = "0%";
+      text.textContent = "Preparing microphone…";
+
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += 5; bar.style.width = progress + "%";
+        if (progress >= 100) clearInterval(interval);
+      }, 100);
+
+      try {
+        const speechConfig = await getSpeechConfig();
+        cachedSpeechConfig = speechConfig;
+
+        const audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
+        globalRecognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
+
+        await new Promise(resolve => {
+          globalRecognizer.recognizeOnceAsync(() => {
+            clearInterval(interval);
+            bar.style.width = "100%";
+            text.textContent = "Ready!";
+            setTimeout(() => container.style.display = "none", 500);
+            resolve();
+          });
+        });
+      } catch (err) {
+        console.warn("⚠️ Mic warm-up failed:", err);
+        text.textContent = "⚠️ Mic warm-up failed.";
+      }
+    }
+
+    async function getSpeechConfig() {
+      if (cachedSpeechConfig) return cachedSpeechConfig;
+      const baseUrl = (window.location.hostname === "andrewdionne.github.io") ? "https://flashcards-5c95.onrender.com" : "";
+      const res = await fetch(`${baseUrl}/api/token`);
+      if (!res.ok) throw new Error("Token fetch failed: " + res.status);
+      const data = await res.json();
+      const speechConfig = SpeechSDK.SpeechConfig.fromAuthorizationToken(data.token, data.region);
+      speechConfig.speechRecognitionLanguage = "pl-PL";
+      speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, "2500");
+      speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "1000");
+      cachedSpeechConfig = speechConfig;
+      return speechConfig;
+    }
+
+    async function initRecognizer() {
+      if (globalRecognizer) return globalRecognizer;
+      const speechConfig = await getSpeechConfig();
+      const audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
+      globalRecognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
+      return globalRecognizer;
+    }
+
+    async function assessPronunciation(phrase, isFirst=false) {
+      const resultDiv = document.getElementById("result");
+      resultDiv.innerHTML = "⏳ Preparing microphone…";
+
+      if (!window.SpeechSDK) {
+        resultDiv.textContent = "❌ Azure SDK not loaded.";
+        return 0;
+      }
+
+      try {
+        const recognizer = await initRecognizer();
+
+        const config = new SpeechSDK.PronunciationAssessmentConfig(
+          phrase,
+          SpeechSDK.PronunciationAssessmentGradingSystem.HundredMark,
+          SpeechSDK.PronunciationAssessmentGranularity.Word,
+          true
+        );
+        config.applyTo(recognizer);
+
+        const warmDelay = isFirst ? 1200 : 400;
+        setTimeout(() => {
+          resultDiv.innerHTML = `🎤 Say: <strong>${phrase}</strong>`;
+        }, warmDelay);
+
+        return new Promise(resolve => {
+          let settled = false;
+
+          recognizer.recognized = (s, e) => {
+            if (settled) return;
+            if (!e.result || !e.result.json) return;
+
+            try {
+              const resJson = JSON.parse(e.result.json);
+              const words = resJson?.NBest?.[0]?.Words || [];
+              const avg = words.length
+                ? (words.reduce((a,b) => a + (b.PronunciationAssessment?.AccuracyScore || 0), 0) / words.length).toFixed(1)
+                : "0";
+
+              const wordHtml = words.map(w => {
+                const score = w.PronunciationAssessment?.AccuracyScore || 0;
+                const color = score >= 85 ? "green" : score >= 70 ? "orange" : "red";
+                return `<span style="color:${color}; margin:0 4px;">${w.Word}</span>`;
+              }).join(" ");
+
+              resultDiv.innerHTML = `<div><strong>Overall:</strong> ${avg}%</div><div style="margin-top:5px; font-size:1.1em;">${wordHtml}</div>`;
+
+              const cue = parseFloat(avg) >= PASS_THRESHOLD ? "good" : "try_again";
+              playSystemAudio(cue, () => resolve(parseFloat(avg)));
+            } catch (err) {
+              console.warn("Parse error:", err);
+              resultDiv.textContent = "⚠️ Error parsing result.";
+              resolve(0);
+            }
+            settled = true;
+          };
+
+          // Start continuous recognition only once
+          if (!isRecognizerActive) {
+            recognizer.startContinuousRecognitionAsync();
+            isRecognizerActive = true;
+          }
+
+          // Safety timeout (2s + ~50ms/char)
+          const stopMs = 2000 + (phrase.replace(/\s+/g, "").length * 50);
+          setTimeout(() => {
+            if (!settled) {
+              resultDiv.innerHTML = "⚠️ No speech detected.";
+              resolve(0);
+            }
+          }, stopMs);
+        });
+      } catch (err) {
+        console.error("Azure error:", err);
+        resultDiv.textContent = "❌ Azure config error.";
+        return 0;
+      }
+    }
+
+    async function runPractice() {
+      if (paused || isRunning) return;  // ✅ fixed
+      if (index >= cards.length) {
+        // Stop recognizer when finished
+        if (globalRecognizer) {
+          try {
+            globalRecognizer.stopContinuousRecognitionAsync(() => {
+              globalRecognizer.close();
+            });
+          } catch { /* noop */ }
+          globalRecognizer = null;
+          isRecognizerActive = false;
+        }
+        document.getElementById("result").innerHTML = "✅ Done!";
+        return;
+      }
+
+      isRunning = true;
+
+      const entry = cards[index] || {};
+      const filename = `${index}_${sanitizeFilename(entry.phrase || "")}.mp3`;
+
+      // 1) Play Polish audio
+      await new Promise(resolve => playAudio(filename, resolve));
+      if (paused) { isRunning = false; return; }
+
+      // 2) Assess pronunciation
+      const score = await assessPronunciation(entry.phrase || "", index === 0);
+      if (paused) { isRunning = false; return; }
+
+      // 3) Decide next
+      if (score >= PASS_THRESHOLD || attempts >= 2) {
+        index++; attempts = 0;
+      } else {
+        attempts++;
+        const r = document.getElementById("result");
+        r.innerHTML += "<br>🔁 Try again!";
+      }
+
+      isRunning = false;
+      setTimeout(() => { if (!paused) runPractice(); }, 800);
+    }
+
+    // ===== UI wiring =====
+    document.addEventListener("DOMContentLoaded", async () => {
+      const startBtn = document.getElementById("startBtn");
+      const pauseBtn = document.getElementById("pauseBtn");
+      const restartBtn = document.getElementById("restartBtn");
+
+      preloadAudioFiles();
+      await warmupMic();
+
+      startBtn.addEventListener("click", () => {
+        if (!hasStarted) {
+          hasStarted = true; paused = false;
+          startBtn.style.display = "none";
+          pauseBtn.style.display = "inline-block";
+          restartBtn.style.display = "inline-block";
+          playSystemAudio("repeat_after_me", () => runPractice());
+        }
+      });
+
+      pauseBtn.addEventListener("click", () => {
+        if (!hasStarted) return;
+        paused = !paused;
+        pauseBtn.textContent = paused ? "▶️ Resume" : "⏸ Pause";
+        if (!paused && !isRunning) {
+          playSystemAudio("repeat_after_me", () => runPractice());
+        }
+      });
+
+      restartBtn.addEventListener("click", () => {
+        paused = false;
+        index = 0; attempts = 0; isRunning = false;
+        pauseBtn.textContent = "⏸ Pause";
+        playSystemAudio("repeat_after_me", () => runPractice());
+      });
+    });
+
+    function goHome() {
+      if (window.location.hostname === "andrewdionne.github.io") {
+        window.location.href = repoBase() + "/";
+      } else {
+        window.location.href = "/";
+      }
+    }
+  </script>
+</body>
+</html>

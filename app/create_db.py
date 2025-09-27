@@ -1,6 +1,6 @@
 # app/create_db.py
 from app import create_app, db
-from app.models import User, Score, UserSet, Group, GroupMembership
+from app.models import User, Score, UserSet, Group, GroupMembership, Rating, SessionState
 
 app = create_app()
 

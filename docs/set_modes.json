@@ -1,14 +1,42 @@
 {
-  "14-16": [
+  "24-1": [
     "flashcards",
     "practice"
   ],
-  "24-1": [],
-  "Pleasantries": [
-    "flashcards"
+  "24-1r": [
+    "reading"
   ],
-  "15-1": [
+  "24-2": [
     "flashcards",
     "practice"
+  ],
+  "24-3": [
+    "flashcards",
+    "practice"
+  ],
+  "24-3r": [
+    "reading"
+  ],
+  "25-1": [
+    "flashcards",
+    "practice"
+  ],
+  "25-1R": [
+    "reading"
+  ],
+  "25-2": [
+    "flashcards",
+    "practice"
+  ],
+  "25-3": [
+    "flashcards",
+    "practice"
+  ],
+  "26-1": [
+    "flashcards",
+    "practice"
+  ],
+  "26-1R": [
+    "reading"
   ]
 }
