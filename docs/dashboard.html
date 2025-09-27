@@ -2,159 +2,487 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Dashboard • Learn Polish</title>
+  <title>Path to POLISH • Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:#f7f7fb; margin:0; padding:24px; }
-    .wrap { max-width: 960px; margin: 0 auto; }
-    header { display:flex; align-items:center; justify-content:space-between; margin-bottom: 20px; }
-    h1 { margin:0; font-size: 24px; }
-    .cards { display:grid; grid-template-columns: repeat(auto-fit,minmax(260px,1fr)); gap:16px; }
-    .card { background:#fff; border:1px solid #e6e6ef; border-radius:12px; padding:16px; box-shadow: 0 1px 2px rgba(8,15,52,.04); }
-    .muted { color:#666; font-size: 14px; }
-    table { width:100%; border-collapse: collapse; }
-    th, td { text-align:left; padding:8px; border-bottom: 1px solid #eee; font-size: 14px; }
-    .btn { display:inline-block; padding:8px 12px; border-radius:8px; border:1px solid #ccc; background:#fafafa; text-decoration:none; color:#222; }
-    .btn-primary { background:#2d6cdf; color:#fff; border-color:#2d6cdf; }
-    .row { display:flex; gap:8px; flex-wrap:wrap; }
-    .tag { display:inline-block; padding:2px 8px; border-radius:999px; background:#f0f3ff; color:#2d45b6; font-size:12px; }
-    .danger { color:#b31d1d; }
-    footer { margin-top: 28px; color:#777; font-size: 13px; }
-    .hidden { display:none; }
+    :root{
+      --brand:#2d6cdf;
+      --bg:#f7f7fb; --card:#ffffff; --text:#0c0f14; --muted:#5a6472; --border:#e6e6ef;
+      --shadow:0 8px 24px rgba(0,0,0,.08);
+      --radius:14px; --pad:16px; --gap:14px; --tap:48px;
+      --gold:#c99200; --gold-soft:#ffe8a3;
+      --green:#137a3a; --red:#b4232a;
+      --focus:0 0 0 3px rgba(45,108,223,.35);
+    }
+    @media (prefers-color-scheme: dark){
+      :root{ --bg:#0b0c10; --card:#121418; --text:#e7e9ee; --muted:#a7b0bf; --border:#1e2230; --shadow:0 6px 22px rgba(0,0,0,.35); --gold:#ffd35a; --gold-soft:#5a4700; }
+    }
+    *{ box-sizing:border-box }
+    body{ font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Ubuntu,Helvetica,Arial; background:var(--bg); color:var(--text); margin:0; padding-bottom:92px; }
+
+    /* Top bar (consistent with the rest) */
+    header{ position:sticky; top:0; z-index:10; background:var(--card); border-bottom:1px solid var(--border); }
+    header .bar{ display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px 16px; }
+    .hello{ font-size:clamp(18px,4.2vw,22px); margin:0 }
+    .head-actions a, .head-actions button{ margin-left:8px; font-size:14px; color:var(--brand); background:none; border:1px solid var(--border); padding:8px 10px; border-radius:10px; text-decoration:none; cursor:pointer; }
+    .head-actions button{ color:var(--text); }
+
+    /* iPhone-first layout */
+    .wrap{ width:100%; max-width:1100px; margin:16px auto 90px; padding:0 16px; display:grid; gap:16px; grid-template-columns:1fr; }
+    @media (min-width:1000px){ .wrap{ grid-template-columns: 1.1fr .9fr; } }
+
+    h2{ margin:0 0 6px; font-size:clamp(20px,4.8vw,28px) }
+    .muted{ color:var(--muted) }
+    .card{ background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:var(--pad); box-shadow:var(--shadow) }
+    .row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap }
+
+    /* chips */
+    .pill{ display:inline-flex; align-items:center; gap:10px; padding:6px 10px; border-radius:999px; border:1px solid var(--border); font-size:13px; color:var(--muted); background:var(--card) }
+    .bar{ height:10px; background:#e9ecf6; border-radius:999px; overflow:hidden; border:1px solid var(--border) }
+    .bar > i{ display:block; height:100%; width:0%; background:var(--brand); }
+
+    /* icons */
+    .coinstack{ width:24px; height:20px; display:inline-block; vertical-align:middle }
+    .coinstack svg{ width:100%; height:100% }
+    .chest{ width:22px; height:18px; display:inline-block; vertical-align:middle; opacity:.45; }
+    .chest.achieved{ opacity:1 }
+
+    /* challenges */
+    .challenge{ display:flex; align-items:center; gap:10px; justify-content:space-between; border:1px solid var(--border); border-radius:12px; padding:10px; margin-bottom:8px; background:var(--card) }
+    .challenge .meta{ display:flex; flex-direction:column; gap:4px }
+    .challenge .title{ font-weight:600 }
+    .challenge .reward{ font-size:12px; color:var(--muted) }
+    .challenge .act{ display:flex; gap:8px; align-items:center }
+    .btn{ display:inline-flex; align-items:center; justify-content:center; height:36px; padding:0 12px; border-radius:10px; border:1px solid var(--border); background:var(--card); color:var(--text); text-decoration:none; cursor:pointer }
+    .btn-primary{ background:var(--brand); color:#fff; border-color:transparent }
+    .btn:focus{ outline:none; box-shadow:var(--focus) }
+
+    /* tables */
+    .table-wrap{ overflow:auto; border:1px solid var(--border); border-radius:12px }
+    table{ width:100%; border-collapse:collapse }
+    th, td{ text-align:left; padding:10px 8px; border-bottom:1px solid var(--border); font-size:14px }
+    th .right{ float:right; font-weight:500; font-size:12px; color:var(--muted) }
+    .badge{ padding:4px 8px; border-radius:999px; border:1px solid var(--border); font-size:12px; font-weight:600; display:inline-block }
+    .badge.green{ background:#e8f7ee; color:var(--green); border-color:#c9e8d4 }
+    .badge.red{ background:#fdecee; color:var(--red); border-color:#f5c2c7 }
+    .badge.gold{ background:#fff5d6; color:#8a5a00; border-color:#ffe08a }
+    .nowrap{ white-space:nowrap }
+    .tiny{ font-size:12px; color:var(--muted) }
+
+    /* sections */
+    .stack{ display:grid; gap:16px }
+    .progressGrid{ display:grid; gap:16px; grid-template-columns:1fr; }
+    @media (min-width:640px){ .progressGrid{ grid-template-columns:repeat(2,1fr); } }
+
+    /* history */
+    #statsScroller{ max-height:360px; overflow:auto; border:1px solid var(--border); border-radius:12px }
+
+    /* bottom nav */
+    nav.bottom{ position:fixed; left:0; right:0; bottom:0; background:var(--card); border-top:1px solid var(--border); display:flex; justify-content:space-around; padding:6px 8px; gap:8px; }
+    nav.bottom a{ flex:1; text-align:center; padding:8px; text-decoration:none; color:var(--text); border-radius:10px; display:flex; flex-direction:column; align-items:center; gap:4px; font-size:12px }
+    nav.bottom a svg{ width:20px; height:20px }
+    nav.bottom a.active{ background:rgba(45,108,223,.12); color:var(--brand) }
+    @supports(padding: max(0px)){ nav.bottom{ padding-bottom: max(6px, env(safe-area-inset-bottom)) } }
   </style>
 </head>
 <body>
-<div class="wrap">
+  <!-- Top bar -->
   <header>
-    <h1>👋 <span id="greeting">Loading…</span></h1>
-    <div class="row">
-      <a class="btn" href="/index.html">Home</a>
-      <a class="btn" href="/manage_sets/">My Library</a>
-      <button id="logoutBtn" class="btn">Log out</button>
+    <div class="bar">
+      <h1 class="hello">Dashboard</h1>
+      <div class="head-actions">
+        <a href="./profile.html" id="profileBtn">Profile</a>
+        <a href="./login.html" id="loginLink">Sign In</a>
+        <a href="./register.html" id="registerLink">Register</a>
+        <button id="logoutBtn" style="display:none;">Logout</button>
+      </div>
     </div>
   </header>
 
-  <div class="cards">
-    <section class="card">
-      <h3>Profile</h3>
-      <div class="muted" id="profile">—</div>
-      <div id="adminBadge" class="tag hidden">Admin</div>
-    </section>
+  <main class="wrap">
+    <!-- Left: Streaks, Weekly Gold, Challenges -->
+    <section class="stack">
+      <div class="card">
+        <h2>Progress</h2>
+        <div class="row" style="margin-top:8px">
+          <div id="streakPill" class="pill" style="display:none;">🔥 <span id="streakText">Streak: 0 days</span></div>
+          <div id="bestPill" class="pill" style="display:none;">🏆 <span id="bestText">Best: 0 days</span></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <span class="coinstack" aria-hidden="true">
+            <svg viewBox="0 0 64 48">
+              <ellipse cx="18" cy="18" rx="14" ry="8" fill="var(--gold-soft)" stroke="var(--gold)" stroke-width="2"/>
+              <ellipse cx="34" cy="24" rx="14" ry="8" fill="var(--gold-soft)" stroke="var(--gold)" stroke-width="2"/>
+              <ellipse cx="46" cy="16" rx="14" ry="8" fill="var(--gold-soft)" stroke="var(--gold)" stroke-width="2"/>
+            </svg>
+          </span>
+          <b id="weeklyText">0 / 500 gold this week</b>
+          <span style="flex:1; min-width:160px">
+            <div class="bar"><i id="weeklyBar"></i></div>
+          </span>
+          <span id="chest" class="chest" title="Weekly bonus">
+            <svg viewBox="0 0 64 48" aria-hidden="true">
+              <path d="M6 16h52V9a7 7 0 0 0-7-7H13A7 7 0 0 0 6 9v7z" fill="currentColor" opacity=".12" stroke="currentColor" stroke-width="2"/>
+              <rect x="6" y="16" width="52" height="26" rx="4" ry="4" fill="currentColor" opacity=".06" stroke="currentColor" stroke-width="2"/>
+              <g>
+                <circle cx="18" cy="30" r="3" fill="var(--gold)"/>
+                <circle cx="25" cy="31" r="3" fill="var(--gold)"/>
+                <circle cx="22" cy="26" r="3" fill="var(--gold)"/>
+              </g>
+              <rect x="30" y="26" width="4" height="10" fill="currentColor"/>
+            </svg>
+          </span>
+        </div>
+        <div class="tiny" id="goldTotal" style="margin-top:6px">Total gold: —</div>
+      </div>
 
-    <section class="card">
-      <h3>Recent Scores</h3>
-      <div id="scoresEmpty" class="muted">No scores yet. Try a mode and come back!</div>
-      <table id="scoresTable" class="hidden">
-        <thead><tr><th>When</th><th>Set</th><th>Mode</th><th>Score</th></tr></thead>
-        <tbody></tbody>
-      </table>
-      <div class="row" style="margin-top:10px">
-        <a class="btn" href="/flashcards/">Flashcards</a>
-        <a class="btn" href="/practice/">Practice</a>
-        <a class="btn" href="/listening/">Listening</a>
-        <a class="btn" href="/reading/">Reading</a>
+      <!-- Challenges -->
+      <div class="card">
+        <h3 style="margin:0 0 10px">Challenges</h3>
+        <div class="progressGrid">
+          <div>
+            <h4 style="margin:0 0 8px">Daily</h4>
+            <div id="dailyWrap"></div>
+          </div>
+          <div>
+            <h4 style="margin:0 0 8px">Weekly</h4>
+            <div id="weeklyWrap"></div>
+          </div>
+          <div>
+            <h4 style="margin:0 0 8px">Monthly</h4>
+            <div id="monthlyWrap"></div>
+          </div>
+          <div>
+            <h4 style="margin:0 0 8px">Special events</h4>
+            <div id="specialWrap"></div>
+          </div>
+        </div>
       </div>
     </section>
 
-    <section class="card">
-      <h3>My Library</h3>
-      <ul id="libraryList" class="muted" style="padding-left:18px; margin:0;"></ul>
-      <div style="margin-top:10px">
-        <a class="btn" href="/manage_sets/">Manage Library</a>
+    <!-- Right: Avatar / Gamification + Learning Statistics -->
+    <section class="stack">
+      <div class="card">
+        <h3 style="margin-top:0">Your avatar & regions</h3>
+        <div class="row">
+          <div style="width:72px;height:72px;border-radius:16px;border:1px solid var(--border);background:linear-gradient(135deg,#dfe8ff,#fff0d8);display:flex;align-items:center;justify-content:center;font-size:28px">🧭</div>
+          <div>
+            <div><b id="playerName">Traveler</b></div>
+            <div class="tiny">Regions unlocked: <span id="regionsCount">0</span></div>
+            <div class="tiny">Titles: <span id="titlesMini">—</span></div>
+          </div>
+          <div style="margin-left:auto;text-align:right">
+            <div class="tiny">Gold savings</div>
+            <div style="font-weight:700"><span id="goldBank">—</span> gold</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-top:0">Learning statistics <span class="tiny">(scroll for full list)</span></h3>
+        <div id="statsScroller">
+          <table id="statsTable">
+            <thead>
+              <tr>
+                <th>Rating</th>
+                <th>Collection</th>
+                <th>Activity</th>
+                <th>Top score</th>
+                <th>Trials</th>
+                <th>Status</th>
+                <th>Last</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <div id="statsEmpty" class="muted" style="padding:12px">No activity yet.</div>
+        </div>
       </div>
     </section>
+  </main>
 
-    <section class="card">
-      <h3>Groups</h3>
-      <ul id="groupsList" class="muted" style="padding-left:18px; margin:0;"></ul>
-    </section>
-  </div>
+  <!-- Bottom nav -->
+  <nav class="bottom">
+    <a href="./index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a 1 1 0 0 1-1-1v-10.5Z" stroke-width="1.5"/></svg>
+      <span>Home</span>
+    </a>
+    <a href="./learn.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 12h16M4 18h9" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <span>Learn</span>
+    </a>
+    <a href="./manage_sets/">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="16" rx="2" ry="2" stroke-width="1.5"/><path d="M7 8h10M7 12h10M7 16h7" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <span>Library</span>
+    </a>
+    <a href="./dashboard.html" class="active" aria-current="page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 14h6V4H4v10Zm10 6h6V4h-6v16Z" stroke-width="1.5"/></svg>
+      <span>Dashboard</span>
+    </a>
+    <a href="./groups.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <circle cx="8" cy="8" r="3" stroke-width="1.5"/>
+        <path d="M2 20v-1c0-3 3-5 6-5" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="16" cy="10" r="3" stroke-width="1.5"/>
+        <path d="M11 20v-1c0-2.5 2.5-4.5 5-5" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <span>Groups</span>
+    </a>
+  </nav>
 
-  <footer>
-    If you see a login prompt, make sure your backend is reachable. For GitHub Pages set <code>localStorage.API_BASE</code> to your Render URL.
-  </footer>
-</div>
+  <script src="./static/js/api.js"></script>
+  <script>
+    // Top bar auth wiring (match other pages)
+    (async () => {
+      const logoutBtn = document.getElementById('logoutBtn');
+      const loginLink = document.getElementById('loginLink');
+      const registerLink = document.getElementById('registerLink');
+      try {
+        const r = await api.fetch('/api/me');
+        if (r.ok) { loginLink.style.display='none'; registerLink.style.display='none'; logoutBtn.style.display='inline-block'; }
+      } catch(_) {}
+      logoutBtn?.addEventListener('click', async ()=>{ try{ await api.fetch('/api/logout',{method:'POST'});}catch(_){}
+        localStorage.removeItem('lp_token'); location.href='./login.html'; });
+    })();
+  </script>
 
-<!-- load helper -->
-<script src="./static/js/api.js"></script>
-<script>
-async function requireMe() {
-  const r = await api.fetch('/api/me');
-  if (r.status === 401) {
-    location.href = '/login.html';
-    return null;
-  }
-  if (!r.ok) throw new Error('Failed /api/me');
-  return r.json();
-}
-function shortDate(iso) {
-  if (!iso) return '';
-  const d = new Date(iso);
-  return d.toLocaleString();
-}
+  <script>
+    // ===== Helpers =====
+    function modeLabel(m){
+      m = (m||'').toLowerCase();
+      if (m==='practice'||m==='speak') return 'Speak';
+      if (m==='reading'||m==='read') return 'Read';
+      if (m==='listening'||m==='listen') return 'Listen';
+      return 'Learn';
+    }
+    function pathFor(mode, setName){
+      const enc = encodeURIComponent(setName || '');
+      if (!enc) return './learn.html';
+      if (mode === 'reading' || mode === 'read')     return './reading/'   + enc + '/';
+      if (mode === 'listening' || mode === 'listen') return './listening/' + enc + '/';
+      if (mode === 'practice'  || mode === 'speak')  return './practice/'  + enc + '/';
+      return './flashcards/' + enc + '/';
+    }
+    function shortDate(iso){ if(!iso) return ''; const d = new Date(iso); return d.toLocaleString(); }
+    function stars(n){ if (typeof n !== 'number' || isNaN(n)) return null; const full = Math.max(0, Math.min(5, Math.round(n))); return '★'.repeat(full) + '☆'.repeat(5-full); }
 
-async function loadDashboard() {
-  const me = await requireMe(); if (!me) return;
+    // Ratings cache
+    function loadLocalRatings(){ try{ return JSON.parse(localStorage.getItem('lp.setRatings') || '{}'); }catch(_){ return {}; } }
+    const myRatings = loadLocalRatings();
 
-  // Greeting + profile
-  document.getElementById('greeting').textContent = me.name ? `Cześć, ${me.name}!` : `Cześć, ${me.email}!`;
-  document.getElementById('profile').textContent = `${me.email} • Joined ${shortDate(me.created_at)}`;
-  if (me.is_admin) document.getElementById('adminBadge').classList.remove('hidden');
+    // Spaced repetition helpers (1–2–3–7–30)
+    const PASS_SCORE = 100;
+    const SR_STEPS   = [1,2,3,7,30];
+    function nextDueDate(lastPass, stage){ if (stage >= SR_STEPS.length) return null; const d = new Date(lastPass); d.setDate(d.getDate() + SR_STEPS[stage]); return d; }
+    function computeSRFromScores(events, prev){
+      let stage = Math.max(0, Math.min((prev?.stage ?? 0), SR_STEPS.length));
+      let lastPass = prev?.last_pass_ts ? new Date(prev.last_pass_ts) : null;
+      const byTime = [...events].sort((a,b)=> new Date(a.timestamp) - new Date(b.timestamp));
+      for (const e of byTime){
+        const ts = new Date(e.timestamp);
+        if (Number(e.score) >= PASS_SCORE){
+          if (!lastPass){ lastPass = ts; }
+          else{
+            const due = nextDueDate(lastPass, stage);
+            if (due && ts >= due){ stage = Math.min(stage + 1, SR_STEPS.length); }
+            lastPass = ts;
+          }
+        }
+      }
+      return { stage, last_pass_ts: lastPass ? lastPass.toISOString() : null };
+    }
+    function makeStatus(stage, lastPass, href){
+      if (stage >= SR_STEPS.length) return '<span class="badge gold">🏅 Mastered</span>';
+      if (!lastPass) return `<a class="badge red" href="${href}">🔴 Repetition due</a>`;
+      const due = nextDueDate(lastPass, stage);
+      const now = new Date();
+      if (now < due){ return '<span class="badge green">🟢 Complete</span>'; }
+      if (stage === SR_STEPS.length - 1){ return '<span class="badge red">🧪 Test your knowledge retention</span>'; }
+      return `<a class="badge red" href="${href}">🔴 Repetition due</a>`;
+    }
+    function keyFor(setName, mode){ return `${setName}│${(mode||'').toLowerCase()}`; }
 
-  // Scores
-  const sr = await api.fetch('/api/my/scores?limit=10');
-  const scores = sr.ok ? await sr.json() : [];
-  const tbody = document.querySelector('#scoresTable tbody');
-  if (scores.length) {
-    document.getElementById('scoresEmpty').classList.add('hidden');
-    document.getElementById('scoresTable').classList.remove('hidden');
-    tbody.innerHTML = scores.map(s => `
-      <tr>
-        <td>${shortDate(s.timestamp)}</td>
-        <td>${s.set_name || '-'}</td>
-        <td>${s.mode || '-'}</td>
-        <td>${(s.score ?? '').toString()}</td>
-      </tr>
-    `).join('');
-  }
+    // ===== Dashboard init =====
+    (async function init(){
+      // Stats: streaks & weekly gold
+      try{
+        const r = await api.fetch('/api/my/stats');
+        if (r.ok){
+          const s = await r.json();
 
-  // Library
-  const lr = await api.fetch('/api/my/sets');
-  const lib = lr.ok ? await lr.json() : [];
-  const list = document.getElementById('libraryList');
-  if (lib.length) {
-    list.classList.remove('muted');
-    list.innerHTML = lib.map(x => `<li>${x.set_name}${x.is_owner ? ' <span class="tag">owner</span>' : ''}</li>`).join('');
-  } else {
-    list.textContent = 'No sets in your library yet.';
-  }
+          const streak = Number(s.streak_days || 0);
+          const best   = Number(s.longest_streak || s.best_streak || 0);
+          const weekly = Number(s.weekly_points || s.weekly_gold || 0);
+          const goal   = Number(s.goal_points || s.goal_gold || 500) || 500;
+          const pct = Math.max(0, Math.min(100, Math.round((weekly/goal)*100)));
 
-  // Groups
-  const gr = await api.fetch('/api/my/groups');
-  const groups = gr.ok ? await gr.json() : [];
-  const gl = document.getElementById('groupsList');
-  if (groups.length) {
-    gl.classList.remove('muted');
-    gl.innerHTML = groups.map(g => `<li>${g.group_name || 'Group ' + g.group_id} • ${g.role}</li>`).join('');
-  } else {
-    gl.textContent = 'Not in any groups yet.';
-  }
-}
+          if (streak >= 0){
+            document.getElementById('streakText').textContent = 'Streak: ' + streak + ' ' + (streak===1?'day':'days');
+            document.getElementById('streakPill').style.display='inline-flex';
+          }
+          if (best > 0){
+            document.getElementById('bestText').textContent = 'Best: ' + best + ' ' + (best===1?'day':'days');
+            document.getElementById('bestPill').style.display='inline-flex';
+          }
 
-document.getElementById('logoutBtn').addEventListener('click', async () => {
-  const tryPaths = ['/api/logout', '/logout'];
-  for (const p of tryPaths) {
-    try { await api.fetch(p, { method: 'POST' }); } catch (e) {}
-  }
-  localStorage.removeItem('authToken');
-  localStorage.removeItem('lp_token');    // <- add this
-  location.href = '/login.html';
-});
+          document.getElementById('weeklyText').textContent = `${weekly} / ${goal} gold this week`;
+          document.getElementById('weeklyBar').style.width = pct + '%';
+          const chest = document.getElementById('chest'); if (weekly >= goal) chest.classList.add('achieved'); else chest.classList.remove('achieved');
 
-loadDashboard().catch(err => {
-  console.error(err);
-  alert('Failed to load dashboard. Is the backend running?');
-});
-</script>
+          const total = (s.total_gold ?? s.total_points ?? null);
+          document.getElementById('goldTotal').textContent = 'Total gold: ' + (total!=null ? total : '—');
+          document.getElementById('goldBank').textContent = total!=null ? total : '—';
+          document.getElementById('playerName').textContent = s.display_name || s.name || 'Traveler';
+          document.getElementById('regionsCount').textContent = s.regions_unlocked ?? 0;
+          document.getElementById('titlesMini').textContent = (s.titles || []).slice(0,2).join(', ') || '—';
+        }
+      }catch(_){}
+
+      // Challenges
+      async function fetchChallenges(){
+        try{
+          const r = await api.fetch('/api/my/challenges');
+          if (r.ok) return await r.json();
+        }catch(_){}
+        return [
+          {id:'d1',scope:'daily', title:'Complete 1 Learn session', reward:10, progress:0, goal:1, done:false, cta_href:'./learn.html'},
+          {id:'d2',scope:'daily', title:'Score 100 in any activity', reward:15, progress:0, goal:1, done:false, cta_href:'./flashcards/'},
+          {id:'w1',scope:'weekly',title:'Earn 300 gold this week', reward:60, progress:0, goal:300, done:false, cta_href:'./index.html'},
+          {id:'m1',scope:'monthly',title:'Master 3 collections', reward:200, progress:0, goal:3, done:false, cta_href:'./manage_sets/'},
+          {id:'s1',scope:'special',title:'Event: Polish Proverbs Pack', reward:100, progress:0, goal:1, done:false, cta_href:'./manage_sets/'},
+        ];
+      }
+      function renderChallenge(c, wrap){
+        const pct = c.goal>0 ? Math.min(100, Math.round((c.progress||0)/c.goal*100)) : 0;
+        const row = document.createElement('div');
+        row.className = 'challenge';
+        row.innerHTML = `
+          <div class="meta">
+            <div class="title">${c.title}${c.done?' <span class="badge green">done</span>':''}</div>
+            <div class="reward">Reward: <b>${c.reward}</b> gold • ${c.progress||0}/${c.goal}</div>
+            <div class="bar" style="width:220px;max-width:60vw;"><i style="width:${pct}%"></i></div>
+          </div>
+          <div class="act">
+            ${c.cta_href ? `<a class="btn" href="${c.cta_href}">Go</a>` : ''}
+            <button class="btn btn-primary" ${c.done?'disabled':''} data-complete="${c.id}">${c.done?'Claimed':'Claim'}</button>
+          </div>
+        `;
+        wrap.appendChild(row);
+      }
+      const allChal = await fetchChallenges();
+      const zones = {daily:document.getElementById('dailyWrap'), weekly:document.getElementById('weeklyWrap'), monthly:document.getElementById('monthlyWrap'), special:document.getElementById('specialWrap')};
+      ['daily','weekly','monthly','special'].forEach(scope=>{
+        const arr = allChal.filter(x=>x.scope===scope);
+        zones[scope].innerHTML = '';
+        if (!arr.length){ zones[scope].innerHTML = `<div class="muted tiny">No ${scope} challenges right now.</div>`; }
+        arr.forEach(c=> renderChallenge(c, zones[scope]));
+      });
+      document.addEventListener('click', async (e)=>{
+        const btn = e.target.closest('button[data-complete]');
+        if(!btn) return;
+        const id = btn.getAttribute('data-complete');
+        btn.disabled = true;
+        try{
+          await api.fetch('/api/my/challenges/complete', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id})});
+          btn.textContent = 'Claimed';
+        }catch(_){ btn.textContent='Claimed'; }
+      });
+
+      // Learning statistics
+      const globalRatings = {};
+      try{
+        let rr = await api.fetch('/api/sets/ratings/averages');
+        if (!rr.ok) rr = await api.fetch('/api/sets/ratings');
+        if (rr.ok){
+          const arr = await rr.json();
+          (arr||[]).forEach(x=>{
+            const avg = typeof x.avg === 'number' ? x.avg
+                       : typeof x.rating === 'number' ? x.rating
+                       : (typeof x.average === 'number' ? x.average : null);
+            if (avg!=null) globalRatings[x.set_name] = avg;
+          });
+        }
+      }catch(_){}
+
+      try{
+        const sr = await api.fetch('/api/my/scores?limit=2000');
+        const raw = sr.ok ? await sr.json() : [];
+        const groups = new Map();
+        for (const r of raw){
+          if (!r.set_name) continue;
+          const mode = (r.mode || 'flashcards').toLowerCase();
+          const key  = `${r.set_name}│${mode}`;
+          if (!groups.has(key)) groups.set(key, []);
+          groups.get(key).push(r);
+        }
+        const rows = [];
+        for (const [key, evts] of groups){
+          const setName = evts[0].set_name;
+          const mode = (evts[0].mode || 'flashcards').toLowerCase();
+          const trials = evts.length;
+          const top = evts.reduce((m,e)=> Math.max(m, Number(e.score||0)), 0);
+          const last = evts.reduce((m,e)=> Math.max(m, +new Date(e.timestamp||0)), 0);
+
+          const srState = (function computeSRFromScores(events){
+            let stage=0, lastPass=null;
+            const byTime = [...events].sort((a,b)=> new Date(a.timestamp) - new Date(b.timestamp));
+            for(const e of byTime){
+              const ts = new Date(e.timestamp);
+              if (Number(e.score) >= 100){
+                if (!lastPass){ lastPass = ts; }
+                else{
+                  const steps=[1,2,3,7,30];
+                  const due = (d=>{ const x=new Date(lastPass); x.setDate(x.getDate()+steps[stage]); return x; })();
+                  if (due && ts >= due) stage = Math.min(stage+1, 5);
+                  lastPass = ts;
+                }
+              }
+            }
+            return {stage, last_pass_ts: lastPass ? lastPass.toISOString() : null};
+          })(evts);
+          const lastPass = srState.last_pass_ts ? new Date(srState.last_pass_ts) : null;
+          const href = pathFor(mode, setName);
+          const statusHtml = (function makeStatus(stage, lastPass, href){
+            const steps=[1,2,3,7,30];
+            if (stage >= steps.length) return '<span class="badge gold">🏅 Mastered</span>';
+            if (!lastPass) return `<a class="badge red" href="${href}">🔴 Repetition due</a>`;
+            const due = (d=>{ const x=new Date(lastPass); x.setDate(x.getDate()+steps[stage]); return x; })();
+            const now = new Date();
+            if (now < due){ return '<span class="badge green">🟢 Complete</span>'; }
+            if (stage === steps.length - 1){ return '<span class="badge red">🧪 Test your knowledge retention</span>'; }
+            return `<a class="badge red" href="${href}">🔴 Repetition due</a>`;
+          })(srState.stage, lastPass, href);
+
+          const g = globalRatings[setName];
+          const mine = myRatings[setName];
+          let ratingCell = g != null ? `<div class="nowrap" title="Global rating">${stars(g)}</div>` : `<div class="tiny">no ratings</div>`;
+          if (!mine){ ratingCell += `<div class="tiny"><a href="./manage_sets/">add your rating</a></div>`; }
+
+          rows.push({ setName, mode, trials, top, last, ratingCell, statusHtml, href });
+        }
+
+        const urgencyRank = (html)=> html.includes('gold') ? 3 : (html.includes('green') ? 2 : 1);
+        rows.sort((a,b)=> (urgencyRank(a.statusHtml)-urgencyRank(b.statusHtml)) || (b.last - a.last));
+
+        const tb = document.querySelector('#statsTable tbody');
+        const empty = document.getElementById('statsEmpty');
+        if (!rows.length){ empty.style.display='block'; }
+        else{
+          empty.style.display='none';
+          tb.innerHTML = rows.map(r => `
+            <tr>
+              <td>${r.ratingCell}</td>
+              <td><a href="${r.href}">${r.setName}</a></td>
+              <td>${modeLabel(r.mode)}</td>
+              <td>${r.top}</td>
+              <td>${r.trials}</td>
+              <td>${r.statusHtml}</td>
+              <td class="nowrap">${new Date(r.last).toLocaleString()}</td>
+            </tr>
+          `).join('');
+        }
+      }catch(_){}
+    })();
+  </script>
 </body>
 </html>

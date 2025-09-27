@@ -1,82 +1,202 @@
-<!-- docs/manage_sets.html -->
+<!-- docs/manage_sets/index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Manage Sets</title>
+  <title>Library • Path to POLISH</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f8f9fa; padding: 2rem; }
-    h1 { text-align: center; margin-bottom: 0.75rem; }
-    .home-btn { position: absolute; top: 1rem; right: 1rem; background: #007bff; color: white; padding: 0.4rem 0.8rem; border-radius: 8px; text-decoration: none; font-size: 1rem; }
+    :root{
+      --brand:#2d6cdf;
+      --bg:#f7f7fb; --card:#ffffff; --text:#0c0f14; --muted:#5a6472; --border:#e6e6ef;
+      --shadow:0 8px 24px rgba(0,0,0,.08);
+      --radius:14px; --pad:16px; --gap:14px; --tap:48px;
+      --focus:0 0 0 3px rgba(45,108,223,.35);
+    }
+    @media (prefers-color-scheme: dark){
+      :root{ --bg:#0b0c10; --card:#121418; --text:#e7e9ee; --muted:#a7b0bf; --border:#1e2230; --shadow:0 6px 22px rgba(0,0,0,.35); }
+    }
+    *{ box-sizing:border-box }
+    body{ font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Ubuntu,Helvetica,Arial; background:var(--bg); color:var(--text); margin:0; padding-bottom:88px; }
 
-    .tabs { display: flex; justify-content: center; gap: 1rem; margin: 0.25rem 0 0.75rem; }
-    .tab-btn { padding: 0.5rem 1.2rem; border: none; border-radius: 8px; background: #e0e0e0; cursor: pointer; font-size: 1rem; }
-    .tab-btn.active { background: #007bff; color: white; }
+    /* Header */
+    header{ position:sticky; top:0; z-index:10; background:var(--card); border-bottom:1px solid var(--border); }
+    header .bar{ display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px 16px; }
+    .hello{ font-size:clamp(18px,4.2vw,22px); margin:0 }
+    .head-actions a, .head-actions button{ margin-left:8px; font-size:14px; color:var(--brand); background:none; border:1px solid var(--border); padding:8px 10px; border-radius:10px; text-decoration:none; cursor:pointer; }
+    .head-actions button{ color:var(--text); }
 
-    .toolbar { display:flex; align-items:center; gap:10px; justify-content:center; margin: 0.5rem 0 0.75rem; flex-wrap: wrap; }
-    .search-bar input { width: 90%; max-width: 420px; padding: 0.5rem; border-radius: 6px; border: 1px solid #ccc; }
+    .wrap{ max-width:1100px; margin:0 auto; padding:16px; }
 
-    table { width: 100%; border-collapse: collapse; background: white; }
-    th, td { padding: 0.6rem; border-bottom: 1px solid #eee; text-align: center; }
-    th { background: #f1f1f1; user-select: none; cursor: pointer; }
-    th.sortable:hover { background:#e9eefb; }
+    h1{ margin:8px 0 10px; font-size:clamp(20px,4.6vw,26px); }
+    .tabs { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:4px 0 10px; }
+    .tab-buttons { display:flex; gap:8px; }
+    .tab-btn { padding:8px 14px; border-radius:10px; border:1px solid var(--border); background:var(--card); cursor:pointer; font-size:14px; }
+    .tab-btn.active { background:rgba(45,108,223,.12); color:var(--brand); border-color:transparent; }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      align-items: stretch;
+      justify-content: stretch;
+      margin: 8px 0 12px;
+    }
+
+    .search-bar input {
+      width: 100%;
+      height: 42px;
+      padding: 0 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+    }
+
+    .btn { padding:10px 12px; border-radius:10px; border:1px solid var(--border); background:var(--card); cursor:pointer; text-decoration:none; color:var(--text); font-weight:600; }
+    .btn-primary { background:var(--brand); color:#fff; border-color:transparent; }
+
+    /* Mode filter (like Learn page) */
+    .seg{ display:flex; background:var(--card); border:1px solid var(--border); border-radius:10px; overflow:hidden }
+    .seg button{ padding:8px 12px; border:0; background:none; cursor:pointer; color:var(--muted); font-weight:600 }
+    .seg button.active{ background:rgba(45,108,223,.12); color:var(--brand) }
+    .seg { width: 100%; }
+    .seg button { flex: 1; }
+
+    .card{ background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:var(--pad); box-shadow:var(--shadow); }
+
+    table { width: 100%; border-collapse: collapse; background: transparent; }
+    th, td { padding: 10px 8px; border-bottom: 1px solid var(--border); text-align:center; font-size:14px; }
+    th { background: rgba(0,0,0,0.02); user-select: none; cursor: pointer; }
+    th.sortable:hover { background: rgba(45,108,223,.06); }
     th .arrow { font-size: 0.85em; opacity: .7; margin-left: 4px; }
+    tr.in-library { background: #f0fff0; }
 
-    .action-btn { padding: 4px 10px; border-radius: 6px; border: none; cursor: pointer; font-size: 0.9rem; }
+    .rating { display:inline-block; font-size: 18px; letter-spacing: 2px; line-height:1; }
+    .muted { color:#666; font-size: 0.95rem; }
+    #status { margin-top: 8px; min-height: 1.2em; color:#666; text-align:center; }
+
+    .action-btn { padding: 6px 10px; border-radius: 8px; border: none; cursor: pointer; font-size: 0.9rem; }
     .import-btn { background: #28a745; color: white; }
     .remove-btn { background: #dc3545; color: white; }
     .delete-link { background: none; border: none; font-size: 0.95rem; color: #b00020; cursor: pointer; text-decoration: underline; }
-    tr.in-library { background: #e6ffe6; }
-
-    .rating { display:inline-block; font-size: 1.1rem; letter-spacing: 2px; cursor: default; }
-    .rating .star { cursor: pointer; }
-    .muted { color:#666; font-size: 0.95rem; }
-    #status { margin-top: 8px; min-height: 1.2em; color:#666; text-align:center; }
 
     /* Inline editor row */
     .edit-row td { background:#fafcff; }
     .edit-wrap { display:flex; gap:12px; align-items:center; justify-content:center; flex-wrap:wrap; padding:6px 0; }
-    .edit-wrap textarea { width: 420px; max-width: 90vw; height: 70px; padding:6px; border-radius:6px; border:1px solid #ccc; }
-    .btn { padding: 6px 10px; border-radius: 6px; border: 1px solid #ccc; background: #fff; cursor: pointer; }
-    .btn-primary { background:#2d6cdf; color:#fff; border-color:#2d6cdf; }
+    .edit-wrap textarea { width: 420px; max-width: 90vw; height: 70px; padding:6px; border-radius:6px; border:1px solid var(--border); background:var(--card); color:var(--text); }
+
+    /* Bottom nav */
+    nav.bottom{ position:fixed; left:0; right:0; bottom:0; background:var(--card); border-top:1px solid var(--border); display:flex; justify-content:space-around; padding:6px 8px; gap:8px; }
+    nav.bottom a{ flex:1; text-align:center; padding:8px; text-decoration:none; color:var(--text); border-radius:10px; display:flex; flex-direction:column; align-items:center; gap:4px; font-size:12px }
+    nav.bottom a svg{ width:20px; height:20px }
+    nav.bottom a.active{ background:rgba(45,108,223,.12); color:var(--brand) }
+    @supports(padding: max(0px)){ nav.bottom{ padding-bottom: max(6px, env(safe-area-inset-bottom)) } }
   </style>
 </head>
 <body>
-  <h1>⚙️ Manage Sets</h1>
-  <a href="/" class="home-btn">🏠 Home</a>
+  <!-- Header -->
+  <header>
+    <div class="bar">
+      <h1 class="hello" id="hello">Cześć!</h1>
+      <div class="head-actions">
+        <a href="../profile.html" id="profileBtn">Profile</a>
+        <a href="../login.html" id="loginLink">Sign In</a>
+        <a href="../register.html" id="registerLink">Register</a>
+        <button id="logoutBtn" style="display:none;">Logout</button>
+      </div>
+    </div>
+  </header>
 
-  <div class="tabs">
-    <button class="tab-btn" data-tab="my">📚 My Collection</button>
-    <button class="tab-btn" data-tab="global">🌍 Global Library</button>
-  </div>
+  <div class="wrap">
+    <h1>Library</h1>
 
-  <div class="toolbar">
-    <div class="search-bar">
-      <input type="text" id="searchInput" placeholder="Search sets..." />
+    <div class="tabs">
+      <div class="tab-buttons">
+        <button class="tab-btn" data-tab="my">📚 My Collection</button>
+        <button class="tab-btn" data-tab="global">🌍 Global Library</button>
+      </div>
+      <a id="addBtn" class="btn btn-primary">Add to the Collection</a>
+    </div>
+
+
+    <div class="toolbar">
+      <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="Search sets..." />
+      </div>
+
+      <!-- NEW: Mode filter (matches the Learn page) -->
+      <div class="seg" role="tablist" aria-label="Mode Filter">
+        <button id="f_all" class="active" aria-pressed="true">All</button>
+        <button id="f_learn">Learn</button>
+        <button id="f_speak">Speak</button>
+        <button id="f_listen">Listen</button>
+        <button id="f_read">Read</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <table id="setsTable">
+        <thead>
+          <tr>
+            <th class="sortable" data-key="name">Name <span class="arrow" id="sortName"></span></th>
+            <th class="sortable" data-key="count">Cards <span class="arrow" id="sortCount"></span></th>
+            <th class="sortable" data-key="type">Type <span class="arrow" id="sortType"></span></th>
+            <th>Community</th>
+            <th>Your rating</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <div id="status" class="muted"></div>
     </div>
   </div>
 
-  <table id="setsTable">
-    <thead>
-      <tr>
-        <th class="sortable" data-key="name">Name <span class="arrow" id="sortName"></span></th>
-        <th class="sortable" data-key="count">Cards <span class="arrow" id="sortCount"></span></th>
-        <th class="sortable" data-key="type">Type <span class="arrow" id="sortType"></span></th>
-        <th>Rating</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-
-  <div id="status" class="muted"></div>
-
-  <a href="/create_page" class="floating-btn">＋ New Set</a>
+  <!-- Bottom nav -->
+  <nav class="bottom">
+    <a href="../index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a 1 1 0 0 1-1-1v-10.5Z" stroke-width="1.5"/></svg>
+    <span>Home</span></a>
+    <a href="../learn.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 12h16M4 18h9" stroke-width="1.5" stroke-linecap="round"/></svg>
+    <span>Learn</span></a>
+    <a href="./" class="active" aria-current="page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="16" rx="2" ry="2" stroke-width="1.5"/><path d="M7 8h10M7 12h10M7 16h7" stroke-width="1.5" stroke-linecap="round"/></svg>
+    <span>Library</span></a>
+    <a href="../dashboard.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 14h6V4H4v10Zm10 6h6V4h-6v16Z" stroke-width="1.5"/></svg>
+    <span>Dashboard</span></a>
+    <a href="../groups.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm-9 9a9 9 0 0 1 18 0" stroke-width="1.5" stroke-linecap="round"/></svg>
+    <span>Groups</span></a>
+  </nav>
 
   <!-- unified API helper -->
-  <script src="./static/js/api.js"></script>
+  <script src="../static/js/api.js"></script>
   <script>
+    // -------- header auth --------
+    (async function wireHeader(){
+      let me=null;
+      try{ const r=await api.fetch('/api/me'); if(r.ok) me=await r.json(); }catch(_){}
+      const hello = document.getElementById('hello');
+      const loginLink   = document.getElementById('loginLink');
+      const registerLink= document.getElementById('registerLink');
+      const logoutBtn   = document.getElementById('logoutBtn');
+      if(me){
+        hello.textContent = 'Cześć' + (me.name ? ', ' + me.name : '') + '!';
+        loginLink.style.display = 'none'; registerLink.style.display = 'none'; logoutBtn.style.display = 'inline-block';
+      }else{
+        hello.textContent = 'Cześć!';
+        loginLink.style.display = 'inline-block'; registerLink.style.display = 'inline-block'; logoutBtn.style.display = 'none';
+      }
+      logoutBtn?.addEventListener('click', async () => {
+        try{ await api.fetch('/api/logout', {method:'POST'});}catch(_){}
+        localStorage.removeItem('lp_token'); location.href = '../login.html';
+      });
+    })();
+
     // --- State ---
     let globalList = []; // [{name,count,type,created_by?}]
     let myList = [];     // [{name,count,type,is_owner?,created_by?}]
@@ -87,11 +207,19 @@
       search: document.getElementById('searchInput'),
       table: document.getElementById('setsTable'),
       tbody: document.querySelector('#setsTable tbody'),
-      tabs: document.querySelectorAll('.tab-btn'),
       status: document.getElementById('status'),
       sortName: document.getElementById('sortName'),
       sortCount: document.getElementById('sortCount'),
       sortType: document.getElementById('sortType'),
+      addBtn: document.getElementById('addBtn'),
+      tabs: document.querySelectorAll('.tab-btn'),
+
+      // NEW: filter buttons
+      f_all:    document.getElementById('f_all'),
+      f_learn:  document.getElementById('f_learn'),
+      f_speak:  document.getElementById('f_speak'),
+      f_listen: document.getElementById('f_listen'),
+      f_read:   document.getElementById('f_read'),
     };
 
     // Persisted UI state
@@ -99,6 +227,7 @@
     let sortKey = localStorage.getItem('lp.manage.sortKey') || 'name';
     let sortDir = parseInt(localStorage.getItem('lp.manage.sortDir') || '1', 10); // 1=asc, -1=desc
     els.search.value = localStorage.getItem('lp.manage.q') || '';
+    let filterMode = localStorage.getItem('lp.manage.filter') || 'all';
 
     function setActiveTab(tab) {
       activeTab = tab;
@@ -107,138 +236,188 @@
       renderTable();
     }
 
+    function setActiveFilter(key){
+      filterMode = key;
+      localStorage.setItem('lp.manage.filter', key);
+      ['all','learn','speak','listen','read'].forEach(k=>{
+        const btn = els['f_'+k];
+        if (btn){
+          btn.classList.toggle('active', k===key);
+          btn.setAttribute('aria-pressed', k===key ? 'true' : 'false');
+        }
+      });
+      renderTable();
+    }
+
     function rebuildMaps() {
       globalMap = new Map(globalList.map(s => [s.name, s]));
       myMap = new Map(myList.map(s => [s.name, s]));
     }
 
-    // --- Ratings (local for now; will POST if backend adds /api/sets/rate) ---
-    function loadRatings() {
-      try { return JSON.parse(localStorage.getItem('lp.setRatings') || '{}'); }
-      catch { return {}; }
-    }
-    function saveRatings(map) {
-      localStorage.setItem('lp.setRatings', JSON.stringify(map));
-    }
+    // --- Ratings cache ---
+    function loadRatings(){ try{ return JSON.parse(localStorage.getItem('lp.setRatings')||'{}'); }catch{return {};}}
+    function saveRatings(map){ localStorage.setItem('lp.setRatings', JSON.stringify(map)); }
     const ratings = loadRatings(); // { [name]: {stars, comment, ts} }
 
-    function starsHtml(n) {
-      const filled = '★'.repeat(n || 0);
-      const empty = '☆'.repeat(Math.max(0, 5 - (n || 0)));
-      return filled + empty;
+    function starsHtml(n){ const filled='★'.repeat(n||0); const empty='☆'.repeat(Math.max(0,5-(n||0))); return filled+empty; }
+    function starsFromAvg(avg){ if(avg==null||Number.isNaN(Number(avg))) return '☆☆☆☆☆'; const r=Math.round(Number(avg)); return starsHtml(r); }
+
+    // Map a set "type" to implied modes (same idea as Learn page)
+    function impliedModes(type){
+      const t = String(type||'').toLowerCase();
+      if (t === 'flashcards' || t === 'vocab' || t === 'cards') return ['learn','speak'];
+      if (t === 'reading' || t === 'read') return ['read','listen'];
+      if (t === 'listening' || t === 'listen') return ['listen'];
+      // unknown -> conservative default
+      return ['learn'];
     }
 
-    // --- Fetchers (prefer enriched legacy to get counts/types; fallback to new minimal) ---
-    async function fetchGlobal() {
-      // Prefer legacy enriched list for real counts/types
+    function matchesFilter(set, filter){
+      if (filter === 'all') return true;
+      const modes = impliedModes(set.type);
+      return modes.includes(filter);
+    }
+
+    // --- Fetchers ---
+    async function fetchGlobal(){
       let r = await api.fetch('/api/global_sets');
       if (r.ok) return r.json();
-
-      // Fallback: new minimal list -> we’ll mark unknowns accordingly
       r = await api.fetch('/api/sets/available');
-      if (r.ok) {
+      if (r.ok){
         const arr = await r.json();
-        return arr.map(x => ({ name: x.name, count: '?', type: 'unknown' }));
+        return arr.map(x => ({ name:x.name, count:'?', type:'unknown' }));
       }
       return [];
     }
-
-    async function fetchMy() {
-      // Prefer legacy enriched list (includes counts for private sets)
-      let r = await api.fetch('/api/my_sets');
-      if (r.status === 401) {
-        alert('Please sign in to manage your sets.');
-        location.href = '/login.html';
-        return [];
-      }
+    async function fetchMy(){
+      let r = await api.fetch('/api/my_sets'); // legacy
+      if (r.status === 401) { alert('Please sign in to manage your sets.'); location.href = '../login.html'; return []; }
       if (r.ok) return r.json();
-
-      // Fallback: new minimal -> merge with global to derive counts/types
-      r = await api.fetch('/api/my/sets');
-      if (r.ok) {
+      r = await api.fetch('/api/my/sets'); // new
+      if (r.ok){
         const raw = await r.json();
         return raw.map(x => {
           const name = x.set_name || x.name || '';
           const g = globalMap.get(name);
-          return {
-            name,
-            is_owner: !!x.is_owner,
-            count: g?.count ?? '?',
-            type: g?.type ?? 'unknown',
-            created_by: x.is_owner ? 'me' : g?.created_by
-          };
+          return { name, is_owner: !!x.is_owner, count: g?.count ?? '?', type: g?.type ?? 'unknown', created_by: x.is_owner ? 'me' : g?.created_by };
         });
       }
       return [];
     }
 
-    async function loadSets() {
-      try {
+    let aggMap = new Map();
+    async function fetchAggregatesFor(names){
+      const uniq = Array.from(new Set((names||[]).filter(Boolean)));
+      if(!uniq.length) return;
+      try{
+        const r = await api.fetch('/api/sets/ratings/batch', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ sets: uniq.slice(0,200) })
+        });
+        if (r.ok){
+          const arr = await r.json();
+          arr.forEach(a => aggMap.set(a.set_name, { count:a.count, avg_stars:a.avg_stars }));
+          return;
+        }
+      }catch(_){}
+      for (const name of uniq){
+        try{
+          const rr = await api.fetch('/api/sets/ratings?set='+encodeURIComponent(name));
+          if (rr.ok){
+            const a = await rr.json();
+            aggMap.set(name, { count:a.count, avg_stars:a.avg_stars });
+          }
+        }catch(_){}
+      }
+    }
+
+    async function loadSets(){
+      try{
         els.status.textContent = 'Loading…';
         globalList = await fetchGlobal();
         rebuildMaps();
         myList = await fetchMy();
         rebuildMaps();
+
+        // Sync your ratings from server
+        try{
+          const rr = await api.fetch('/api/my/ratings');
+          if (rr.ok){
+            const server = await rr.json();
+            server.forEach(r => { ratings[r.set_name] = { stars:r.stars, comment:r.comment||'', ts: Date.now() }; });
+            saveRatings(ratings);
+          }
+        }catch(_){}
+
+        // Community aggregates
+        const names = Array.from(new Set([...globalList.map(s=>s.name), ...myList.map(s=>s.name)])).slice(0,200);
+        await fetchAggregatesFor(names);
+
         els.status.textContent = '';
         renderTable();
-      } catch (e) {
+      }catch(e){
         console.error(e);
         els.status.textContent = 'Failed to load sets. Is the backend running?';
       }
     }
 
-    // --- Utilities ---
-    function numVal(v) {
-      const n = typeof v === 'number' ? v : parseInt(v, 10);
-      return Number.isFinite(n) ? n : Number.NEGATIVE_INFINITY;
+    // --- Utilities & rendering ---
+    function numVal(v){ const n=typeof v==='number'?v:parseInt(v,10); return Number.isFinite(n)?n:Number.NEGATIVE_INFINITY; }
+    function cmp(a,b,key){
+      const av=a[key], bv=b[key];
+      if (key==='count'){ return (numVal(av)-numVal(bv)) || String(a.name).localeCompare(String(b.name)); }
+      return String(av||'').localeCompare(String(bv||''), undefined, {sensitivity:'base'});
     }
-    function cmp(a, b, key) {
-      const av = a[key], bv = b[key];
-      if (key === 'count') {
-        return (numVal(av) - numVal(bv)) || String(a.name).localeCompare(String(b.name));
-      }
-      return String(av || '').localeCompare(String(bv || ''), undefined, { sensitivity: 'base' });
-    }
-    function sortList(list) {
-      const arr = list.slice().sort((a, b) => cmp(a, b, sortKey) * sortDir);
-      els.sortName.textContent = sortKey === 'name' ? (sortDir > 0 ? '▲' : '▼') : '';
-      els.sortCount.textContent = sortKey === 'count' ? (sortDir > 0 ? '▲' : '▼') : '';
-      els.sortType.textContent = sortKey === 'type' ? (sortDir > 0 ? '▲' : '▼') : '';
+    function sortList(list){
+      const arr = list.slice().sort((a,b)=>cmp(a,b,sortKey)*sortDir);
+      els.sortName.textContent  = sortKey==='name'  ? (sortDir>0?'▲':'▼') : '';
+      els.sortCount.textContent = sortKey==='count' ? (sortDir>0?'▲':'▼') : '';
+      els.sortType.textContent  = sortKey==='type'  ? (sortDir>0?'▲':'▼') : '';
       return arr;
     }
-    function debounce(fn, ms) {
-      let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
-    }
 
-    // --- Render (with inline rating editor row) ---
-    function makeCell(text) {
-      const td = document.createElement('td');
-      td.textContent = text;
-      return td;
-    }
+    function makeCell(text){ const td=document.createElement('td'); td.textContent=text; return td; }
 
-    function renderTable() {
+    function renderTable(){
       els.tbody.innerHTML = '';
-
       const q = els.search.value.toLowerCase().trim();
-      const baseList = activeTab === 'my' ? myList : globalList;
-      const filtered = baseList.filter(s => (s.name || '').toLowerCase().includes(q));
-      const list = sortList(filtered);
+      const baseList = (activeTab==='my' ? myList : globalList)
+        .filter(s => matchesFilter(s, filterMode))
+        .filter(s => (s.name||'').toLowerCase().includes(q));
 
-      list.forEach(set => {
+      const list = sortList(baseList);
+
+      list.forEach(set=>{
         const tr = document.createElement('tr');
         const inMyLib = myMap.has(set.name);
-        const r = ratings[set.name] || {};
 
         tr.appendChild(makeCell(set.name));
         tr.appendChild(makeCell(set.count ?? '?'));
         tr.appendChild(makeCell(set.type ?? 'unknown'));
 
-        // Rating display + "Rate" button
+        // Community
+        const tdCommunity = document.createElement('td');
+        const agg = aggMap.get(set.name);
+        if (agg && agg.avg_stars != null){
+          const avgSpan = document.createElement('span');
+          avgSpan.className = 'rating';
+          avgSpan.textContent = starsFromAvg(agg.avg_stars);
+          const meta = document.createElement('span');
+          meta.className = 'muted';
+          meta.textContent = ` ${agg.avg_stars.toFixed(1)} (${agg.count})`;
+          tdCommunity.appendChild(avgSpan);
+          tdCommunity.appendChild(meta);
+        }else{
+          tdCommunity.textContent = '—';
+        }
+        tr.appendChild(tdCommunity);
+
+        // Your rating
         const tdRate = document.createElement('td');
+        const mine = ratings[set.name] || {};
         const span = document.createElement('span');
         span.className = 'rating';
-        span.textContent = starsHtml(r.stars || 0);
+        span.textContent = starsHtml(mine.stars || 0);
         tdRate.appendChild(span);
 
         const rateBtn = document.createElement('button');
@@ -252,36 +431,17 @@
         // Actions
         const tdAct = document.createElement('td');
         if (activeTab === 'my') {
-          // Always allow Remove (library only)
-          const rm = document.createElement('button');
-          rm.className = 'action-btn remove-btn';
-          rm.dataset.set = set.name;
-          rm.textContent = 'Remove';
-          tdAct.appendChild(rm);
-
-          // Owner: optional "Delete permanently"
-          const isOwner = !!set.is_owner || set.created_by === 'me' || !globalMap.has(set.name);
-          if (isOwner) {
-            const del = document.createElement('button');
-            del.className = 'delete-link';
-            del.dataset.set = set.name;
-            del.title = 'Delete the set file (use only for upload mistakes)';
-            del.textContent = 'Delete permanently';
-            tdAct.appendChild(document.createTextNode(' '));
-            tdAct.appendChild(del);
+          const rm = document.createElement('button'); rm.className='action-btn remove-btn'; rm.dataset.set=set.name; rm.textContent='Remove'; tdAct.appendChild(rm);
+          const isOwner = !!(myMap.get(set.name)?.is_owner) || !globalMap.has(set.name);
+          if (isOwner){
+            const del = document.createElement('button'); del.className='delete-link'; del.dataset.set=set.name; del.title='Delete the set file (use only for upload mistakes)'; del.textContent='Delete permanently';
+            tdAct.appendChild(document.createTextNode(' ')); tdAct.appendChild(del);
           }
         } else {
-          if (inMyLib) {
-            const spanIn = document.createElement('span');
-            spanIn.className = 'muted';
-            spanIn.textContent = '✔️ In Library';
-            tdAct.appendChild(spanIn);
-          } else {
-            const imp = document.createElement('button');
-            imp.className = 'action-btn import-btn';
-            imp.dataset.set = set.name;
-            imp.textContent = 'Import';
-            tdAct.appendChild(imp);
+          if (inMyLib){
+            const spanIn = document.createElement('span'); spanIn.className='muted'; spanIn.textContent='✔️ In Library'; tdAct.appendChild(spanIn);
+          }else{
+            const imp = document.createElement('button'); imp.className='action-btn import-btn'; imp.dataset.set=set.name; imp.textContent='Import'; tdAct.appendChild(imp);
           }
         }
         tr.appendChild(tdAct);
@@ -291,22 +451,15 @@
       });
     }
 
-    // Insert or toggle an inline editor row beneath a set row
-    function toggleEditorRow(afterTr, setName) {
+    // Inline rating editor row
+    function toggleEditorRow(afterTr, setName){
       const next = afterTr.nextElementSibling;
-      if (next && next.classList.contains('edit-row')) {
-        next.remove(); // close if already open
-        return;
-      }
-      // Close any other editors
+      if (next && next.classList.contains('edit-row')){ next.remove(); return; }
       document.querySelectorAll('.edit-row').forEach(n => n.remove());
 
-      const r = ratings[setName] || { stars: 0, comment: '' };
-      const tr = document.createElement('tr');
-      tr.className = 'edit-row';
-      const td = document.createElement('td');
-      td.colSpan = 5;
-
+      const r = ratings[setName] || { stars:0, comment:'' };
+      const tr = document.createElement('tr'); tr.className='edit-row';
+      const td = document.createElement('td'); td.colSpan=6;
       td.innerHTML = `
         <div class="edit-wrap" data-set="${setName}">
           <div class="rating" aria-label="Choose rating">
@@ -315,160 +468,120 @@
           <textarea placeholder="Leave a short comment...">${r.comment || ''}</textarea>
           <button class="btn btn-primary save-rating">Save</button>
           <button class="btn cancel-rating">Cancel</button>
-          <span class="muted">(Saved locally for now)</span>
+          <span class="muted">(Saves to server)</span>
         </div>
       `;
       tr.appendChild(td);
       afterTr.insertAdjacentElement('afterend', tr);
     }
 
-    // --- Actions (event delegation) ---
-    els.table.addEventListener('click', async (ev) => {
+    // Actions (delegation)
+    els.table.addEventListener('click', async (ev)=>{
       const btn = ev.target.closest('button');
       const cellStar = ev.target.classList.contains('star') ? ev.target : null;
 
-      // Star click inside editor
-      if (cellStar) {
-        const wrap = cellStar.closest('.edit-wrap');
-        if (!wrap) return;
+      if (cellStar){
+        const wrap = cellStar.closest('.edit-wrap'); if(!wrap) return;
         const val = parseInt(cellStar.dataset.val, 10);
-        wrap.querySelectorAll('.star').forEach((s, i) => s.textContent = (i < val ? '★' : '☆'));
+        wrap.querySelectorAll('.star').forEach((s,i)=> s.textContent = (i < val ? '★' : '☆'));
         wrap.dataset.stars = String(val);
         return;
       }
-
       if (!btn) return;
       const setName = btn.dataset.set || (btn.closest('.edit-wrap')?.dataset.set);
 
-      try {
-        // Rate (open editor under row)
-        if (btn.textContent === 'Rate') {
-          const tr = btn.closest('tr');
-          toggleEditorRow(tr, setName);
-          return;
+      try{
+        if (btn.textContent === 'Rate'){
+          const tr = btn.closest('tr'); toggleEditorRow(tr, setName); return;
         }
-
-        if (btn.classList.contains('save-rating')) {
+        if (btn.classList.contains('save-rating')){
           const wrap = btn.closest('.edit-wrap');
           const stars = parseInt(wrap.dataset.stars || '0', 10);
           const comment = wrap.querySelector('textarea').value.trim();
-          // Try backend (optional / future)
-          try {
-            const r = await api.fetch('/api/sets/rate', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ set_name: setName, stars, comment })
-            });
-            // If 404/501, silently fall back to local
-          } catch {}
-          // Save locally
-          ratings[setName] = { stars, comment, ts: Date.now() };
-          saveRatings(ratings);
-          // Update table rating stars
+          try{
+            await api.fetch('/api/sets/rate', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ set_name:setName, stars, comment }) });
+          }catch{}
+          ratings[setName] = { stars, comment, ts: Date.now() }; saveRatings(ratings);
           const row = wrap.closest('tr').previousElementSibling;
-          const ratingCell = row.children[3].querySelector('.rating');
-          ratingCell.textContent = starsHtml(stars);
-          // Close editor
-          wrap.closest('.edit-row').remove();
+          const ratingCell = row.children[4].querySelector('.rating'); ratingCell.textContent = starsHtml(stars);
+          wrap.closest('tr').remove();
           els.status.textContent = `Saved rating for "${setName}".`;
+          try{ await fetchAggregatesFor([setName]); renderTable(); }catch(_){}
           return;
         }
+        if (btn.classList.contains('cancel-rating')){ btn.closest('.edit-row').remove(); return; }
 
-        if (btn.classList.contains('cancel-rating')) {
-          btn.closest('.edit-row').remove();
-          return;
-        }
-
-        // Import
-        if (btn.classList.contains('import-btn')) {
-          let r = await api.fetch('/api/my/sets', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ set_name: setName })
-          });
-          if (!r.ok) {
-            r = await api.fetch('/api/add_set', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ set_name: setName })
-            });
+        if (btn.classList.contains('import-btn')){
+          let r = await api.fetch('/api/my/sets', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ set_name:setName }) });
+          if (!r.ok){
+            r = await api.fetch('/api/add_set', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ set_name:setName }) });
           }
           if (!r.ok) throw new Error('import failed');
-
-          const g = globalMap.get(setName) || { name: setName, count: '?', type: 'unknown' };
-          myMap.set(setName, { name: setName, count: g.count, type: g.type, is_owner: false });
-          myList = Array.from(myMap.values());
-          rebuildMaps();
-          renderTable();
-          els.status.textContent = `Imported "${setName}".`;
-          return;
+          const g = globalMap.get(setName) || { name:setName, count:'?', type:'unknown' };
+          myMap.set(setName, { name:setName, count:g.count, type:g.type, is_owner:false });
+          myList = Array.from(myMap.values()); rebuildMaps(); renderTable();
+          els.status.textContent = `Imported "${setName}".`; return;
         }
 
-        // Remove (library only)
-        if (btn.classList.contains('remove-btn')) {
-          let r = await api.fetch(`/api/my/sets/${encodeURIComponent(setName)}`, { method: 'DELETE' });
-          if (!r.ok) {
-            r = await api.fetch('/api/remove_set', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ set_name: setName })
-            });
+        if (btn.classList.contains('remove-btn')){
+          let r = await api.fetch('/api/my/sets/'+encodeURIComponent(setName), { method:'DELETE' });
+          if (!r.ok){
+            r = await api.fetch('/api/remove_set', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ set_name:setName }) });
           }
           if (!r.ok) throw new Error('remove failed');
-
-          myMap.delete(setName);
-          myList = Array.from(myMap.values());
-          rebuildMaps();
-          renderTable();
-          els.status.textContent = `Removed "${setName}" from your library.`;
-          return;
+          myMap.delete(setName); myList = Array.from(myMap.values()); rebuildMaps(); renderTable();
+          els.status.textContent = `Removed "${setName}" from your library.`; return;
         }
 
-        // Delete permanently (owner only, for mistakes)
-        if (btn.classList.contains('delete-link')) {
+        if (btn.classList.contains('delete-link')){
           if (!confirm(`Delete your set "${setName}"? This removes the set file for everyone. This cannot be undone.`)) return;
-          const r = await api.fetch(`/api/delete_set/${encodeURIComponent(setName)}`, { method: 'POST' });
+          const r = await api.fetch('/api/delete_set/'+encodeURIComponent(setName), { method:'POST' });
           if (!r.ok) throw new Error('delete failed');
-          myMap.delete(setName);
-          myList = Array.from(myMap.values());
-          globalMap.delete(setName);
-          globalList = globalList.filter(s => s.name !== setName);
-          rebuildMaps();
-          renderTable();
-          els.status.textContent = `Deleted "${setName}".`;
-          return;
+          myMap.delete(setName); myList = Array.from(myMap.values());
+          globalMap.delete(setName); globalList = globalList.filter(s=>s.name!==setName);
+          rebuildMaps(); renderTable();
+          els.status.textContent = `Deleted "${setName}".`; return;
         }
-      } catch (e) {
-        console.error(e);
-        els.status.textContent = 'Action failed.';
-      }
+      }catch(e){ console.error(e); els.status.textContent = 'Action failed.'; }
     });
 
-    // --- Sorting (click headers) ---
-    document.querySelectorAll('th.sortable').forEach(th => {
-      th.addEventListener('click', () => {
+    // Sorting
+    document.querySelectorAll('th.sortable').forEach(th=>{
+      th.addEventListener('click', ()=>{
         const key = th.dataset.key;
-        if (sortKey === key) { sortDir = -sortDir; } else { sortKey = key; sortDir = 1; }
+        if (sortKey===key){ sortDir = -sortDir; } else { sortKey = key; sortDir = 1; }
         localStorage.setItem('lp.manage.sortKey', sortKey);
         localStorage.setItem('lp.manage.sortDir', String(sortDir));
         renderTable();
       });
     });
 
-    // --- Tabs ---
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-      btn.addEventListener('click', () => setActiveTab(btn.dataset.tab));
-    });
+    // Tabs
+    document.querySelectorAll('.tab-btn').forEach(btn=> btn.addEventListener('click', ()=> setActiveTab(btn.dataset.tab)));
 
-    // --- Search (debounced) ---
-    els.search.addEventListener('input', (function debounce(fn, ms){ let t; return e=>{clearTimeout(t); t=setTimeout(fn,ms)}; })(() => {
+    // Mode filter events
+    els.f_all.addEventListener('click', ()=> setActiveFilter('all'));
+    els.f_learn.addEventListener('click', ()=> setActiveFilter('learn'));
+    els.f_speak.addEventListener('click', ()=> setActiveFilter('speak'));
+    els.f_listen.addEventListener('click', ()=> setActiveFilter('listen'));
+    els.f_read.addEventListener('click',  ()=> setActiveFilter('read'));
+
+    // Search (debounced)
+    els.search.addEventListener('input', (function debounce(fn,ms){ let t; return e=>{ clearTimeout(t); t=setTimeout(fn,ms) } })(()=>{
       localStorage.setItem('lp.manage.q', els.search.value);
       renderTable();
     }, 200));
 
-    // --- Init ---
-    (async function init() {
+    // Fix create link per host
+    (function wireAddButton(){
+      if (!els.addBtn) return;
+      els.addBtn.href = (location.hostname.endsWith('github.io')) ? '../create.html' : '/create_page';
+    })();
+
+    // Init
+    (async function init(){
       setActiveTab(activeTab);
+      setActiveFilter(filterMode); // reflect persisted filter
       await loadSets();
     })();
   </script>
