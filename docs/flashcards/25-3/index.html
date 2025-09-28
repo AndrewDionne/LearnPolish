@@ -286,6 +286,7 @@
           // Clear session state & go to summary
           try { if (window.SessionSync) await SessionSync.complete({ setName, mode }); } catch(_){
           }
+          try { localStorage.removeItem('lp_last'); } catch(_){}
           const q = awarded != null ? ("?awarded=" + encodeURIComponent(awarded)) : "";
           window.location.href = "summary.html" + q;
         }

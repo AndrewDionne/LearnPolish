@@ -3,115 +3,72 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Listening • Path to POLISH</title>
+  <title>27-2L • Listening Mode</title>
   <style>
     :root{
-      --brand:#2d6cdf;
       --bg:#0b0c10; --card:#121418; --text:#e9ecf1; --muted:#8b94a7; --accent:#2d6cdf; --good:#2dcf6c; --bad:#ff5a5f;
       --pad:16px; --radius:14px; --shadow:0 8px 24px rgba(0,0,0,.25);
-      --border:#1e2230;
     }
     @media (prefers-color-scheme: light){
-      :root{ --bg:#f7f7fb; --card:#ffffff; --text:#0c0f14; --muted:#5a6472; --shadow:0 8px 24px rgba(0,0,0,.08); --border:#e6e6ef; }
+      :root{ --bg:#f7f7fb; --card:#ffffff; --text:#0c0f14; --muted:#5a6472; --shadow:0 8px 24px rgba(0,0,0,.08); }
     }
     html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Inter,system-ui,sans-serif;}
-
-    /* Global site header with gold bar */
-    .site-header{position:sticky;top:0;z-index:20;background:var(--card);border-bottom:1px solid var(--border)}
-    .site-header .row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px}
-    .brand{font-weight:800;letter-spacing:.2px}
-    .gold-wrap{display:flex;align-items:center;gap:8px}
-    .goldbar{width:140px;height:8px;border-radius:999px;background:rgba(45,108,223,.15);overflow:hidden}
-    .goldbar .fill{height:100%;width:0;border-radius:999px;background:#2d6cdf;transition:width .25s ease}
-    .gold-label{font-size:12px;opacity:.8}
-
-    /* Page header */
-    header.page{position:sticky;top:58px;background:var(--bg);padding:12px var(--pad);display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(128,128,128,.15);z-index:10;}
+    header{position:sticky;top:0;background:var(--bg);padding:12px var(--pad);display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(128,128,128,.15);z-index:10;}
     .title{font-weight:700;}
     .pill{font-size:.9rem;color:var(--muted);}
-
     .wrap{max-width:900px;margin:0 auto;padding:var(--pad);}
-    .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;margin:16px 0;border:1px solid var(--border);}
-
+    .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;margin:16px 0;}
     .player{display:flex;gap:12px;align-items:center;}
     button{appearance:none;border:0;background:var(--accent);color:white;border-radius:12px;padding:10px 14px;font-weight:600;cursor:pointer;}
-    button.ghost{background:transparent;color:var(--text);border:1px solid var(--border);}
+    button.ghost{background:transparent;color:var(--text);border:1px solid rgba(128,128,128,.3);}
     button[disabled]{opacity:.5;cursor:not-allowed;}
-
-    .speed-btn{border:1px solid var(--border);background:var(--card);color:var(--text);border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:700}
-    .speed-btn.active{background:rgba(45,108,223,.12);color:#2d6cdf;border-color:transparent}
-
-    .play-btn.replay::before{content:"↻ ";}
-
-    .meta{display:flex;gap:12px;align-items:center;color:var(--muted);font-size:.95rem;}
     .choices{display:grid;grid-template-columns:1fr;gap:10px;margin-top:10px;}
-    .choice{background:#1a1f27;border:1px solid var(--border);padding:12px;border-radius:12px;text-align:left}
+    .choice{background:#1a1f27;border:1px solid rgba(128,128,128,.25);padding:12px;border-radius:12px;}
     @media (prefers-color-scheme: light){ .choice{background:#fff;} }
     .choice.correct{outline:2px solid var(--good);}
     .choice.wrong{outline:2px solid var(--bad);}
-
+    .meta{display:flex;gap:12px;align-items:center;color:var(--muted);font-size:.95rem;}
     .section-title{font-weight:700;margin:0 0 6px;}
-    .tr{white-space:pre-wrap;color:var(--muted);}
-
-    .footer{display:flex;justify-content:space-between;align-items:center;margin-top:8px;gap:10px;flex-wrap:wrap;}
-    .tag{background:rgba(128,128,128,.15);color:var(--text);border-radius:999px;padding:6px 10px;font-size:.85rem;}
-
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+    .grow{flex:1;}
     .hidden{display:none;}
-
-    /* Bottom nav (shared style) */
-    nav.bottom{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--border);display:flex;justify-content:space-around;padding:6px 8px;gap:8px;z-index:30}
-    nav.bottom a{flex:1;text-align:center;padding:8px;text-decoration:none;color:var(--text);border-radius:10px;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12px}
-    nav.bottom a svg{width:20px;height:20px}
-    nav.bottom a.active{background:rgba(45,108,223,.12);color:var(--brand)}
-    @supports(padding:max(0px)){ nav.bottom{ padding-bottom:max(6px, env(safe-area-inset-bottom)) } }
+    .tr{white-space:pre-wrap;color:var(--muted);}
+    .footer{display:flex;justify-content:space-between;align-items:center;margin-top:8px;}
+    .tag{background:rgba(128,128,128,.15);color:var(--text);border-radius:999px;padding:6px 10px;font-size:.85rem;}
   </style>
 </head>
 <body>
-
-  <!-- Global header with gold bar -->
-  <div class="site-header">
-    <div class="row">
-      <div class="brand">Path to POLISH</div>
-      <div class="gold-wrap">
-        <div class="goldbar"><div id="goldFill" class="fill"></div></div>
-        <span id="goldLabel" class="gold-label">0 / 500</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- Page header (kept) -->
-  <header class="page">
-    <div class="title">🎧 Listening</div>
+  <header class="wrap">
+    <div class="title">🎧 Listening • 27-2L</div>
     <div class="pill"><span id="gold">0</span> gold • <span id="progress">0/0</span></div>
   </header>
 
   <main class="wrap">
-
-    <!-- Player + meta -->
     <div class="card">
-      <div class="meta"><span id="countLabel"></span><span id="lengthLabel"></span><span id="replayLabel"></span></div>
+      <div class="row" style="justify-content:space-between;">
+        <div class="meta"><span id="countLabel"></span><span id="lengthLabel"></span><span id="replayLabel"></span></div>
+        <div class="row"><button class="ghost" id="homeBtn">🏠 Home</button></div>
+      </div>
       <div class="player" style="margin-top:8px;">
-        <button id="playBtn" class="play-btn" type="button">Play</button>
-        <button id="speedBtn" class="speed-btn" type="button" aria-pressed="false" title="Toggle 0.75×">0.75×</button>
-        <audio id="audio" preload="auto" controlslist="nodownload noplaybackrate"></audio>
+        <button id="playBtn">▶️ Play</button>
+        <button class="ghost" id="speedBtn">0.75×</button>
+        <button class="ghost" id="replayBtn">Replay (3)</button>
+        <audio id="audio" preload="auto"></audio>
       </div>
     </div>
 
-    <!-- Gist -->
     <div class="card" id="gistCard" aria-live="polite">
       <div class="section-title">Gist</div>
       <div id="gistPrompt"></div>
       <div class="choices" id="gistChoices"></div>
     </div>
 
-    <!-- Details -->
     <div class="card" id="detailCard" aria-live="polite">
       <div class="section-title">Details</div>
       <div id="detailPrompt"></div>
       <div class="choices" id="detailChoices"></div>
     </div>
 
-    <!-- Reveal -->
     <div class="card" id="revealCard">
       <div class="section-title">Transcript</div>
       <div class="tr" id="plText"></div>
@@ -120,10 +77,9 @@
       <div class="tr" id="enText"></div>
     </div>
 
-    <!-- Footer actions (difficulty is gated off by default) -->
-    <div class="footer" id="feedbackStrip" style="display:none">
-      <div class="tag">Rate difficulty:</div>
+    <div class="footer">
       <div class="row" style="gap:6px;">
+        <span class="tag">Rate difficulty:</span>
         <button class="ghost" id="rEasy">Too easy</button>
         <button class="ghost" id="rOk">Just right</button>
         <button class="ghost" id="rHard">Too hard</button>
@@ -133,7 +89,6 @@
       </div>
     </div>
 
-    <!-- Summary -->
     <div class="card" id="summaryCard">
       <div class="section-title">Session Summary</div>
       <div id="summaryBody"></div>
@@ -142,35 +97,10 @@
         <button id="toHomeBtn">Done</button>
       </div>
     </div>
-
   </main>
 
-  <!-- Bottom nav -->
-  <nav class="bottom">
-    <a id="navHome">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1v-10.5Z" stroke-width="1.5"/></svg>
-      <span>Home</span>
-    </a>
-    <a id="navLearn" class="active" aria-current="page">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 12h16M4 18h9" stroke-width="1.5" stroke-linecap="round"/></svg>
-      <span>Learn</span>
-    </a>
-    <a id="navLibrary">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="16" rx="2" ry="2" stroke-width="1.5"/><path d="M7 8h10M7 12h10M7 16h7" stroke-width="1.5" stroke-linecap="round"/></svg>
-      <span>Library</span>
-    </a>
-    <a id="navDashboard">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 14h6V4H4v10Zm10 6h6V4h-6v16Z" stroke-width="1.5"/></svg>
-      <span>Dashboard</span>
-    </a>
-    <a id="navGroups">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="8" cy="8" r="3" stroke-width="1.5"/><path d="M2 20v-1c0-3 3-5 6-5" stroke-width="1.5" stroke-linecap="round"/><circle cx="16" cy="10" r="3" stroke-width="1.5"/><path d="M11 20v-1c0-2.5 2.5-4.5 5-5" stroke-width="1.5" stroke-linecap="round"/></svg>
-      <span>Groups</span>
-    </a>
-  </nav>
-
   <script>
-  // ————— Config —————
+  // ————— Config (tweak without touching Python) —————
   const CONFIG = {
     sessionBonus: 20,
     basePerDialogue: 10,
@@ -185,43 +115,9 @@
     triesPerQuestion: 3,
   };
 
-  // ————— Sample dialogues (replace with your generated set) —————
-  const DIALOGUES = [
-    {
-      id: "d001",
-      audio: "audio/d001.mp3",
-      duration_s: 0,
-      transcript_pl: "ZMIANA! Do ławki, szybko!",
-      translation_en: "Change! To the bench, quick!",
-      gist: {
-        prompt: "Which best matches the audio?",
-        correct: "Change! To the bench, quick!",
-        distractors: ["Get back! Mark your man!", "Directions", "An apology"]
-      },
-      detail: {
-        prompt: "What exactly did you hear (in Polish)?",
-        correct: "ZMIANA! Do ławki, szybko!",
-        distractor_bank: ["Wracaj! Kryj swojego!"]
-      }
-    },
-    {
-      id: "d002",
-      audio: "audio/d002.mp3",
-      duration_s: 0,
-      transcript_pl: "Wracaj! Kryj swojego!",
-      translation_en: "Get back! Mark your man!",
-      gist: {
-        prompt: "Which best matches the audio?",
-        correct: "Get back! Mark your man!",
-        distractors: ["Change! To the bench, quick!", "Directions", "Small talk"]
-      },
-      detail: {
-        prompt: "What exactly did you hear (in Polish)?",
-        correct: "Wracaj! Kryj swojego!",
-        distractor_bank: ["ZMIANA! Do ławki, szybko!"]
-      }
-    }
-  ];
+  const SET_NAME = "27-2L";
+  const DIALOGUES = [{"id": "d001", "audio": "listening/d001.mp3", "duration_s": 0, "transcript_pl": "ZMIANA! Do ławki, szybko!", "translation_en": "Change! To the bench, quick!", "gist": {"prompt": "Which best matches the audio?", "correct": "Change! To the bench, quick!", "distractors": ["Get back! Mark your man!", "Directions", "An apology"]}, "detail": {"prompt": "What exactly did you hear (in Polish)?", "correct": "ZMIANA! Do ławki, szybko!", "distractor_bank": ["Wracaj! Kryj swojego!"]}}, {"id": "d002", "audio": "listening/d002.mp3", "duration_s": 0, "transcript_pl": "Wracaj! Kryj swojego!", "translation_en": "Get back! Mark your man!", "gist": {"prompt": "Which best matches the audio?", "correct": "Get back! Mark your man!", "distractors": ["Change! To the bench, quick!", "A question", "A time of day"]}, "detail": {"prompt": "What exactly did you hear (in Polish)?", "correct": "Wracaj! Kryj swojego!", "distractor_bank": ["ZMIANA! Do ławki, szybko!"]}}];
+
 
   // ————— State —————
   const state = {
@@ -240,11 +136,13 @@
     started: false,
   };
 
-  // ————— DOM —————
+  // ————— DOM helpers —————
   const $ = (id) => document.getElementById(id);
   const playBtn = $("playBtn");
   const speedBtn = $("speedBtn");
+  const replayBtn = $("replayBtn");
   const nextBtn = $("nextBtn");
+  const homeBtn = $("homeBtn");
   const toHomeBtn = $("toHomeBtn");
   const restartBtn = $("restartBtn");
   const audioEl = $("audio");
@@ -270,27 +168,25 @@
   const lengthLabel = $("lengthLabel");
   const replayLabel = $("replayLabel");
 
-  // ————— Helpers —————
   function repoBase() {
-    const parts = location.pathname.split("/").filter(Boolean);
-    if (location.hostname.includes("github.io")) return "/" + parts[0];
+    // Matches patterns used in other modes hosted on GitHub Pages
+    const p = window.location.pathname.split("/").filter(Boolean);
+    if (window.location.hostname.includes("github.io")) {
+      // /<repo>/listening/<set>/
+      return "/" + p[0];
+    }
     return "";
   }
 
-  function setBottomNav(){
-    const base = repoBase();
-    $("navHome").href      = base + "/index.html";
-    $("navLearn").href     = base + "/learn.html";
-    $("navLibrary").href   = base + "/manage_sets/";
-    $("navDashboard").href = base + "/dashboard.html";
-    $("navGroups").href    = base + "/groups.html";
-  }
-
   function gotoHome() {
-    const base = repoBase();
-    location.href = base + "/index.html";
+    if (window.location.hostname.includes("github.io")) {
+      window.location.href = repoBase() + "/";
+    } else {
+      window.location.href = "/";
+    }
   }
 
+  // ————— Utils —————
   function shuffle(arr) {
     for (let i = arr.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -306,13 +202,6 @@
     const three = pruned.slice(0, 3);
     const combined = [correct, ...three];
     return shuffle(combined);
-  }
-  function mcqText(opt){
-    if (typeof opt === 'string') return opt.trim();
-    if (!opt || typeof opt !== 'object') return '';
-    return String(
-      opt.gist || opt.detail || opt.phrase || opt.polish || opt.meaning || opt.english || ''
-    ).trim();
   }
 
   function computePool(item, usedSlow, replays, wrongGist, wrongDetail) {
@@ -336,7 +225,7 @@
   function resetQuestionUI() {
     gistChoices.innerHTML = ""; detailChoices.innerHTML = "";
     [gistCard, detailCard, revealCard, summaryCard].forEach(el => setHidden(el, true));
-    if (nextBtn) nextBtn.disabled = true;
+    nextBtn.disabled = true;
   }
 
   function setHeader() {
@@ -345,7 +234,7 @@
     countLabel.textContent = `Dialog ${state.i+1} of ${DIALOGUES.length}`;
     const dur = (DIALOGUES[state.i]?.duration_s || state.currentDurationS || 0);
     lengthLabel.textContent = dur ? `• ${dur}s` : "";
-    replayLabel.textContent = `• Replays left: ${Math.max(0, CONFIG.replayMax - state.replays)}`;
+    replayLabel.textContent = `• Replays left: ${CONFIG.replayMax - state.replays}`;
   }
 
   function beginSessionIfNeeded() {
@@ -356,24 +245,44 @@
     }
   }
 
-  function loadAudio(item) {
-    const src = item.audio || item.audio_url || "";
-    audioEl.src = src;
-    audioEl.playbackRate = 1.0;
+  function audioUrlFor(item){
+    // Prefer absolute URL if provided
+    if (item.audio_url) return item.audio_url;
+
+    const rel = (item.audio || "").replace(/^\/+/, "");
+    if (!rel) return "";
+
+    const encSet = encodeURIComponent(SET_NAME);
+    if (window.location.hostname.includes("github.io")){
+      // GitHub Pages: serve from /static/<set>/<rel>
+      return repoBase() + `/static/${encSet}/${rel}`;
+    }
+    // Local dev: served by /custom_static → docs/static
+    return `/custom_static/${encSet}/${rel}`;
   }
+
+  function loadAudio(item) {
+    const src = audioUrlFor(item);
+    if (!src) {
+      console.warn("No audio for item", item);
+      audioEl.removeAttribute("src");
+      return;
+    }
+    audioEl.src = src;
+    audioEl.playbackRate = state.usedSlow ? 0.75 : 1.0;
+  }
+
 
   function renderGist(item) {
     if (!item.gist) return;
     setHidden(gistCard, false);
-    gistPrompt.textContent = item.gist.prompt || "Which best matches the audio?";
-    const correct = item.gist.correct;
-    const opts = shuffle([ correct, ...(item.gist.distractors || []).slice(0,3) ]);
+    gistPrompt.textContent = item.gist.prompt || "What is the gist?";
+    const opts = shuffle([ item.gist.correct, ...(item.gist.distractors || []).slice(0,3) ]);
     gistChoices.innerHTML = "";
-    opts.forEach((opt) => {
-      const txt = mcqText(opt) || "—";
+    opts.forEach((txt) => {
       const b = document.createElement("button");
       b.className = "choice"; b.textContent = txt;
-      b.onclick = () => onGistAnswer(item, b, txt === mcqText(correct));
+      b.onclick = () => onGistAnswer(item, b, txt === item.gist.correct);
       gistChoices.appendChild(b);
     });
   }
@@ -386,8 +295,7 @@
     detailChoices.innerHTML = "";
     opts.forEach((txt) => {
       const b = document.createElement("button");
-      b.className = "choice";
-      b.textContent = mcqText(txt) || "—";
+      b.className = "choice"; b.textContent = txt;
       b.onclick = () => onDetailAnswer(item, b, txt === item.detail.correct);
       detailChoices.appendChild(b);
     });
@@ -414,14 +322,16 @@
       if (state.answeredDetail) finalizeDialogue(item);
       return;
     }
+    // wrong
     btn.classList.add("wrong");
     btn.disabled = true;
     state.wrongGist++;
     state.gistTriesLeft--;
     if (state.gistTriesLeft <= 0) {
       state.answeredGist = true;
+      // show correct
       [...gistChoices.children].forEach(c => {
-        if (c.textContent === (mcqText(item.gist?.correct) || "")) c.classList.add("correct");
+        if (c.textContent === (item.gist?.correct || "")) c.classList.add("correct");
         c.disabled = true;
       });
       if (!state.answeredDetail) renderDetail(item);
@@ -438,12 +348,14 @@
       if (state.answeredGist) finalizeDialogue(item);
       return;
     }
+    // wrong
     btn.classList.add("wrong");
     btn.disabled = true;
     state.wrongDetail++;
     state.detailTriesLeft--;
     if (state.detailTriesLeft <= 0) {
       state.answeredDetail = true;
+      // show correct
       [...detailChoices.children].forEach(c => {
         if (c.textContent === (item.detail?.correct || "")) c.classList.add("correct");
         c.disabled = true;
@@ -453,6 +365,7 @@
   }
 
   function finalizeDialogue(item) {
+    // Compute payout
     const gained = computePool(item, state.usedSlow, state.replays, state.wrongGist, state.wrongDetail);
     state.gold += gained;
     state.perDialogueLog.push({
@@ -466,7 +379,7 @@
     });
     goldLbl.textContent = state.gold;
     renderReveal(item);
-    if (nextBtn) nextBtn.disabled = false;
+    nextBtn.disabled = false;
   }
 
   function resetPerDialogue() {
@@ -479,15 +392,17 @@
     state.gistTriesLeft = CONFIG.triesPerQuestion;
     state.detailTriesLeft = CONFIG.triesPerQuestion;
     state.currentDurationS = 0;
-    document.dispatchEvent(new Event('lp:speed-reset'));
-    document.dispatchEvent(new Event('lp:dialogue-start'));
+    replayBtn.textContent = `Replay (${CONFIG.replayMax})`;
+    replayBtn.disabled = false;
+    speedBtn.disabled = false;
   }
 
   function startDialogue(idx) {
     if (idx >= DIALOGUES.length) return endSession();
     resetPerDialogue(); resetQuestionUI();
     const item = DIALOGUES[idx];
-    state.currentDurationS = Math.round(item?.duration_s || 0); // until metadata loads
+    // prefer authored duration until metadata loads
+    state.currentDurationS = Math.round(item?.duration_s || 0);
     setHeader();
     loadAudio(item);
   }
@@ -495,97 +410,35 @@
   function endSession() {
     setHidden(gistCard,true); setHidden(detailCard,true); setHidden(revealCard,true);
     setHidden(summaryCard,false);
-    const rows = state.perDialogueLog.map((r, k) =>
-      `#${k+1} • +${r.payout} gold • replay:${r.replays} • slow:${r.usedSlow?'y':'n'} • gist×${r.wrongGist} • detail×${r.wrongDetail}`
-    ).join("\n");
+    const rows = state.perDialogueLog.map((r, k) => `#${k+1} • +${r.payout} gold • replay:${r.replays} • slow:${r.usedSlow?'y':'n'} • gist×${r.wrongGist} • detail×${r.wrongDetail}`).join("\n");
     summaryBody.textContent = `Total gold: ${state.gold}\n\n${rows}`;
   }
 
-  // ————— Wire Play→Replay (counts replays, respects max) —————
-  (function wirePlayReplay(){
-    const audio = audioEl;
-    const btn = playBtn;
-    if (!audio || !btn) return;
-
-    let hasPlayed = false;
-
-    function makeReplayUI(){
-      btn.classList.add('replay');
-      btn.textContent = 'Replay';
-      btn.setAttribute('aria-label','Replay');
-    }
-
-    btn.addEventListener('click', ()=>{
-      if (hasPlayed && state.replays >= CONFIG.replayMax) {
-        btn.disabled = true;
-        return;
-      }
-      audio.currentTime = 0;
-      audio.play();
-
-      if (!hasPlayed){
-        hasPlayed = true;
-        makeReplayUI();
-      } else {
-        state.replays += 1;
-        setHeader();
-      }
-      if (state.replays >= CONFIG.replayMax) btn.disabled = true;
-    });
-
-    audio.addEventListener('ended', ()=>{
-      if (!hasPlayed){ hasPlayed = true; makeReplayUI(); }
-    });
-
-    document.addEventListener('lp:dialogue-start', ()=>{
-      hasPlayed = false;
-      btn.disabled = false;
-      btn.classList.remove('replay');
-      btn.textContent = 'Play';
-      btn.setAttribute('aria-label','Play');
-    });
-  })();
-
-  // ————— Wire Speed toggle (blue active, on/off) —————
-  (function wireSpeed(){
-    const audio = audioEl;
-    const btn = speedBtn;
-    if (!audio || !btn) return;
-
-    let slow = false;
-
-    function apply(){
-      audio.playbackRate = slow ? 0.75 : 1.0;
-      btn.classList.toggle('active', slow);
-      btn.setAttribute('aria-pressed', slow ? 'true' : 'false');
-      btn.textContent = slow ? '0.75×' : '1.0×';
-      btn.title = slow ? 'Back to 1.0×' : 'Switch to 0.75×';
-    }
-
-    btn.addEventListener('click', ()=>{
-      slow = !slow;
-      if (slow && !state.usedSlow) state.usedSlow = true; // charge once per dialogue
-      apply();
-    });
-
-    document.addEventListener('lp:speed-reset', ()=>{
-      slow = false; apply();
-    });
-
-    apply();
-  })();
-
-  // ————— Events —————
-  playBtn.onclick = () => { beginSessionIfNeeded(); audioEl.play().catch(()=>{}); };
-  nextBtn && (nextBtn.onclick = () => { state.i++; if (state.i >= DIALOGUES.length) endSession(); else startDialogue(state.i); });
-  restartBtn.onclick = () => window.location.reload();
-  toHomeBtn.onclick = gotoHome;
+  // ————— Wire up —————
+  playBtn.onclick = () => {
+    beginSessionIfNeeded();
+    audioEl.play().catch(()=>{});
+  };
+  speedBtn.onclick = () => {
+    if (state.usedSlow) return; // single-cost per dialogue
+    state.usedSlow = true; audioEl.playbackRate = 0.75; speedBtn.disabled = true; // gold cost accounted at finalize
+  };
+  replayBtn.onclick = () => {
+    if (state.replays >= CONFIG.replayMax) return;
+    state.replays++; replayBtn.textContent = `Replay (${CONFIG.replayMax - state.replays})`;
+    setHeader();
+    audioEl.currentTime = 0; audioEl.play().catch(()=>{});
+    if (state.replays >= CONFIG.replayMax) replayBtn.disabled = true;
+  };
+  nextBtn.onclick = () => { state.i++; if (state.i >= DIALOGUES.length) endSession(); else startDialogue(state.i); };
+  homeBtn.onclick = gotoHome; toHomeBtn.onclick = gotoHome; restartBtn.onclick = () => window.location.reload();
 
   $("rEasy").onclick = () => console.log("rated: easy", DIALOGUES[state.i]?.id);
   $("rOk").onclick   = () => console.log("rated: ok", DIALOGUES[state.i]?.id);
   $("rHard").onclick = () => console.log("rated: hard", DIALOGUES[state.i]?.id);
 
   audioEl.addEventListener('ended', () => {
+    // When audio finishes, show gist question
     const item = DIALOGUES[state.i];
     renderGist(item);
   });
@@ -596,9 +449,8 @@
     setHeader();
   });
 
-  // ————— Init —————
+  // Initial mount
   (function init() {
-    setBottomNav();
     if (!Array.isArray(DIALOGUES) || DIALOGUES.length === 0) {
       document.body.innerHTML = '<div style="padding:20px;font-family:sans-serif;">⚠️ No dialogues found for this set.</div>';
       return;
@@ -606,32 +458,6 @@
     setHidden(gistCard,true); setHidden(detailCard,true); setHidden(revealCard,true); setHidden(summaryCard,true);
     state.gold = 0;
     startDialogue(0);
-  })();
-
-  // ————— Gold bar —————
-  (async function wireGold(){
-    try{
-      const token = localStorage.getItem('lp_token') || '';
-      const r = await fetch('/api/my/stats', { headers: { Authorization: 'Bearer '+token }});
-      if(!r.ok) return;
-      const s = await r.json();
-      const got = Number(s.weekly_gold || s.weekly_points || 0);
-      const goal = Number(s.goal_gold || s.goal_points || 500) || 500;
-      const pct = Math.max(0, Math.min(100, Math.round((got/goal)*100)));
-      const fill = document.getElementById('goldFill');
-      const lab  = document.getElementById('goldLabel');
-      if (fill) fill.style.width = pct + '%';
-      if (lab)  lab.textContent = `${got} / ${goal}`;
-    }catch(_){}
-  })();
-
-  // ————— Feedback gate (enable via ?feedback=1, localStorage lp_feedback=on, or window.IS_ADMIN=true) —————
-  (function feedbackGate(){
-    const on = new URL(location.href).searchParams.get('feedback') === '1'
-            || localStorage.getItem('lp_feedback') === 'on'
-            || window.IS_ADMIN === true;
-    const el = document.getElementById('feedbackStrip');
-    if (el) el.style.display = on ? 'flex' : 'none';
   })();
   </script>
 </body>
