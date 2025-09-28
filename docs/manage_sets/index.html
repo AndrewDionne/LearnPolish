@@ -263,19 +263,37 @@
     function starsFromAvg(avg){ if(avg==null||Number.isNaN(Number(avg))) return '☆☆☆☆☆'; const r=Math.round(Number(avg)); return starsHtml(r); }
 
     // Map a set "type" to implied modes (same idea as Learn page)
-    function impliedModes(type){
+    function impliedModesLegacy(type){
       const t = String(type||'').toLowerCase();
       if (t === 'flashcards' || t === 'vocab' || t === 'cards') return ['learn','speak'];
-      if (t === 'reading' || t === 'read') return ['read','listen'];
+      if (t === 'reading' || t === 'read') return ['read'];
       if (t === 'listening' || t === 'listen') return ['listen'];
-      // unknown -> conservative default
-      return ['learn'];
+      return ['learn']; // conservative default
+    }
+
+    function modesFor(set){
+      if (Array.isArray(set.modes) && set.modes.length) return set.modes;
+      return impliedModesLegacy(set.type);
     }
 
     function matchesFilter(set, filter){
       if (filter === 'all') return true;
-      const modes = impliedModes(set.type);
-      return modes.includes(filter);
+      return modesFor(set).includes(filter);
+    }
+
+    function typeLabelFrom(modes, fallbackType){
+      if (Array.isArray(modes) && modes.length){
+        const map = {learn:'Learn', speak:'Speak', read:'Read', listen:'Listen'};
+        // Special pretty join for learn+speak
+        if (modes.length === 2 && modes.includes('learn') && modes.includes('speak')) {
+          return 'Learn / Speak';
+        }
+        return modes.map(m => map[m] || m).join(' / ');
+      }
+      // Fallback from legacy 'type'
+      if (fallbackType === 'flashcards') return 'Learn / Speak';
+      if (fallbackType) return fallbackType.charAt(0).toUpperCase() + fallbackType.slice(1);
+      return 'unknown';
     }
 
     // --- Fetchers ---
@@ -296,11 +314,23 @@
       r = await api.fetch('/api/my/sets'); // new
       if (r.ok){
         const raw = await r.json();
-        return raw.map(x => {
-          const name = x.set_name || x.name || '';
-          const g = globalMap.get(name);
-          return { name, is_owner: !!x.is_owner, count: g?.count ?? '?', type: g?.type ?? 'unknown', created_by: x.is_owner ? 'me' : g?.created_by };
-        });
+      return raw.map(x => {
+        const name = x.set_name || x.name || '';
+        const g = globalMap.get(name);
+        const modes = Array.isArray(x.modes) && x.modes.length ? x.modes
+                    : (Array.isArray(g?.modes) && g.modes.length ? g.modes : null);
+        const count = Number.isFinite(x.count) ? x.count : (g?.count ?? '?');
+        const type  = x.type || g?.type || 'unknown';
+        return {
+          name,
+          is_owner: !!x.is_owner,
+          count,
+          type,
+          modes,                  // <-- keep explicit modes
+          created_by: x.is_owner ? 'me' : g?.created_by
+        };
+      });
+
       }
       return [];
     }
@@ -364,10 +394,19 @@
     // --- Utilities & rendering ---
     function numVal(v){ const n=typeof v==='number'?v:parseInt(v,10); return Number.isFinite(n)?n:Number.NEGATIVE_INFINITY; }
     function cmp(a,b,key){
-      const av=a[key], bv=b[key];
-      if (key==='count'){ return (numVal(av)-numVal(bv)) || String(a.name).localeCompare(String(b.name)); }
+      if (key === 'count') {
+        const av = a.count, bv = b.count;
+        return (numVal(av) - numVal(bv)) || String(a.name).localeCompare(String(b.name));
+      }
+      if (key === 'type') {
+        const ad = typeLabelFrom(a.modes, a.type);
+        const bd = typeLabelFrom(b.modes, b.type);
+        return ad.localeCompare(bd, undefined, {sensitivity:'base'});
+      }
+      const av = a[key], bv = b[key];
       return String(av||'').localeCompare(String(bv||''), undefined, {sensitivity:'base'});
     }
+
     function sortList(list){
       const arr = list.slice().sort((a,b)=>cmp(a,b,sortKey)*sortDir);
       els.sortName.textContent  = sortKey==='name'  ? (sortDir>0?'▲':'▼') : '';
@@ -393,7 +432,7 @@
 
         tr.appendChild(makeCell(set.name));
         tr.appendChild(makeCell(set.count ?? '?'));
-        tr.appendChild(makeCell(set.type ?? 'unknown'));
+        tr.appendChild(makeCell(typeLabelFrom(set.modes, set.type)));
 
         // Community
         const tdCommunity = document.createElement('td');
@@ -517,8 +556,8 @@
             r = await api.fetch('/api/add_set', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ set_name:setName }) });
           }
           if (!r.ok) throw new Error('import failed');
-          const g = globalMap.get(setName) || { name:setName, count:'?', type:'unknown' };
-          myMap.set(setName, { name:setName, count:g.count, type:g.type, is_owner:false });
+          const g = globalMap.get(setName) || { name:setName, count:'?', type:'unknown', modes:null };
+          myMap.set(setName, { name:setName, count:g.count, type:g.type, modes:g.modes || null, is_owner:false });
           myList = Array.from(myMap.values()); rebuildMaps(); renderTable();
           els.status.textContent = `Imported "${setName}".`; return;
         }

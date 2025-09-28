@@ -7,6 +7,7 @@ from .modes import SET_TYPES
 from .models import db, UserSet
 from .auth import token_required
 from .utils import build_all_mode_indexes
+from shutil import rmtree
 
 # Prefer importing a single source of truth for sets dir + helpers
 try:
@@ -136,6 +137,55 @@ def _apply_list_params(items: list[dict]):
 
     return out
 
+def _ensure_modes(row: dict) -> dict:
+    """
+    Guarantee a 'modes' array on each listing row.
+    If the set JSON already has modes, keep them.
+    Otherwise derive from 'type'.
+    """
+    try:
+        if isinstance(row.get("modes"), list) and row["modes"]:
+            return row
+        t = (row.get("type") or "").lower()
+        if t in ("flashcards", "vocab", "cards"):
+            row["modes"] = ["learn", "speak"]
+        elif t in ("reading", "read"):
+            row["modes"] = ["read"]
+        elif t in ("listening", "listen", "audio"):
+            row["modes"] = ["listen"]
+        else:
+            # conservative default (so Learn/Speak shows up)
+            row["modes"] = ["learn", "speak"]
+    except Exception:
+        row["modes"] = ["learn", "speak"]
+    return row
+DOCS_ROOT = Path("docs")
+
+def _safe_rmtree(p: Path):
+    try:
+        if p.exists():
+            rmtree(p)
+    except Exception:
+        pass
+
+def _delete_set_files_everywhere(set_name: str):
+    # remove the JSON via existing delete_set_file (if it wraps extra logic)
+    try:
+        delete_set_file(set_name)
+    except Exception:
+        # fall back to manual unlink, if delete_set_file isn't present/failed
+        try:
+            (SETS_DIR / f"{set_name}.json").unlink(missing_ok=True)
+        except Exception:
+            pass
+
+    # nuke generated assets and pages
+    _safe_rmtree(DOCS_ROOT / "flashcards" / set_name)
+    _safe_rmtree(DOCS_ROOT / "practice"   / set_name)
+    _safe_rmtree(DOCS_ROOT / "reading"    / set_name)
+    _safe_rmtree(DOCS_ROOT / "listening"  / set_name)
+    _safe_rmtree(DOCS_ROOT / "static"     / set_name)
+
 # ----------------------------
 # API
 # ----------------------------
@@ -152,6 +202,7 @@ def global_sets():
     """
     glist = list_global_sets()
     glist = _apply_list_params(glist)  # non-breaking filter/sort
+    glist = [_ensure_modes(x) for x in glist]
     resp = jsonify(glist)
     # Point clients to the new minimal listing at /api/sets/available
     return _with_deprecation_headers(resp, "/api/sets/available")
@@ -182,11 +233,12 @@ def my_sets(current_user):
             meta = gmap[name].copy()
             if ownership.get(name):
                 meta["created_by"] = "me"
+            meta = _ensure_modes(meta)         # <— add
             out.append(meta)
         else:
-            # Not in global: enrich with actual count/type if the file exists
             meta = get_set_metadata(name)
             meta["created_by"] = "me"
+            meta = _ensure_modes(meta)         # <— add
             out.append(meta)
 
     out = _apply_list_params(out)  # non-breaking filter/sort
@@ -301,34 +353,71 @@ def create_set(current_user):
 @token_required
 def delete_set(current_user, set_name):
     """
-    Deletes the set file + generated assets if the current user is the owner.
-    Also removes the set from all users' libraries.
+    Owner action:
+    - If only the owner has this set: delete files and unlink all rows.
+    - If others also have it: transfer ownership to another user, unlink current owner (or set is_owner=False), keep files.
+    Returns:
+      { ok: true, deleted: true }  OR
+      { ok: true, handover: true, new_owner_id: <id> }
     """
-    safe_name = sanitize_filename(set_name)
+    safe_name = sanitize_filename(set_name or "")
     if not safe_name:
         return jsonify({"message": "Invalid set name"}), 400
 
-    owner_row = UserSet.query.filter_by(user_id=current_user.id, set_name=safe_name).first()
-    if not owner_row or not getattr(owner_row, "is_owner", False):
+    # who has this set?
+    links = UserSet.query.filter_by(set_name=safe_name).all()
+    if not links:
+        # Nothing in DB: best-effort file cleanup
+        try:
+            _delete_set_files_everywhere(safe_name)
+        except Exception:
+            pass
+        return jsonify({"ok": True, deleted: True}), 200
+
+    # ensure caller is/was owner
+    me_link = next((l for l in links if l.user_id == current_user.id), None)
+    if not me_link or not getattr(me_link, "is_owner", False):
         return jsonify({"message": "Only the owner can delete this set"}), 403
 
-    ok = delete_set_file(safe_name)
-    if not ok:
-        return jsonify({"message": "Set file not found"}), 404
+    # others?
+    others = [l for l in links if l.user_id != current_user.id]
 
-    UserSet.query.filter_by(set_name=safe_name).delete()
+    if not others:
+        # Sole owner -> delete files + unlink all rows
+        for l in links:
+            db.session.delete(l)
+        db.session.commit()
+        try:
+            _delete_set_files_everywhere(safe_name)
+        except Exception:
+            pass
+        # rebuild indices
+        try:
+            build_all_mode_indexes()
+        except Exception as e:
+            print("⚠️ Failed to rebuild mode indexes after delete:", e)
+        try:
+            rebuild_set_modes_map()
+        except Exception as e:
+            print("⚠️ Failed to rebuild set_modes.json after delete:", e)
+        return jsonify({"ok": True, deleted: True}), 200
+
+    # there are other users -> transfer ownership
+    new_owner_link = sorted(others, key=lambda l: l.id)[0]  # stable heuristic
+    me_link.is_owner = False
+    new_owner_link.is_owner = True
+    # Optionally also remove the owner's membership (acts like "remove from my library")
+    db.session.delete(me_link)
     db.session.commit()
 
-    # Keep generated indices in sync (same as create_set)
+    # Keep files; nothing to rebuild except indexes (optional, cheap)
     try:
         build_all_mode_indexes()
     except Exception as e:
-        print("⚠️ Failed to rebuild mode indexes after delete:", e)
-
-    # Keep docs/set_modes.json current
+        print("⚠️ Failed to rebuild mode indexes after handover:", e)
     try:
         rebuild_set_modes_map()
     except Exception as e:
-        print("⚠️ Failed to rebuild set_modes.json after delete:", e)
+        print("⚠️ Failed to rebuild set_modes.json after handover:", e)
 
-    return jsonify({"message": f"Set '{safe_name}' deleted"}), 200
+    return jsonify({"ok": True, handover: True, new_owner_id: new_owner_link.user_id}), 200

@@ -109,13 +109,29 @@ def list_global_sets() -> List[Dict[str, Any]]:
 # ---------------- Data I/O ----------------
 
 def load_set_data(set_name: str) -> List[Dict[str, Any]]:
-    """Load the array of items for a set."""
+    """
+    Load the array of items for a set.
+
+    Supports both legacy flat arrays and the new wrapper format:
+      { "meta": {...}, "cards": [...]}  (learn/speak or listen data)
+      { "meta": {...}, "passages": [...]}  (reading data)
+      { "items": [...] }                  (fallback)
+    """
     p = _set_file_path(set_name)
     data = _read_json_file(p)
-    if not isinstance(data, list):
-        raise FileNotFoundError(f"Set file not found or invalid: {p}")
-    return data
 
+    # Legacy: already a flat list
+    if isinstance(data, list):
+        return data
+
+    # New wrapper: pick the content list
+    if isinstance(data, dict):
+        for key in ("cards", "passages", "items"):
+            vals = data.get(key)
+            if isinstance(vals, list):
+                return vals
+
+    raise FileNotFoundError(f"Set file not found or invalid: {p}")
 
 def save_set_data(set_name: str, data: List[Dict[str, Any]]) -> Path:
     """Save the array of items to docs/sets/<set_name>.json."""

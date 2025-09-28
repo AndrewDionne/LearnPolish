@@ -35,6 +35,17 @@ def custom_static(filename):
         return "Not found", 404
     return send_from_directory(static_root, filename)
 
+# ----------------------------
+# Listening audio (dev): serve docs/listening/<set>/audio/<file>
+# ----------------------------
+@routes_bp.route("/listening/<path:set_name>/audio/<path:fname>")
+def listening_audio(set_name, fname):
+    d = DOCS_DIR / "listening" / set_name / "audio"
+    f = d / fname
+    if not f.exists():
+        routes_bp.logger.warning("Listening audio not found: %s", f)
+        return "Not found", 404
+    return send_from_directory(d, fname)
 
 # ----------------------------
 # Directory index helpers for mode pages in dev

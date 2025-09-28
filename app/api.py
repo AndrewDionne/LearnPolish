@@ -1,22 +1,28 @@
 # app/api.py
-from flask import Blueprint, request, jsonify, g, session
+from flask import Blueprint, request, jsonify
 from pathlib import Path
 from sqlalchemy import func
 from datetime import datetime, timedelta, time as dtime
 from collections import defaultdict
 import json
 import random, string
-
+from shutil import rmtree
+from .listening import create_listening_set
 from .auth import token_required
 from .models import db, Score, UserSet, GroupMembership, Group, Rating, User, SessionState
 
 # Prefer canonical sets directory from sets_utils; fall back to docs/sets
 try:
     from .sets_utils import SETS_DIR  # expected Path("docs/sets")
+    from .sets_utils import regenerate_set_pages
 except Exception:
     SETS_DIR = Path("docs/sets")
+    # ensure later calls don't crash if sets_utils isn't available
+    def regenerate_set_pages(_set_name: str):
+        return None
 
 api_bp = Blueprint("api", __name__)
+
 
 # ---------------------------
 # Helpers
@@ -62,6 +68,14 @@ def _path_for(mode: str, set_name: str) -> str:
     return f"/flashcards/{set_name}/"
 
 # ---------- Global sets: helpers ----------
+ALLOWED_MODES = ("learn", "speak", "read", "listen")
+
+def _type_from_modes(modes):
+    m = set(modes or [])
+    if m == {"listen"}: return "listening"
+    if m == {"read"}:   return "reading"
+    # learn/speak or mixed → show as flashcards in tables
+    return "flashcards"
 
 def _infer_modes_from_json(j):
     """
@@ -96,17 +110,20 @@ def _infer_modes_from_json(j):
 
 def _count_items(j):
     """Return a reasonable item count for the set."""
+    if isinstance(j.get("data"), list): return len(j["data"])
     if isinstance(j.get("cards"), list): return len(j["cards"])
     if isinstance(j.get("items"), list): return len(j["items"])
     if isinstance(j.get("passages"), list): return len(j["passages"])
-    return None
+    return 0
+
 
 # ---------- Create/Update set: helpers ----------
 
 def _valid_set_name(name: str) -> bool:
     if not name or len(name) > 200:
         return False
-    return all(ch.isalnum() or ch in "_-" for ch in name)
+    # allow letters, digits, spaces, underscore, hyphen
+    return all(ch.isalnum() or ch in " _-" for ch in name)
 
 def _normalize_modes(modes_in):
     """Normalize + enforce learn<->speak pairing. Return list in stable order or None if invalid/empty."""
@@ -133,19 +150,47 @@ def _normalize_modes(modes_in):
     norm = [m for m in order if m in seen]
     return norm
 
-def _body_for_set(set_name: str, modes: list, data):
-    """
-    Build JSON to write:
-      - Learn/Speak → "cards": [...]
-      - Read        → "passages": [...]
-      - Listen      → (typically "cards": [...] with audio fields; we store as cards)
-    """
-    body = {"name": set_name, "meta": {"modes": modes}}
-    if "read" in modes and len(modes) == 1:
-        body["passages"] = data
-    else:
-        body["cards"] = data
-    return body
+def _body_for_set(set_name: str, modes: list[str], data: list):
+    """Canonical on-disk shape for new sets."""
+    # normalize modes: if either learn or speak is chosen, enforce both
+    mset = set(modes or [])
+    if "learn" in mset or "speak" in mset:
+        mset.update({"learn", "speak"})
+    clean = [m for m in ("learn","speak","read","listen") if m in mset]
+    return {
+        "name": set_name,
+        "modes": clean,
+        "data": data,
+    }
+
+# ---------- Delete set: helpers ----------
+
+DOCS_ROOT = Path("docs")
+
+def _safe_rmtree(p: Path):
+    try:
+        if p.exists():
+            rmtree(p)
+    except Exception:
+        pass
+
+def delete_set_files_everywhere(set_name: str):
+    # main json
+    try:
+        (SETS_DIR / f"{set_name}.json").unlink(missing_ok=True)  # py3.8+: wrap try/except if needed
+    except Exception:
+        pass
+
+    # generated pages/assets we create
+    # flashcards + speak
+    _safe_rmtree(DOCS_ROOT / "flashcards" / set_name)
+    _safe_rmtree(DOCS_ROOT / "practice"   / set_name)
+    # reading
+    _safe_rmtree(DOCS_ROOT / "reading"    / set_name)
+    # listening
+    _safe_rmtree(DOCS_ROOT / "listening"  / set_name)
+    # static (audio buckets)
+    _safe_rmtree(DOCS_ROOT / "static"     / set_name)
 
 # ---------------------------
 # Account / profile
@@ -664,9 +709,43 @@ def group_leaderboard(current_user, group_id):
 @api_bp.route("/my/sets", methods=["GET"])
 @token_required
 def my_sets_get(current_user):
-    """List sets attached to the current user."""
+    """Return [{set_name, is_owner, modes, type, count}] for the user."""
     rows = UserSet.query.filter_by(user_id=current_user.id).all()
-    return jsonify([{"set_name": r.set_name, "is_owner": bool(r.is_owner)} for r in rows])
+    out = []
+    for r in rows:
+        modes = None
+        count = 0
+        typ = None
+
+        p = SETS_DIR / f"{r.set_name}.json"
+        if p.exists():
+            try:
+                j = json.loads(p.read_text(encoding="utf-8"))
+                if isinstance(j, dict):
+                    # infer modes (supports top-level + meta.modes + structure)
+                    modes = _infer_modes_from_json(j) or None
+                    # DRY count (data/cards/passages/items)
+                    count = _count_items(j)
+                elif isinstance(j, list):
+                    # legacy array
+                    modes = ["learn", "speak"]
+                    count = len(j)
+            except Exception:
+                pass
+
+        # Provide a type only if we know the modes; else leave None ("unknown" in UI)
+        if modes:
+            typ = _type_from_modes(modes)
+
+        out.append({
+            "set_name": r.set_name,
+            "is_owner": bool(r.is_owner),
+            "modes": modes,
+            "type": typ,
+            "count": count,
+        })
+    return jsonify(out)
+
 
 @api_bp.route("/my/sets", methods=["POST"])
 @token_required
@@ -716,23 +795,45 @@ def list_available_sets(current_user):
 @api_bp.route("/global_sets", methods=["GET"])
 def global_sets_index():
     """
-    Public list with basic metadata the UI needs.
-    Returns: [{ name, filename, count, modes }]
+    Public list with metadata the UI needs.
+    Prefers explicit 'modes' saved in the set file; falls back only for legacy sets.
+    Returns: [{ name, filename, count, modes, type }]
     """
     out = []
     if not SETS_DIR.exists():
         return jsonify(out)
+
     for p in sorted(SETS_DIR.glob("*.json")):
+        name = p.stem
+        modes = ["learn", "speak"]  # safe default for legacy
+        count = 0
+
         try:
             j = json.loads(p.read_text(encoding="utf-8"))
+
+            if isinstance(j, dict):
+                name = j.get("name") or name
+                # infer modes (handles top-level, meta.modes, structure)
+                modes = _infer_modes_from_json(j) or modes
+                # DRY count
+                count = _count_items(j)
+
+            elif isinstance(j, list):
+                # very old: top-level array of cards
+                count = len(j)
+
         except Exception:
-            j = {}
+            # keep defaults if file is malformed
+            pass
+
         out.append({
-            "name": j.get("name") or p.stem,
+            "name": name,
             "filename": p.name,
-            "count": _count_items(j),
-            "modes": _infer_modes_from_json(j),
+            "count": count,
+            "modes": modes,
+            "type": _type_from_modes(modes),
         })
+
     return jsonify(out)
 
 # ---------- Create set ----------
@@ -783,7 +884,32 @@ def create_set(current_user):
         db.session.add(UserSet(user_id=current_user.id, set_name=set_name, is_owner=True))
         db.session.commit()
 
-    return jsonify({"ok": True, "name": set_name, "modes": modes}), 201
+    # ---- NEW: generate static assets (audio + HTML) for the modes implied by data ----
+    warnings = []
+    try:
+        # This will:
+        # - Generate flashcard/practice audio via gTTS into docs/static/<set>/audio/...
+        # - Generate reading audio via gTTS into docs/static/<set>/reading/...
+        # - Regenerate HTML pages for flashcards/practice/reading (via MODE_GENERATORS)
+        # Listening is handled separately in app/listening.py and isn’t part of MODE_GENERATORS.
+        regenerate_set_pages(set_name)
+    except Exception as e:
+        warnings.append(f"regenerate_failed: {e}")
+        
+    # Generate Listening artifacts if requested
+    try:
+        if "listen" in modes:
+            # Pass the same 'data' shape you received. The helper will normalize
+            # and write MP3s to docs/static/<set>/listening/ and page to docs/listening/<set>/.
+            create_listening_set(set_name, data)
+
+    except Exception as e:
+        warnings.append(f"listening_generate_failed: {e}")
+
+    resp = {"ok": True, "name": set_name, "modes": modes}
+    if warnings:
+        resp["warnings"] = warnings
+    return jsonify(resp), 201
 
 # ---------- Update set ----------
 
@@ -823,6 +949,7 @@ def update_set(current_user):
             return jsonify({"error": "invalid_modes"}), 400
         j.setdefault("meta", {})
         j["meta"]["modes"] = modes
+        j["modes"] = modes  # keep top-level in sync
 
     # Data (optional → full replace)
     if "data" in payload:
@@ -842,7 +969,32 @@ def update_set(current_user):
     j["name"] = j.get("name") or set_name
 
     path.write_text(json.dumps(j, ensure_ascii=False, indent=2), encoding="utf-8")
-    return jsonify({"ok": True, "name": set_name, "modes": _infer_modes_from_json(j)})
+
+    warns = []
+
+    # Rebuild other modes’ audio/pages
+    try:
+        regenerate_set_pages(set_name)
+    except Exception as e:
+        warns.append(f"regenerate_failed: {e}")
+
+    # Rebuild Listening if this set uses it
+    try:
+        modes_now = _infer_modes_from_json(j)
+        if "listen" in modes_now:
+            # For listening, items live in "cards" when not purely reading
+            items = j.get("cards") or j.get("items") or []
+            create_listening_set(set_name, items)
+    except Exception as e:
+        warns.append(f"listening_generate_failed: {e}")
+
+    return jsonify({
+        "ok": True,
+        "name": set_name,
+        "modes": _infer_modes_from_json(j),
+        "warnings": warns or None
+    })
+
 
 # ---------------------------
 # Ratings

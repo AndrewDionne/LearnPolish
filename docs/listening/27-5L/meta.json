@@ -1,0 +1,10 @@
+{
+  "set_name": "27-5L",
+  "description": "Auto-generated listening set (can be edited).",
+  "tags": [
+    "listening"
+  ],
+  "recommended_session_size": 2,
+  "advanced_mode_available": false,
+  "distractor_bank_policy": "Detail draws 3 from a bank each run."
+}

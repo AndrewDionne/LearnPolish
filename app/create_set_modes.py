@@ -30,9 +30,12 @@ def infer_modes_from_item(item: dict) -> list[str]:
         ({"polish", "english"}.issubset(keys) and "title" in keys)
     )
 
-    # Listen(ing): any audio-ish field
-    audio_keys = {"audio", "mp3", "wav", "sound", "file", "url"}
-    has_listen = any(k in keys for k in audio_keys)
+    # Listen(ing): any audio-ish field OR authored dialogue keys
+    audio_keys = {"audio", "audio_url", "mp3", "wav", "sound", "file", "url"}
+    has_listen = any(k in keys for k in audio_keys) or (
+        {"gist", "detail"}.intersection(keys) or
+        {"transcript_pl", "translation_en"}.intersection(keys)
+    )
 
     modes = []
     if has_flash:

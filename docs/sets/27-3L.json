@@ -1,0 +1,20 @@
+{
+  "name": "27-3L",
+  "meta": {
+    "modes": [
+      "listen"
+    ]
+  },
+  "cards": [
+    {
+      "audio": "audio/d001.mp3",
+      "phrase": "ZMIANA! Do ławki, szybko!",
+      "meaning": "Change! To the bench, quick!"
+    },
+    {
+      "audio": "audio/d002.mp3",
+      "phrase": "Wracaj! Kryj swojego!",
+      "meaning": "Get back! Mark your man!"
+    }
+  ]
+}

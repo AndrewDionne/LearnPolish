@@ -1,0 +1,19 @@
+{
+  "name": "28-1",
+  "modes": [
+    "learn",
+    "speak"
+  ],
+  "data": [
+    {
+      "phrase": "Cześć",
+      "meaning": "Hello",
+      "pronunciation": "cheshch"
+    },
+    {
+      "phrase": "Dziękuję",
+      "meaning": "Thank you",
+      "pronunciation": "jen-koo-yeh"
+    }
+  ]
+}

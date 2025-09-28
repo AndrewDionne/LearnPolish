@@ -92,11 +92,6 @@
   </header>
 
   <div class="wrap">
-    <!-- Tabs -->
-    <div class="tabs">
-      <a id="tabMine"    class="tab" href="?view=mine">My Library</a>
-      <a id="tabExplore" class="tab" href="?view=explore">Explore</a>
-    </div>
 
     <!-- Filters / search -->
     <div class="controls">
@@ -125,8 +120,6 @@
           <tbody id="setsBody"></tbody>
         </table>
       </div>
-      <div id="emptyMine" class="empty" style="display:none;">Sign in to see your library, or add collections from <a href="?view=explore">Explore</a>.</div>
-      <div id="emptyExplore" class="empty" style="display:none;">No collections found.</div>
     </div>
   </div>
 
@@ -189,23 +182,26 @@
       if (/\b(listen|listening|audio|podcast)\b/i.test(s)) return 'listening';
       return 'flashcards';
     }
+    // Accepts either a set row object { name, modes? } or a plain set name (string).
+    function activityModesFor(input){
+      // If caller passed a row object that already has modes, use them.
+      if (input && typeof input === 'object' && Array.isArray(input.modes) && input.modes.length){
+        return input.modes;
+      }
+      // Otherwise infer from name
+      const name = (typeof input === 'string') ? input : (input?.name || '');
+      const t = detectTypeByName(name);
+      if (t === 'reading')   return ['read'];
+      if (t === 'listening') return ['listen'];
+      return ['learn','speak'];
+    }
+
     function activityModesForRow(row){
       if (Array.isArray(row?.modes) && row.modes.length) return row.modes;
       const t = detectTypeByName(row?.name);
       if (t==='reading')   return ['read'];
       if (t==='listening') return ['listen'];
       return ['learn','speak'];
-    }
-    function activityButtons(row){
-      const modes = activityModesForRow(row);
-      return `<span class="acts">${
-        modes.map(m => {
-          const label = m==='learn' ? 'Learn' : m==='speak' ? 'Speak' : m==='read' ? 'Read' : 'Listen';
-          // speak gets color too
-          const primary = (m==='learn' || m==='speak' || m==='read' || m==='listen') ? 'btn-primary' : '';
-          return `<a class="btn ${primary}" href="${pathFor(m, row.name)}">${label}</a>`;
-        }).join('')
-      }</span>`;
     }
 
     function pathFor(mode, setName){
@@ -287,18 +283,46 @@
       });
     }
 
+    // ---- Shared render state (safe defaults) ----
+    let statsMap   = new Map();   // set -> {best,trials,last_ts,perfect_dates}
+    let ratingsMap = {};          // set -> {avg,count}
+    let myRatedSet = new Set();   // Set<set_name>
+    let modeMap    = Object.create(null); // set -> ["learn","speak"|...]
+    let currentNames  = [];             // names we request ratings for (batch)
+
     // ---------- Data fetchers ----------
     async function fetchMe(){
       try{ const r=await api.fetch('/api/me'); return r.ok ? await r.json() : null; }catch(_){ return null; }
     }
     async function fetchMyLibrary(){
-      const r = await api.fetch('/api/my/sets');
-      if(r.status===401) return {unauth:true, data:[]};
-      if(!r.ok) return {unauth:false, data:[]};
-      const arr = await r.json();
-      const data = Array.isArray(arr) ? arr.map(x => ({ name: x.set_name || x.name || '' })) : [];
-      return {unauth:false, data};
+      try{
+        const r = await api.fetch('/api/my/sets');
+        if (r && r.status === 401) return { unauth: true, data: [] };
+        if (!r || !r.ok){
+          // fall back to legacy endpoint instead of returning undefined
+          try{
+            const r2 = await api.fetch('/api/my_sets'); // legacy
+            if (r2 && r2.ok){
+              const arr2 = await r2.json();
+              const data2 = Array.isArray(arr2)
+                ? arr2.map(x => ({ name: x.set_name || x.name || '' }))
+                : [];
+              return { unauth: false, data: data2 };
+            }
+          }catch(_){}
+          return { unauth: false, data: [] };
+        }
+        const arr = await r.json();
+        const data = Array.isArray(arr)
+          ? arr.map(x => ({ name: x.set_name || x.name || '' }))
+          : [];
+        return { unauth: false, data };
+      }catch(e){
+        console.warn('fetchMyLibrary failed:', e);
+        return { unauth: false, data: [] };
+      }
     }
+
     async function fetchGlobal(){
       let gl = [];
       try{
@@ -395,78 +419,140 @@
       body.innerHTML = rows.map(r => trFor(r, statsMap.get(r.name), ratingsMap[r.name], myRatedSet.has(r.name))).join('');
     }
 
-    // ---------- Main ----------
-    async function init(){
-      await wireHeader();
+  // ---------- Main ----------
+  async function init(){
+    await wireHeader();
 
-      // Tabs
-      let view = (qs('view') || 'mine').toLowerCase();
-      const tabMine    = document.getElementById('tabMine');
-      const tabExplore = document.getElementById('tabExplore');
-      function setActiveTab(){
-        tabMine.classList.toggle('active', view==='mine');
-        tabExplore.classList.toggle('active', view==='explore');
+    // 1) Fetch what we need
+    const [libRes, globalSetsRes, scoresRes] = await Promise.all([
+      fetchMyLibrary().catch(() => null),
+      fetchGlobal().catch(() => []),
+      fetchMyScores().catch(() => []),
+    ]);
+
+    const unauth    = !!(libRes && libRes.unauth);
+    const mineRaw   = Array.isArray(libRes?.data) ? libRes.data : [];
+    const globalSets= Array.isArray(globalSetsRes) ? globalSetsRes : [];
+    const scores    = Array.isArray(scoresRes) ? scoresRes : [];
+
+    // 2) Stats for table
+    const statsMapLocal = buildStatsBySet(scores || []);
+
+    // 3) Build a combined name -> modes map
+    const combinedModeMap = Object.create(null);
+
+    function modesFromType(t){
+      const tt = String(t || '').toLowerCase();
+      if (tt === 'reading'   || tt === 'read')      return ['read'];
+      if (tt === 'listening' || tt === 'listen')    return ['listen'];
+      if (tt === 'flashcards'|| tt === 'vocab' || tt === 'cards') return ['learn','speak'];
+      return null;
+    }
+    function nameOf(x){ return (x && (x.name || x.set_name)) || ''; }
+
+    // prefer global catalog (authoritative)
+    (globalSets || []).forEach(x => {
+      const n = nameOf(x);
+      if (!n) return;
+      if (Array.isArray(x.modes) && x.modes.length) {
+        combinedModeMap[n] = x.modes;
+      } else {
+        const mf = modesFromType(x.type);
+        if (mf) combinedModeMap[n] = mf;
       }
-      setActiveTab();
+    });
 
-      // Fetch data
-      const [{unauth, data:mine}, globalSets, scores] = await Promise.all([
-        fetchMyLibrary(),
-        fetchGlobal(),
-        fetchMyScores()
-      ]);
-      const statsMap = buildStatsBySet(scores);
-
-      if (view==='mine' && unauth){
-        document.getElementById('emptyMine').style.display='block';
+    // fill gaps from my library (don’t override global)
+    (mineRaw || []).forEach(x => {
+      const n = nameOf(x);
+      if (!n || combinedModeMap[n]) return;
+      if (Array.isArray(x.modes) && x.modes.length) {
+        combinedModeMap[n] = x.modes;
+      } else {
+        const mf = modesFromType(x.type);
+        if (mf) combinedModeMap[n] = mf;
       }
+    });
 
-      // Ratings (batch + my ratings)
-      const currentNames = (view==='mine' ? mine : globalSets).map(x => x.name).slice(0, 400);
-      const [ratingsMap, myRatedSet] = await Promise.all([
-        fetchRatingsBatch(currentNames),
-        fetchMyRatings().catch(()=> new Set())
-      ]);
+    // 4) Helpers used by filters and renderers
+    function activityModesFor(name){
+      const arr = combinedModeMap[name];
+      if (Array.isArray(arr) && arr.length) return arr;
+      return ['learn','speak']; // last-resort legacy fallback
+    }
+    function activityModesForRow(row){
+      if (!row) return ['learn','speak'];
+      if (Array.isArray(row.modes) && row.modes.length) return row.modes;
+      const mf = modesFromType(row.type);
+      if (mf) return mf;
+      return activityModesFor(row.name || row.set_name || '');
+    }
+    // expose for any existing helpers
+    window.activityModesFor = activityModesFor;
+    window.activityModesForRow = activityModesForRow;
 
-      // Filtering
-      const qEl = document.getElementById('q');
-      const filterBtns = {
-        all:    document.getElementById('f_all'),
-        learn:  document.getElementById('f_learn'),
-        speak:  document.getElementById('f_speak'),
-        listen: document.getElementById('f_listen'),
-        read:   document.getElementById('f_read'),
-      };
-      let filterMode = 'all';
+    // 5) Normalize "mine" rows (add modes/type for filtering)
+    const mine = mineRaw.map(x => {
+      const n = nameOf(x);
+      const m = Array.isArray(x.modes) && x.modes.length ? x.modes : (combinedModeMap[n] || null);
+      return { name: n, modes: m, type: x.type || null };
+    });
 
-      function setFilter(key){
-        for(const k in filterBtns){
-          filterBtns[k].classList.toggle('active', k===key);
-          filterBtns[k].setAttribute('aria-pressed', k===key ? 'true' : 'false');
-        }
-        filterMode = key;
-        rerender();
+    // 6) Ratings (community + mine)
+    const currentNames = mine.map(r => r.name).slice(0, 400);
+    const [ratingsMapLocal, myRatedSetLocal] = await Promise.all([
+      fetchRatingsBatch(currentNames).catch(() => ({})),
+      fetchMyRatings().catch(() => new Set()),
+    ]);
+
+    // 7) Sign-in prompt if needed
+    if (unauth){
+      const el = document.getElementById('emptyMine');
+      if (el) el.style.display='block';
+    }
+
+    // 8) Filtering UI (All / Learn / Speak / Listen / Read + search)
+    const qEl = document.getElementById('q');
+    const filterBtns = {
+      all:    document.getElementById('f_all'),
+      learn:  document.getElementById('f_learn'),
+      speak:  document.getElementById('f_speak'),
+      listen: document.getElementById('f_listen'),
+      read:   document.getElementById('f_read'),
+    };
+    let filterMode = 'all';
+
+    function setFilter(key){
+      for(const k in filterBtns){
+        const b = filterBtns[k];
+        if (!b) continue;
+        b.classList.toggle('active', k===key);
+        b.setAttribute('aria-pressed', k===key ? 'true' : 'false');
       }
-      for(const k in filterBtns){ filterBtns[k].addEventListener('click', ()=> setFilter(k)); }
-      qEl.addEventListener('input', rerender);
-
-      function baseRows(){
-        const base = (view==='mine' ? mine : globalSets).map(x => ({ name: x.name }));
-        return applyFilters(base, filterMode, qEl.value);
-      }
-
-      function rerender(){
-        const rows = baseRows();
-        document.getElementById('emptyExplore').style.display = (view==='explore' && rows.length===0) ? 'block' : 'none';
-        renderTable(rows, statsMap, ratingsMap, myRatedSet || new Set());
-      }
-
-      // Hook tab clicks (stay on page; replace query)
-      tabMine.addEventListener('click', (e)=>{ e.preventDefault(); view='mine'; history.replaceState(null,'','?view=mine'); setActiveTab(); rerender(); });
-      tabExplore.addEventListener('click', (e)=>{ e.preventDefault(); view='explore'; history.replaceState(null,'','?view=explore'); setActiveTab(); rerender(); });
-
+      filterMode = key;
       rerender();
     }
+    for(const k in filterBtns){
+      const b = filterBtns[k];
+      if (b) b.addEventListener('click', ()=> setFilter(k));
+    }
+    if (qEl) qEl.addEventListener('input', rerender);
+
+    // 9) Data → rows → filters
+    function baseRows(){
+      // mine already has {name, modes, type}
+      return applyFilters(mine, filterMode, qEl ? qEl.value : '');
+    }
+
+    // 10) Render
+    function rerender(){
+      const rows = baseRows();
+      renderTable(rows, statsMapLocal, ratingsMapLocal, myRatedSetLocal);
+    }
+
+    // initial paint
+    rerender();
+  }
 
     init();
   </script>

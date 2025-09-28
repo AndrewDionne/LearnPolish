@@ -193,23 +193,31 @@
 
     const scaffolds = {
       ls: `[
-  {"phrase":"Cześć","meaning":"Hello","pronunciation":"cheshch"},
-  {"phrase":"Dziękuję","meaning":"Thank you","pronunciation":"jen-koo-yeh"}
-]`,
+      {"phrase":"Cześć","meaning":"Hello","pronunciation":"cheshch"},
+      {"phrase":"Dziękuję","meaning":"Thank you","pronunciation":"jen-koo-yeh"}
+    ]`,
       read: `[
-  {"title":"Story 1","polish":"Ala ma kota.","english":"Ala has a cat."},
-  {"title":"Spacer","polish":"Dzisiaj idziemy do parku.","english":"Today we are going to the park."}
-]`,
+      {"title":"Story 1","polish":"Ala ma kota.","english":"Ala has a cat."},
+      {"title":"Spacer","polish":"Dzisiaj idziemy do parku.","english":"Today we are going to the park."}
+    ]`,
+      // ✅ Listening no longer needs audio/audio_url; server will synthesize audio
       listen: `[
-  {"phrase":"Dzień dobry","meaning":"Good morning","audio_url":"https://example.com/audio/dzien_dobry.mp3"},
-  {"phrase":"Przepraszam","meaning":"Excuse me","audio_url":"https://example.com/audio/przepraszam.mp3"}
-]`
+      {"polish":"Krążek wpadł do bramki po dobitce napastnika.","english":"The puck went into the net on the forward's rebound."},
+      {"polish":"Dostaliśmy dwie minuty kary za zahaczanie.","english":"We got a two-minute penalty for hooking."}
+    ]`
     };
+
     const notes = {
       ls: 'Each item: {"phrase","meaning","pronunciation?"}.',
       read: 'Each item: {"polish","english?","title?"}.',
-      listen: 'Each item: {"audio_url" or "audio"}; optional {"phrase"/"text"/"polish","meaning?"}.'
+      // ✅ Updated help text for Listening
+      listen: [
+        'No audio file needed — the server will synthesize it.',
+        'Each item should have "polish" and optional "english".',
+        'Synonyms accepted: "phrase" for polish, "meaning" for english.'
+      ].join(' ')
     };
+
 
     function currentGroup(){
       const r = radios.find(x => x.checked);
@@ -251,9 +259,13 @@
     }
     function validateListen(arr){
       if (!Array.isArray(arr) || !arr.length) return 'Must be a non-empty array.';
-      for (let i=0;i<arr.length;i++){
-        const it = arr[i]; if (!it || typeof it !== 'object') return `Item ${i+1} must be an object.`;
-        if (!('audio_url' in it) && !('audio' in it)) return `Item ${i+1} must include "audio_url" (or "audio").`;
+      for (let i = 0; i < arr.length; i++){
+        const it = arr[i];
+        if (!it || typeof it !== 'object') return `Item ${i+1} must be an object.`;
+        const hasPolish = (typeof it.polish === 'string' && it.polish.trim().length > 0) ||
+                          (typeof it.phrase === 'string' && it.phrase.trim().length > 0);
+        if (!hasPolish) return `Item ${i+1} must include "polish" (or "phrase").`;
+        // english/meaning are optional
       }
       return null;
     }
@@ -264,7 +276,9 @@
 
     document.getElementById('createForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-      status.textContent=''; success.style.display='none';
+      status.textContent = '';
+      status.style.color = '';
+      success.style.display = 'none';
 
       const setName = document.getElementById('set_name').value.trim();
       const group = currentGroup();
@@ -275,22 +289,60 @@
       try { data = JSON.parse(ta.value); }
       catch { status.textContent='❌ Invalid JSON.'; status.style.color='crimson'; return; }
 
+      // Modes per group
       const modes = (group==='ls') ? ['learn','speak'] : (group==='read') ? ['read'] : ['listen'];
+
+      // Validate per group
       const err = group==='ls' ? validateLS(data) : group==='read' ? validateRead(data) : validateListen(data);
       if (err){ status.textContent='❌ ' + err; status.style.color='crimson'; return; }
 
+      // ✅ Normalize keys before sending (esp. for Listening)
+      let payloadData = data;
+      if (group === 'listen'){
+        payloadData = data.map((it, i) => {
+          const polish = (it.polish ?? it.phrase ?? '').toString().trim();
+          const english = (it.english ?? it.meaning ?? '').toString().trim();
+          return english ? { polish, english } : { polish };
+        });
+      } else if (group === 'read'){
+        // Optional tidy-up: ensure only expected keys are sent
+        payloadData = data.map(it => {
+          const out = {
+            polish: (it.polish ?? '').toString(),
+          };
+          if (it.english) out.english = it.english.toString();
+          if (it.title) out.title = it.title.toString();
+          return out;
+        });
+      } else {
+        // Learn/Speak: accept phrase/meaning (+ keep pronunciation if present)
+        payloadData = data.map(it => {
+          const out = {
+            phrase: (it.phrase ?? it.polish ?? it.front ?? '').toString(),
+            meaning: (it.meaning ?? it.english ?? it.back ?? '').toString()
+          };
+          if (it.pronunciation) out.pronunciation = it.pronunciation.toString();
+          return out;
+        });
+      }
+
       try{
         const res = await fetch(`${API_BASE}/create_set`, {
-          method:'POST',
-          headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+(localStorage.getItem('lp_token')||'') },
-          body: JSON.stringify({ set_name: setName, modes, data })
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + (localStorage.getItem('lp_token') || '')
+          },
+          body: JSON.stringify({ set_name: setName, modes, data: payloadData })
         });
         const j = await res.json();
+
         if (!res.ok){
           status.textContent = '❌ ' + (j.message || j.error || res.status);
           status.style.color = 'crimson';
           return;
         }
+
         status.textContent = '';
         const enc = encodeURIComponent(setName);
         const links = modes.map(m=>{
@@ -306,6 +358,7 @@
         status.style.color = 'crimson';
       }
     });
+
   </script>
 </body>
 </html>
