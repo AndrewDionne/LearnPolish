@@ -10,8 +10,8 @@
       "correct": "Change! To the bench, quick!",
       "distractors": [
         "Get back! Mark your man!",
-        "A question",
-        "A time of day"
+        "A request",
+        "Small talk"
       ]
     },
     "detail": {
@@ -34,7 +34,7 @@
       "distractors": [
         "Change! To the bench, quick!",
         "A request",
-        "A question"
+        "Small talk"
       ]
     },
     "detail": {
