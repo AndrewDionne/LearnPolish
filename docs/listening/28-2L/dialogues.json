@@ -1,0 +1,48 @@
+[
+  {
+    "id": "d001",
+    "audio": "listening/d001.mp3",
+    "duration_s": 0,
+    "transcript_pl": "Krążek wpadł do bramki po dobitce napastnika.",
+    "translation_en": "The puck went into the net on the forward's rebound.",
+    "gist": {
+      "prompt": "Which best matches the audio?",
+      "correct": "The puck went into the net on the forward's rebound.",
+      "distractors": [
+        "We got a two-minute penalty for hooking.",
+        "A question",
+        "A number"
+      ]
+    },
+    "detail": {
+      "prompt": "What exactly did you hear (in Polish)?",
+      "correct": "Krążek wpadł do bramki po dobitce napastnika.",
+      "distractor_bank": [
+        "Dostaliśmy dwie minuty kary za zahaczanie."
+      ]
+    }
+  },
+  {
+    "id": "d002",
+    "audio": "listening/d002.mp3",
+    "duration_s": 0,
+    "transcript_pl": "Dostaliśmy dwie minuty kary za zahaczanie.",
+    "translation_en": "We got a two-minute penalty for hooking.",
+    "gist": {
+      "prompt": "Which best matches the audio?",
+      "correct": "We got a two-minute penalty for hooking.",
+      "distractors": [
+        "The puck went into the net on the forward's rebound.",
+        "A number",
+        "An apology"
+      ]
+    },
+    "detail": {
+      "prompt": "What exactly did you hear (in Polish)?",
+      "correct": "Dostaliśmy dwie minuty kary za zahaczanie.",
+      "distractor_bank": [
+        "Krążek wpadł do bramki po dobitce napastnika."
+      ]
+    }
+  }
+]
