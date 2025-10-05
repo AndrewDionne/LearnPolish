@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Dual-host <base> (GitHub Pages vs Flask) -->
+  <script>
+    (function () {
+      var isGH = /\.github\.io$/i.test(location.hostname);
+      var baseHref = isGH ? '/LearnPolish/' : '/';
+      document.write('<base href="' + baseHref + '">');
+    })();
+  </script>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;700&family=Manrope:wght@700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+
+  <!-- Shared styles -->
+  <link rel="stylesheet" href="static/app.css?v=5">
+  <title>Groups • Path to POLISH</title>
+
+  <style>
+    .card-head{ display:flex; align-items:flex-end; justify-content:space-between; gap:10px; margin-bottom:8px; }
+    .field{ display:flex; gap:8px; align-items:center; margin:8px 0 }
+    .field input{
+      flex:1; height:38px; padding:0 10px; border:1px solid var(--border);
+      border-radius:10px; background:var(--card); color:var(--text);
+    }
+    .hint{ font-size:12px; color:var(--muted); margin-top:6px }
+    .tabs .btn{ min-width:96px }
+    /* Top-right page action (like Library's "My collections") */
+    .page-actions{ max-width:1100px; padding:0 var(--pad); display:flex; justify-content:flex; }
+  </style>
+</head>
+
+<body
+  data-header="Path to Polish"
+  data-note-lead="Groups"
+  data-note-tail="Learn with friends and progress together."
+  data-note-no-sep
+  data-note-tight 
+  style="
+    --logo-size: 48px;
+    --banner-font: 'Manrope', -apple-system, system-ui, Segoe UI, Roboto, Helvetica, Arial;
+    --banner-weight: 800;
+    --banner-track: .01em;
+    --banner-size: 28px;
+    --banner-size-lg: 36px;
+    --banner-nudge-x: 10px;
+
+    --note-lead-font: 'Inter', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    --note-lead-size: 18px; --note-lead-weight: 700; --note-lead-track: .02em;
+    --note-lead-color: var(--text);
+    --note-font: 'Source Serif 4', ui-serif, Georgia, 'Times New Roman', serif;
+    --note-weight: 400;
+  ">
+
+  <!-- Header -->
+  <header class="topbar no-nav">
+    <div class="row container">
+      <div class="header-left">
+        <a class="brand" href="index.html" aria-label="Path to Polish — Home">
+          <svg class="brand-mark" aria-hidden="true" focusable="false">
+            <use href="static/brand.svg#ptp-mark"></use>
+          </svg>
+          <span id="headerBanner" class="header-banner"></span>
+        </a>
+      </div>
+      <nav class="head-actions">
+        <a href="profile.html"  id="profileBtn">Profile</a>
+        <a href="login.html"    id="loginLink">Sign In</a>
+        <a href="register.html" id="registerLink">Register</a>
+        <button id="logoutBtn" style="display:none;">Logout</button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Subheader note -->
+  <div class="wrap">
+    <div id="pageNote" class="page-note"></div>
+  </div>
+
+  <!-- Top-right page action -->
+  <div class="page-actions">
+    <button id="globalGroupBtn" class="btn btn-primary" type="button">Create / Join</button>
+  </div>
+
+  <!-- Main -->
+  <main class="wrap">
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 id="groupNameHdr" style="margin:0">No group yet</h2>
+          <div class="muted tiny" id="groupMeta">Create or join to get started.</div>
+          <div class="muted tiny" id="multiNote" style="display:none">Multiple groups found; showing the first.</div>
+        </div>
+        <!-- In multi-group mode we show both Invite + Leave inside the card -->
+        <div class="row" style="gap:8px;">
+          <button id="leaveBtn"  class="btn" type="button" style="display:none">Leave group</button>
+          <button id="inviteBtn" class="btn" type="button" style="display:none">Invite members</button>
+        </div>
+      </div>
+
+      <div class="row" style="margin:12px 0; gap:12px; flex-wrap:wrap">
+        <button id="tabActivity"    class="btn btn-primary" type="button">Recent activity</button>
+        <button id="tabLeaderboard" class="btn" type="button">Weekly leaderboard</button>
+      </div>
+
+      <!-- Activity -->
+      <div id="panelActivity">
+        <div class="table-wrap">
+          <table id="activityTable" style="display:none;">
+            <thead>
+              <tr>
+                <th>When</th>
+                <th>Person</th>
+                <th>Collection</th>
+                <th>Activity</th>
+                <th>Score</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div id="emptyActivity" class="muted" style="padding:10px">No recent activity.</div>
+      </div>
+
+      <!-- Leaderboard -->
+      <div id="panelLeaderboard" style="display:none">
+        <div class="table-wrap">
+          <table id="lbTable" style="display:none;">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Member</th>
+                <th>Gold (week)</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div id="emptyLb" class="muted" style="padding:10px">No data for this week.</div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Create / Join modal -->
+  <div id="groupModal" class="modal-backdrop" role="dialog" aria-modal="true" style="display:none;">
+    <div class="modal">
+      <h3 id="modalTitle" style="margin:0 0 10px">Create or join a group</h3>
+
+      <div class="tabs" style="margin-bottom:8px">
+        <button id="tabCreate" class="btn btn-primary" type="button">Create</button>
+        <button id="tabJoin"   class="btn" type="button">Join</button>
+      </div>
+
+      <div id="viewCreate">
+        <div class="field">
+          <input id="inpGroupName" placeholder="New group name" />
+          <button id="btnCreate" class="btn btn-primary" type="button">Create</button>
+        </div>
+        <div class="hint">Create a team name and invite friends with a link.</div>
+      </div>
+
+      <div id="viewJoin" style="display:none">
+        <div class="field">
+          <input id="inpJoinCode" placeholder="Enter invite code" />
+          <button id="btnJoin" class="btn" type="button">Join</button>
+        </div>
+        <div class="hint">Paste the invite code or open the link you received.</div>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:12px;">
+        <button id="btnClose" class="btn" type="button">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Invite modal -->
+  <div id="inviteModal" class="modal-backdrop" aria-hidden="true"
+       style="display:none; align-items:center; justify-content:center;">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="inviteTitle">
+      <h4 id="inviteTitle" style="margin:0 0 8px">Invite members</h4>
+      <div id="inviteGroupName" class="tiny" style="margin:-6px 0 10px; color:var(--muted)"></div>
+
+      <label style="display:block; font-weight:600; margin:8px 0 6px;">Email addresses</label>
+      <textarea id="inviteEmails" rows="4"
+                placeholder="one per line or comma-separated"
+                style="width:100%; border:1px solid var(--border); border-radius:10px; padding:8px;
+                       background:var(--card); color:var(--text);"></textarea>
+
+      <div id="inviteLinkWrap" class="tiny" style="margin:10px 0; display:none;">
+        Invite link:
+        <a id="inviteLink" href="#" target="_blank" rel="noopener"></a>
+      </div>
+
+      <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:10px;">
+        <button id="copyInviteBtn"  class="btn">Copy invite link</button>
+        <button id="sendInviteBtn"  class="btn btn-primary">Send invites</button>
+        <button id="inviteCloseBtn" class="btn">Close</button>
+      </div>
+
+      <div id="inviteStatus" class="tiny" style="margin-top:8px; color:var(--muted)"></div>
+    </div>
+  </div>
+
+  <!-- Bottom nav -->
+  <nav class="bottom" aria-label="Primary">
+    <a href="index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a 1 1 0 0 1-1-1v-10.5Z" stroke-width="1.5"/></svg>
+      <span>Home</span>
+    </a>
+    <a href="learn.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 12h16M4 18h9" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <span>Learn</span>
+    </a>
+    <a href="manage_sets/index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="16" rx="2" ry="2" stroke-width="1.5"/><path d="M7 8h10M7 12h10M7 16h7" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <span>Library</span>
+    </a>
+    <a href="dashboard.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 14h6V4H4v10Zm10 6h6V4h-6v16Z" stroke-width="1.5"/></svg>
+      <span>Dashboard</span>
+    </a>
+    <a href="groups.html" aria-current="page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm-9 9a9 9 0 0 1 18 0" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <span>Groups</span>
+    </a>
+  </nav>
+
+  <!-- Scripts -->
+  <script src="static/js/api.js"></script>
+  <script src="static/js/page-chrome.js" defer></script>
+
+  <script>
+    // Auth wiring
+    (async () => {
+      const logoutBtn = document.getElementById('logoutBtn');
+      const loginLink = document.getElementById('loginLink');
+      const registerLink = document.getElementById('registerLink');
+      try { const r = await api.fetch('/api/me'); if (r.ok) { loginLink.style.display='none'; registerLink.style.display='none'; logoutBtn.style.display='inline-block'; } } catch(_) {}
+      logoutBtn?.addEventListener('click', async (e)=>{ e.preventDefault(); try{ await api.fetch('/api/logout',{method:'POST'});}catch(_){}
+        localStorage.removeItem('lp_token'); location.href='login.html'; });
+    })();
+
+    // Groups logic
+    (function(){
+      // ---- CONFIG: flip to false if backend allows only 1 group ----
+      const MULTI_GROUPS = true;
+
+      const $ = (id)=> document.getElementById(id);
+      const baseAbs = (path) => new URL(path, document.baseURI).href;
+
+      // Helpers
+      function modeLabel(m){ m=(m||'').toLowerCase(); if(m==='practice'||m==='speak') return 'Speak'; if(m==='reading'||m==='read') return 'Read'; if(m==='listening'||m==='listen') return 'Listen'; return 'Learn'; }
+      function shortDate(iso){ if(!iso) return ''; const d=new Date(iso); return d.toLocaleString(); }
+      function normalizeEmails(raw){
+        return (raw||'').split(/[\n,; ]+/g).map(s=>s.trim()).filter(Boolean)
+          .filter(e=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)).slice(0,200);
+      }
+      async function copyToClipboard(text){
+        try{ if(navigator.clipboard?.writeText){ await navigator.clipboard.writeText(text); return true; } }catch(_){}
+        const ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.left='-9999px'; document.body.appendChild(ta);
+        ta.select(); ta.setSelectionRange(0,99999); const ok=document.execCommand('copy'); document.body.removeChild(ta); return ok;
+      }
+
+      async function fetchInviteLink(groupId){
+        const tries = [
+          {m:'POST', u:`/api/groups/${groupId}/invite_link`},
+          {m:'GET',  u:`/api/groups/${groupId}/invite_link`},
+          {m:'GET',  u:`/api/my/groups/${groupId}/invite_link`},
+          {m:'GET',  u:`/api/my/groups/invite_link?group_id=${encodeURIComponent(groupId)}`},
+          {m:'POST', u:`/api/groups/${groupId}/share`},
+        ];
+        for(const t of tries){
+          try{
+            const r=await api.fetch(t.u,{method:t.m}); if(!r.ok) continue;
+            const j=await r.json();
+            const url=j.url||j.invite_url||j.link||j.href;
+            if(typeof url==='string') return url;
+            const token=j.token||j.invite_token||j.code;
+            if(token) return baseAbs(`join?token=${encodeURIComponent(token)}`);
+          }catch(_){}
+        }
+        return baseAbs('groups.html');
+      }
+      async function sendInvites(groupId, emails){
+        const bodies = [
+          { url:`/api/groups/${groupId}/invite`,           body:{ emails } },
+          { url:`/api/my/groups/${groupId}/invite`,        body:{ emails } },
+          { url:`/api/groups/invite`,                      body:{ group_id:groupId, emails } },
+          { url:`/api/my/groups/invite`,                   body:{ group_id:groupId, emails } },
+        ];
+        for(const b of bodies){
+          try{ const r=await api.fetch(b.url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b.body)}); if(r.ok) return {ok:true}; }catch(_){}
+        }
+        return {ok:false};
+      }
+      async function leaveGroup(groupId){
+        try{
+          let r = await api.fetch(`/api/groups/${groupId}/leave`, {method:'DELETE'});
+          if(!r.ok) r = await api.fetch(`/api/my/groups/${groupId}/leave`, {method:'DELETE'});
+          return r.ok;
+        }catch(_){ return false; }
+      }
+
+      // DOM
+      const dom = {
+        globalBtn:   $('globalGroupBtn'),
+        name:        $('groupNameHdr'),
+        meta:        $('groupMeta'),
+        multiNote:   $('multiNote'),
+
+        tabA:        $('tabActivity'),
+        tabL:        $('tabLeaderboard'),
+        panA:        $('panelActivity'),
+        panL:        $('panelLeaderboard'),
+
+        actTable:    $('activityTable'),
+        actBody:     document.querySelector('#activityTable tbody'),
+        actEmpty:    $('emptyActivity'),
+
+        lbTable:     $('lbTable'),
+        lbBody:      document.querySelector('#lbTable tbody'),
+        lbEmpty:     $('emptyLb'),
+
+        inviteBtn:   $('inviteBtn'),
+        leaveBtn:    $('leaveBtn'),
+
+        // Create/Join modal
+        groupModal:  $('groupModal'),
+        tabCreate:   $('tabCreate'),
+        tabJoin:     $('tabJoin'),
+        viewCreate:  $('viewCreate'),
+        viewJoin:    $('viewJoin'),
+        btnCreate:   $('btnCreate'),
+        btnJoin:     $('btnJoin'),
+        inpGroupName:$('inpGroupName'),
+        inpJoinCode: $('inpJoinCode'),
+        btnClose:    $('btnClose'),
+        modalTitle:  $('modalTitle'),
+
+        // Invite modal
+        inviteModal: $('inviteModal'),
+        inviteTitle: $('inviteTitle'),
+        inviteName:  $('inviteGroupName'),
+        inviteTA:    $('inviteEmails'),
+        inviteLinkW: $('inviteLinkWrap'),
+        inviteLink:  $('inviteLink'),
+        btnCopy:     $('copyInviteBtn'),
+        btnSend:     $('sendInviteBtn'),
+        btnInvClose: $('inviteCloseBtn'),
+        inviteStat:  $('inviteStatus'),
+      };
+
+      let groups = [];
+      let current = null;
+
+      // Modal helpers
+      function showGroupModal(which='create'){
+        dom.groupModal.style.display='flex';
+        if(which==='join'){ showJoinTab(); setTimeout(()=>dom.inpJoinCode?.focus(),0); }
+        else { showCreateTab(); setTimeout(()=>dom.inpGroupName?.focus(),0); }
+      }
+      function hideGroupModal(){ dom.groupModal.style.display='none'; }
+      function showCreateTab(){ dom.tabCreate.classList.add('btn-primary'); dom.tabJoin.classList.remove('btn-primary'); dom.viewCreate.style.display='block'; dom.viewJoin.style.display='none'; dom.modalTitle.textContent='Create a group'; }
+      function showJoinTab(){ dom.tabJoin.classList.add('btn-primary'); dom.tabCreate.classList.remove('btn-primary'); dom.viewJoin.style.display='block'; dom.viewCreate.style.display='none'; dom.modalTitle.textContent='Join a group'; }
+
+      function openInvite(){
+        if(!current) return;
+        dom.inviteTA.value=''; dom.inviteStat.textContent=''; dom.inviteName.textContent=current.group_name||current.name||''; dom.inviteLinkW.style.display='none';
+        dom.inviteModal.style.display='flex';
+      }
+      function closeInvite(){ dom.inviteModal.style.display='none'; }
+
+      async function loadGroups(){
+        try{ const r=await api.fetch('/api/my/groups'); groups = r.ok ? await r.json() : []; }catch(_){ groups=[]; }
+
+        dom.multiNote.style.display = groups.length > 1 ? 'block' : 'none';
+        current = groups[0] || null;
+
+        if(!current){
+          dom.name.textContent='No group yet';
+          dom.meta.textContent='Create or join to get started.';
+          dom.inviteBtn.style.display='none';
+          dom.leaveBtn.style.display='none';
+          // Top-right button label for single-group mode
+          if(MULTI_GROUPS){
+            dom.globalBtn.textContent='Create / Join';
+            dom.globalBtn.onclick = ()=> showGroupModal('create');
+          }else{
+            dom.globalBtn.textContent='Create / Join';
+            dom.globalBtn.onclick = ()=> showGroupModal('create');
+          }
+          return;
+        }
+
+        dom.name.textContent = current.group_name || current.name || ('Group ' + (current.group_id || current.id));
+        const size = current.member_count ?? current.size;
+        dom.meta.textContent = (size != null) ? `${size} member${size===1?'':'s'}` : ' ';
+
+        // Button placement logic
+        if (MULTI_GROUPS){
+          dom.inviteBtn.style.display='inline-flex';
+          dom.leaveBtn.style.display='inline-flex';
+          dom.globalBtn.textContent='Create / Join';
+          dom.globalBtn.onclick = ()=> showGroupModal('create');
+        }else{
+          dom.inviteBtn.style.display='inline-flex';
+          dom.leaveBtn.style.display='none';
+          dom.globalBtn.textContent='Leave group';
+          dom.globalBtn.onclick = async ()=>{
+            if(!confirm('Leave this group?')) return;
+            const ok = await leaveGroup(current.group_id || current.id);
+            if(ok){ await loadGroups(); } else { alert('Failed to leave group'); }
+          };
+        }
+
+        await showActivity();
+      }
+
+      // Views
+      async function showActivity(){
+        if(!current) return;
+        dom.tabA.classList.add('btn-primary'); dom.tabL.classList.remove('btn-primary');
+        dom.panA.style.display='block'; dom.panL.style.display='none';
+        dom.actTable.style.display='none'; dom.actEmpty.style.display='block'; dom.actBody.innerHTML='';
+        try{
+          let r = await api.fetch(`/api/groups/${current.group_id}/recent_activity?limit=50`);
+          if(!r.ok) r = await api.fetch('/api/my/groups/recent?limit=50');
+          if(r.ok){
+            const acts=await r.json();
+            if(Array.isArray(acts) && acts.length){
+              dom.actEmpty.style.display='none'; dom.actTable.style.display='table';
+              dom.actBody.innerHTML = acts.map(a=>`
+                <tr>
+                  <td>${shortDate(a.timestamp || a.when)}</td>
+                  <td>${a.user_name || a.user || '—'}</td>
+                  <td>${a.set_name || '—'}</td>
+                  <td>${modeLabel(a.mode || a.activity || '')}</td>
+                  <td>${(a.score ?? '—')}</td>
+                </tr>`).join('');
+            }
+          }
+        }catch(_){}
+      }
+      async function showLeaderboard(){
+        if(!current) return;
+        dom.tabL.classList.add('btn-primary'); dom.tabA.classList.remove('btn-primary');
+        dom.panL.style.display='block'; dom.panA.style.display='none';
+        dom.lbTable.style.display='none'; dom.lbEmpty.style.display='block'; dom.lbBody.innerHTML='';
+        try{
+          const r=await api.fetch(`/api/groups/${current.group_id}/leaderboard?window=week`);
+          if(r.ok){
+            const data=await r.json(); const rows=data.leaderboard||data||[];
+            if(Array.isArray(rows) && rows.length){
+              dom.lbEmpty.style.display='none'; dom.lbTable.style.display='table';
+              dom.lbBody.innerHTML = rows.map((x,i)=>`
+                <tr>
+                  <td>${i+1}</td>
+                  <td>${x.name || x.user_name || '—'}</td>
+                  <td>${x.points ?? x.gold ?? 0}</td>
+                </tr>`).join('');
+            }
+          }
+        }catch(_){}
+      }
+
+      // Auto-join via ?code=
+      (async function autoJoinFromQuery(){
+        const params = new URLSearchParams(location.search);
+        const code = (params.get('code') || '').trim();
+        if(!code) return;
+        try{
+          const r=await api.fetch('/api/groups/join',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code})});
+          if(r.ok){
+            alert('Joined the group!');
+            params.delete('code');
+            const q=params.toString();
+            history.replaceState({},'',location.pathname+(q?`?${q}`:''));
+          }else{
+            let j={}; try{ j=await r.json(); }catch(_){}
+            showGroupModal('join'); dom.inpJoinCode.value = code;
+            alert('Could not join: ' + (j.error || r.status));
+          }
+        }catch(_){}
+      })();
+
+      // Bindings
+      dom.tabActivity?.addEventListener('click', (e)=>{ e.preventDefault(); showActivity(); });
+      dom.tabLeaderboard?.addEventListener('click', (e)=>{ e.preventDefault(); showLeaderboard(); });
+
+      dom.globalBtn?.addEventListener('click', (e)=>{ /* action is set in loadGroups() */ });
+
+      dom.tabCreate?.addEventListener('click', (e)=>{ e.preventDefault(); showCreateTab(); });
+      dom.tabJoin?.addEventListener('click',   (e)=>{ e.preventDefault(); showJoinTab(); });
+      dom.btnClose?.addEventListener('click',  (e)=>{ e.preventDefault(); hideGroupModal(); });
+      dom.groupModal?.addEventListener('click',(e)=>{ if(e.target===dom.groupModal) hideGroupModal(); });
+
+      dom.btnCreate?.addEventListener('click', async (e)=>{
+        e.preventDefault();
+        const name=(dom.inpGroupName.value||'').trim(); if(!name) return;
+        try{
+          const r=await api.fetch('/api/groups',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
+          if(r.ok){ dom.inpGroupName.value=''; hideGroupModal(); await loadGroups(); alert('Group created'); }
+          else { let j={}; try{ j=await r.json(); }catch(_){}
+            alert('Failed to create group: ' + (j.error || r.status)); }
+        }catch(_){ alert('Failed to create group'); }
+      });
+      dom.inpGroupName?.addEventListener('keydown', (e)=>{ if(e.key==='Enter') dom.btnCreate?.click(); });
+
+      dom.btnJoin?.addEventListener('click', async (e)=>{
+        e.preventDefault();
+        const code=(dom.inpJoinCode.value||'').trim(); if(!code) return;
+        try{
+          const r=await api.fetch('/api/groups/join',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code})});
+          if(r.ok){ dom.inpJoinCode.value=''; hideGroupModal(); await loadGroups(); alert('Joined!'); }
+          else { let j={}; try{ j=await r.json(); }catch(_){}
+            alert('Failed to join group: ' + (j.error || r.status)); }
+        }catch(_){ alert('Failed to join group'); }
+      });
+      dom.inpJoinCode?.addEventListener('keydown', (e)=>{ if(e.key==='Enter') dom.btnJoin?.click(); });
+
+      dom.inviteBtn?.addEventListener('click', async (e)=>{
+        e.preventDefault();
+        if(!current) return;
+        openInvite();
+        try{
+          const url = await fetchInviteLink(current.group_id || current.id);
+          dom.inviteLink.href = url; dom.inviteLink.textContent = url; dom.inviteLinkW.style.display='block';
+        }catch(_){}
+      });
+      dom.leaveBtn?.addEventListener('click', async ()=>{
+        if(!current) return;
+        if(!confirm('Leave this group?')) return;
+        const ok = await leaveGroup(current.group_id || current.id);
+        if(ok){ await loadGroups(); } else { alert('Failed to leave group'); }
+      });
+
+      dom.btnInvClose?.addEventListener('click', (e)=>{ e.preventDefault(); closeInvite(); });
+      dom.inviteModal?.addEventListener('click', (e)=>{ if(e.target===dom.inviteModal) closeInvite(); });
+
+      dom.btnCopy?.addEventListener('click', async ()=>{
+        if(!current) return;
+        dom.inviteStat.textContent='Generating invite link…';
+        const url = await fetchInviteLink(current.group_id || current.id);
+        const ok  = await copyToClipboard(url);
+        dom.inviteLink.href = url; dom.inviteLink.textContent = url; dom.inviteLinkW.style.display='block';
+        dom.inviteStat.textContent = ok ? 'Invite link copied!' : 'Could not copy automatically—long-press the link and copy.';
+      });
+
+      dom.btnSend?.addEventListener('click', async ()=>{
+        if(!current) return;
+        const emails = normalizeEmails(dom.inviteTA.value);
+        if(!emails.length){ dom.inviteStat.textContent='Add at least one valid email or use “Copy invite link”.'; return; }
+        dom.inviteStat.textContent='Sending invites…';
+        const res = await sendInvites(current.group_id || current.id, emails);
+        dom.inviteStat.textContent = res.ok ? 'Invites sent! 🎉' : 'Could not send via API. Copy and share the link instead.';
+        if(res.ok) dom.inviteTA.value='';
+      });
+
+      // Boot
+      (async function boot(){ await loadGroups(); })();
+    })();
+  </script>
+</body>
+</html>

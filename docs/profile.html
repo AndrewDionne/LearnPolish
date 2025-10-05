@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="stylesheet" href="static/app.css">
+  <title>Path to POLISH • Profile</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root{
+      --brand:#2d6cdf;
+      --bg:#f7f7fb; --card:#ffffff; --text:#0c0f14; --muted:#5a6472; --border:#e6e6ef;
+      --shadow:0 8px 24px rgba(0,0,0,.08);
+      --radius:14px; --pad:16px; --gap:16px; --tap:48px;
+      --gold:#c99200; --gold-soft:#ffe8a3;
+      --focus:0 0 0 3px rgba(45,108,223,.35);
+    }
+    @media (prefers-color-scheme: dark){
+      :root{ --bg:#0b0c10; --card:#121418; --text:#e7e9ee; --muted:#a7b0bf; --border:#1e2230; --shadow:0 6px 22px rgba(0,0,0,.35); --gold:#ffd35a; --gold-soft:#5a4700; }
+    }
+    *{ box-sizing:border-box }
+    body{ font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Ubuntu,Helvetica,Arial; background:var(--bg); color:var(--text); margin:0; }
+
+    main{ max-width:1100px; margin:16px auto 90px; padding:0 16px; display:grid; gap:16px; grid-template-columns:1fr 1fr; }
+    @media (max-width:960px){ main{ grid-template-columns:1fr; } }
+
+    .card{ background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:var(--pad); box-shadow:var(--shadow) }
+    h2{ margin:0 0 8px; font-size:clamp(20px,4.8vw,28px) }
+    h3{ margin:0 0 8px; font-size:clamp(16px,2.6vw,18px) }
+    .muted{ color:var(--muted) }
+    .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap }
+    .col{ display:flex; flex-direction:column; gap:8px }
+    label{ font-size:13px; color:var(--muted) }
+    input[type="text"], input[type="email"], input[type="number"], input[type="file"]{
+      width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:10px; background:var(--card); color:var(--text);
+    }
+    .btn{ display:inline-flex; align-items:center; justify-content:center; height:var(--tap); padding:0 14px; border-radius:10px; border:1px solid var(--border); background:var(--card); color:var(--text); font-weight:600; text-decoration:none; cursor:pointer }
+    .btn-primary{ background:var(--brand); color:#fff; border-color:transparent }
+    .btn-danger{ border-color:#e7b0b0; color:#8d1e1e; background:rgba(255,0,0,.06) }
+    .btn:focus{ outline:none; box-shadow:var(--focus) }
+
+    .avatar-big{
+      width:88px; height:88px; border-radius:18px; border:1px solid var(--border);
+      background:linear-gradient(135deg,#e6edff,#fff5db); display:flex; align-items:center; justify-content:center; font-size:46px;
+    }
+    .avatars{ display:grid; grid-template-columns:repeat(6,1fr); gap:10px }
+    @media (max-width:520px){ .avatars{ grid-template-columns:repeat(4,1fr); } }
+    .ava{
+      border:1px solid var(--border); border-radius:12px; background:var(--card); height:56px; display:flex; align-items:center; justify-content:center;
+      cursor:pointer; font-size:28px; transition:transform .05s ease;
+    }
+    .ava:hover{ transform: translateY(-1px); }
+    .ava.active{ outline:2px solid rgba(45,108,223,.35) }
+
+    .bar{ height:10px; background:#e9ecf6; border-radius:999px; overflow:hidden; border:1px solid var(--border) }
+    .bar > i{ display:block; height:100%; width:0%; background:var(--brand); }
+
+    .coinstack{ width:24px; height:20px; display:inline-block; vertical-align:middle }
+    .coinstack svg{ width:100%; height:100% }
+
+    .tiny{ font-size:12px; color:var(--muted) }
+
+    nav.bottom{ position:fixed; left:0; right:0; bottom:0; background:var(--card); border-top:1px solid var(--border); display:flex; justify-content:space-around; padding:6px 8px; gap:8px; }
+    nav.bottom a{ flex:1; text-align:center; padding:8px; text-decoration:none; color:var(--text); border-radius:10px; display:flex; flex-direction:column; align-items:center; gap:4px; font-size:12px }
+    nav.bottom a svg{ width:20px; height:20px }
+    nav.bottom a.active{ background:rgba(45,108,223,.12); color:var(--brand) }
+    @supports(padding: max(0px)){ nav.bottom{ padding-bottom: max(6px, env(safe-area-inset-bottom)) } }
+  </style>
+</head>
+<body>
+
+  <main>
+    <!-- Left column -->
+    <section class="card">
+      <h2>Profile</h2>
+      <div class="row" style="margin-top:6px">
+        <div id="avatarBig" class="avatar-big" aria-label="Your avatar">🙂</div>
+        <div class="col" style="flex:1; min-width:220px">
+          <div>
+            <label for="displayName">Display name</label>
+            <input id="displayName" type="text" placeholder="Your name" />
+          </div>
+          <div>
+            <label for="email">Email</label>
+            <input id="email" type="email" disabled />
+          </div>
+        </div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <a class="btn" href="./reset.html">Reset password</a>
+        <button id="logoutBtn" class="btn">Log out</button>
+      </div>
+      <div class="tiny" style="margin-top:6px" id="joinDate">Joined —</div>
+    </section>
+
+    <!-- Right column -->
+    <section class="card">
+      <h3>Avatar</h3>
+      <div class="tiny" style="margin-bottom:8px">Pick a character. We’ll use this across groups and leaderboards.</div>
+      <div id="avatars" class="avatars" role="listbox" aria-label="Choose avatar"></div>
+      <div class="row" style="margin-top:10px">
+        <input id="avatarFile" type="file" accept="image/*" />
+        <button id="uploadBtn" class="btn">Upload image</button>
+        <span class="tiny">(optional — requires server support)</span>
+      </div>
+    </section>
+
+    <section class="card">
+      <h3>Goals & preferences</h3>
+      <div class="row" style="align-items:flex-end">
+        <div style="flex:1; min-width:220px">
+          <label for="weeklyGoal">Weekly gold goal</label>
+          <input id="weeklyGoal" type="number" min="50" step="10" value="500" />
+          <div class="row" style="margin-top:6px">
+            <span class="coinstack" aria-hidden="true">
+              <svg viewBox="0 0 64 48">
+                <ellipse cx="18" cy="18" rx="14" ry="8" fill="var(--gold-soft)" stroke="var(--gold)" stroke-width="2"/>
+                <ellipse cx="34" cy="24" rx="14" ry="8" fill="var(--gold-soft)" stroke="var(--gold)" stroke-width="2"/>
+                <ellipse cx="46" cy="16" rx="14" ry="8" fill="var(--gold-soft)" stroke="var(--gold)" stroke-width="2"/>
+              </svg>
+            </span>
+            <span class="tiny">Used for your weekly progress bar & treasure chest.</span>
+          </div>
+        </div>
+        <div style="flex:1; min-width:220px">
+          <label for="uiLang">Interface language</label>
+          <select id="uiLang" style="width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:10px; background:var(--card); color:var(--text);">
+            <option value="en">English</option>
+            <option value="pl">Polski (beta)</option>
+          </select>
+        </div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button id="saveBtn" class="btn btn-primary">Save changes</button>
+        <span id="saveMsg" class="tiny"></span>
+      </div>
+    </section>
+
+    <section class="card">
+      <h3>Account</h3>
+      <div class="row">
+        <button id="exportBtn" class="btn">Export my data (JSON)</button>
+        <button id="deleteBtn" class="btn btn-danger">Delete my account</button>
+      </div>
+      <div id="accountMsg" class="tiny" style="margin-top:6px"></div>
+    </section>
+
+    <section class="card">
+      <h3>Your stats</h3>
+      <div class="row" style="margin-bottom:8px">
+        <div class="pill">🔥 <span id="streakNow">0-day streak</span></div>
+        <div class="pill">🏆 <span id="streakBest">Best 0 days</span></div>
+      </div>
+      <div class="row">
+        <b id="weeklyText">0 / 500 gold this week</b>
+        <div style="flex:1; min-width:160px"><div class="bar"><i id="weeklyBar"></i></div></div>
+      </div>
+      <div class="tiny" style="margin-top:6px">Total gold: <b id="totalGold">—</b></div>
+    </section>
+  </main>
+
+  <!-- Bottom nav (same as Home) -->
+  <nav class="bottom">
+    <a href="./index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1v-10.5Z" stroke-width="1.5"/></svg>
+      <span>Home</span>
+    </a>
+    <a href="./learn.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 12h16M4 18h9" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <span>Learn</span>
+    </a>
+    <a href="./manage_sets/">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="16" rx="2" ry="2" stroke-width="1.5"/><path d="M7 8h10M7 12h10M7 16h7" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <span>Library</span>
+    </a>
+    <a href="./dashboard.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 14h6V4H4v10Zm10 6h6V4h-6v16Z" stroke-width="1.5"/></svg>
+      <span>Dashboard</span>
+    </a>
+    <a href="./groups.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <circle cx="8" cy="8" r="3" stroke-width="1.5"/>
+        <path d="M2 20v-1c0-3 3-5 6-5" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="16" cy="10" r="3" stroke-width="1.5"/>
+        <path d="M11 20v-1c0-2.5 2.5-4.5 5-5" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <span>Groups</span>
+    </a>
+  </nav>
+
+  <script src="./static/js/api.js"></script>
+  <script>
+    // --- tiny helpers ---
+    function shortDate(iso){ if(!iso) return '—'; const d=new Date(iso); return d.toLocaleDateString(); }
+    function msg(el, t){ el.textContent=t; setTimeout(()=>{ el.textContent=''; }, 1800); }
+
+    // Preset avatar catalog (id + emoji). You can swap for SVGs later.
+    const AVATARS = [
+      {id:'scout',   glyph:'🧭'}, {id:'fox',     glyph:'🦊'}, {id:'owl', glyph:'🦉'},
+      {id:'bear',    glyph:'🐻'}, {id:'koala',   glyph:'🐨'}, {id:'dragon', glyph:'🐉'},
+      {id:'mage',    glyph:'🧙‍♂️'}, {id:'ninja', glyph:'🥷'}, {id:'robot', glyph:'🤖'},
+      {id:'books',   glyph:'📚'}, {id:'rocket',  glyph:'🚀'}, {id:'clover', glyph:'🍀'}
+    ];
+    function renderAvatarGrid(selected){
+      const wrap = document.getElementById('avatars');
+      wrap.innerHTML = '';
+      AVATARS.forEach(a=>{
+        const d = document.createElement('button');
+        d.type = 'button';
+        d.className = 'ava' + (a.id===selected ? ' active' : '');
+        d.setAttribute('role','option');
+        d.setAttribute('aria-label', a.id);
+        d.textContent = a.glyph;
+        d.onclick = ()=> selectAvatar(a.id);
+        wrap.appendChild(d);
+      });
+    }
+    function selectAvatar(id){
+      state.avatar_id = id;
+      document.getElementById('avatarBig').textContent = (AVATARS.find(a=>a.id===id)?.glyph) || '🙂';
+      // update active class
+      [...document.querySelectorAll('.ava')].forEach(el=>{
+        if (el.getAttribute('aria-label') === id) el.classList.add('active'); else el.classList.remove('active');
+      });
+    }
+
+    // Local fallback
+    function loadLocalProfile(){
+      try { return JSON.parse(localStorage.getItem('lp.profile') || '{}'); } catch(_){ return {}; }
+    }
+    function saveLocalProfile(obj){
+      try { localStorage.setItem('lp.profile', JSON.stringify(obj||{})); } catch(_){}
+    }
+
+    const state = { avatar_id:null, weekly_goal:500 };
+
+    async function initProfile(){
+      // Me
+      let me=null;
+      try{ const r=await api.fetch('/api/me'); if(r.ok) me=await r.json(); }catch(_){}
+      const loc = loadLocalProfile();
+
+      // seed UI
+      renderAvatarGrid(me?.avatar_id || loc.avatar_id || 'scout');
+      selectAvatar(me?.avatar_id || loc.avatar_id || 'scout');
+
+      document.getElementById('displayName').value = (me?.display_name || me?.name || loc.display_name || '') || '';
+      document.getElementById('email').value = (me?.email || loc.email || '') || '';
+      document.getElementById('joinDate').textContent = 'Joined ' + shortDate(me?.created_at || loc.created_at);
+
+      // Stats/goal
+      try{
+        const r = await api.fetch('/api/my/stats');
+        if(r.ok){
+          const s = await r.json();
+          const weekly = Number(s.weekly_points || s.weekly_gold || 0);
+          const goal   = Number(s.goal_points || s.goal_gold || loc.weekly_goal || 500) || 500;
+          const pct    = Math.max(0, Math.min(100, Math.round((weekly/goal)*100)));
+          document.getElementById('weeklyText').textContent = `${weekly} / ${goal} gold this week`;
+          document.getElementById('weeklyBar').style.width = pct + '%';
+          document.getElementById('weeklyGoal').value = goal;
+          state.weekly_goal = goal;
+          const streak = Number(s.streak_days || 0);
+          const best   = Number(s.longest_streak || s.best_streak || 0);
+          document.getElementById('streakNow').textContent  = `${streak}-day streak`;
+          document.getElementById('streakBest').textContent = `Best ${best} ${best===1?'day':'days'}`;
+          document.getElementById('totalGold').textContent  = (s.total_gold ?? s.total_points ?? '—');
+        }else{
+          document.getElementById('weeklyGoal').value = loc.weekly_goal || 500;
+          state.weekly_goal = Number(document.getElementById('weeklyGoal').value) || 500;
+        }
+      }catch(_){
+        document.getElementById('weeklyGoal').value = loc.weekly_goal || 500;
+        state.weekly_goal = Number(document.getElementById('weeklyGoal').value) || 500;
+      }
+
+      // Language (optional; saved locally unless server supports)
+      const uiLang = loc.ui_lang || 'en';
+      document.getElementById('uiLang').value = uiLang;
+    }
+
+    // Save
+    document.getElementById('saveBtn').addEventListener('click', async ()=>{
+      const saveMsg = document.getElementById('saveMsg');
+      const body = {
+        display_name: document.getElementById('displayName').value.trim(),
+        name: document.getElementById('displayName').value.trim(), // compatibility
+        weekly_goal: Number(document.getElementById('weeklyGoal').value) || 500,
+        avatar_id: state.avatar_id,
+        ui_lang: document.getElementById('uiLang').value
+      };
+      let ok = false;
+      try{
+        const r = await api.fetch('/api/me', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+        ok = r.ok;
+      }catch(_){}
+      // fallback local
+      const loc = loadLocalProfile();
+      const merged = Object.assign({}, loc, body, { email: document.getElementById('email').value, created_at: loc.created_at || new Date().toISOString() });
+      saveLocalProfile(merged);
+
+      msg(saveMsg, ok ? 'Saved!' : 'Saved locally (offline)');
+    });
+
+    // Upload (optional)
+    document.getElementById('uploadBtn').addEventListener('click', async ()=>{
+      const fileIn = document.getElementById('avatarFile');
+      const msgEl  = document.getElementById('saveMsg');
+      const f = fileIn.files?.[0];
+      if(!f){ msg(msgEl, 'Choose a file first'); return; }
+      try{
+        const fd = new FormData(); fd.append('file', f);
+        const r = await api.fetch('/api/me/avatar_upload', { method:'POST', body: fd });
+        if(r.ok){
+          const j = await r.json();
+          // If backend returns avatar_id or avatar_url, reflect it. We fall back to using the big preview.
+          if (j.avatar_id){ selectAvatar(j.avatar_id); }
+          msg(msgEl, 'Avatar uploaded!');
+        }else{
+          msg(msgEl, 'Upload not supported on server');
+        }
+      }catch(_){
+        msg(msgEl, 'Upload failed or not supported');
+      }
+    });
+
+    // Logout
+    document.getElementById('logoutBtn').addEventListener('click', async ()=>{
+      try{ await api.fetch('/api/logout', {method:'POST'});}catch(_){}
+      localStorage.removeItem('lp_token');
+      location.href = './login.html';
+    });
+
+    // Export / Delete (optional endpoints)
+    document.getElementById('exportBtn').addEventListener('click', async ()=>{
+      const msgEl = document.getElementById('accountMsg');
+      try{
+        const r = await api.fetch('/api/my/export');
+        if(r.ok){
+          const j = await r.json();
+          const blob = new Blob([JSON.stringify(j,null,2)], {type:'application/json'});
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a'); a.href = url; a.download = 'learnpolish_export.json'; a.click();
+          URL.revokeObjectURL(url);
+          msg(msgEl, 'Exported!');
+        }else{
+          // Fallback: compile local profile only
+          const j = loadLocalProfile();
+          const blob = new Blob([JSON.stringify(j,null,2)], {type:'application/json'});
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a'); a.href = url; a.download = 'learnpolish_local_profile.json'; a.click();
+          URL.revokeObjectURL(url);
+          msg(msgEl, 'Exported local profile (server export unavailable)');
+        }
+      }catch(_){ msg(msgEl, 'Export failed'); }
+    });
+
+    document.getElementById('deleteBtn').addEventListener('click', async ()=>{
+      const msgEl = document.getElementById('accountMsg');
+      if(!confirm('Delete your account? This cannot be undone.')) return;
+      try{
+        const r = await api.fetch('/api/me', { method:'DELETE' });
+        if(r.ok){ alert('Account deleted'); localStorage.clear(); location.href='./register.html'; }
+        else{ msg(msgEl, 'Server refused deletion'); }
+      }catch(_){ msg(msgEl, 'Deletion failed'); }
+    });
+
+    initProfile();
+  </script>
+</body>
+</html>
