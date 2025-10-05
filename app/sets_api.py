@@ -3,86 +3,35 @@
 from flask import Blueprint, request, jsonify
 from pathlib import Path
 import json
+from shutil import rmtree
+
 from .modes import SET_TYPES
 from .models import db, UserSet
 from .auth import token_required
 from .utils import build_all_mode_indexes
-from shutil import rmtree
 
-# Prefer importing a single source of truth for sets dir + helpers
-try:
-    from .sets_utils import (
-        SETS_DIR,
-        sanitize_filename,
-        create_set as util_create_set,
-        delete_set_file,
-        list_global_sets,      # canonical global listing
-        get_set_metadata,      # <- use to enrich private items in /my_sets
-    )
-except Exception:
-    SETS_DIR = Path("docs/sets")  # fallback
+# ❗ Centralized paths + constants
+from .constants import SETS_DIR, PAGES_DIR, SET_MODES_JSON
 
-    def sanitize_filename(s): return s
+# Canonical helpers from sets_utils (no fallbacks)
+from .sets_utils import (
+    sanitize_filename,
+    create_set as util_create_set,
+    delete_set_file,
+    list_global_sets,     # canonical global listing
+    get_set_metadata,     # enrich items in /my_sets and other listings
+)
 
-    def util_create_set(set_type, name, data):
-        return {"name": name, "count": len(data) if isinstance(data, list) else "?", "type": set_type}
+# Keep the map-builder explicit (no silent fallback)
+from .create_set_modes import main as rebuild_set_modes_map
 
-    def delete_set_file(name):
-        p = SETS_DIR / f"{name}.json"
-        if p.exists():
-            p.unlink()
-            return True
-        return False
-
-    def list_global_sets():
-        out = []
-        for p in sorted(SETS_DIR.glob("*.json")):
-            try:
-                with p.open("r", encoding="utf-8") as f:
-                    arr = json.load(f)
-                count = len(arr) if isinstance(arr, list) else "?"
-            except Exception:
-                count = "?"
-            out.append({"name": p.stem, "count": count, "type": "unknown", "created_by": "system"})
-        return out
-
-    def get_set_metadata(name: str):
-        p = SETS_DIR / f"{name}.json"
-        if p.exists():
-            try:
-                with p.open("r", encoding="utf-8") as f:
-                    arr = json.load(f)
-                if isinstance(arr, list) and arr:
-                    first = arr[0]
-                    if {"phrase","pronunciation","meaning"}.issubset(first):
-                        t = "flashcards"
-                    elif {"title","polish","english"}.issubset(first):
-                        t = "reading"
-                    else:
-                        t = "unknown"
-                    return {"name": name, "count": len(arr), "type": t, "created_by": "system"}
-                elif isinstance(arr, list):
-                    return {"name": name, "count": 0, "type": "unknown", "created_by": "system"}
-            except Exception:
-                pass
-        return {"name": name, "count": "?", "type": "unknown", "created_by": "system"}
-
-# Rebuild docs/set_modes.json when sets change (safe no-op fallback)
-try:
-    from .create_set_modes import main as rebuild_set_modes_map
-except Exception:
-    def rebuild_set_modes_map():
-        try:
-            Path("docs/set_modes.json").write_text("{}", encoding="utf-8")
-        except Exception as e:
-            print(f"⚠️ Failed to (re)write docs/set_modes.json: {e}")
-
-
+# Single blueprint for this module
 sets_api = Blueprint("sets_api", __name__)
 
 # ----------------------------
 # Helpers
 # ----------------------------
+
 def _global_map_by_name(global_list: list[dict]) -> dict[str, dict]:
     return {s["name"]: s for s in global_list if "name" in s}
 
@@ -119,6 +68,7 @@ def _apply_list_params(items: list[dict]):
     except Exception:
         offset = 0
 
+    # filter
     out = items
     if q:
         out = [x for x in out if q in (x.get("name") or "").lower()]
@@ -126,7 +76,10 @@ def _apply_list_params(items: list[dict]):
     # sort
     keyfunc = (lambda x: (x.get("name") or "").lower())
     if sort == "count":
-        keyfunc = (lambda x: (x.get("count") if isinstance(x.get("count"), int) else -1, (x.get("name") or "").lower()))
+        keyfunc = (lambda x: (
+            x.get("count") if isinstance(x.get("count"), int) else -1,
+            (x.get("name") or "").lower()
+        ))
     out.sort(key=keyfunc, reverse=(order == "desc"))
 
     # slice
@@ -154,12 +107,13 @@ def _ensure_modes(row: dict) -> dict:
         elif t in ("listening", "listen", "audio"):
             row["modes"] = ["listen"]
         else:
-            # conservative default (so Learn/Speak shows up)
-            row["modes"] = ["learn", "speak"]
+            row["modes"] = []
     except Exception:
-        row["modes"] = ["learn", "speak"]
+        row["modes"] = []
     return row
-DOCS_ROOT = Path("docs")
+
+# Replace legacy docs root alias with centralized pages dir
+DOCS_ROOT = PAGES_DIR
 
 def _safe_rmtree(p: Path):
     try:
@@ -189,6 +143,7 @@ def _delete_set_files_everywhere(set_name: str):
 # ----------------------------
 # API
 # ----------------------------
+
 
 # 0) Global sets (canonical shape)
 @sets_api.route("/global_sets", methods=["GET"])

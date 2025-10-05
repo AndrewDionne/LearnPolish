@@ -9,19 +9,55 @@ Flask app factory for LearnPolish.
 
 import os
 from pathlib import Path
-
+from .config import CORS_ORIGINS
 from flask import Flask, send_from_directory
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
+from .constants import PAGES_DIR  # PAGES_DIR = Path("docs")
+# Load .env for local dev (safe no-op in prod)
+try:
+    from dotenv import load_dotenv
+    from pathlib import Path
+    import os
+
+    ROOT = Path(__file__).resolve().parents[1]
+    DOTENV = ROOT / ".env"
+
+    IN_RENDER = bool(os.getenv("RENDER"))
+    IS_DEV = (
+        os.getenv("FLASK_ENV") == "development"
+        or os.getenv("FLASK_DEBUG") == "1"
+        or os.getenv("APP_ENV", "development") == "development"
+    )
+    # Allow manual override via env if needed
+    FORCE = (os.getenv("DOTENV_OVERRIDE", "").lower() in {"1", "true", "yes"})
+
+    # In dev (and not on Render) let .env win; otherwise let OS env win
+    load_dotenv(dotenv_path=DOTENV, override=(FORCE or (IS_DEV and not IN_RENDER)))
+except Exception:
+    # Don't hard-fail if python-dotenv isn't installed
+    pass
+
+
 
 # ----------------------------
-# Config fallbacks
+# Config
 # ----------------------------
 try:
-    from .config import JWT_SECRET  # string
-except Exception:
-    JWT_SECRET = os.getenv("JWT_SECRET", "dev-secret-change-me")
+    # Prefer a single canonical Config in app/config.py
+    from .config import Config
+except Exception as e:
+    # Minimal fallback if config.py is missing; OK for dev only
+    import secrets
+    class Config:
+        SECRET_KEY = os.getenv("SECRET_KEY") or ("dev-" + secrets.token_urlsafe(32))
+        JWT_SECRET = os.getenv("JWT_SECRET") or SECRET_KEY
+        FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL", "http://localhost:5000")
+        SQLALCHEMY_TRACK_MODIFICATIONS = False
+        JSON_AS_ASCII = False
+        TEMPLATES_AUTO_RELOAD = True
 
+# CORS origins (from config.py if provided; else sensible defaults)
 try:
     from .config import CORS_ALLOWED_ORIGINS
 except Exception:
@@ -50,24 +86,29 @@ def create_app():
         static_url_path="",  # make docs content available at /
     )
 
+    # Load base config first
+    app.config.from_object(Config)
+
     # Instance folder & DB path
     os.makedirs(app.instance_path, exist_ok=True)
     db_uri = os.getenv("DATABASE_URL")
     if db_uri and db_uri.startswith("postgres://"):
+        # SQLAlchemy requires postgresql://
         db_uri = db_uri.replace("postgres://", "postgresql://", 1)
     if not db_uri:
         db_uri = f"sqlite:///{Path(app.instance_path) / 'learnpolish.db'}"
 
-    # Core config
+    # Apply/override runtime config
     app.config.update(
-        SECRET_KEY=os.getenv("SECRET_KEY", "dev-secret-key"),
         SQLALCHEMY_DATABASE_URI=db_uri,
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
-        JWT_SECRET=JWT_SECRET,
         JSON_AS_ASCII=False,
         TEMPLATES_AUTO_RELOAD=True,
-        FRONTEND_BASE_URL=os.getenv("FRONTEND_BASE_URL", "http://localhost:5000"),
     )
+    # Ensure FRONTEND_BASE_URL has a value even if Config omitted it
+    app.config.setdefault("FRONTEND_BASE_URL", os.getenv("FRONTEND_BASE_URL", "http://localhost:5000"))
+    # If JWT_SECRET missing, fall back to SECRET_KEY (keeps old behavior)
+    app.config.setdefault("JWT_SECRET", app.config.get("SECRET_KEY"))
 
     # Kill static caching in dev to avoid stale HTML/JS
     if os.getenv("FLASK_DEBUG") == "1" or os.getenv("FLASK_ENV") == "development":
@@ -90,7 +131,7 @@ def create_app():
     # Blueprints
     # ----------------------------
     from .auth import auth_bp
-    from .api import api_bp             # scores
+    from .api import api_bp             # scores, groups, misc API
     from .sets_api import sets_api      # sets CRUD for user/global
     from .routes import routes_bp       # token endpoint, /custom_static, per-set pages
 
@@ -170,8 +211,8 @@ def create_app():
     def ping():
         return "✅ LearnPolish API is running"
 
-    # Optional debug prints
-    print("🔑 AZURE_SPEECH_KEY:", os.getenv("AZURE_SPEECH_KEY"))
-    print("🌎 AZURE_REGION:", os.getenv("AZURE_REGION"))
+    # Optional debug prints (don’t print actual secret values)
+    print("🔑 AZURE_SPEECH_KEY set:", bool(os.getenv("AZURE_SPEECH_KEY")))
+    print("🌎 AZURE_SPEECH_REGION:", os.getenv("AZURE_SPEECH_REGION"))
 
     return app

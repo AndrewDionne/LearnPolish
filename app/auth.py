@@ -7,6 +7,8 @@ from .models import db, User
 from .config import ADMIN_EMAIL   # still fine to use for initial admin flag
 from flask_cors import cross_origin
 
+from .emailer import send_email
+
 auth_bp = Blueprint("auth", __name__)
 
 # ----------------------------
@@ -170,14 +172,41 @@ def reset_request():
     token = jwt.encode(payload, current_app.config["JWT_SECRET"], algorithm="HS256")
     token = token if isinstance(token, str) else token.decode("utf-8")
 
-    # Build a link to the static reset page (works in GH Pages if FRONTEND_BASE_URL set)
-    base = (current_app.config.get("FRONTEND_BASE_URL") or "").rstrip("/")
+    # Build a link to the static reset page (public URL)
+    base = (current_app.config.get("FRONTEND_BASE_URL")
+            or current_app.config.get("APP_BASE_URL")
+            or "").rstrip("/")
     reset_link = (base + "/reset_confirm.html?token=" + token) if base else ("/reset_confirm.html?token=" + token)
 
-    # TODO: send via email service
-    print("🔗 Password reset link:", reset_link)
+    # Send the email (don’t leak errors to the client)
+    try:
+        subject = "Reset your Path to POLISH password"
+        text = f"""Hi,
+
+    We received a request to reset your Path to POLISH password.
+
+    Reset your password using this link:
+    {reset_link}
+
+    If you didn’t request this, you can safely ignore this email.
+
+    Thanks,
+    Path to POLISH Support
+    """
+        html = f"""<html><body>
+    <p>Hi,</p>
+    <p>We received a request to reset your <b>Path to POLISH</b> password.</p>
+    <p><b>Reset your password using this link:</b><br>
+    <a href="{reset_link}">{reset_link}</a></p>
+    <p>If you didn’t request this, you can safely ignore this email.</p>
+    <p>Thanks,<br>Path to POLISH Support</p>
+    </body></html>"""
+        send_email(subject=subject, text=text, html=html, to=[email], bcc=None, reply_to=None)
+    except Exception as e:
+        print("Reset email failed:", repr(e))
 
     return jsonify({"message": "If the email exists, a reset link has been sent."}), 200
+
 
 
 @auth_bp.route("/reset_confirm", methods=["POST"])

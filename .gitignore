@@ -4,6 +4,8 @@ __pycache__/
 *$py.class
 .python-version
 .pip-selfcheck.json
+*.pyo
+*.pyd
 
 # Caches / tooling
 .pytest_cache/
@@ -23,6 +25,7 @@ venv/
 env/
 .env
 .env.*    # e.g., .env.local
+.envrc
 
 # --- Flask instance & local databases ---
 # Keep the folder, ignore contents (except a placeholder)
@@ -43,6 +46,14 @@ build/
 # --- GitHub Pages (generated/output caches) ---
 docs/output/
 docs/static/cache/
+docs/static/temp.svg
+
+# Per-set generated static directories (examples/patterns)
+docs/static/[0-9][0-9]-*/
+docs/static/*L
+docs/static/*R
+docs/static/*LS
+docs/static/*r
 
 # (Optional) generated media — uncomment if these are auto-generated
 # docs/listening/audio/
@@ -53,6 +64,9 @@ docs/static/cache/
 Thumbs.db
 .AppleDouble
 ._*
+*.swp
+*.swo
+
 
 # --- Editors/IDEs ---
 .vscode/

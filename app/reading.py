@@ -1,33 +1,29 @@
 # app/reading.py
 from pathlib import Path
 import json
-
-DOCS_DIR = Path("docs")
+from .constants import PAGES_DIR, SETS_DIR
 
 
 def generate_reading_html(set_name, data=None):
     """
     Generates docs/reading/<set_name>/index.html for reading mode.
 
-    Preserves functionality:
+    Features:
       - Start/Stop continuous recognition with word-level scoring.
       - Per-word color highlights; WPM; status panel.
-      - "Listen (Polish)" playback (prefers pre-rendered MP3; falls back to Azure TTS).
-      - "Replay Me" of user's recording; translation toggle.
-
-    Aligned with project structure:
-      - Loads data from docs/sets/<set_name>.json when `data` not provided.
-      - Uses pre-rendered audio at docs/static/<set_name>/reading/<index>.mp3.
-      - For local dev: /custom_static/<set>/reading/<index>.mp3
-      - For GH Pages: /<repo>/static/<set>/reading/<index>.mp3
+      - "Listen (Polish)" playback:
+          1) Prefer CDN via R2 manifest (reading/<set>/<idx>.mp3)
+          2) Fallback to local static (GH Pages / dev)
+          3) Fallback to Azure TTS if file not found
+      - "Replay Me" of user's recording (robust, memory-leak safe).
     """
-    out_dir = DOCS_DIR / "reading" / set_name
+    out_dir = PAGES_DIR / "reading" / set_name
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / "index.html"
 
-    # If 'data' wasn't provided, load the flat JSON: docs/sets/<set_name>.json
+    # Load set data if not provided
     if data is None:
-        sets_file = DOCS_DIR / "sets" / f"{set_name}.json"
+        sets_file = SETS_DIR / f"{set_name}.json"
         if not sets_file.exists():
             raise FileNotFoundError(f"No set JSON for reading: {sets_file}")
         data = json.loads(sets_file.read_text(encoding="utf-8"))
@@ -46,6 +42,7 @@ def generate_reading_html(set_name, data=None):
   .toolbar {{ display:flex; gap:8px; flex-wrap: wrap; align-items:center; margin-bottom: 12px; }}
   button {{ padding:8px 12px; border-radius: 10px; border:0; background:#007bff; color:#fff; cursor:pointer; }}
   button.secondary {{ background:#6c757d; }}
+  button:disabled {{ opacity:.6; cursor:default; }}
   .passage {{ font-size: 1.35rem; line-height: 1.8; margin: 16px 0; }}
   .word {{ padding: 2px 4px; border-radius: 6px; margin: 0 1px; display:inline-block; }}
   .word.active {{ outline: 2px solid #007bff; }}
@@ -74,9 +71,9 @@ def generate_reading_html(set_name, data=None):
       <select id="passageSelect"></select>
     </div>
     <button id="btnStart">🎤 Start Reading</button>
-    <button id="btnStop" class="secondary">⏹ Stop</button>
+    <button id="btnStop" class="secondary" disabled>⏹ Stop</button>
     <button id="btnListen" class="secondary">🔊 Listen (Polish)</button>
-    <button id="btnReplay" class="secondary">🎧 Replay Me</button>
+    <button id="btnReplay" class="secondary" disabled>🎧 Replay Me</button>
     <button id="btnToggleEN" class="secondary">🇬🇧 Show Translation</button>
   </div>
 
@@ -99,9 +96,13 @@ let currentIndex = 0;
 let recognizer = null;
 let mediaRecorder = null;
 let recordedChunks = [];
+let replayUrl = null; // revoke old blobs to avoid leaks
 let startTime = 0;
 let wordsSpans = [];
 let wordsMeta = []; // {{ text, idx, score }}
+
+// R2 manifest (if present)
+let r2Manifest = null; // {{ files: { "reading/<set>/<i>.mp3": "https://cdn..." }, assetsBase: "https://cdn..." }}
 
 // ---------- Helpers ----------
 function byId(id) {{ return document.getElementById(id); }}
@@ -119,14 +120,28 @@ function apiBase() {{
   return (window.location.hostname === "andrewdionne.github.io") ? "https://flashcards-5c95.onrender.com" : "";
 }}
 
-function cardAudioPathReading(index) {{
-  // GH Pages: /<repo>/static/<setName>/reading/<index>.mp3
-  // Local dev: /custom_static/<setName>/reading/<index>.mp3
+// Prefer R2 → fallback static (GH Pages / dev)
+function getReadingAudioPath(index) {{
+  const key = `reading/${{setName}}/${{index}}.mp3`;
+  if (r2Manifest && r2Manifest.files && r2Manifest.files[key]) return r2Manifest.files[key];
+  if (r2Manifest && r2Manifest.assetsBase) {{
+    return r2Manifest.assetsBase.replace(/\\/$/,'') + '/' + key;
+  }}
   if (window.location.hostname === "andrewdionne.github.io") {{
     return repoBase() + `/static/${{setName}}/reading/${{index}}.mp3`;
   }} else {{
     return `/custom_static/${{setName}}/reading/${{index}}.mp3`;
   }}
+}}
+
+async function loadR2Manifest() {{
+  try {{
+    const url = (window.location.hostname === "andrewdionne.github.io")
+      ? repoBase() + `/static/${{setName}}/r2_manifest.json`
+      : `/custom_static/${{setName}}/r2_manifest.json`;
+    const res = await fetch(url, {{ cache: "no-store" }});
+    if (res.ok) r2Manifest = await res.json();
+  }} catch(_) {{}}
 }}
 
 function populateSelect() {{
@@ -163,6 +178,7 @@ function renderPassage(i) {{
   }});
   byId("stats").textContent = "Ready.";
   byId("status").textContent = "";
+  byId("btnReplay").disabled = true;
 }}
 
 function colorByScore(s) {{
@@ -230,7 +246,10 @@ async function speakPolish(text) {{
             const blob = new Blob([result.audioData], {{type: "audio/wav"}});
             const url = URL.createObjectURL(blob);
             a.src = url; a.load();
-            a.onended = () => resolve();
+            a.onended = () => {{
+              URL.revokeObjectURL(url);
+              resolve();
+            }};
             a.play().catch(() => resolve());
           }} else {{
             resolve();
@@ -277,9 +296,11 @@ function stopRecordingMyAudio() {{
   return new Promise(resolve => {{
     if (!mediaRecorder) return resolve(null);
     mediaRecorder.onstop = () => {{
+      try {{ if (replayUrl) URL.revokeObjectURL(replayUrl); }} catch(_){{}}
+      // Use a broadly supported container; most modern browsers accept audio/webm Opus
       const blob = new Blob(recordedChunks, {{ type: "audio/webm" }});
-      const url = URL.createObjectURL(blob);
-      resolve(url);
+      replayUrl = URL.createObjectURL(blob);
+      resolve(replayUrl);
     }};
     try {{ mediaRecorder.stop(); }} catch(e) {{ resolve(null); }}
   }});
@@ -319,22 +340,29 @@ function attachRecognitionHandlers() {{
 
   recognizer.sessionStarted = () => {{
     byId("status").textContent = "Session started. Speak now…";
+    byId("btnStart").disabled = true;
+    byId("btnStop").disabled = false;
     startTime = Date.now();
     updateStats(false);
   }};
 
   recognizer.sessionStopped = async () => {{
     byId("status").textContent = "Session stopped.";
+    byId("btnStart").disabled = false;
+    byId("btnStop").disabled = true;
     const url = await stopRecordingMyAudio();
     if (url) {{
       const a = byId("replayAudio");
       a.src = url; a.load();
+      byId("btnReplay").disabled = false;
     }}
     updateStats(true);
   }};
 
   recognizer.canceled = () => {{
     byId("status").textContent = "Canceled.";
+    byId("btnStart").disabled = false;
+    byId("btnStop").disabled = true;
   }};
 }}
 
@@ -346,8 +374,9 @@ async function startReading() {{
   }}
   await setupRecognizer(p.polish || "");
   attachRecognitionHandlers();
-  await new Promise(r => setTimeout(r, 300));
+  await new Promise(r => setTimeout(r, 200));
   byId("status").textContent = "🎤 Speak now…";
+  byId("btnReplay").disabled = true; // fresh recording
   startRecordingMyAudio();
   recognizer.startContinuousRecognitionAsync();
 }}
@@ -359,20 +388,24 @@ function stopReading() {{
 }}
 
 function listenPolish() {{
-  // Try pre-rendered file first; fall back to Azure TTS if not found/blocked
+  // Try pre-rendered file first (R2 → local); fall back to Azure TTS if not found/blocked
   const a = byId("ttsAudio");
-  const src = cardAudioPathReading(currentIndex);
-  a.src = src; a.load();
+  const src = getReadingAudioPath(currentIndex);
   const tryTTS = () => {{
     const p = passages[currentIndex] || {{}};
     speakPolish(p.polish || "");
   }};
   a.onerror = tryTTS;
+  a.onended = () => {{ /* no-op */ }};
+  a.src = src; a.load();
   a.play().catch(tryTTS);
 }}
 
 function replayMe() {{
-  byId("replayAudio").play().catch(()=>{{}});
+  const a = byId("replayAudio");
+  if (!a.src) return;
+  a.currentTime = 0;
+  a.play().catch(()=>{{}});
 }}
 
 function toggleEN() {{
@@ -396,6 +429,7 @@ function wireUI() {{
   // Clean up mic/recognizer if user navigates away
   window.addEventListener("beforeunload", () => {{
     try {{ if (recognizer) recognizer.stopContinuousRecognitionAsync(); }} catch(_){{}}
+    try {{ if (replayUrl) URL.revokeObjectURL(replayUrl); }} catch(_){{}}
   }});
   document.addEventListener("visibilitychange", () => {{
     if (document.hidden) {{
@@ -412,12 +446,11 @@ function goHome() {{
   }}
 }}
 
-(function init() {{
-  // SDK hint
+(async function init() {{
   if (!SpeechSDK) {{
     byId("status").textContent = "⚠️ Azure SDK not loaded (check network).";
   }}
-  // Build UI
+  await loadR2Manifest();
   populateSelect();
   renderPassage(0);
   wireUI();

@@ -1,7 +1,21 @@
 # app/listening.py
+from __future__ import annotations
+
 from pathlib import Path
 import json
+import os
 import random
+from html import escape as _esc
+
+from .constants import PAGES_DIR, STATIC_DIR
+
+# Optional R2 integration (safe if missing)
+try:
+    from app.r2_client import enabled as r2_enabled, put_file as r2_put_file
+except Exception:  # pragma: no cover
+    r2_enabled = False
+    def r2_put_file(*_a, **_k):  # type: ignore
+        return None
 
 # Keep parity with other modes (not used for paths; we allow spaces)
 try:
@@ -10,19 +24,98 @@ except Exception:  # pragma: no cover
     def sanitize_filename(name: str) -> str:
         return "".join(c for c in name if c.isalnum() or c in (" ", "-", "_", ".")).rstrip()
 
-DOCS_DIR = Path("docs")
+# ---------------- Listening helpers ----------------
 
+FALLBACK_DISTRACTORS = [
+    "Small talk", "Directions", "An apology", "A question",
+    "A reminder", "A warning", "A joke", "A greeting"
+]
+
+def _text(v):
+    return (str(v).strip() if isinstance(v, (str, int, float)) else "").strip()
+
+def _synth_distractors(correct, pool, n=3):
+    correct = _text(correct)
+    seen = {correct}
+    out = []
+    for cand in pool:
+        t = _text(cand)
+        if not t or t in seen:
+            continue
+        out.append(t)
+        seen.add(t)
+        if len(out) >= n:
+            break
+    if len(out) < n:
+        for fb in FALLBACK_DISTRACTORS:
+            if fb not in seen:
+                out.append(fb)
+                seen.add(fb)
+                if len(out) >= n:
+                    break
+    return out[:n]
+
+def normalize_listening_items(set_name: str, raw_items: list[dict]) -> list[dict]:
+    """
+    Accept mixed schemas and guarantee:
+      - transcript_pl / translation_en are non-empty (use '—' as last resort)
+      - gist/detail MCQs always have distractors
+      - audio fields:
+          * 'audio_url' (absolute URL) is honored as-is on the client
+          * 'audio' is a set-relative static key (e.g., 'listening/d001.mp3'), resolved by the client
+    """
+    items = raw_items or []
+    pool_en = []
+    pool_pl = []
+    for it in items:
+        pool_en.append(_text(it.get("meaning") or it.get("translation_en")))
+        pool_pl.append(_text(it.get("phrase")  or it.get("transcript_pl")))
+
+    dialogs = []
+    for idx, it in enumerate(items, start=1):
+        audio = _text(it.get("audio") or it.get("audio_url"))
+
+        tr_pl = _text(it.get("transcript_pl") or it.get("phrase"))
+        tr_en = _text(it.get("translation_en") or it.get("meaning"))
+        if not tr_pl and tr_en: tr_pl = "—"
+        if not tr_en and tr_pl: tr_en = "—"
+
+        gist = it.get("gist") or {}
+        gist_prompt = _text(gist.get("prompt")) or "Which best matches the audio?"
+        gist_correct = _text(gist.get("correct") or tr_en or tr_pl or "—")
+        gist_distractors = gist.get("distractors")
+        if not isinstance(gist_distractors, list) or not any(_text(x) for x in gist_distractors):
+            gist_distractors = _synth_distractors(gist_correct, [x for x in pool_en if x])
+
+        detail = it.get("detail") or {}
+        detail_prompt = _text(detail.get("prompt")) or "What exactly did you hear (in Polish)?"
+        detail_correct = _text(detail.get("correct") or tr_pl or "—")
+        detail_bank = detail.get("distractor_bank")
+        if not isinstance(detail_bank, list) or not any(_text(x) for x in detail_bank):
+            detail_bank = _synth_distractors(detail_correct, [x for x in pool_pl if x])
+
+        dialogs.append({
+            "id": it.get("id") or f"d{idx:03d}",
+            "audio": audio,                    # set-relative key OR absolute URL (audio_url)
+            "duration_s": int(it.get("duration_s") or 0),
+            "transcript_pl": tr_pl,
+            "translation_en": tr_en,
+            "gist": {
+                "prompt": gist_prompt,
+                "correct": gist_correct,
+                "distractors": gist_distractors
+            },
+            "detail": {
+                "prompt": detail_prompt,
+                "correct": detail_correct,
+                "distractor_bank": detail_bank
+            }
+        })
+    return dialogs
 
 def _load_listening_data(set_name: str):
-    """Load dialogues.json for a listening set. Returns list of dialogues.
-
-    Expected folder structure:
-    docs/listening/<set_name>/
-      - meta.json (optional, not required here)
-      - dialogues.json (required)
-      - audio/ (mp3 files referenced by dialogues.json)
-    """
-    d = DOCS_DIR / "listening" / set_name
+    """Load dialogues.json for a listening set (docs/listening/<set_name>/dialogues.json)."""
+    d = PAGES_DIR / "listening" / set_name
     data_path = d / "dialogues.json"
     if not data_path.exists():
         raise FileNotFoundError(f"Missing {data_path}. Create it with your dialogue items.")
@@ -32,92 +125,177 @@ def _load_listening_data(set_name: str):
         raise ValueError("dialogues.json must be a JSON array of dialogue objects.")
     return data
 
+# ---------------- R2 manifest helpers ----------------
+
+def _manifest_path(set_name: str) -> Path:
+    """Where the per-set manifest lives alongside other static assets."""
+    return STATIC_DIR / set_name / "r2_manifest.json"
+
+def _merge_manifest(set_name: str, files_map: dict[str, str], assets_base: str | None) -> Path:
+    """
+    Merge (or create) docs/static/<set>/r2_manifest.json
+
+    files_map: { "listening/<set>/<file>": "https://cdn.example.com/listening/<set>/<file>", ... }
+    """
+    mp = _manifest_path(set_name)
+    mp.parent.mkdir(parents=True, exist_ok=True)
+
+    existing = {}
+    if mp.exists():
+        try:
+            existing = json.loads(mp.read_text(encoding="utf-8"))
+        except Exception:
+            existing = {}
+    if not isinstance(existing, dict):
+        existing = {}
+
+    files = existing.get("files") if isinstance(existing.get("files"), dict) else {}
+    files.update(files_map)
+
+    merged = {
+        "assetsBase": assets_base or existing.get("assetsBase") or "",
+        "files": files,
+    }
+    mp.write_text(json.dumps(merged, ensure_ascii=False, indent=2), encoding="utf-8")
+    return mp
+
+def _cdn_base() -> str | None:
+    """
+    Prefer an explicit CDN base (e.g., https://cdn.polishpath.com).
+    Falls back to public R2 dev domain if provided in env.
+    """
+    base = os.getenv("R2_CDN_BASE") or os.getenv("R2_PUBLIC_BASE") or ""
+    base = base.strip().rstrip("/")
+    return base or None
+
+def _publish_listening_audio_to_r2(set_name: str) -> None:
+    """
+    Upload docs/static/<set>/listening/*.mp3 to R2 under keys:
+      listening/<set>/<filename>
+    Merge their URLs into r2_manifest.json.
+    """
+    if not r2_enabled:
+        return
+    static_dir = STATIC_DIR / set_name / "listening"
+    if not static_dir.exists():
+        return
+
+    cdn = _cdn_base()
+    published: dict[str, str] = {}
+
+    for mp3 in sorted(static_dir.glob("*.mp3")):
+        key = f"listening/{set_name}/{mp3.name}"
+        try:
+            # r2_put_file should accept (local_path, key) and return a URL or None
+            url = r2_put_file(mp3, key) or (f"{cdn}/{key}" if cdn else None)
+            if url:
+                published[key] = url
+        except Exception as e:
+            print(f"[listen] R2 upload failed for {mp3.name}: {e}")
+
+    if published:
+        _merge_manifest(set_name, published, cdn or "")
+
+# ---------------- HTML generation ----------------
 
 def generate_listening_html(set_name: str, data=None):
     """
-    Generate Listening Mode page:
-      - docs/listening/<set_name>/index.html
-
-    Behavior:
-      • No text before questions; audio-first.
-      • Controls: Play/Pause, 0.75× toggle (one-time cost per dialogue), Replay (max 3, each costs gold).
-      • After audio ends → Gist MCQ (4 options) → Detail MCQ (4 options sampled from a 10-item bank).
-      • Then reveal Polish transcript + English translation.
-      • Gold economy (defaults; tweakable in the JSON config at the top of the page script):
-          - Session bonus: +20 once per visit (tracked in page state)
-          - Base per-dialogue: 10 gold
-          - Length bonus: +1 per 20s of audio (cap +5)
-          - Costs: slow toggle −2 (once), each replay −1, each wrong attempt −1 (up to 3 tries per Q)
-          - Weighting: 40% gist / 60% detail; penalties for wrong gist hit gist share, detail hit detail share
-          - Floor 0 per dialogue
+    Generate docs/listening/<set_name>/index.html with:
+      - top site header + weekly gold bar
+      - bottom nav
+      - Play→Replay with cap
+      - 0.75× speed toggle
+      - MCQs with safe fallback distractors
+      - R2 manifest-aware audio resolution
     """
-    out_dir = DOCS_DIR / "listening" / set_name
+    out_dir = PAGES_DIR / "listening" / set_name
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / "index.html"
 
-    # Load data automatically if not provided
     if data is None:
         data = _load_listening_data(set_name)
 
-    # Inject data as JSON for client-side (escape </script>)
-    dialogues_json = json.dumps(data, ensure_ascii=False)
-    dialogues_json_safe = dialogues_json.replace("</", "<\\/")
+    dialogues = normalize_listening_items(set_name, data)
+    dlg_json = json.dumps(dialogues, ensure_ascii=False).replace("</", "<\\/")
+
+    title = f"{_esc(set_name)} • Listening"
 
     html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>{set_name} • Listening Mode</title>
+  <title>{title}</title>
   <style>
-    :root{{
-      --bg:#0b0c10; --card:#121418; --text:#e9ecf1; --muted:#8b94a7; --accent:#2d6cdf; --good:#2dcf6c; --bad:#ff5a5f;
-      --pad:16px; --radius:14px; --shadow:0 8px 24px rgba(0,0,0,.25);
-    }}
-    @media (prefers-color-scheme: light){{
-      :root{{ --bg:#f7f7fb; --card:#ffffff; --text:#0c0f14; --muted:#5a6472; --shadow:0 8px 24px rgba(0,0,0,.08); }}
-    }}
-    html,body{{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Inter,system-ui,sans-serif;}}
-    header{{position:sticky;top:0;background:var(--bg);padding:12px var(--pad);display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(128,128,128,.15);z-index:10;}}
-    .title{{font-weight:700;}}
-    .pill{{font-size:.9rem;color:var(--muted);}}
-    .wrap{{max-width:900px;margin:0 auto;padding:var(--pad);}}
-    .card{{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;margin:16px 0;}}
-    .player{{display:flex;gap:12px;align-items:center;}}
-    button{{appearance:none;border:0;background:var(--accent);color:white;border-radius:12px;padding:10px 14px;font-weight:600;cursor:pointer;}}
-    button.ghost{{background:transparent;color:var(--text);border:1px solid rgba(128,128,128,.3);}}
-    button[disabled]{{opacity:.5;cursor:not-allowed;}}
-    .choices{{display:grid;grid-template-columns:1fr;gap:10px;margin-top:10px;}}
-    .choice{{background:#1a1f27;border:1px solid rgba(128,128,128,.25);padding:12px;border-radius:12px;}}
-    @media (prefers-color-scheme: light){{ .choice{{background:#fff;}} }}
-    .choice.correct{{outline:2px solid var(--good);}}
-    .choice.wrong{{outline:2px solid var(--bad);}}
-    .meta{{display:flex;gap:12px;align-items:center;color:var(--muted);font-size:.95rem;}}
-    .section-title{{font-weight:700;margin:0 0 6px;}}
-    .row{{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}}
-    .grow{{flex:1;}}
-    .hidden{{display:none;}}
-    .tr{{white-space:pre-wrap;color:var(--muted);}}
-    .footer{{display:flex;justify-content:space-between;align-items:center;margin-top:8px;}}
-    .tag{{background:rgba(128,128,128,.15);color:var(--text);border-radius:999px;padding:6px 10px;font-size:.85rem;}}
+    :root{{ --brand:#2d6cdf; --bg:#0b0c10; --card:#121418; --text:#e9ecf1; --muted:#8b94a7; --border:#1e2230; --good:#2dcf6c; --bad:#ff5a5f; --pad:16px; --radius:14px; --shadow:0 8px 24px rgba(0,0,0,.25); }}
+    @media (prefers-color-scheme: light){{ :root{{ --bg:#f7f7fb; --card:#fff; --text:#0c0f14; --muted:#5a6472; --border:#e6e6ef; --shadow:0 8px 24px rgba(0,0,0,.08); }} }}
+    *{{ box-sizing:border-box }}
+    html,body{{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Inter,system-ui,sans-serif}}
+    .wrap{{max-width:900px;margin:0 auto;padding:16px}}
+    .card{{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;margin:16px 0}}
+    /* Top site header + gold bar */
+    .site-header{{position:sticky;top:0;z-index:20;background:var(--card);border-bottom:1px solid var(--border)}}
+    .site-header .row{{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px}}
+    .brand{{font-weight:800;letter-spacing:.2px}}
+    .gold-wrap{{display:flex;align-items:center;gap:8px}}
+    .goldbar{{width:140px;height:8px;border-radius:999px;background:rgba(45,108,223,.15);overflow:hidden}}
+    .goldbar .fill{{height:100%;width:0;border-radius:999px;background:#2d6cdf;transition:width .25s ease}}
+    .gold-label{{font-size:12px;opacity:.8}}
+
+    header.page{{padding:12px 16px}}
+    .title{{font-weight:700}}
+    .pill{{font-size:.95rem;color:var(--muted)}}
+
+    .player{{display:flex;gap:12px;align-items:center;flex-wrap:wrap}}
+    button{{appearance:none;border:0;background:var(--brand);color:#fff;border-radius:12px;padding:10px 14px;font-weight:600;cursor:pointer}}
+    button.ghost{{background:transparent;color:var(--text);border:1px solid var(--border)}}
+    button[disabled]{{opacity:.5;cursor:not-allowed}}
+
+    .speed-btn{{border:1px solid var(--border);background:var(--card);color:var(--text);border-radius:10px;padding:6px 10px}}
+    .speed-btn.active{{background:rgba(45,108,223,.12);color:#2d6cdf;border-color:transparent}}
+    .play-btn.replay::before{{content:"↻ ";}}
+
+    .choices{{display:grid;grid-template-columns:1fr;gap:10px;margin-top:10px}}
+    .choice{{background:#1a1f27;border:1px solid rgba(128,128,128,.25);padding:12px;border-radius:12px;text-align:left}}
+    @media (prefers-color-scheme: light){{ .choice{{background:#fff}} }}
+    .choice.correct{{outline:2px solid var(--good)}}
+    .choice.wrong{{outline:2px solid var(--bad)}}
+    .meta{{display:flex;gap:12px;align-items:center;color:var(--muted);font-size:.95rem}}
+    .section-title{{font-weight:700;margin:0 0 6px}}
+    .hidden{{display:none}}
+    .tr{{white-space:pre-wrap;color:var(--muted)}}
+    .footer{{display:flex;justify-content:space-between;align-items:center;margin:12px 0 96px}}
+
+    /* Bottom nav */
+    nav.bottom{{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--border);display:flex;justify-content:space-around;padding:6px 8px;gap:8px}}
+    nav.bottom a{{flex:1;text-align:center;padding:8px;text-decoration:none;color:var(--text);border-radius:10px;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12px}}
+    nav.bottom a svg{{width:20px;height:20px}}
+    nav.bottom a.active{{background:rgba(45,108,223,.12);color:#2d6cdf}}
+    @supports(padding: max(0px)){{ nav.bottom{{ padding-bottom: max(6px, env(safe-area-inset-bottom)) }} }}
   </style>
 </head>
 <body>
-  <header class="wrap">
-    <div class="title">🎧 Listening • {set_name}</div>
+  <header class="site-header">
+    <div class="row">
+      <div class="brand">Path to POLISH</div>
+      <div class="gold-wrap">
+        <div class="goldbar"><div id="goldFill" class="fill"></div></div>
+        <span id="goldLabel" class="gold-label">0 / 500</span>
+      </div>
+    </div>
+  </header>
+
+  <header class="page wrap">
+    <div class="title">🎧 Listening • {_esc(set_name)}</div>
     <div class="pill"><span id="gold">0</span> gold • <span id="progress">0/0</span></div>
   </header>
 
   <main class="wrap">
     <div class="card">
-      <div class="row" style="justify-content:space-between;">
-        <div class="meta"><span id="countLabel"></span><span id="lengthLabel"></span><span id="replayLabel"></span></div>
-        <div class="row"><button class="ghost" id="homeBtn">🏠 Home</button></div>
-      </div>
+      <div class="meta"><span id="countLabel"></span><span id="lengthLabel"></span><span id="replayLabel"></span></div>
       <div class="player" style="margin-top:8px;">
-        <button id="playBtn">▶️ Play</button>
-        <button class="ghost" id="speedBtn">0.75×</button>
-        <button class="ghost" id="replayBtn">Replay (3)</button>
+        <button id="playBtn" class="play-btn" type="button">Play</button>
+        <button id="speedBtn" class="speed-btn" type="button" aria-pressed="false" title="Toggle 0.75×">0.75×</button>
         <audio id="audio" preload="auto"></audio>
       </div>
     </div>
@@ -143,18 +321,11 @@ def generate_listening_html(set_name: str, data=None):
     </div>
 
     <div class="footer">
-      <div class="row" style="gap:6px;">
-        <span class="tag">Rate difficulty:</span>
-        <button class="ghost" id="rEasy">Too easy</button>
-        <button class="ghost" id="rOk">Just right</button>
-        <button class="ghost" id="rHard">Too hard</button>
-      </div>
-      <div class="row">
-        <button id="nextBtn" disabled>Next ▶</button>
-      </div>
+      <div></div>
+      <div class="row"><button id="nextBtn" disabled>Next ▶</button></div>
     </div>
 
-    <div class="card" id="summaryCard">
+    <div class="card hidden" id="summaryCard">
       <div class="section-title">Session Summary</div>
       <div id="summaryBody"></div>
       <div class="row" style="margin-top:10px;">
@@ -164,12 +335,89 @@ def generate_listening_html(set_name: str, data=None):
     </div>
   </main>
 
+  <!-- Bottom nav -->
+  <nav class="bottom">
+    <a href="../../index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1v-10.5Z" stroke-width="1.5"/></svg>
+      <span>Home</span>
+    </a>
+    <a href="../../learn.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 12h16M4 18h9" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <span>Learn</span>
+    </a>
+    <a href="../../manage_sets/">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="16" rx="2" ry="2" stroke-width="1.5"/><path d="M7 8h10M7 12h10M7 16h7" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <span>Library</span>
+    </a>
+    <a href="../../dashboard.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 14h6V4H4v10Zm10 6h6V4h-6v16Z" stroke-width="1.5"/></svg>
+      <span>Dashboard</span>
+    </a>
+    <a href="../../groups.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm-9 9a9 9 0 0 1 18 0" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <span>Groups</span>
+    </a>
+  </nav>
+
   <script>
-  // ————— Config (tweak without touching Python) —————
+  // ---- R2 manifest (if present) ----
+  let r2Manifest = null; // {{ files: {{ "listening/<set>/<file>": "https://cdn..." }}, assetsBase }}
+  const SET_NAME = {json.dumps(set_name)};
+  async function loadR2Manifest(){{
+    try {{
+      const base = (location.hostname === "andrewdionne.github.io")
+        ? '/' + location.pathname.split('/').filter(Boolean)[0]
+        : '';
+      const url = (location.hostname === "andrewdionne.github.io")
+        ? `${{base}}/static/${{SET_NAME}}/r2_manifest.json`
+        : `/custom_static/${{SET_NAME}}/r2_manifest.json`;
+      const res = await fetch(url, {{ cache: 'no-store' }});
+      if (res.ok) r2Manifest = await res.json();
+    }} catch(_){{
+      r2Manifest = null;
+    }}
+  }}
+
+  function repoBase(){{
+    if (location.hostname === "andrewdionne.github.io") {{
+      const parts = location.pathname.split("/").filter(Boolean);
+      const repo = parts.length ? parts[0] : "LearnPolish";
+      return "/" + repo;
+    }}
+    return "";
+  }}
+
+  function resolveAudioUrl(it){{
+    // absolute URL is honored as-is
+    const abs = (it.audio_url || '').trim();
+    if (abs && /^(https?:)?\\/\\//i.test(abs)) return abs;
+
+    // set-relative static key (e.g., "listening/d001.mp3")
+    const rel = (it.audio || '').trim().replace(/^\\/+/, '');
+    if (!rel) return '';
+
+    // R2 manifest lookup: listening/<set>/<file>
+    const file = rel.split('/').pop();
+    const key = `listening/${{SET_NAME}}/${{file}}`;
+
+    if (r2Manifest && r2Manifest.files && r2Manifest.files[key]) return r2Manifest.files[key];
+    if (r2Manifest && r2Manifest.assetsBase) {{
+      return r2Manifest.assetsBase.replace(/\\/$/,'') + '/' + key;
+    }}
+
+    // Fallback to static (GH Pages vs local dev)
+    if (location.hostname === "andrewdionne.github.io") {{
+      return repoBase() + `/static/${{SET_NAME}}/${{rel}}`;
+    }} else {{
+      return `/custom_static/${{SET_NAME}}/${{rel}}`;
+    }}
+  }}
+
+  // ---- Config ----
   const CONFIG = {{
     sessionBonus: 20,
     basePerDialogue: 10,
-    lengthBonusEverySec: 20, // +1 per 20s
+    lengthBonusEverySec: 20,
     lengthBonusCap: 5,
     slowCost: 2,
     replayCost: 1,
@@ -180,361 +428,244 @@ def generate_listening_html(set_name: str, data=None):
     triesPerQuestion: 3,
   }};
 
-  const SET_NAME = {json.dumps(set_name)};
-  const DIALOGUES = {dialogues_json_safe};
+  const DIALOGUES = {dlg_json};
 
-
-  // ————— State —————
-  const state = {{
-    i: 0,
-    gold: 0,
-    usedSlow: false,
-    replays: 0,
-    wrongGist: 0,
-    wrongDetail: 0,
-    answeredGist: false,
-    answeredDetail: false,
-    gistTriesLeft: CONFIG.triesPerQuestion,
-    detailTriesLeft: CONFIG.triesPerQuestion,
-    currentDurationS: 0,
-    perDialogueLog: [],
-    started: false,
-  }};
-
-  // ————— DOM helpers —————
+  // ---- State / DOM ----
   const $ = (id) => document.getElementById(id);
+  const audioEl = $("audio");
   const playBtn = $("playBtn");
   const speedBtn = $("speedBtn");
-  const replayBtn = $("replayBtn");
   const nextBtn = $("nextBtn");
-  const homeBtn = $("homeBtn");
-  const toHomeBtn = $("toHomeBtn");
-  const restartBtn = $("restartBtn");
-  const audioEl = $("audio");
+  const gistCard = $("gistCard"), gistPrompt = $("gistPrompt"), gistChoices = $("gistChoices");
+  const detailCard = $("detailCard"), detailPrompt = $("detailPrompt"), detailChoices = $("detailChoices");
+  const revealCard = $("revealCard"), plText = $("plText"), enText = $("enText");
+  const summaryCard = $("summaryCard"), summaryBody = $("summaryBody");
+  const goldLbl = $("gold"), progressLbl = $("progress");
+  const countLabel = $("countLabel"), lengthLabel = $("lengthLabel"), replayLabel = $("replayLabel");
 
-  const gistCard = $("gistCard");
-  const gistPrompt = $("gistPrompt");
-  const gistChoices = $("gistChoices");
+  const state = {{
+    i: 0, gold: 0, slowOn: false, slowCharged: false,
+    replays: 0, answeredGist: false, answeredDetail: false,
+    wrongGist: 0, wrongDetail: 0, gistTriesLeft: CONFIG.triesPerQuestion,
+    detailTriesLeft: CONFIG.triesPerQuestion, currentDurationS: 0,
+    started:false, perDialogueLog:[]
+  }};
 
-  const detailCard = $("detailCard");
-  const detailPrompt = $("detailPrompt");
-  const detailChoices = $("detailChoices");
+  // ---- UI helpers ----
+  function setHidden(el, h=true){{ el.classList.toggle("hidden", h); }}
+  function shuffle(a){{ for(let i=a.length-1;i>0;i--){{const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}} return a; }}
 
-  const revealCard = $("revealCard");
-  const plText = $("plText");
-  const enText = $("enText");
-
-  const summaryCard = $("summaryCard");
-  const summaryBody = $("summaryBody");
-
-  const goldLbl = $("gold");
-  const progressLbl = $("progress");
-  const countLabel = $("countLabel");
-  const lengthLabel = $("lengthLabel");
-  const replayLabel = $("replayLabel");
-
-  function repoBase() {{
-    // Matches patterns used in other modes hosted on GitHub Pages
-    const p = window.location.pathname.split("/").filter(Boolean);
-    if (window.location.hostname.includes("github.io")) {{
-      // /<repo>/listening/<set>/
-      return "/" + p[0];
-    }}
-    return "";
-  }}
-
-  function gotoHome() {{
-    if (window.location.hostname.includes("github.io")) {{
-      window.location.href = repoBase() + "/";
-    }} else {{
-      window.location.href = "/";
-    }}
-  }}
-
-  // ————— Utils —————
-  function shuffle(arr) {{
-    for (let i = arr.length - 1; i > 0; i--) {{
-      const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-    }}
-    return arr;
-  }}
-  function sampleDetailChoices(item) {{
-    const bank = (item.detail?.distractor_bank || []).slice();
-    const correct = item.detail?.correct ?? "";
-    const pruned = bank.filter(x => x !== correct);
-    shuffle(pruned);
-    const three = pruned.slice(0, 3);
-    const combined = [correct, ...three];
-    return shuffle(combined);
-  }}
-
-  function computePool(item, usedSlow, replays, wrongGist, wrongDetail) {{
-    const base = CONFIG.basePerDialogue;
-    const dur = (item.duration_s || state.currentDurationS || 0);
-    const lenBonus = Math.min(CONFIG.lengthBonusCap, Math.floor(dur / CONFIG.lengthBonusEverySec));
-    let pool = base + lenBonus;
-    // Global penalties
-    pool -= (usedSlow ? CONFIG.slowCost : 0);
-    pool -= (replays * CONFIG.replayCost);
-    if (pool < 0) pool = 0;
-    // Shares
-    const gShare = pool * CONFIG.weightGist;
-    const dShare = pool * CONFIG.weightDetail;
-    const gEarn = Math.max(0, Math.floor(gShare - wrongGist * CONFIG.wrongCost));
-    const dEarn = Math.max(0, Math.floor(dShare - wrongDetail * CONFIG.wrongCost));
-    return Math.max(0, gEarn + dEarn);
-  }}
-
-  function setHidden(el, hidden=true) {{ el.classList.toggle("hidden", hidden); }}
-  function resetQuestionUI() {{
-    gistChoices.innerHTML = ""; detailChoices.innerHTML = "";
-    [gistCard, detailCard, revealCard, summaryCard].forEach(el => setHidden(el, true));
-    nextBtn.disabled = true;
-  }}
-
-  function setHeader() {{
+  function setHeader(){{
     goldLbl.textContent = state.gold;
     progressLbl.textContent = `${{state.i+1}}/${{DIALOGUES.length}}`;
     countLabel.textContent = `Dialog ${{state.i+1}} of ${{DIALOGUES.length}}`;
     const dur = (DIALOGUES[state.i]?.duration_s || state.currentDurationS || 0);
     lengthLabel.textContent = dur ? `• ${{dur}}s` : "";
-    replayLabel.textContent = `• Replays left: ${{CONFIG.replayMax - state.replays}}`;
+    replayLabel.textContent = `• Replays left: ${{Math.max(0, CONFIG.replayMax - state.replays)}}`;
   }}
 
-  function beginSessionIfNeeded() {{
-    if (!state.started) {{
-      state.gold += CONFIG.sessionBonus;
-      state.started = true;
-      goldLbl.textContent = state.gold;
-    }}
+  function beginSessionIfNeeded(){{
+    if(!state.started){{ state.gold += CONFIG.sessionBonus; state.started = true; goldLbl.textContent = state.gold; }}
   }}
 
-  function audioUrlFor(item){{
-    // Prefer absolute URL if provided
-    if (item.audio_url) return item.audio_url;
-
-    const rel = (item.audio || "").replace(/^\/+/, "");
-    if (!rel) return "";
-
-    const encSet = encodeURIComponent(SET_NAME);
-    if (window.location.hostname.includes("github.io")){{
-      // GitHub Pages: serve from /static/<set>/<rel>
-      return repoBase() + `/static/${{encSet}}/${{rel}}`;
-    }}
-    // Local dev: served by /custom_static → docs/static
-    return `/custom_static/${{encSet}}/${{rel}}`;
-  }}
-
-  function loadAudio(item) {{
-    const src = audioUrlFor(item);
-    if (!src) {{
-      console.warn("No audio for item", item);
-      audioEl.removeAttribute("src");
-      return;
-    }}
+  function loadAudio(it){{
+    const src = resolveAudioUrl(it);
+    if (!src) {{ console.warn("No audio for item", it); audioEl.removeAttribute("src"); return; }}
     audioEl.src = src;
-    audioEl.playbackRate = state.usedSlow ? 0.75 : 1.0;
+    audioEl.playbackRate = state.slowOn ? 0.75 : 1.0;
   }}
 
+  function computePool(it){{
+    const dur = (it.duration_s || state.currentDurationS || 0);
+    const lenBonus = Math.min(CONFIG.lengthBonusCap, Math.floor(dur / CONFIG.lengthBonusEverySec));
+    let pool = CONFIG.basePerDialogue + lenBonus;
+    if(state.slowCharged) pool -= CONFIG.slowCost;
+    pool -= state.replays * CONFIG.replayCost;
+    const gShare = pool * CONFIG.weightGist;
+    const dShare = pool * CONFIG.weightDetail;
+    const gEarn = Math.max(0, Math.floor(gShare - state.wrongGist*CONFIG.wrongCost));
+    const dEarn = Math.max(0, Math.floor(dShare - state.wrongDetail*CONFIG.wrongCost));
+    return Math.max(0, gEarn + dEarn);
+  }}
 
-  function renderGist(item) {{
-    if (!item.gist) return;
-    setHidden(gistCard, false);
-    gistPrompt.textContent = item.gist.prompt || "What is the gist?";
-    const opts = shuffle([ item.gist.correct, ...(item.gist.distractors || []).slice(0,3) ]);
+  function resetPerDialogue(){{
+    state.slowOn = false; state.slowCharged = false; speedBtn.classList.remove('active'); speedBtn.textContent='0.75×'; speedBtn.setAttribute('aria-pressed','false');
+    state.replays = 0; state.answeredGist = false; state.answeredDetail = false;
+    state.wrongGist = 0; state.wrongDetail = 0;
+    state.gistTriesLeft = CONFIG.triesPerQuestion; state.detailTriesLeft = CONFIG.triesPerQuestion;
+    state.currentDurationS = 0;
+    nextBtn.disabled = true;
+    gistChoices.innerHTML = ""; detailChoices.innerHTML = "";
+    setHidden(gistCard,true); setHidden(detailCard,true); setHidden(revealCard,true);
+  }}
+
+  function startDialogue(idx){{
+    if(idx >= DIALOGUES.length) return endSession();
+    resetPerDialogue();
+    const it = DIALOGUES[idx];
+    state.currentDurationS = Math.round(it?.duration_s||0);
+    setHeader();
+    loadAudio(it);
+    playBtn.classList.remove('replay'); playBtn.textContent = 'Play';
+  }}
+
+  function endSession(){{
+    setHidden(gistCard,true); setHidden(detailCard,true); setHidden(revealCard,true);
+    setHidden(summaryCard,false);
+    const rows = state.perDialogueLog.map((r,k)=>`#${{k+1}} • +${{r.payout}} gold • replay:${{r.replays}} • slow:${{r.slow?'y':'n'}} • gist×${{r.wrongGist}} • detail×${{r.wrongDetail}}`).join("\\n");
+    summaryBody.textContent = `Total gold: ${{state.gold}}\\n\\n${{rows}}`;
+  }}
+
+  function renderGist(it){{
+    const g = it.gist || {{}};
+    setHidden(gistCard,false);
+    gistPrompt.textContent = g.prompt || "Which best matches the audio?";
+    const opts = shuffle([ g.correct, ...(g.distractors||[]).slice(0,3) ]);
     gistChoices.innerHTML = "";
-    opts.forEach((txt) => {{
-      const b = document.createElement("button");
-      b.className = "choice"; b.textContent = txt;
-      b.onclick = () => onGistAnswer(item, b, txt === item.gist.correct);
+    opts.forEach(txt=>{{
+      const b = document.createElement('button');
+      b.className='choice'; b.textContent = txt || "—";
+      b.onclick = ()=> onGistAnswer(it, b, txt === g.correct);
       gistChoices.appendChild(b);
     }});
   }}
 
-  function renderDetail(item) {{
-    if (!item.detail) return;
-    setHidden(detailCard, false);
-    detailPrompt.textContent = item.detail.prompt || "What detail did you hear?";
-    const opts = sampleDetailChoices(item);
+  function renderDetail(it){{
+    const d = it.detail || {{}};
+    setHidden(detailCard,false);
+    detailPrompt.textContent = d.prompt || "What exactly did you hear (in Polish)?";
+    const bank = (d.distractor_bank||[]).filter(x=>x && x!==d.correct);
+    const opts = shuffle([ d.correct, ...bank.slice(0,3) ]);
     detailChoices.innerHTML = "";
-    opts.forEach((txt) => {{
-      const b = document.createElement("button");
-      b.className = "choice"; b.textContent = txt;
-      b.onclick = () => onDetailAnswer(item, b, txt === item.detail.correct);
+    opts.forEach(txt=>{{
+      const b = document.createElement('button');
+      b.className='choice'; b.textContent = txt || "—";
+      b.onclick = ()=> onDetailAnswer(it, b, txt === d.correct);
       detailChoices.appendChild(b);
     }});
   }}
 
-  function renderReveal(item) {{
-    plText.textContent = item.transcript_pl || "(no transcript)";
-    enText.textContent = item.translation_en || "";
-    setHidden(revealCard, false);
-  }}
+  function lockButtons(containerId){{ [...document.getElementById(containerId).children].forEach(c=>c.disabled=true); }}
 
-  function lockChoices(containerId) {{
-    const children = document.getElementById(containerId).children;
-    for (const c of children) c.disabled = true;
-  }}
-
-  function onGistAnswer(item, btn, correct) {{
-    if (state.answeredGist) return;
-    if (correct) {{
-      btn.classList.add("correct");
-      state.answeredGist = true;
-      lockChoices("gistChoices");
-      if (!state.answeredDetail) renderDetail(item);
-      if (state.answeredDetail) finalizeDialogue(item);
-      return;
-    }}
-    // wrong
-    btn.classList.add("wrong");
-    btn.disabled = true;
-    state.wrongGist++;
-    state.gistTriesLeft--;
-    if (state.gistTriesLeft <= 0) {{
-      state.answeredGist = true;
-      // show correct
-      [...gistChoices.children].forEach(c => {{
-        if (c.textContent === (item.gist?.correct || "")) c.classList.add("correct");
-        c.disabled = true;
-      }});
-      if (!state.answeredDetail) renderDetail(item);
-      if (state.answeredDetail) finalizeDialogue(item);
+  function onGistAnswer(it, btn, ok){{
+    if(state.answeredGist) return;
+    if(ok){{ btn.classList.add('correct'); state.answeredGist=true; lockButtons('gistChoices'); if(!state.answeredDetail) renderDetail(it); if(state.answeredDetail) finalize(it); }}
+    else {{
+      btn.classList.add('wrong'); btn.disabled=true; state.wrongGist++; state.gistTriesLeft--;
+      if(state.gistTriesLeft<=0){{ state.answeredGist=true; [...gistChoices.children].forEach(c=>{{ if(c.textContent==(it.gist?.correct||'')) c.classList.add('correct'); c.disabled=true; }}); if(!state.answeredDetail) renderDetail(it); if(state.answeredDetail) finalize(it); }}
     }}
   }}
 
-  function onDetailAnswer(item, btn, correct) {{
-    if (state.answeredDetail) return;
-    if (correct) {{
-      btn.classList.add("correct");
-      state.answeredDetail = true;
-      lockChoices("detailChoices");
-      if (state.answeredGist) finalizeDialogue(item);
-      return;
-    }}
-    // wrong
-    btn.classList.add("wrong");
-    btn.disabled = true;
-    state.wrongDetail++;
-    state.detailTriesLeft--;
-    if (state.detailTriesLeft <= 0) {{
-      state.answeredDetail = true;
-      // show correct
-      [...detailChoices.children].forEach(c => {{
-        if (c.textContent === (item.detail?.correct || "")) c.classList.add("correct");
-        c.disabled = true;
-      }});
-      if (state.answeredGist) finalizeDialogue(item);
+  function onDetailAnswer(it, btn, ok){{
+    if(state.answeredDetail) return;
+    if(ok){{ btn.classList.add('correct'); state.answeredDetail=true; lockButtons('detailChoices'); if(state.answeredGist) finalize(it); }}
+    else {{
+      btn.classList.add('wrong'); btn.disabled=true; state.wrongDetail++; state.detailTriesLeft--;
+      if(state.detailTriesLeft<=0){{ state.answeredDetail=true; [...detailChoices.children].forEach(c=>{{ if(c.textContent==(it.detail?.correct||'')) c.classList.add('correct'); c.disabled=true; }}); if(state.answeredGist) finalize(it); }}
     }}
   }}
 
-  function finalizeDialogue(item) {{
-    // Compute payout
-    const gained = computePool(item, state.usedSlow, state.replays, state.wrongGist, state.wrongDetail);
+  function finalize(it){{
+    const gained = computePool(it);
     state.gold += gained;
     state.perDialogueLog.push({{
-      id: item.id || `d${{state.i+1}}`,
-      usedSlow: state.usedSlow,
-      replays: state.replays,
-      wrongGist: state.wrongGist,
-      wrongDetail: state.wrongDetail,
-      payout: gained,
-      duration_s: item.duration_s || state.currentDurationS || 0,
+      id: it.id||`d${{state.i+1}}`,
+      slow: state.slowCharged, replays: state.replays,
+      wrongGist: state.wrongGist, wrongDetail: state.wrongDetail,
+      payout: gained, duration_s: it.duration_s || state.currentDurationS || 0
     }});
     goldLbl.textContent = state.gold;
-    renderReveal(item);
+    plText.textContent = it.transcript_pl || "(no transcript)";
+    enText.textContent = it.translation_en || "";
+    setHidden(revealCard,false);
     nextBtn.disabled = false;
   }}
 
-  function resetPerDialogue() {{
-    state.usedSlow = false;
-    state.replays = 0;
-    state.wrongGist = 0;
-    state.wrongDetail = 0;
-    state.answeredGist = false;
-    state.answeredDetail = false;
-    state.gistTriesLeft = CONFIG.triesPerQuestion;
-    state.detailTriesLeft = CONFIG.triesPerQuestion;
-    state.currentDurationS = 0;
-    replayBtn.textContent = `Replay (${{CONFIG.replayMax}})`;
-    replayBtn.disabled = false;
-    speedBtn.disabled = false;
-  }}
+  // ---- Controls ----
+  (function wirePlayReplay(){{
+    let hasPlayed=false;
+    playBtn.addEventListener('click', ()=>{{
+      beginSessionIfNeeded();
+      if(hasPlayed){{
+        if(state.replays >= CONFIG.replayMax) return;
+        state.replays++;
+        setHeader();
+      }}
+      audioEl.currentTime = 0;
+      audioEl.play().catch(()=>{{}});
+    }});
+    audioEl.addEventListener('play', ()=>{{
+      if(!hasPlayed){{
+        hasPlayed = true;
+        playBtn.classList.add('replay');
+        playBtn.textContent = 'Replay';
+      }}
+    }});
+    audioEl.addEventListener('ended', ()=>{{ renderGist(DIALOGUES[state.i]); }});
+    audioEl.addEventListener('loadedmetadata', ()=>{{
+      const d = isFinite(audioEl.duration) ? Math.round(audioEl.duration) : 0;
+      if(d>0) state.currentDurationS = d;
+      setHeader();
+    }});
+  }})();
 
-  function startDialogue(idx) {{
-    if (idx >= DIALOGUES.length) return endSession();
-    resetPerDialogue(); resetQuestionUI();
-    const item = DIALOGUES[idx];
-    // prefer authored duration until metadata loads
-    state.currentDurationS = Math.round(item?.duration_s || 0);
-    setHeader();
-    loadAudio(item);
-  }}
+  (function wireSpeed(){{
+    function apply(){{
+      audioEl.playbackRate = state.slowOn ? 0.75 : 1.0;
+      speedBtn.classList.toggle('active', state.slowOn);
+      speedBtn.setAttribute('aria-pressed', state.slowOn ? 'true' : 'false');
+      speedBtn.textContent = state.slowOn ? '1.0×' : '0.75×';
+      speedBtn.title = state.slowOn ? 'Back to 0.75×' : 'Switch to 0.75×';
+    }}
+    speedBtn.addEventListener('click', ()=>{{
+      if(!state.slowOn && !state.slowCharged) state.slowCharged = true;
+      state.slowOn = !state.slowOn; apply();
+    }});
+    apply();
+  }})();
 
-  function endSession() {{
-    setHidden(gistCard,true); setHidden(detailCard,true); setHidden(revealCard,true);
-    setHidden(summaryCard,false);
-    const rows = state.perDialogueLog.map((r, k) => `#${{k+1}} • +${{r.payout}} gold • replay:${{r.replays}} • slow:${{r.usedSlow?'y':'n'}} • gist×${{r.wrongGist}} • detail×${{r.wrongDetail}}`).join("\\n");
-    summaryBody.textContent = `Total gold: ${{state.gold}}\\n\\n${{rows}}`;
-  }}
+  nextBtn.onclick = ()=>{{ state.i++; if(state.i >= DIALOGUES.length) endSession(); else startDialogue(state.i); }};
+  $("toHomeBtn").onclick = ()=>{{ location.href='../../index.html'; }};
+  $("restartBtn").onclick = ()=>{{ location.reload(); }};
 
-  // ————— Wire up —————
-  playBtn.onclick = () => {{
-    beginSessionIfNeeded();
-    audioEl.play().catch(()=>{{}});
-  }};
-  speedBtn.onclick = () => {{
-    if (state.usedSlow) return; // single-cost per dialogue
-    state.usedSlow = true; audioEl.playbackRate = 0.75; speedBtn.disabled = true; // gold cost accounted at finalize
-  }};
-  replayBtn.onclick = () => {{
-    if (state.replays >= CONFIG.replayMax) return;
-    state.replays++; replayBtn.textContent = `Replay (${{CONFIG.replayMax - state.replays}})`;
-    setHeader();
-    audioEl.currentTime = 0; audioEl.play().catch(()=>{{}});
-    if (state.replays >= CONFIG.replayMax) replayBtn.disabled = true;
-  }};
-  nextBtn.onclick = () => {{ state.i++; if (state.i >= DIALOGUES.length) endSession(); else startDialogue(state.i); }};
-  homeBtn.onclick = gotoHome; toHomeBtn.onclick = gotoHome; restartBtn.onclick = () => window.location.reload();
+  // gold bar (if token present)
+  (async function wireGold(){{
+    try{{
+      const t = localStorage.getItem('lp_token')||'';
+      if(!t) return;
+      const r = await fetch('/api/my/stats', {{ headers: {{ Authorization: 'Bearer '+t }} }});
+      if(!r.ok) return;
+      const s = await r.json();
+      const got = Number(s.weekly_gold || s.weekly_points || 0);
+      const goal = Number(s.goal_gold || s.goal_points || 500) || 500;
+      const pct = Math.max(0, Math.min(100, Math.round((got/goal)*100)));
+      const fill = document.getElementById('goldFill');
+      const lab  = document.getElementById('goldLabel');
+      if(fill) fill.style.width = pct + '%';
+      if(lab)  lab.textContent = `${{got}} / ${{goal}}`;
+    }}catch(_){{
+      /* no-op */
+    }}
+  }})();
 
-  $("rEasy").onclick = () => console.log("rated: easy", DIALOGUES[state.i]?.id);
-  $("rOk").onclick   = () => console.log("rated: ok", DIALOGUES[state.i]?.id);
-  $("rHard").onclick = () => console.log("rated: hard", DIALOGUES[state.i]?.id);
-
-  audioEl.addEventListener('ended', () => {{
-    // When audio finishes, show gist question
-    const item = DIALOGUES[state.i];
-    renderGist(item);
-  }});
-
-  audioEl.addEventListener('loadedmetadata', () => {{
-    const d = isFinite(audioEl.duration) ? Math.round(audioEl.duration) : 0;
-    if (d > 0) state.currentDurationS = d;
-    setHeader();
-  }});
-
-  // Initial mount
-  (function init() {{
-    if (!Array.isArray(DIALOGUES) || DIALOGUES.length === 0) {{
+  // mount
+  (async function init(){{
+    await loadR2Manifest();
+    if(!Array.isArray(DIALOGUES) || !DIALOGUES.length){{
       document.body.innerHTML = '<div style="padding:20px;font-family:sans-serif;">⚠️ No dialogues found for this set.</div>';
       return;
     }}
-    setHidden(gistCard,true); setHidden(detailCard,true); setHidden(revealCard,true); setHidden(summaryCard,true);
-    state.gold = 0;
     startDialogue(0);
   }})();
   </script>
 </body>
-</html>
-"""
+</html>"""
 
     out_path.write_text(html, encoding="utf-8")
     print(f"✅ listening page generated: {out_path}")
     return out_path
 
-
-# === Creation helpers: turn simple `listen` arrays into `dialogues.json` and write files ===
+# ====== Creation helpers: coerce, synthesize audio, publish to R2, regenerate HTML ======
 
 def _is_dialogues_format(items):
     """Treat as authored dialogues only if MCQ fields exist; otherwise coerce."""
@@ -542,21 +673,12 @@ def _is_dialogues_format(items):
         first = items[0]
     except Exception:
         return False
-    if not isinstance(first, dict):
-        return False
-    has_mcq = ("gist" in first) or ("detail" in first)
-    return bool(has_mcq)
-
+    return isinstance(first, dict) and (("gist" in first) or ("detail" in first))
 
 def _coerce_simple_listen_to_dialogues(items):
-    """Convert a flat array like [{audio|audio_url, phrase?, meaning?}] into dialogues.json entries
-    that Listening Mode can run (with gist/detail MCQs auto-built from peer items).
-    """
-    # Gather corpora for distractors
+    """Convert flat items into dialogues with MCQs."""
     phrases = [str(x.get("phrase") or x.get("polish") or "").strip() for x in items]
     meanings = [str(x.get("meaning") or x.get("english") or "").strip() for x in items]
-
-    # Fallback distractors if the set is tiny
     fallback_meaning = [
         "A greeting", "An apology", "A request", "A question",
         "Directions", "Small talk", "A number", "A time of day",
@@ -568,26 +690,20 @@ def _coerce_simple_listen_to_dialogues(items):
         pl = str(it.get("phrase") or it.get("polish") or "").strip()
         en = str(it.get("meaning") or it.get("english") or "").strip()
 
-        # Build gist options: correct English meaning + 3 other meanings
         other_meanings = [m for m in meanings if m and m != en]
         random.shuffle(other_meanings)
         gist_distractors = other_meanings[:3]
         if len(gist_distractors) < 3:
-            # top up with generic fallbacks not equal to `en`
             pool = [x for x in fallback_meaning if x != en]
             random.shuffle(pool)
-            need = 3 - len(gist_distractors)
-            gist_distractors += pool[:need]
+            gist_distractors += pool[: 3 - len(gist_distractors)]
 
-        # Detail distractor bank: other Polish phrases (up to 10)
         other_phrases = [p for p in phrases if p and p != pl]
         random.shuffle(other_phrases)
         bank = other_phrases[:10]
-        # If no Polish text given, mirror meanings to keep UI working
-        if not pl:
-            pl = en  # last resort so the MCQ isn't empty
-        if not en:
-            en = pl  # keep both sides non-empty
+
+        if not pl: pl = en or "—"
+        if not en: en = pl or "—"
 
         out.append({
             "id": f"d{idx:03d}",
@@ -608,18 +724,11 @@ def _coerce_simple_listen_to_dialogues(items):
         })
     return out
 
-
 def save_listening_set(set_name: str, items):
-    """Write meta.json + dialogues.json for a listening set. Accepts either full dialogues
-    or simple-listen items and will coerce as needed. Returns output directory path.
-    """
-    base = DOCS_DIR / "listening" / set_name
+    """Write meta.json + dialogues.json for a listening set (coercing if needed)."""
+    base = PAGES_DIR / "listening" / set_name
     base.mkdir(parents=True, exist_ok=True)
-
-    # Normalize to dialogues format
     dialogues = items if _is_dialogues_format(items) else _coerce_simple_listen_to_dialogues(items)
-
-    # Minimal meta
     meta = {
         "set_name": set_name,
         "description": "Auto-generated listening set (can be edited).",
@@ -628,8 +737,6 @@ def save_listening_set(set_name: str, items):
         "advanced_mode_available": False,
         "distractor_bank_policy": "Detail draws 3 from a bank each run."
     }
-
-    # Write files (first pass; audio refs will be rewritten by prerender later)
     (base / "meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
     (base / "dialogues.json").write_text(json.dumps(dialogues, ensure_ascii=False, indent=2), encoding="utf-8")
     return base
@@ -638,51 +745,88 @@ def render_missing_audio_for_listening(set_name: str, voice_lang: str = "pl"):
     """
     For each dialogue in docs/listening/<set>/dialogues.json:
       - If 'audio_url' is present, leave as-is.
-      - Else synthesize MP3 from transcript_pl (or detail.correct/translation_en fallback)
-        into docs/static/<set>/listening/dXXX.mp3, and set item["audio"] = "listening/dXXX.mp3".
-    Uses gTTS to match other modes' pipeline.
+      - Else synthesize MP3 from transcript_pl/detail.correct/translation_en
+        into docs/static/<set>/listening/dXXX.mp3,
+        set item["audio"] = "listening/dXXX.mp3",
+        and try to upload to R2 (item["audio_url"] on success).
     """
-    from gtts import gTTS  # lazy import to avoid hard dependency if unused
+    from gtts import gTTS  # lazy import
 
-    # Read dialogues
-    base = DOCS_DIR / "listening" / set_name
+    # Optional manifest writer (if you added it in sets_utils)
+    try:
+        from .sets_utils import _write_r2_manifest  # type: ignore
+    except Exception:
+        _write_r2_manifest = None  # type: ignore
+
+    base = PAGES_DIR / "listening" / set_name
     dlg_path = base / "dialogues.json"
     if not dlg_path.exists():
         raise FileNotFoundError(f"Missing {dlg_path}")
 
     try:
         dialogues = json.loads(dlg_path.read_text(encoding="utf-8"))
+        if not isinstance(dialogues, list):
+            raise ValueError("dialogues.json must be a JSON array.")
     except Exception as e:
         raise ValueError(f"Invalid dialogues.json: {e}")
 
-    # Output dir under docs/static (same convention as other modes)
-    static_dir = DOCS_DIR / "static" / set_name / "listening"
+    static_dir = STATIC_DIR / set_name / "listening"
     static_dir.mkdir(parents=True, exist_ok=True)
+
+    # Prepare R2 (optional)
+    try:
+        from app.r2_client import enabled as r2_enabled, put_file  # type: ignore
+    except Exception:
+        r2_enabled = False
+        put_file = None  # type: ignore
+
+    # Collect CDN mappings for an optional r2_manifest.json
+    r2_map: dict[str, str] = {}
 
     changed = False
     for idx, item in enumerate(dialogues, start=1):
-        # Skip if an absolute/remote URL is provided
-        if item.get("audio_url"):
+        # If already points to a remote URL, keep it
+        audio_url = (item.get("audio_url") or "").strip()
+        if audio_url.startswith("http://") or audio_url.startswith("https://"):
             continue
 
-        # If we already have a local rel path ("listening/…") and file exists, keep it
-        existing_rel = item.get("audio") or ""
+        # If we have a local relative audio path and the file exists, keep (but may still upload)
+        existing_rel = (item.get("audio") or "").strip()  # e.g., 'listening/d001.mp3'
         if existing_rel:
-            candidate = DOCS_DIR / "static" / set_name / existing_rel
+            candidate = STATIC_DIR / set_name / existing_rel
             if candidate.exists():
-                continue  # already rendered & referenced
+                # Try to upload existing file if not already uploaded
+                if r2_enabled and put_file and "audio_url" not in item:
+                    try:
+                        fname = candidate.name
+                        # S3/R2 key should be sanitized set name
+                        r2_key = f"audio/{sanitize_filename(set_name)}/listening/{fname}"
+                        cdn = put_file(
+                            key=str(r2_key),
+                            body=candidate.read_bytes(),  # ensure bytes; some clients require this
+                            content_type="audio/mpeg",
+                            cache_control="public,max-age=31536000,immutable",
+                        )
+                        if cdn:
+                            item["audio_url"] = cdn
+                            # Manifest keys use the *display* set name (what the pages use)
+                            r2_map[f"audio/{set_name}/listening/{fname}"] = cdn
+                            changed = True
+                    except Exception as e:
+                        print(f"[listen] R2 upload failed for existing {existing_rel}: {e}")
+                continue  # no need to synthesize
 
-        # Pick text: prefer Polish transcript, then detail.correct, then English translation
+        # Choose text to synthesize
         text = (
             (item.get("transcript_pl") or "").strip()
             or (item.get("detail", {}).get("correct") or "").strip()
             or (item.get("translation_en") or "").strip()
         )
         if not text:
-            # Nothing to synthesize, just leave empty (UI will warn in console)
+            # Nothing to synthesize; leave item as-is
             continue
 
-        # Render MP3
+        # Render MP3 locally
         filename = f"d{idx:03d}.mp3"
         out_path = static_dir / filename
         try:
@@ -690,23 +834,50 @@ def render_missing_audio_for_listening(set_name: str, voice_lang: str = "pl"):
                 tts = gTTS(text=text, lang=voice_lang)
                 tts.save(str(out_path))
         except Exception as e:
-            # Do not fail set creation because of one item; just continue
             print(f"[listen] gTTS failed for {set_name} #{idx}: {e}")
             continue
 
-        # Rewrite item to point at the static-relative path (like other modes)
+        # Always set local relative path for dev/offline
         item["audio"] = f"listening/{filename}"
-        # If duration was not authored, keep or set 0; actual length will be picked up client-side
         changed = True
 
+        # Upload to R2 and expose a CDN URL if possible
+        if r2_enabled and put_file:
+            try:
+                r2_key = f"audio/{sanitize_filename(set_name)}/listening/{filename}"  # STRING key
+                cdn_url = put_file(
+                    key=str(r2_key),
+                    body=out_path.read_bytes(),  # bytes for maximum compatibility
+                    content_type="audio/mpeg",
+                    cache_control="public,max-age=31536000,immutable",
+                )
+                if cdn_url:
+                    item["audio_url"] = cdn_url
+                    r2_map[f"audio/{set_name}/listening/{filename}"] = cdn_url
+            except Exception as e:
+                print(f"[listen] R2 upload failed for {filename}: {e}")
+
+    # Persist updated dialogues
     if changed:
         dlg_path.write_text(json.dumps(dialogues, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    # Write/update manifest if we uploaded anything and the helper exists
+    if r2_map and callable(_write_r2_manifest):
+        try:
+            _write_r2_manifest(set_name, r2_map)  # writes docs/static/<set>/r2_manifest.json
+        except Exception as e:
+            print(f"[listen] Failed to write r2_manifest.json: {e}")
+
     return changed
 
 
 def create_listening_set(set_name: str, items):
-    """Create listening set, render any missing audio to docs/static/<set>/listening/,
-    rewrite dialogues.json to point at those files, then generate the HTML page.
+    """
+    Create listening set:
+      1) Write meta.json & dialogues.json (coerce if needed)
+      2) Render missing audio to docs/static/<set>/listening/
+      3) Upload audio to R2 (if configured) and merge r2_manifest.json
+      4) Generate HTML page
     """
     out_dir = save_listening_set(set_name, items)
 
@@ -715,6 +886,12 @@ def create_listening_set(set_name: str, items):
         render_missing_audio_for_listening(set_name)
     except Exception as e:
         print(f"[listen] prerender skipped/failed for {set_name}: {e}")
+
+    # Publish to R2 + manifest merge (no-op if r2 not configured)
+    try:
+        _publish_listening_audio_to_r2(set_name)
+    except Exception as e:
+        print(f"[listen] R2 publish skipped/failed for {set_name}: {e}")
 
     # Regenerate HTML using the (possibly updated) dialogues
     with (out_dir / "dialogues.json").open("r", encoding="utf-8") as f:

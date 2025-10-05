@@ -1,7 +1,6 @@
 # app/practice.py
 from pathlib import Path
 import json
-
 from .sets_utils import sanitize_filename
 
 DOCS_DIR = Path("docs")
@@ -17,13 +16,16 @@ def generate_practice_html(set_name, data):
       - System audio cues (repeat_after_me / good / try_again)
       - Per-card audio playback using "<idx>_<sanitized phrase>.mp3"
       - GitHub Pages vs local dev path handling
-    ❗ No dependency on per-set modes.
-    """
 
+    ➕ Enhancements:
+      - Uses R2 CDN audio if available via docs/static/<set>/r2_manifest.json
+      - Falls back to local static assets if CDN isn’t configured or a key is missing
+      - Optional Offline cache button (service worker caches audio for the set)
+    """
     # Ensure output dir exists
     output_dir = DOCS_DIR / "practice" / set_name
     output_dir.mkdir(parents=True, exist_ok=True)
-    out_path = output_dir / "index.html"
+    out_path = output_dir / "index.html"  # <-- defined here, used below
 
     # Preserve your audio filename convention for each entry
     safe_data = []
@@ -104,8 +106,12 @@ def generate_practice_html(set_name, data):
     let isRecognizerActive = false;
     let preloadedAudio = {{}};
 
-    const cards = {cards_json};
+    // R2 manifest (if present) is loaded at startup
+    let r2Manifest = null;     // {{ files: {{ "audio/<set>/<file>": "https://cdn..." }}, assetsBase: "https://cdn..." }}
+    let manifestReady = false;
+
     const setName = "{set_name}";
+    const cards = {cards_json};
     const PASS_THRESHOLD = 70;
 
     // Mirror of Python sanitize_filename
@@ -131,11 +137,23 @@ def generate_practice_html(set_name, data):
     function getSystemAudioPath(name) {{
       return (window.location.hostname === "andrewdionne.github.io")
         ? repoBase() + `/static/system_audio/${{name}}.mp3`
-        : `/custom_static/system_audio/${{name}}.mp3`;
+        : `/custom_static/${{setName}}/../system_audio/${{name}}.mp3`;
     }}
 
-    // Resolve a card audio path
+    // R2-aware card audio resolver:
+    // 1) If r2Manifest.files has a full CDN URL for this key, use it
+    // 2) Else if r2Manifest.assetsBase exists, build URL with it
+    // 3) Else fallback to local static path (GH Pages or dev)
     function getCardAudioPath(filename) {{
+      const key = `audio/${{setName}}/${{filename}}`;
+      if (r2Manifest && r2Manifest.files && r2Manifest.files[key]) {{
+        return r2Manifest.files[key]; // absolute CDN URL
+      }}
+      if (r2Manifest && r2Manifest.assetsBase) {{
+        const base = r2Manifest.assetsBase.replace(/\\/$/, "");
+        return `${{base}}/${{key}}`;
+      }}
+      // Fallback to local static
       return (window.location.hostname === "andrewdionne.github.io")
         ? repoBase() + `/static/${{setName}}/audio/${{filename}}`
         : `/custom_static/${{setName}}/audio/${{filename}}`;
@@ -308,7 +326,7 @@ def generate_practice_html(set_name, data):
     }}
 
     async function runPractice() {{
-      if (paused || isRunning) return;  // ✅ fixed
+      if (paused || isRunning) return;
       if (index >= cards.length) {{
         // Stop recognizer when finished
         if (globalRecognizer) {{
@@ -350,15 +368,111 @@ def generate_practice_html(set_name, data):
       setTimeout(() => {{ if (!paused) runPractice(); }}, 800);
     }}
 
-    // ===== UI wiring =====
+    // ---------- Offline helpers (no HTML changes needed) ----------
+    let swReg = null;
+    function allAudioUrls() {{
+      const urls = [];
+      for (let i = 0; i < cards.length; i++) {{
+        const fn = `${{i}}_${{sanitizeFilename((cards[i]||{{}}).phrase || "")}}.mp3`;
+        urls.push(getCardAudioPath(fn));
+      }}
+      ["repeat_after_me","good","try_again"].forEach(n => urls.push(getSystemAudioPath(n)));
+      return Array.from(new Set(urls));
+    }}
+    async function ensureSW() {{
+      if (!("serviceWorker" in navigator)) return null;
+      try {{
+        swReg = await navigator.serviceWorker.register("./sw.js", {{ scope: "./" }});
+        await navigator.serviceWorker.ready;
+        return swReg;
+      }} catch (e) {{
+        console.log("SW register failed", e);
+        return null;
+      }}
+    }}
+
+    // ===== Startup: load R2 manifest → preload audio → warmup mic → bind UI + Offline
     document.addEventListener("DOMContentLoaded", async () => {{
       const startBtn = document.getElementById("startBtn");
       const pauseBtn = document.getElementById("pauseBtn");
       const restartBtn = document.getElementById("restartBtn");
 
+      // Inject Offline UI right under the control buttons (no HTML changes needed)
+      const firstControls = document.querySelector("h1 + div");
+      const offWrap = document.createElement("div");
+      offWrap.style.marginTop = ".5rem";
+      offWrap.innerHTML = `
+        <button id="offlineBtn" class="flash secondary" disabled>⬇️ Offline</button>
+        <button id="offlineRemoveBtn" class="flash secondary" style="display:none;">🗑 Remove</button>
+        <span id="offlineStatus" class="result" style="display:block;margin-top:.5rem;"></span>
+      `;
+      firstControls.after(offWrap);
+      const offlineBtn = document.getElementById("offlineBtn");
+      const offlineRemoveBtn = document.getElementById("offlineRemoveBtn");
+      const offlineStatus = document.getElementById("offlineStatus");
+
+      // Try to load r2_manifest.json (same-origin file that lists CDN URLs)
+      try {{
+        const manUrl = (window.location.hostname === "andrewdionne.github.io")
+          ? repoBase() + `/static/${{setName}}/r2_manifest.json`
+          : `/custom_static/${{setName}}/r2_manifest.json`;
+        const res = await fetch(manUrl, {{ cache: "no-store" }});
+        if (res.ok) {{
+          r2Manifest = await res.json();
+          console.log("R2 manifest loaded:", r2Manifest);
+        }} else {{
+          console.log("No R2 manifest (fallback to local):", res.status);
+        }}
+      }} catch (e) {{
+        console.log("R2 manifest fetch error (fallback to local):", e);
+      }} finally {{
+        manifestReady = true;
+        offlineBtn.disabled = false; // now we can build URLs for offline
+      }}
+
+      // Now preload audio with R2-aware resolver
       preloadAudioFiles();
+
+      // Warm up mic / recognizer
       await warmupMic();
 
+      // ----- Offline wiring -----
+      await ensureSW();
+      if (!swReg) {{
+        offlineStatus.textContent = "⚠️ Offline not supported in this browser.";
+      }}
+      navigator.serviceWorker?.addEventListener("message", (ev) => {{
+        const d = ev.data || {{}};
+        if (d.type === "CACHE_PROGRESS") {{
+          offlineStatus.textContent = `⬇️ ${{d.done}} / ${{d.total}} files cached…`;
+        }} else if (d.type === "CACHE_DONE") {{
+          offlineStatus.textContent = "✅ Available offline";
+          offlineRemoveBtn.style.display = "inline-block";
+        }} else if (d.type === "UNCACHE_DONE") {{
+          offlineStatus.textContent = "🗑 Removed offline copy";
+          offlineRemoveBtn.style.display = "none";
+        }} else if (d.type === "CACHE_ERROR") {{
+          offlineStatus.textContent = "❌ Offline failed: " + (d.error || "");
+        }}
+      }});
+      offlineBtn.addEventListener("click", async () => {{
+        if (!manifestReady) return;
+        const reg = await ensureSW();
+        if (!reg || !reg.active) {{
+          offlineStatus.textContent = "❌ Offline not available.";
+          return;
+        }}
+        offlineStatus.textContent = "⬇️ Downloading…";
+        const urls = allAudioUrls();
+        reg.active.postMessage({{ type: "CACHE_SET", cache: `practice-{set_name}`, urls }});
+      }});
+      offlineRemoveBtn.addEventListener("click", async () => {{
+        const reg = await ensureSW();
+        if (!reg || !reg.active) return;
+        reg.active.postMessage({{ type: "UNCACHE_SET", cache: `practice-{set_name}` }});
+      }});
+
+      // ----- Start/Pause/Restart wiring -----
       startBtn.addEventListener("click", () => {{
         if (!hasStarted) {{
           hasStarted = true; paused = false;
@@ -397,7 +511,61 @@ def generate_practice_html(set_name, data):
 </body>
 </html>
 """
-
+    # Write the HTML
     out_path.write_text(html, encoding="utf-8")
+
+    # Write a set-scoped service worker to enable offline caching of audio (CDN or local)
+    sw_js = """/* practice SW */
+self.addEventListener('install', (e) => { self.skipWaiting(); });
+self.addEventListener('activate', (e) => { self.clients.claim(); });
+
+function isValid(u){ try { new URL(u); return true; } catch(_) { return false; } }
+
+self.addEventListener('message', async (e) => {
+  const data = e.data || {};
+  const client = await self.clients.get(e.source && e.source.id);
+  if (data.type === 'CACHE_SET') {
+    const cacheName = data.cache || 'practice-cache';
+    const urls = Array.isArray(data.urls) ? data.urls.filter(isValid) : [];
+    try {
+      const cache = await caches.open(cacheName);
+      let done = 0, total = urls.length;
+      for (const u of urls) {
+        try {
+          const res = await fetch(u, { mode: 'cors' });
+          if (res.ok || res.type === 'opaque') {
+            await cache.put(u, res);
+          }
+        } catch (_) { /* skip failed */ }
+        done++;
+        client && client.postMessage({ type: 'CACHE_PROGRESS', done, total });
+      }
+      client && client.postMessage({ type: 'CACHE_DONE', cache: cacheName });
+    } catch (err) {
+      client && client.postMessage({ type: 'CACHE_ERROR', error: String(err) });
+    }
+  } else if (data.type === 'UNCACHE_SET') {
+    const cacheName = data.cache || 'practice-cache';
+    await caches.delete(cacheName);
+    client && client.postMessage({ type: 'UNCACHE_DONE', cache: cacheName });
+  }
+});
+
+// Cache-first for anything we have; otherwise fall through to network
+self.addEventListener('fetch', (event) => {
+  event.respondWith((async () => {
+    const reqUrl = event.request.url;
+    const names = await caches.keys();
+    for (const name of names) {
+      const cache = await caches.open(name);
+      const hit = await cache.match(reqUrl, { ignoreSearch: true });
+      if (hit) return hit;
+    }
+    try { return await fetch(event.request); } catch (_) { return new Response('', { status: 504 }); }
+  })());
+});
+"""
+    (output_dir / "sw.js").write_text(sw_js, encoding="utf-8")
+
     print(f"✅ practice page generated: {out_path}")
     return out_path

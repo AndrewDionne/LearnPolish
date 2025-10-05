@@ -2,108 +2,156 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Path to POLISH • Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Dual-host <base>: GitHub Pages vs Flask -->
+  <script>
+    (function () {
+      var isGH = /\.github\.io$/i.test(location.hostname);
+      var baseHref = isGH ? '/LearnPolish/' : '/';
+      document.write('<base href="' + baseHref + '">');
+    })();
+  </script>
+
+  <title>Dashboard • Path to POLISH</title>
+
+  <!-- Fonts (optional) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;700&family=Manrope:wght@700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+
+  <!-- Site styles -->
+  <link rel="stylesheet" href="static/app.css?v=5">
+
+  <!-- Page-scoped styles (only for Dashboard) -->
   <style>
-    :root{
-      --brand:#2d6cdf;
-      --bg:#f7f7fb; --card:#ffffff; --text:#0c0f14; --muted:#5a6472; --border:#e6e6ef;
-      --shadow:0 8px 24px rgba(0,0,0,.08);
-      --radius:14px; --pad:16px; --gap:14px; --tap:48px;
-      --gold:#c99200; --gold-soft:#ffe8a3;
-      --green:#137a3a; --red:#b4232a;
-      --focus:0 0 0 3px rgba(45,108,223,.35);
+    /* Make the little subheader note tight on this page only */
+    .page-note-wrap .page-note { margin: 6px 0 6px; }
+    .page-note-wrap { padding: 8px 16px 6px; }
+
+    /* Dashboard grid wrapper – use a new class so we don't fight .wrap from app.css */
+    .dash{
+      width:100%;
+      max-width:1100px;
+      margin:0 auto 92px;
+      padding:0 16px 8px;
+      display:grid;
+      gap:16px;
+      grid-template-columns:1fr;      /* iPhone stack */
     }
-    @media (prefers-color-scheme: dark){
-      :root{ --bg:#0b0c10; --card:#121418; --text:#e7e9ee; --muted:#a7b0bf; --border:#1e2230; --shadow:0 6px 22px rgba(0,0,0,.35); --gold:#ffd35a; --gold-soft:#5a4700; }
+    @media (min-width:1000px){
+      .dash{ grid-template-columns: 1.1fr .9fr; } /* 2 columns on desktop */
     }
-    *{ box-sizing:border-box }
-    body{ font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Ubuntu,Helvetica,Arial; background:var(--bg); color:var(--text); margin:0; padding-bottom:92px; }
 
-    /* Top bar (consistent with the rest) */
-    header{ position:sticky; top:0; z-index:10; background:var(--card); border-bottom:1px solid var(--border); }
-    header .bar{ display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px 16px; }
-    .hello{ font-size:clamp(18px,4.2vw,22px); margin:0 }
-    .head-actions a, .head-actions button{ margin-left:8px; font-size:14px; color:var(--brand); background:none; border:1px solid var(--border); padding:8px 10px; border-radius:10px; text-decoration:none; cursor:pointer; }
-    .head-actions button{ color:var(--text); }
-
-    /* iPhone-first layout */
-    .wrap{ width:100%; max-width:1100px; margin:16px auto 90px; padding:0 16px; display:grid; gap:16px; grid-template-columns:1fr; }
-    @media (min-width:1000px){ .wrap{ grid-template-columns: 1.1fr .9fr; } }
-
-    h2{ margin:0 0 6px; font-size:clamp(20px,4.8vw,28px) }
-    .muted{ color:var(--muted) }
-    .card{ background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:var(--pad); box-shadow:var(--shadow) }
+    /* Handy little utilities used here */
     .row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap }
+    .stack{ display:grid; gap:16px }
+    .tiny{ font-size:12px }
+    .nowrap{ white-space:nowrap }
 
-    /* chips */
-    .pill{ display:inline-flex; align-items:center; gap:10px; padding:6px 10px; border-radius:999px; border:1px solid var(--border); font-size:13px; color:var(--muted); background:var(--card) }
-    .bar{ height:10px; background:#e9ecf6; border-radius:999px; overflow:hidden; border:1px solid var(--border) }
-    .bar > i{ display:block; height:100%; width:0%; background:var(--brand); }
+    /* Progress pills + bars */
+    .pill{
+      display:inline-flex; align-items:center; gap:10px;
+      padding:6px 10px; border-radius:999px;
+      border:1px solid var(--border); font-size:13px;
+      color:var(--muted); background:var(--card)
+    }
+    .bar{
+      height:10px; background:#e9ecf6; border-radius:999px;
+      overflow:hidden; border:1px solid var(--border)
+    }
+    .bar > i{ display:block; height:100%; width:0%; background:var(--brand) }
 
-    /* icons */
+    /* Coins + chest */
     .coinstack{ width:24px; height:20px; display:inline-block; vertical-align:middle }
     .coinstack svg{ width:100%; height:100% }
     .chest{ width:22px; height:18px; display:inline-block; vertical-align:middle; opacity:.45; }
     .chest.achieved{ opacity:1 }
 
-    /* challenges */
-    .challenge{ display:flex; align-items:center; gap:10px; justify-content:space-between; border:1px solid var(--border); border-radius:12px; padding:10px; margin-bottom:8px; background:var(--card) }
+    /* Challenges list */
+    .challenge{
+      display:flex; align-items:center; gap:10px; justify-content:space-between;
+      border:1px solid var(--border); border-radius:12px;
+      padding:10px; margin-bottom:8px; background:var(--card)
+    }
     .challenge .meta{ display:flex; flex-direction:column; gap:4px }
     .challenge .title{ font-weight:600 }
     .challenge .reward{ font-size:12px; color:var(--muted) }
-    .challenge .act{ display:flex; gap:8px; align-items:center }
-    .btn{ display:inline-flex; align-items:center; justify-content:center; height:36px; padding:0 12px; border-radius:10px; border:1px solid var(--border); background:var(--card); color:var(--text); text-decoration:none; cursor:pointer }
-    .btn-primary{ background:var(--brand); color:#fff; border-color:transparent }
-    .btn:focus{ outline:none; box-shadow:var(--focus) }
-
-    /* tables */
-    .table-wrap{ overflow:auto; border:1px solid var(--border); border-radius:12px }
-    table{ width:100%; border-collapse:collapse }
-    th, td{ text-align:left; padding:10px 8px; border-bottom:1px solid var(--border); font-size:14px }
-    th .right{ float:right; font-weight:500; font-size:12px; color:var(--muted) }
-    .badge{ padding:4px 8px; border-radius:999px; border:1px solid var(--border); font-size:12px; font-weight:600; display:inline-block }
-    .badge.green{ background:#e8f7ee; color:var(--green); border-color:#c9e8d4 }
-    .badge.red{ background:#fdecee; color:var(--red); border-color:#f5c2c7 }
-    .badge.gold{ background:#fff5d6; color:#8a5a00; border-color:#ffe08a }
-    .nowrap{ white-space:nowrap }
-    .tiny{ font-size:12px; color:var(--muted) }
-
-    /* sections */
-    .stack{ display:grid; gap:16px }
     .progressGrid{ display:grid; gap:16px; grid-template-columns:1fr; }
     @media (min-width:640px){ .progressGrid{ grid-template-columns:repeat(2,1fr); } }
 
-    /* history */
-    #statsScroller{ max-height:360px; overflow:auto; border:1px solid var(--border); border-radius:12px }
+    /* Learning stats scroller */
+    #statsScroller{
+      max-height:360px; overflow:auto;
+      border:1px solid var(--border); border-radius:12px
+    }
 
-    /* bottom nav */
-    nav.bottom{ position:fixed; left:0; right:0; bottom:0; background:var(--card); border-top:1px solid var(--border); display:flex; justify-content:space-around; padding:6px 8px; gap:8px; }
-    nav.bottom a{ flex:1; text-align:center; padding:8px; text-decoration:none; color:var(--text); border-radius:10px; display:flex; flex-direction:column; align-items:center; gap:4px; font-size:12px }
-    nav.bottom a svg{ width:20px; height:20px }
-    nav.bottom a.active{ background:rgba(45,108,223,.12); color:var(--brand) }
-    @supports(padding: max(0px)){ nav.bottom{ padding-bottom: max(6px, env(safe-area-inset-bottom)) } }
+    /* Table tweaks (reuse app.css table basics) */
+    #statsTable th .right{ float:right; font-weight:500; font-size:12px; color:var(--muted) }
+
+    /* Keep the icon labels in the bottom nav centered on iPhone */
+    nav.bottom a span{ line-height:1 }
   </style>
 </head>
-<body>
-  <!-- Top bar -->
-  <header>
-    <div class="bar">
-      <h1 class="hello">Dashboard</h1>
-      <div class="head-actions">
-        <a href="./profile.html" id="profileBtn">Profile</a>
-        <a href="./login.html" id="loginLink">Sign In</a>
-        <a href="./register.html" id="registerLink">Register</a>
-        <button id="logoutBtn" style="display:none;">Logout</button>
+
+<body
+  data-header="Path to Polish"
+  data-note-lead="The Dashboard"
+  data-note-tail="Find all your learning statistics and progress here."
+  data-note-no-sep
+  data-note-tight 
+  style="
+    --logo-size: 48px;
+    --banner-font: 'Manrope', -apple-system, system-ui, Segoe UI, Roboto, Helvetica, Arial;
+    --banner-weight: 800;
+    --banner-track: .01em;
+    --banner-case: none;
+    --banner-size: 28px;    /* iPhone */
+    --banner-size-lg: 36px; /* Desktop */
+    --banner-nudge-x: 10px;
+
+    --note-lead-font: 'Inter', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    --note-lead-size: 18px;
+    --note-lead-weight: 700;
+    --note-lead-track: .02em;
+    --note-lead-case: none;
+    --note-lead-color: var(--text);
+
+    --note-font: 'Source Serif 4', ui-serif, Georgia, 'Times New Roman', serif;
+    --note-weight: 400;
+  ">
+
+  <!-- Header (brand mark + banner left, auth buttons right) -->
+  <header class="topbar no-nav">
+    <div class="row container">
+      <div class="header-left">
+        <a class="brand" href="index.html" aria-label="Path to Polish — Home">
+          <svg class="brand-mark" aria-hidden="true" focusable="false">
+            <use href="static/brand.svg#ptp-mark"></use>
+          </svg>
+          <span id="headerBanner" class="header-banner"></span>
+        </a>
       </div>
+      <nav class="head-actions">
+        <a href="profile.html"  id="profileBtn">Profile</a>
+        <a href="login.html"    id="loginLink">Sign In</a>
+        <a href="register.html" id="registerLink">Register</a>
+        <button id="logoutBtn" style="display:none;">Logout</button>
+      </nav>
     </div>
   </header>
 
-  <main class="wrap">
-    <!-- Left: Streaks, Weekly Gold, Challenges -->
+  <!-- Tight page note -->
+  <div class="wrap page-note-wrap">
+    <div id="pageNote" class="page-note"></div>
+  </div>
+
+  <!-- Dashboard content -->
+  <main class="dash">
+    <!-- Left: Progress + Challenges -->
     <section class="stack">
       <div class="card">
-        <h2>Progress</h2>
+        <h2 style="margin:0 0 6px">Progress</h2>
         <div class="row" style="margin-top:8px">
           <div id="streakPill" class="pill" style="display:none;">🔥 <span id="streakText">Streak: 0 days</span></div>
           <div id="bestPill" class="pill" style="display:none;">🏆 <span id="bestText">Best: 0 days</span></div>
@@ -136,7 +184,6 @@
         <div class="tiny" id="goldTotal" style="margin-top:6px">Total gold: —</div>
       </div>
 
-      <!-- Challenges -->
       <div class="card">
         <h3 style="margin:0 0 10px">Challenges</h3>
         <div class="progressGrid">
@@ -160,7 +207,7 @@
       </div>
     </section>
 
-    <!-- Right: Avatar / Gamification + Learning Statistics -->
+    <!-- Right: Profile card + Learning stats -->
     <section class="stack">
       <div class="card">
         <h3 style="margin-top:0">Your avatar & regions</h3>
@@ -202,52 +249,52 @@
   </main>
 
   <!-- Bottom nav -->
-  <nav class="bottom">
-    <a href="./index.html">
+  <nav class="bottom" aria-label="Primary">
+    <a href="index.html">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a 1 1 0 0 1-1-1v-10.5Z" stroke-width="1.5"/></svg>
       <span>Home</span>
     </a>
-    <a href="./learn.html">
+    <a href="learn.html">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 12h16M4 18h9" stroke-width="1.5" stroke-linecap="round"/></svg>
       <span>Learn</span>
     </a>
-    <a href="./manage_sets/">
+    <a href="manage_sets/index.html">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="16" rx="2" ry="2" stroke-width="1.5"/><path d="M7 8h10M7 12h10M7 16h7" stroke-width="1.5" stroke-linecap="round"/></svg>
       <span>Library</span>
     </a>
-    <a href="./dashboard.html" class="active" aria-current="page">
+    <a href="dashboard.html" class="active" aria-current="page">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 14h6V4H4v10Zm10 6h6V4h-6v16Z" stroke-width="1.5"/></svg>
       <span>Dashboard</span>
     </a>
-    <a href="./groups.html">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-        <circle cx="8" cy="8" r="3" stroke-width="1.5"/>
-        <path d="M2 20v-1c0-3 3-5 6-5" stroke-width="1.5" stroke-linecap="round"/>
-        <circle cx="16" cy="10" r="3" stroke-width="1.5"/>
-        <path d="M11 20v-1c0-2.5 2.5-4.5 5-5" stroke-width="1.5" stroke-linecap="round"/>
-      </svg>
+    <a href="groups.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm-9 9a9 9 0 0 1 18 0" stroke-width="1.5" stroke-linecap="round"/></svg>
       <span>Groups</span>
     </a>
   </nav>
 
-  <script src="./static/js/api.js"></script>
+  <!-- Scripts: API helper, chrome (banner/note/auth), then page JS -->
+  <script src="static/js/api.js"></script>
+  <script src="static/js/page-chrome.js" defer></script>
+
   <script>
-    // Top bar auth wiring (match other pages)
+    // Auth button show/hide (safe, no-throw)
     (async () => {
       const logoutBtn = document.getElementById('logoutBtn');
       const loginLink = document.getElementById('loginLink');
       const registerLink = document.getElementById('registerLink');
       try {
         const r = await api.fetch('/api/me');
-        if (r.ok) { loginLink.style.display='none'; registerLink.style.display='none'; logoutBtn.style.display='inline-block'; }
+        if (r.ok) { loginLink.style.display='none'; registerLink.style.display='none'; logoutBtn.style.display='inline-flex'; }
       } catch(_) {}
       logoutBtn?.addEventListener('click', async ()=>{ try{ await api.fetch('/api/logout',{method:'POST'});}catch(_){}
-        localStorage.removeItem('lp_token'); location.href='./login.html'; });
+        localStorage.removeItem('lp_token'); location.href='login.html'; });
     })();
   </script>
 
   <script>
-    // ===== Helpers =====
+    /* ---------- Dashboard logic (robust, GH+Flask) ---------- */
+
+    // Helpers
     function modeLabel(m){
       m = (m||'').toLowerCase();
       if (m==='practice'||m==='speak') return 'Speak';
@@ -257,99 +304,88 @@
     }
     function pathFor(mode, setName){
       const enc = encodeURIComponent(setName || '');
-      if (!enc) return './learn.html';
-      if (mode === 'reading' || mode === 'read')     return './reading/'   + enc + '/';
-      if (mode === 'listening' || mode === 'listen') return './listening/' + enc + '/';
-      if (mode === 'practice'  || mode === 'speak')  return './practice/'  + enc + '/';
-      return './flashcards/' + enc + '/';
+      if (!enc) return 'learn.html';
+      if (mode === 'reading' || mode === 'read')     return 'reading/'   + enc + '/';
+      if (mode === 'listening' || mode === 'listen') return 'listening/' + enc + '/';
+      if (mode === 'practice'  || mode === 'speak')  return 'practice/'  + enc + '/';
+      return 'flashcards/' + enc + '/';
     }
-    function shortDate(iso){ if(!iso) return ''; const d = new Date(iso); return d.toLocaleString(); }
-    function stars(n){ if (typeof n !== 'number' || isNaN(n)) return null; const full = Math.max(0, Math.min(5, Math.round(n))); return '★'.repeat(full) + '☆'.repeat(5-full); }
+    function stars(n){ if (typeof n !== 'number' || isNaN(n)) return '☆☆☆☆☆'; const full=Math.max(0,Math.min(5,Math.round(n))); return '★'.repeat(full)+'☆'.repeat(5-full); }
 
-    // Ratings cache
+    // Local ratings cache
     function loadLocalRatings(){ try{ return JSON.parse(localStorage.getItem('lp.setRatings') || '{}'); }catch(_){ return {}; } }
     const myRatings = loadLocalRatings();
 
-    // Spaced repetition helpers (1–2–3–7–30)
-    const PASS_SCORE = 100;
-    const SR_STEPS   = [1,2,3,7,30];
-    function nextDueDate(lastPass, stage){ if (stage >= SR_STEPS.length) return null; const d = new Date(lastPass); d.setDate(d.getDate() + SR_STEPS[stage]); return d; }
-    function computeSRFromScores(events, prev){
-      let stage = Math.max(0, Math.min((prev?.stage ?? 0), SR_STEPS.length));
-      let lastPass = prev?.last_pass_ts ? new Date(prev.last_pass_ts) : null;
-      const byTime = [...events].sort((a,b)=> new Date(a.timestamp) - new Date(b.timestamp));
-      for (const e of byTime){
+    // Spaced repetition (1–2–3–7–30)
+    const PASS_SCORE = 100, SR_STEPS = [1,2,3,7,30];
+    function nextDueDate(lastPass, stage){ if (stage >= SR_STEPS.length) return null; const d=new Date(lastPass); d.setDate(d.getDate()+SR_STEPS[stage]); return d; }
+    function computeSRFromScores(events){
+      let stage=0, lastPass=null;
+      const byTime=[...events].sort((a,b)=> new Date(a.timestamp)-new Date(b.timestamp));
+      for(const e of byTime){
         const ts = new Date(e.timestamp);
         if (Number(e.score) >= PASS_SCORE){
-          if (!lastPass){ lastPass = ts; }
+          if (!lastPass){ lastPass=ts; }
           else{
             const due = nextDueDate(lastPass, stage);
-            if (due && ts >= due){ stage = Math.min(stage + 1, SR_STEPS.length); }
+            if (due && ts >= due) stage = Math.min(stage+1, SR_STEPS.length);
             lastPass = ts;
           }
         }
       }
       return { stage, last_pass_ts: lastPass ? lastPass.toISOString() : null };
     }
-    function makeStatus(stage, lastPass, href){
+    function statusBadge(stage, lastPass, href){
       if (stage >= SR_STEPS.length) return '<span class="badge gold">🏅 Mastered</span>';
       if (!lastPass) return `<a class="badge red" href="${href}">🔴 Repetition due</a>`;
       const due = nextDueDate(lastPass, stage);
-      const now = new Date();
-      if (now < due){ return '<span class="badge green">🟢 Complete</span>'; }
-      if (stage === SR_STEPS.length - 1){ return '<span class="badge red">🧪 Test your knowledge retention</span>'; }
+      if (new Date() < due) return '<span class="badge green">🟢 Complete</span>';
+      if (stage === SR_STEPS.length - 1) return '<span class="badge red">🧪 Test your knowledge retention</span>';
       return `<a class="badge red" href="${href}">🔴 Repetition due</a>`;
     }
-    function keyFor(setName, mode){ return `${setName}│${(mode||'').toLowerCase()}`; }
 
-    // ===== Dashboard init =====
-    (async function init(){
-      // Stats: streaks & weekly gold
+    (async function initDashboard(){
+
+      // ===== Progress (streaks + weekly gold + profile mini) =====
       try{
         const r = await api.fetch('/api/my/stats');
         if (r.ok){
           const s = await r.json();
-
           const streak = Number(s.streak_days || 0);
           const best   = Number(s.longest_streak || s.best_streak || 0);
           const weekly = Number(s.weekly_points || s.weekly_gold || 0);
           const goal   = Number(s.goal_points || s.goal_gold || 500) || 500;
           const pct = Math.max(0, Math.min(100, Math.round((weekly/goal)*100)));
 
-          if (streak >= 0){
-            document.getElementById('streakText').textContent = 'Streak: ' + streak + ' ' + (streak===1?'day':'days');
-            document.getElementById('streakPill').style.display='inline-flex';
-          }
-          if (best > 0){
-            document.getElementById('bestText').textContent = 'Best: ' + best + ' ' + (best===1?'day':'days');
-            document.getElementById('bestPill').style.display='inline-flex';
-          }
+          if (streak >= 0){ document.getElementById('streakText').textContent = `Streak: ${streak} ${streak===1?'day':'days'}`; document.getElementById('streakPill').style.display='inline-flex'; }
+          if (best > 0)   { document.getElementById('bestText').textContent   = `Best: ${best} ${best===1?'day':'days'}`;     document.getElementById('bestPill').style.display='inline-flex'; }
 
           document.getElementById('weeklyText').textContent = `${weekly} / ${goal} gold this week`;
           document.getElementById('weeklyBar').style.width = pct + '%';
-          const chest = document.getElementById('chest'); if (weekly >= goal) chest.classList.add('achieved'); else chest.classList.remove('achieved');
+          const chest = document.getElementById('chest');
+          if (weekly >= goal) chest.classList.add('achieved'); else chest.classList.remove('achieved');
 
           const total = (s.total_gold ?? s.total_points ?? null);
           document.getElementById('goldTotal').textContent = 'Total gold: ' + (total!=null ? total : '—');
-          document.getElementById('goldBank').textContent = total!=null ? total : '—';
-          document.getElementById('playerName').textContent = s.display_name || s.name || 'Traveler';
+          document.getElementById('goldBank').textContent  = total!=null ? total : '—';
+          document.getElementById('playerName').textContent   = s.display_name || s.name || 'Traveler';
           document.getElementById('regionsCount').textContent = s.regions_unlocked ?? 0;
-          document.getElementById('titlesMini').textContent = (s.titles || []).slice(0,2).join(', ') || '—';
+          document.getElementById('titlesMini').textContent   = (s.titles || []).slice(0,2).join(', ') || '—';
         }
       }catch(_){}
 
-      // Challenges
+      // ===== Challenges (with safe fallback) =====
       async function fetchChallenges(){
         try{
           const r = await api.fetch('/api/my/challenges');
           if (r.ok) return await r.json();
         }catch(_){}
         return [
-          {id:'d1',scope:'daily', title:'Complete 1 Learn session', reward:10, progress:0, goal:1, done:false, cta_href:'./learn.html'},
-          {id:'d2',scope:'daily', title:'Score 100 in any activity', reward:15, progress:0, goal:1, done:false, cta_href:'./flashcards/'},
-          {id:'w1',scope:'weekly',title:'Earn 300 gold this week', reward:60, progress:0, goal:300, done:false, cta_href:'./index.html'},
-          {id:'m1',scope:'monthly',title:'Master 3 collections', reward:200, progress:0, goal:3, done:false, cta_href:'./manage_sets/'},
-          {id:'s1',scope:'special',title:'Event: Polish Proverbs Pack', reward:100, progress:0, goal:1, done:false, cta_href:'./manage_sets/'},
+          {id:'d1',scope:'daily',   title:'Complete 1 Learn session', reward:10, progress:0, goal:1,   done:false, cta_href:'learn.html'},
+          {id:'d2',scope:'daily',   title:'Score 100 in any activity',reward:15, progress:0, goal:1,   done:false, cta_href:'flashcards/'},
+          {id:'w1',scope:'weekly',  title:'Earn 300 gold this week',   reward:60, progress:0, goal:300, done:false, cta_href:'index.html'},
+          {id:'m1',scope:'monthly', title:'Master 3 collections',      reward:200,progress:0, goal:3,   done:false, cta_href:'manage_sets/'},
+          {id:'s1',scope:'special', title:'Event: Polish Proverbs Pack',reward:100,progress:0, goal:1,  done:false, cta_href:'manage_sets/'},
         ];
       }
       function renderChallenge(c, wrap){
@@ -369,26 +405,33 @@
         `;
         wrap.appendChild(row);
       }
-      const allChal = await fetchChallenges();
-      const zones = {daily:document.getElementById('dailyWrap'), weekly:document.getElementById('weeklyWrap'), monthly:document.getElementById('monthlyWrap'), special:document.getElementById('specialWrap')};
-      ['daily','weekly','monthly','special'].forEach(scope=>{
-        const arr = allChal.filter(x=>x.scope===scope);
-        zones[scope].innerHTML = '';
-        if (!arr.length){ zones[scope].innerHTML = `<div class="muted tiny">No ${scope} challenges right now.</div>`; }
-        arr.forEach(c=> renderChallenge(c, zones[scope]));
-      });
-      document.addEventListener('click', async (e)=>{
-        const btn = e.target.closest('button[data-complete]');
-        if(!btn) return;
-        const id = btn.getAttribute('data-complete');
-        btn.disabled = true;
-        try{
-          await api.fetch('/api/my/challenges/complete', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id})});
-          btn.textContent = 'Claimed';
-        }catch(_){ btn.textContent='Claimed'; }
-      });
+      try{
+        const zones = {
+          daily:   document.getElementById('dailyWrap'),
+          weekly:  document.getElementById('weeklyWrap'),
+          monthly: document.getElementById('monthlyWrap'),
+          special: document.getElementById('specialWrap')
+        };
+        const chall = await fetchChallenges();
+        ['daily','weekly','monthly','special'].forEach(scope=>{
+          const arr = chall.filter(x=>x.scope===scope);
+          zones[scope].innerHTML = '';
+          if (!arr.length){ zones[scope].innerHTML = `<div class="muted tiny">No ${scope} challenges right now.</div>`; }
+          arr.forEach(c=> renderChallenge(c, zones[scope]));
+        });
+        document.addEventListener('click', async (e)=>{
+          const btn = e.target.closest('button[data-complete]');
+          if(!btn) return;
+          const id = btn.getAttribute('data-complete');
+          btn.disabled = true;
+          try{
+            await api.fetch('/api/my/challenges/complete', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id})});
+            btn.textContent = 'Claimed';
+          }catch(_){ btn.textContent='Claimed'; }
+        });
+      }catch(_){}
 
-      // Learning statistics
+      // ===== Learning statistics =====
       const globalRatings = {};
       try{
         let rr = await api.fetch('/api/sets/ratings/averages');
@@ -397,8 +440,8 @@
           const arr = await rr.json();
           (arr||[]).forEach(x=>{
             const avg = typeof x.avg === 'number' ? x.avg
-                       : typeof x.rating === 'number' ? x.rating
-                       : (typeof x.average === 'number' ? x.average : null);
+                     : typeof x.rating === 'number' ? x.rating
+                     : (typeof x.average === 'number' ? x.average : null);
             if (avg!=null) globalRatings[x.set_name] = avg;
           });
         }
@@ -407,62 +450,43 @@
       try{
         const sr = await api.fetch('/api/my/scores?limit=2000');
         const raw = sr.ok ? await sr.json() : [];
+        // Group by (set_name, mode)
         const groups = new Map();
-        for (const r of raw){
-          if (!r.set_name) continue;
-          const mode = (r.mode || 'flashcards').toLowerCase();
-          const key  = `${r.set_name}│${mode}`;
+        for (const e of raw){
+          if (!e.set_name) continue;
+          const mode = (e.mode || 'flashcards').toLowerCase();
+          const key  = `${e.set_name}│${mode}`;
           if (!groups.has(key)) groups.set(key, []);
-          groups.get(key).push(r);
+          groups.get(key).push(e);
         }
+
         const rows = [];
         for (const [key, evts] of groups){
           const setName = evts[0].set_name;
-          const mode = (evts[0].mode || 'flashcards').toLowerCase();
-          const trials = evts.length;
-          const top = evts.reduce((m,e)=> Math.max(m, Number(e.score||0)), 0);
-          const last = evts.reduce((m,e)=> Math.max(m, +new Date(e.timestamp||0)), 0);
+          const mode    = (evts[0].mode || 'flashcards').toLowerCase();
+          const trials  = evts.length;
+          const top     = evts.reduce((m,e)=> Math.max(m, Number(e.score||0)), 0);
+          const last    = evts.reduce((m,e)=> Math.max(m, +new Date(e.timestamp||0)), 0);
+          const href    = pathFor(mode, setName);
 
-          const srState = (function computeSRFromScores(events){
-            let stage=0, lastPass=null;
-            const byTime = [...events].sort((a,b)=> new Date(a.timestamp) - new Date(b.timestamp));
-            for(const e of byTime){
-              const ts = new Date(e.timestamp);
-              if (Number(e.score) >= 100){
-                if (!lastPass){ lastPass = ts; }
-                else{
-                  const steps=[1,2,3,7,30];
-                  const due = (d=>{ const x=new Date(lastPass); x.setDate(x.getDate()+steps[stage]); return x; })();
-                  if (due && ts >= due) stage = Math.min(stage+1, 5);
-                  lastPass = ts;
-                }
-              }
-            }
-            return {stage, last_pass_ts: lastPass ? lastPass.toISOString() : null};
-          })(evts);
+          const srState = computeSRFromScores(evts);
           const lastPass = srState.last_pass_ts ? new Date(srState.last_pass_ts) : null;
-          const href = pathFor(mode, setName);
-          const statusHtml = (function makeStatus(stage, lastPass, href){
-            const steps=[1,2,3,7,30];
-            if (stage >= steps.length) return '<span class="badge gold">🏅 Mastered</span>';
-            if (!lastPass) return `<a class="badge red" href="${href}">🔴 Repetition due</a>`;
-            const due = (d=>{ const x=new Date(lastPass); x.setDate(x.getDate()+steps[stage]); return x; })();
-            const now = new Date();
-            if (now < due){ return '<span class="badge green">🟢 Complete</span>'; }
-            if (stage === steps.length - 1){ return '<span class="badge red">🧪 Test your knowledge retention</span>'; }
-            return `<a class="badge red" href="${href}">🔴 Repetition due</a>`;
-          })(srState.stage, lastPass, href);
 
-          const g = globalRatings[setName];
+          const gAvg = globalRatings[setName];
           const mine = myRatings[setName];
-          let ratingCell = g != null ? `<div class="nowrap" title="Global rating">${stars(g)}</div>` : `<div class="tiny">no ratings</div>`;
-          if (!mine){ ratingCell += `<div class="tiny"><a href="./manage_sets/">add your rating</a></div>`; }
+          let ratingCell = gAvg != null ? `<div class="nowrap" title="Global rating">${stars(gAvg)}</div>` : `<div class="tiny">no ratings</div>`;
+          if (!mine){ ratingCell += `<div class="tiny"><a href="manage_sets/">add your rating</a></div>`; }
 
-          rows.push({ setName, mode, trials, top, last, ratingCell, statusHtml, href });
+          rows.push({
+            setName, mode, trials, top, last,
+            statusHtml: statusBadge(srState.stage, lastPass, href),
+            ratingCell, href
+          });
         }
 
-        const urgencyRank = (html)=> html.includes('gold') ? 3 : (html.includes('green') ? 2 : 1);
-        rows.sort((a,b)=> (urgencyRank(a.statusHtml)-urgencyRank(b.statusHtml)) || (b.last - a.last));
+        // Sort: urgency (repetition due first) then recency
+        const urgency = (h)=> h.includes('Repetition') || h.includes('🧪') ? 0 : h.includes('Complete') ? 2 : h.includes('Mastered') ? 3 : 1;
+        rows.sort((a,b)=> (urgency(a.statusHtml) - urgency(b.statusHtml)) || (b.last - a.last));
 
         const tb = document.querySelector('#statsTable tbody');
         const empty = document.getElementById('statsEmpty');

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- 1) Dual-host <base> (GitHub Pages vs Flask) -->
+  <script>
+    (function () {
+      // If hosted at andrewdionne.github.io/LearnPolish/ use that as base.
+      // Otherwise (Flask/local), use root "/".
+      var isGH = /\.github\.io$/i.test(location.hostname);
+      var baseHref = isGH ? '/LearnPolish/' : '/';
+      document.write('<base href="' + baseHref + '">');
+    })();
+  </script>
+
+  <!-- 2) Fonts (optional) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- keep or adjust families as you like -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;700&family=Manrope:wght@700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+
+  <!-- 3) Styles (now safe to load relatively thanks to <base>) -->
+  <link rel="stylesheet" href="static/app.css?v=5">
+  <title>Page Title • Path to POLISH</title>
+</head>
+
+<body
+  data-header="Path to Polish"                       
+  data-note-lead="Welcome to the library"            
+  data-note-tail="Search the collections to find one for you, or create your own!"  
+  data-note-no-sep    
+  data-note-tight                              
+  style="
+    /* Page-level typographic tweaks (override tokens from app.css) */
+    --logo-size: 48px;
+    --banner-font: 'Manrope', -apple-system, system-ui, Segoe UI, Roboto, Helvetica, Arial;
+    --banner-weight: 800;
+    --banner-track: .01em;
+    --banner-case: none;
+    --banner-size: 28px;       /* iPhone size */
+    --banner-size-lg: 36px;    /* desktop size */
+    --banner-nudge-x: 10px;
+
+    --note-lead-font: 'Inter', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    --note-lead-size: 18px;
+    --note-lead-weight: 700;
+    --note-lead-track: .02em;
+    --note-lead-case: none;
+    --note-lead-color: var(--text);
+
+    --note-font: 'Source Serif 4', ui-serif, Georgia, 'Times New Roman', serif;
+    --note-weight: 400;
+  ">
+  <!-- Header (brand mark + banner left, auth buttons right) -->
+  <header class="topbar no-nav">
+    <div class="row container">
+      <div class="header-left">
+        <a class="brand" href="index.html" aria-label="Path to Polish — Home">
+          <svg class="brand-mark" aria-hidden="true" focusable="false">
+            <use href="static/brand.svg#ptp-mark"></use>
+          </svg>
+          <span id="headerBanner" class="header-banner"></span>
+        </a>
+      </div>
+      <nav class="head-actions">
+        <a href="profile.html"  id="profileBtn">Profile</a>
+        <a href="login.html"    id="loginLink">Sign In</a>
+        <a href="register.html" id="registerLink">Register</a>
+        <button id="logoutBtn" style="display:none;">Logout</button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Optional subheader note (lead/tail) -->
+  <div class="wrap">
+    <div id="pageNote" class="page-note"></div>
+  </div>
+
+
+  <!-- PAGE CONTENT -->
+
+
+  <main class="wrap">
+    <h1 class="visually-hidden"><!-- Accessible page title (optional) --></h1>
+    <div class="card">
+      <!-- … -->
+    </div>
+  </main>
+
+  <!-- Bottom nav -->
+  <nav class="bottom" aria-label="Primary">
+    <a href="index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a 1 1 0 0 1-1-1v-10.5Z" stroke-width="1.5"/></svg>
+      <span>Home</span>
+    </a>
+    <a href="learn.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 12h16M4 18h9" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <span>Learn</span>
+    </a>
+    <a href="manage_sets/index.html" aria-current="page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="16" rx="2" ry="2" stroke-width="1.5"/><path d="M7 8h10M7 12h10M7 16h7" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <span>Library</span>
+    </a>
+    <a href="dashboard.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 14h6V4H4v10Zm10 6h6V4h-6v16Z" stroke-width="1.5"/></svg>
+      <span>Dashboard</span>
+    </a>
+    <a href="groups.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm-9 9a9 9 0 0 1 18 0" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <span>Groups</span>
+    </a>
+  </nav>
+
+  <!-- Site scripts (order matters): API helper, then chrome (banner/note/auth), then page-specific JS -->
+  <script src="static/js/api.js"></script>
+  <script src="static/js/page-chrome.js" defer></script>
+
+   <!-- Page-specific scripts (if any) below here -->
+    
+  </script>
+</body>
+</html>

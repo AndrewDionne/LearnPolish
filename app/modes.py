@@ -55,3 +55,12 @@ __all__ = [
     "generate_reading_html",
 ] + ([ "generate_listening_html" ] if generate_listening_html else []) \
   + ([ "generate_test_html" ] if generate_test_html else [])
+
+def modes_for_type(set_type: str) -> list[str]:
+    st = (set_type or "").lower()
+    if st == "reading":
+        return ["reading"]
+    if st == "flashcards":
+        return ["flashcards", "practice"]
+    # default: treat unknown as vocab so user isn’t blocked
+    return ["flashcards", "practice"]

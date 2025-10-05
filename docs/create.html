@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <link rel="stylesheet" href="static/app.css" />
+  <script src="static/js/api.js"></script>
+
   <title>Create a Collection • Path to POLISH</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
@@ -159,25 +162,23 @@
   </nav>
 
   <script>
-    // --- Auth header like other pages ---
+    // --- Auth header like other pages (using api.js so it works on GitHub Pages) ---
     (async () => {
       const logoutBtn = document.getElementById('logoutBtn');
       const loginLink = document.getElementById('loginLink');
       const registerLink = document.getElementById('registerLink');
       try {
-        const r = await fetch('./api/me', { headers: { Authorization: 'Bearer ' + (localStorage.getItem('lp_token')||'') }});
+        const r = await api.fetch('/api/me');
         if (r.ok) { loginLink.style.display='none'; registerLink.style.display='none'; logoutBtn.style.display='inline-block'; }
       } catch(_) {}
-      logoutBtn?.addEventListener('click', async ()=>{ try{ await fetch('./api/logout',{method:'POST'});}catch(_){}
-        localStorage.removeItem('lp_token'); location.href='./login.html'; });
+      logoutBtn?.addEventListener('click', async ()=>{
+        try { await api.fetch('/api/logout', { method:'POST' }); } catch(_){}
+        localStorage.removeItem('lp_token'); location.href='./login.html';
+      });
     })();
 
     const token = localStorage.getItem('lp_token') || '';
     if (!token) location.href = 'login.html';
-
-    const API_BASE = (location.hostname === '127.0.0.1' || location.hostname === 'localhost')
-      ? 'http://127.0.0.1:5000/api'
-      : (location.origin.replace(/\/$/, '') + '/api');
 
     // ----- Mode chips (radio) -----
     const chips = [...document.querySelectorAll('.chip')];
@@ -193,18 +194,18 @@
 
     const scaffolds = {
       ls: `[
-      {"phrase":"Cześć","meaning":"Hello","pronunciation":"cheshch"},
-      {"phrase":"Dziękuję","meaning":"Thank you","pronunciation":"jen-koo-yeh"}
-    ]`,
+  {"phrase":"Cześć","meaning":"Hello","pronunciation":"cheshch"},
+  {"phrase":"Dziękuję","meaning":"Thank you","pronunciation":"jen-koo-yeh"}
+]`,
       read: `[
-      {"title":"Story 1","polish":"Ala ma kota.","english":"Ala has a cat."},
-      {"title":"Spacer","polish":"Dzisiaj idziemy do parku.","english":"Today we are going to the park."}
-    ]`,
+  {"title":"Story 1","polish":"Ala ma kota.","english":"Ala has a cat."},
+  {"title":"Spacer","polish":"Dzisiaj idziemy do parku.","english":"Today we are going to the park."}
+]`,
       // ✅ Listening no longer needs audio/audio_url; server will synthesize audio
       listen: `[
-      {"polish":"Krążek wpadł do bramki po dobitce napastnika.","english":"The puck went into the net on the forward's rebound."},
-      {"polish":"Dostaliśmy dwie minuty kary za zahaczanie.","english":"We got a two-minute penalty for hooking."}
-    ]`
+  {"polish":"Krążek wpadł do bramki po dobitce napastnika.","english":"The puck went into the net on the forward's rebound."},
+  {"polish":"Dostaliśmy dwie minuty kary za zahaczanie.","english":"We got a two-minute penalty for hooking."}
+]`
     };
 
     const notes = {
@@ -217,7 +218,6 @@
         'Synonyms accepted: "phrase" for polish, "meaning" for english.'
       ].join(' ')
     };
-
 
     function currentGroup(){
       const r = radios.find(x => x.checked);
@@ -289,37 +289,31 @@
       try { data = JSON.parse(ta.value); }
       catch { status.textContent='❌ Invalid JSON.'; status.style.color='crimson'; return; }
 
-      // Modes per group
+      // Modes for UI links
       const modes = (group==='ls') ? ['learn','speak'] : (group==='read') ? ['read'] : ['listen'];
+      // Backend type for generator selection
+      const set_type = (group==='ls') ? 'flashcards' : (group==='read') ? 'reading' : 'listening';
 
-      // Validate per group
-      const err = group==='ls' ? validateLS(data) : group==='read' ? validateRead(data) : validateListen(data);
-      if (err){ status.textContent='❌ ' + err; status.style.color='crimson'; return; }
-
-      // ✅ Normalize keys before sending (esp. for Listening)
+      // Normalize payload per group
       let payloadData = data;
       if (group === 'listen'){
-        payloadData = data.map((it, i) => {
+        payloadData = data.map((it) => {
           const polish = (it.polish ?? it.phrase ?? '').toString().trim();
           const english = (it.english ?? it.meaning ?? '').toString().trim();
           return english ? { polish, english } : { polish };
         });
       } else if (group === 'read'){
-        // Optional tidy-up: ensure only expected keys are sent
         payloadData = data.map(it => {
-          const out = {
-            polish: (it.polish ?? '').toString(),
-          };
+          const out = { polish: (it.polish ?? '').toString() };
           if (it.english) out.english = it.english.toString();
-          if (it.title) out.title = it.title.toString();
+          if (it.title)   out.title   = it.title.toString();
           return out;
         });
       } else {
-        // Learn/Speak: accept phrase/meaning (+ keep pronunciation if present)
         payloadData = data.map(it => {
           const out = {
             phrase: (it.phrase ?? it.polish ?? it.front ?? '').toString(),
-            meaning: (it.meaning ?? it.english ?? it.back ?? '').toString()
+            meaning:(it.meaning ?? it.english ?? it.back  ?? '').toString()
           };
           if (it.pronunciation) out.pronunciation = it.pronunciation.toString();
           return out;
@@ -327,13 +321,10 @@
       }
 
       try{
-        const res = await fetch(`${API_BASE}/create_set`, {
+        const res = await api.fetch('/api/create_set', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + (localStorage.getItem('lp_token') || '')
-          },
-          body: JSON.stringify({ set_name: setName, modes, data: payloadData })
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ set_name: setName, set_type, modes, data: payloadData })
         });
         const j = await res.json();
 
@@ -358,7 +349,6 @@
         status.style.color = 'crimson';
       }
     });
-
   </script>
 </body>
 </html>

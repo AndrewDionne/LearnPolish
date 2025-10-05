@@ -16,6 +16,10 @@ def generate_flashcard_html(set_name, data):
     - Finish: computes score + points, POSTs /api/submit_score, clears session, -> summary.html
     - Resume mid-set via SessionSync.
     - Correct relative paths for nested pages.
+
+    ➕ Enhancements:
+      - Uses R2 CDN audio if docs/static/<set>/r2_manifest.json exists
+      - Falls back to local ../../static/<set>/audio/*.mp3 if CDN not available
     """
     output_dir = DOCS_DIR / "flashcards" / set_name
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -110,9 +114,11 @@ def generate_flashcard_html(set_name, data):
     const mode = "flashcards";
     let currentIndex = 0;
 
+    // R2 manifest (if present)
+    // Shape: {{ files: {{ "audio/<set>/<file>": "https://cdn..." }}, assetsBase: "https://cdn..." }}
+    let r2Manifest = null;
+
     // Scoring + points
-    // - Score% is based on PASS (>=75)
-    // - Points: 10 base for finishing + 1 per “100% before first flip” + 2x bonus if score==100
     const PASS = 75;
     const tracker = {{
       attempts: 0,
@@ -130,9 +136,20 @@ def generate_flashcard_html(set_name, data):
         .replace(/^_+|_+$/g, "");
     }}
 
+    // Prefer CDN URL from r2_manifest.json → else assetsBase → else local ../../static
     function audioPath(index) {{
       const e = cards[index] || {{}};
       const fn = String(index) + "_" + sanitizeFilename(e.phrase || "") + ".mp3";
+      const key = "audio/" + setName + "/" + fn;
+
+      if (r2Manifest && r2Manifest.files && r2Manifest.files[key]) {{
+        return r2Manifest.files[key];               // absolute CDN URL
+      }}
+      if (r2Manifest && r2Manifest.assetsBase) {{
+        const base = r2Manifest.assetsBase.replace(/\\/$/, "");
+        return base + "/" + key;                    // build from CDN base
+      }}
+      // Fallback to local static (existing behavior)
       return "../../static/" + encodeURIComponent(setName) + "/audio/" + encodeURIComponent(fn);
     }}
 
@@ -186,7 +203,6 @@ def generate_flashcard_html(set_name, data):
             const words = resJson?.NBest?.[0]?.Words || [];
             const avg = words.length ? (words.reduce((a,b)=>a+(b.PronunciationAssessment?.AccuracyScore||0),0)/words.length).toFixed(1) : "0";
 
-            // update tracker
             const rec = (tracker.per[currentIndex] = tracker.per[currentIndex] || {{ tries: 0, best: 0, got100BeforeFlip: false }});
             rec.tries += 1;
             tracker.attempts += 1;
@@ -199,7 +215,6 @@ def generate_flashcard_html(set_name, data):
               tracker.perfectNoFlipCount += 1;
             }}
 
-            // persist progress with per-card results
             if (window.SessionSync) SessionSync.save({{ setName, mode, progress: {{ index: currentIndex, per: tracker.per }} }});
 
             const ok = numericAvg >= PASS;
@@ -229,7 +244,21 @@ def generate_flashcard_html(set_name, data):
     }}
 
     // Wiring
-    document.addEventListener("DOMContentLoaded", () => {{
+    document.addEventListener("DOMContentLoaded", async () => {{
+      // Try to load r2_manifest.json (same-origin relative to this page)
+      try {{
+        const manUrl = "../../static/" + encodeURIComponent(setName) + "/r2_manifest.json";
+        const res = await fetch(manUrl, {{ cache: "no-store" }});
+        if (res.ok) {{
+          r2Manifest = await res.json();
+          console.log("R2 manifest loaded:", r2Manifest);
+        }} else {{
+          console.log("No R2 manifest (fallback to local):", res.status);
+        }}
+      }} catch (e) {{
+        console.log("R2 manifest fetch error (fallback to local):", e);
+      }}
+
       renderCard();
 
       // Flip on tap (ignore buttons/result)
