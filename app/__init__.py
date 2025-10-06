@@ -117,15 +117,17 @@ def create_app():
     # Init DB
     db.init_app(app)
 
-    # CORS
+    # --- CORS setup (expanded for Safari/iOS) ---
     CORS(
         app,
-        origins=CORS_ALLOWED_ORIGINS,
+        resources={r"/api/*": {"origins": CORS_ALLOWED_ORIGINS}},
         supports_credentials=False,
-        methods=["GET", "POST", "OPTIONS"],
-        allow_headers=["Content-Type", "Authorization"],
-        max_age=600,
+        methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"],
+        expose_headers=["Content-Type", "Content-Length", "ETag"],
+        max_age=86400,
     )
+
 
     # ----------------------------
     # Blueprints

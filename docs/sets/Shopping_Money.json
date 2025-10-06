@@ -1,0 +1,131 @@
+{
+  "set_type": "flashcards",
+  "set_name": "Shopping & Money",
+  "data": [
+    {
+      "phrase": "Ile to kosztuje?",
+      "pronunciation": "EE-leh toh kosh-TOO-yeh",
+      "meaning": "How much does this cost?"
+    },
+    {
+      "phrase": "Ile to razem?",
+      "pronunciation": "EE-leh toh RAH-zem",
+      "meaning": "How much is it altogether?"
+    },
+    {
+      "phrase": "Czy mogę zapłacić kartą?",
+      "pronunciation": "chih MOH-geh zah-PWAH-cheech KAR-tohn",
+      "meaning": "Can I pay by card?"
+    },
+    {
+      "phrase": "Czy mogę zapłacić gotówką?",
+      "pronunciation": "chih MOH-geh zah-PWAH-cheech goh-TOOF-kohn",
+      "meaning": "Can I pay in cash?"
+    },
+    {
+      "phrase": "Przyjmujecie karty kredytowe?",
+      "pronunciation": "pshih-moo-YEH-cheh KAR-tih kreh-dih-TOH-veh",
+      "meaning": "Do you accept credit cards?"
+    },
+    {
+      "phrase": "Gdzie jest kasa?",
+      "pronunciation": "gdjyeh yehst KAH-sah",
+      "meaning": "Where is the checkout?"
+    },
+    {
+      "phrase": "Chciałbym zapłacić",
+      "pronunciation": "hchyaow-bim zah-PWAH-cheech",
+      "meaning": "I would like to pay (male)"
+    },
+    {
+      "phrase": "Chciałabym zapłacić",
+      "pronunciation": "hchyaow-ah-bim zah-PWAH-cheech",
+      "meaning": "I would like to pay (female)"
+    },
+    {
+      "phrase": "Poproszę paragon",
+      "pronunciation": "poh-PROH-sheh pah-RAH-gon",
+      "meaning": "Receipt, please"
+    },
+    {
+      "phrase": "Czy macie coś tańszego?",
+      "pronunciation": "chih MAH-chyeh tsohsh tahyn-SHEH-go",
+      "meaning": "Do you have something cheaper?"
+    },
+    {
+      "phrase": "Czy macie inne kolory?",
+      "pronunciation": "chih MAH-chyeh EEN-neh koh-LOH-rih",
+      "meaning": "Do you have other colors?"
+    },
+    {
+      "phrase": "Czy macie inny rozmiar?",
+      "pronunciation": "chih MAH-chyeh EEN-nih ROHZ-myahr",
+      "meaning": "Do you have another size?"
+    },
+    {
+      "phrase": "Za duże",
+      "pronunciation": "zah DOO-zheh",
+      "meaning": "Too big"
+    },
+    {
+      "phrase": "Za małe",
+      "pronunciation": "zah MAH-weh",
+      "meaning": "Too small"
+    },
+    {
+      "phrase": "Pasuje dobrze",
+      "pronunciation": "pah-SOO-yeh DOHB-zheh",
+      "meaning": "It fits well"
+    },
+    {
+      "phrase": "Czy mogę to przymierzyć?",
+      "pronunciation": "chih MOH-geh toh pshee-MYEH-zhich",
+      "meaning": "Can I try this on?"
+    },
+    {
+      "phrase": "Szukam koszuli",
+      "pronunciation": "SHOO-kahm koh-SHOO-lee",
+      "meaning": "I am looking for a shirt"
+    },
+    {
+      "phrase": "Szukam spodni",
+      "pronunciation": "SHOO-kahm SPOD-nee",
+      "meaning": "I am looking for trousers"
+    },
+    {
+      "phrase": "Szukam butów",
+      "pronunciation": "SHOO-kahm BOO-toof",
+      "meaning": "I am looking for shoes"
+    },
+    {
+      "phrase": "Czy to jest na promocji?",
+      "pronunciation": "chih toh yehst nah proh-MOH-tsyee",
+      "meaning": "Is this on sale?"
+    },
+    {
+      "phrase": "Poproszę siatkę",
+      "pronunciation": "poh-PROH-sheh SHYAHT-keh",
+      "meaning": "A shopping bag, please"
+    },
+    {
+      "phrase": "Nie mam drobnych",
+      "pronunciation": "nyeh mahm DROHB-nihkh",
+      "meaning": "I don’t have small change"
+    },
+    {
+      "phrase": "Czy mogę zapłacić później?",
+      "pronunciation": "chih MOH-geh zah-PWAH-cheech POOZH-nyey",
+      "meaning": "Can I pay later?"
+    },
+    {
+      "phrase": "Tylko oglądam",
+      "pronunciation": "TIL-koh oh-GLON-dahm",
+      "meaning": "I’m just looking"
+    },
+    {
+      "phrase": "Wezmę to",
+      "pronunciation": "VEHZ-meh toh",
+      "meaning": "I’ll take it"
+    }
+  ]
+}

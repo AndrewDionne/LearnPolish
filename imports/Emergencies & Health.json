@@ -1,0 +1,28 @@
+Emergencies & Health
+[
+  { "phrase": "Pomocy!", "pronunciation": "poh-MOH-tsih", "meaning": "Help!" },
+  { "phrase": "Zadzwoń na policję!", "pronunciation": "ZAH-dzvon nah poh-LEET-syeh", "meaning": "Call the police!" },
+  { "phrase": "Potrzebuję lekarza", "pronunciation": "poh-tshreh-BOO-yeh leh-KAHR-zah", "meaning": "I need a doctor" },
+  { "phrase": "Wezwij karetkę!", "pronunciation": "VEHZ-viy kah-REH-tkeh", "meaning": "Call an ambulance!" },
+  { "phrase": "Jestem ranny / ranna", "pronunciation": "YES-tem RAH-nih / RAH-nah", "meaning": "I am injured (male/female)" },
+  { "phrase": "Zgubiłem się / Zgubiłam się", "pronunciation": "zguh-BEE-wem shyeh / zguh-BEE-wahm shyeh", "meaning": "I am lost (male/female)" },
+  { "phrase": "Mam alergię", "pronunciation": "mahm ah-LEHR-gyeh", "meaning": "I have an allergy" },
+  { "phrase": "Potrzebuję lekarstwa", "pronunciation": "poh-tshreh-BOO-yeh leh-KAHR-stvah", "meaning": "I need medicine" },
+  { "phrase": "Gdzie jest najbliższy szpital?", "pronunciation": "gdjyeh yehst nay-BLEESH-shih SHPEE-tal", "meaning": "Where is the nearest hospital?" },
+  { "phrase": "Gdzie jest apteka?", "pronunciation": "gdjyeh yehst ahp-TEH-kah", "meaning": "Where is the pharmacy?" },
+  { "phrase": "Mam ból", "pronunciation": "mahm bool", "meaning": "I have pain" },
+  { "phrase": "Boli mnie głowa", "pronunciation": "BOH-lee mnyeh GWOH-vah", "meaning": "I have a headache" },
+  { "phrase": "Boli mnie brzuch", "pronunciation": "BOH-lee mnyeh brooch", "meaning": "I have a stomach ache" },
+  { "phrase": "Mam gorączkę", "pronunciation": "mahm goh-RONCH-keh", "meaning": "I have a fever" },
+  { "phrase": "Czy możesz mi pomóc?", "pronunciation": "chih MOH-zhehsh mee poh-MOOTS?", "meaning": "Can you help me?" },
+  { "phrase": "Zgubiłem dokumenty / Zgubiłam dokumenty", "pronunciation": "zguh-BEE-wem doh-KOO-men-ty / zguh-BEE-wahm doh-KOO-men-ty", "meaning": "I lost my documents (male/female)" },
+  { "phrase": "Dzwonię na pogotowie", "pronunciation": "DZVOH-nyeh nah poh-goh-TOH-vyeh", "meaning": "I am calling emergency services" },
+  { "phrase": "Pożar!", "pronunciation": "POH-zhar", "meaning": "Fire!" },
+  { "phrase": "Nie mogę oddychać", "pronunciation": "nyeh MOH-geh oh-DIH-hach", "meaning": "I can’t breathe" },
+  { "phrase": "Złamałem / Złamałam nogę", "pronunciation": "zwah-MAH-wem / zwah-MAH-wahm NOH-geh", "meaning": "I broke my leg (male/female)" },
+  { "phrase": "Potrzebuję pomocy medycznej", "pronunciation": "poh-tshreh-BOO-yeh poh-MOOTSih meh-DIHCH-ney", "meaning": "I need medical help" },
+  { "phrase": "Gdzie jest najbliższa policja?", "pronunciation": "gdjyeh yehst nay-BLEESH-shah poh-LEET-syah", "meaning": "Where is the nearest police station?" },
+  { "phrase": "Czy mogę zadzwonić?", "pronunciation": "chih MOH-geh ZAH-dzvoh-neech?", "meaning": "Can I make a phone call?" },
+  { "phrase": "Potrzebuję wody", "pronunciation": "poh-tshreh-BOO-yeh VOH-dih", "meaning": "I need water" },
+  { "phrase": "Nie czuję się dobrze", "pronunciation": "nyeh CHOO-yeh shyeh DOHB-zheh", "meaning": "I don’t feel well" }
+]

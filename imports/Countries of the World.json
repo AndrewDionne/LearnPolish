@@ -29,7 +29,9 @@ Countries of the World
   { "phrase": "Słowacja", "pronunciation": "swov-AH-tsyah", "meaning": "Slovakia" },
   { "phrase": "Ukraina", "pronunciation": "oo-KRAH-ee-nah", "meaning": "Ukraine" },
   { "phrase": "Białoruś", "pronunciation": "BYAH-lo-roosh", "meaning": "Belarus" },
-  { "phrase": "Litwa", "pronunciation": "LEET-vah", "meaning": "Lithuania" },
+  { "phrase": "Litwa", "pronunciation": "LEET-vah", "meaning": "Lithuania" }
+]
+[
   { "phrase": "Łotwa", "pronunciation": "WOT-vah", "meaning": "Latvia" },
   { "phrase": "Estonia", "pronunciation": "es-TOH-nyah", "meaning": "Estonia" },
   { "phrase": "Węgry", "pronunciation": "VEN-ghry", "meaning": "Hungary" },
@@ -70,3 +72,4 @@ Countries of the World
   { "phrase": "Bahrajn", "pronunciation": "bah-RAIN", "meaning": "Bahrain" },
   { "phrase": "Katar", "pronunciation": "kah-TAR", "meaning": "Qatar" }
 ]
+[ 

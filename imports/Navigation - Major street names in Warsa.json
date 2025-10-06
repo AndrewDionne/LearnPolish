@@ -25,16 +25,5 @@ Navigation - Major street names in Warsaw
   { "phrase": "ulica Żurawia", "pronunciation": "oo-LEE-tsah zhoo-RAH-vyah", "meaning": "Żurawia Street" },
   { "phrase": "ulica Filtrowa", "pronunciation": "oo-LEE-tsah FEEL-troh-vah", "meaning": "Filtrowa Street" },
   { "phrase": "ulica Waryńskiego", "pronunciation": "oo-LEE-tsah vah-RIN-skeh-go", "meaning": "Waryńskiego Street" },
-  { "phrase": "ulica Elektoralna", "pronunciation": "oo-LEE-tsah eh-lek-toh-RAHL-nah", "meaning": "Elektoralna Street" },
-  { "phrase": "ulica Śniadeckich", "pronunciation": "oo-LEE-tsah shnya-DEHT-skee-kh", "meaning": "Śniadeckich Street" },
-  { "phrase": "ulica Chłodna", "pronunciation": "oo-LEE-tsah khwoh-DNAH", "meaning": "Chłodna Street" },
-  { "phrase": "ulica Pańska", "pronunciation": "oo-LEE-tsah PAHN-skah", "meaning": "Pańska Street" },
-  { "phrase": "ulica Grójecka", "pronunciation": "oo-LEE-tsah groo-YEH-tskah", "meaning": "Grójecka Street" },
-  { "phrase": "ulica Puławska", "pronunciation": "oo-LEE-tsah poo-WAHV-skah", "meaning": "Puławska Street" },
-  { "phrase": "ulica Górczewska", "pronunciation": "oo-LEE-tsah gohr-CHEHF-skah", "meaning": "Górczewska Street" },
-  { "phrase": "ulica Jana Pawła II", "pronunciation": "oo-LEE-tsah YAH-nah PAHV-wah DRUGH-ah", "meaning": "John Paul II Street" },
-  { "phrase": "ulica Marsa", "pronunciation": "oo-LEE-tsah MAR-sah", "meaning": "Marsa Street" },
-  { "phrase": "ulica Modlińska", "pronunciation": "oo-LEE-tsah mod-LEEN-skah", "meaning": "Modlińska Street" },
-  { "phrase": "ulica Pułkowa", "pronunciation": "oo-LEE-tsah pool-KOH-vah", "meaning": "Pułkowa Street" },
-  { "phrase": "ulica Radzymińska", "pronunciation": "oo-LEE-tsah rah-dzih-MEEN-skah", "meaning": "Radzymińska Street" }
+
 ]
