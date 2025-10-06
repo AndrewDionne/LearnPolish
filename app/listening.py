@@ -24,6 +24,20 @@ except Exception:  # pragma: no cover
     def sanitize_filename(name: str) -> str:
         return "".join(c for c in name if c.isalnum() or c in (" ", "-", "_", ".")).rstrip()
 
+# Prefer the shared Azure→gTTS helper from sets_utils; fall back to local gTTS if missing
+try:
+    from .sets_utils import _tts_to_mp3  # type: ignore
+except Exception:  # pragma: no cover
+    def _tts_to_mp3(text, out_path, voice=None):
+        try:
+            from gtts import gTTS
+            out_path.parent.mkdir(parents=True, exist_ok=True)
+            gTTS(text=str(text or ""), lang="pl").save(str(out_path))
+            return True
+        except Exception as e:
+            print(f"[listen] local gTTS fallback failed: {e}")
+            return False
+
 # ---------------- Listening helpers ----------------
 
 FALLBACK_DISTRACTORS = [
@@ -750,13 +764,9 @@ def render_missing_audio_for_listening(set_name: str, voice_lang: str = "pl"):
         set item["audio"] = "listening/dXXX.mp3",
         and try to upload to R2 (item["audio_url"] on success).
     """
-    from gtts import gTTS  # lazy import
+    # TTS helper is imported at module level as _tts_to_mp3
+    cdn = _cdn_base()
 
-    # Optional manifest writer (if you added it in sets_utils)
-    try:
-        from .sets_utils import _write_r2_manifest  # type: ignore
-    except Exception:
-        _write_r2_manifest = None  # type: ignore
 
     base = PAGES_DIR / "listening" / set_name
     dlg_path = base / "dialogues.json"
@@ -773,13 +783,6 @@ def render_missing_audio_for_listening(set_name: str, voice_lang: str = "pl"):
     static_dir = STATIC_DIR / set_name / "listening"
     static_dir.mkdir(parents=True, exist_ok=True)
 
-    # Prepare R2 (optional)
-    try:
-        from app.r2_client import enabled as r2_enabled, put_file  # type: ignore
-    except Exception:
-        r2_enabled = False
-        put_file = None  # type: ignore
-
     # Collect CDN mappings for an optional r2_manifest.json
     r2_map: dict[str, str] = {}
 
@@ -793,28 +796,22 @@ def render_missing_audio_for_listening(set_name: str, voice_lang: str = "pl"):
         # If we have a local relative audio path and the file exists, keep (but may still upload)
         existing_rel = (item.get("audio") or "").strip()  # e.g., 'listening/d001.mp3'
         if existing_rel:
-            candidate = STATIC_DIR / set_name / existing_rel
-            if candidate.exists():
-                # Try to upload existing file if not already uploaded
-                if r2_enabled and put_file and "audio_url" not in item:
-                    try:
-                        fname = candidate.name
-                        # S3/R2 key should be sanitized set name
-                        r2_key = f"audio/{sanitize_filename(set_name)}/listening/{fname}"
-                        cdn = put_file(
-                            key=str(r2_key),
-                            body=candidate.read_bytes(),  # ensure bytes; some clients require this
-                            content_type="audio/mpeg",
-                            cache_control="public,max-age=31536000,immutable",
-                        )
-                        if cdn:
-                            item["audio_url"] = cdn
-                            # Manifest keys use the *display* set name (what the pages use)
-                            r2_map[f"audio/{set_name}/listening/{fname}"] = cdn
-                            changed = True
-                    except Exception as e:
-                        print(f"[listen] R2 upload failed for existing {existing_rel}: {e}")
-                continue  # no need to synthesize
+          candidate = STATIC_DIR / set_name / existing_rel
+          if candidate.exists():
+              # Upload existing file if possible (use consistent key space)
+              if r2_enabled and r2_put_file and "audio_url" not in item:
+                  try:
+                      fname = candidate.name
+                      r2_key = f"listening/{set_name}/{fname}"
+                      url = r2_put_file(candidate, r2_key) or (f"{cdn}/{r2_key}" if cdn else None)
+                      if url:
+                          item["audio_url"] = url
+                          r2_map[r2_key] = url
+                          changed = True
+                  except Exception as e:
+                      print(f"[listen] R2 upload failed for existing {existing_rel}: {e}")
+          continue  # no need to synthesize
+
 
         # Choose text to synthesize
         text = (
@@ -826,34 +823,31 @@ def render_missing_audio_for_listening(set_name: str, voice_lang: str = "pl"):
             # Nothing to synthesize; leave item as-is
             continue
 
-        # Render MP3 locally
+        # Render MP3 locally (Azure→gTTS helper)
         filename = f"d{idx:03d}.mp3"
         out_path = static_dir / filename
         try:
             if not out_path.exists():
-                tts = gTTS(text=text, lang=voice_lang)
-                tts.save(str(out_path))
+                ok = _tts_to_mp3(text, out_path)  # voice is chosen inside helper/env
+                if not ok:
+                    raise RuntimeError("TTS failed")
         except Exception as e:
-            print(f"[listen] gTTS failed for {set_name} #{idx}: {e}")
+            print(f"[listen] TTS failed for {set_name} #{idx}: {e}")
             continue
+
 
         # Always set local relative path for dev/offline
         item["audio"] = f"listening/{filename}"
         changed = True
 
         # Upload to R2 and expose a CDN URL if possible
-        if r2_enabled and put_file:
+        if r2_enabled and r2_put_file:
             try:
-                r2_key = f"audio/{sanitize_filename(set_name)}/listening/{filename}"  # STRING key
-                cdn_url = put_file(
-                    key=str(r2_key),
-                    body=out_path.read_bytes(),  # bytes for maximum compatibility
-                    content_type="audio/mpeg",
-                    cache_control="public,max-age=31536000,immutable",
-                )
-                if cdn_url:
-                    item["audio_url"] = cdn_url
-                    r2_map[f"audio/{set_name}/listening/{filename}"] = cdn_url
+                r2_key = f"listening/{set_name}/{filename}"
+                url = r2_put_file(out_path, r2_key) or (f"{cdn}/{r2_key}" if cdn else None)
+                if url:
+                    item["audio_url"] = url
+                    r2_map[r2_key] = url
             except Exception as e:
                 print(f"[listen] R2 upload failed for {filename}: {e}")
 
@@ -861,10 +855,10 @@ def render_missing_audio_for_listening(set_name: str, voice_lang: str = "pl"):
     if changed:
         dlg_path.write_text(json.dumps(dialogues, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    # Write/update manifest if we uploaded anything and the helper exists
-    if r2_map and callable(_write_r2_manifest):
+    # Merge/update manifest (keys like 'listening/<set>/<file>')
+    if r2_map:
         try:
-            _write_r2_manifest(set_name, r2_map)  # writes docs/static/<set>/r2_manifest.json
+            _merge_manifest(set_name, r2_map, cdn or "")
         except Exception as e:
             print(f"[listen] Failed to write r2_manifest.json: {e}")
 
