@@ -173,12 +173,12 @@
       } catch(_) {}
       logoutBtn?.addEventListener('click', async ()=>{
         try { await api.fetch('/api/logout', { method:'POST' }); } catch(_){}
-        localStorage.removeItem('lp_token'); location.href='./login.html';
+        api.clearToken(); location.href='./login.html';
       });
     })();
 
-    const token = localStorage.getItem('lp_token') || '';
-    if (!token) location.href = 'login.html';
+    // Require sign-in (redirects to login.html on 401)
+    (async () => { await api.requireAuth('login.html'); })();
 
     // ----- Mode chips (radio) -----
     const chips = [...document.querySelectorAll('.chip')];

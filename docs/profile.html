@@ -189,7 +189,11 @@
 
   <script src="./static/js/api.js"></script>
   <script>
+    // Require sign-in (redirects to login.html on 401)
+    (async () => { await api.requireAuth('login.html'); })();
+
     // --- tiny helpers ---
+
     function shortDate(iso){ if(!iso) return '—'; const d=new Date(iso); return d.toLocaleDateString(); }
     function msg(el, t){ el.textContent=t; setTimeout(()=>{ el.textContent=''; }, 1800); }
 
@@ -326,7 +330,7 @@
     // Logout
     document.getElementById('logoutBtn').addEventListener('click', async ()=>{
       try{ await api.fetch('/api/logout', {method:'POST'});}catch(_){}
-      localStorage.removeItem('lp_token');
+      api.clearToken(); // clears lp_token + authToken
       location.href = './login.html';
     });
 
