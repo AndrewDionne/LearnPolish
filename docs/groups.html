@@ -284,28 +284,42 @@
       }
 
       async function fetchInviteLink(groupId){
+        // Your API exposes /api/groups/<id>/invite_code -> { code: "ABCDEFGH" }
         try{
           const r = await api.fetch(`/api/groups/${groupId}/invite_code`);
           if (!r.ok) return baseAbs('groups.html');
           const j = await r.json();
-          const code = (j && j.code || '').trim();
+          const code = (j.code || '').trim();
           if (!code) return baseAbs('groups.html');
-          const url = new URL('groups.html', document.baseURI);
-          url.searchParams.set('code', code);
-          return url.href;
-        }catch(_){ return baseAbs('groups.html'); }
+          // Build a frontend link that auto-joins via ?code=
+          const base =
+            (location.hostname === "andrewdionne.github.io")
+              ? ('/' + location.pathname.split('/').filter(Boolean)[0])
+              : '';
+          // Use absolute URL to your Pages site if you prefer:
+          // const base = 'https://andrewdionne.github.io/LearnPolish';
+          return `${base}/groups.html?code=${encodeURIComponent(code)}`;
+        }catch(_){
+          return baseAbs('groups.html');
+        }
       }
 
       async function sendInvites(groupId, emails){
+        // Your API exposes /api/groups/<id>/invite_emails with { emails: [...] }
         try{
           const r = await api.fetch(`/api/groups/${groupId}/invite_emails`, {
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
             body: JSON.stringify({ emails })
           });
-          return { ok: r.ok };
-        }catch(_){ return { ok:false }; }
+          if (!r.ok) return { ok: false };
+          const j = await r.json();
+          return { ok: !!j.ok, sent: j.sent || 0 };
+        }catch(_){
+          return { ok: false };
+        }
       }
+
 
 
       // DOM

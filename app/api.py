@@ -1109,6 +1109,7 @@ def create_set(current_user):
             return bool(os.getenv("RENDER"))  # default True on Render
         except Exception:
             return False
+
     publish = bool(payload.get("publish")) if "publish" in payload else _env_default_publish()
     if publish:
         try:
@@ -1128,60 +1129,51 @@ def create_set(current_user):
         except Exception as e:
             warnings.append(f"publish_error: {e}")
 
-     # Build response metadata
-    enc = quote(set_name, safe="")  # robust encoding for spaces/unicode
-    pages = {}
-    if "learn" in modes:
-        pages["learn"]  = f"/flashcards/{enc}/index.html"
-    if "speak" in modes:
-        pages["speak"]  = f"/practice/{enc}/index.html"
-    if "read" in modes:
-        pages["read"]   = f"/reading/{enc}/index.html"
-    if "listen" in modes:
-        pages["listen"] = f"/listening/{enc}/index.html"
-
-    # ...artifacts can also use quote for consistency:
-    resp = {
-        "ok": True,
-        "set_name": set_name,
-        "name": set_name,
-        "modes": modes,
-        "pages": pages,
-        "artifacts": {
-            "json": f"/sets/{enc}.json",
-            "audio_count": audio_count
-        },
-        "cdn_base": current_app.config.get("R2_CDN_BASE", "") or ""
-    }
-    
-    # Count audio artifacts we generated locally (any mode)
-    audio_count = 0
+    # Build response metadata (robust URL-encoding for set name)
     try:
-        for sub in ("audio", "reading", "listening"):
-            p = STATIC_DIR / set_name / sub
-            if p.exists():
-                audio_count += len([x for x in p.glob("*.mp3") if x.is_file()])
-    except Exception:
-        pass
+        enc = quote(set_name, safe="")
 
-    resp = {
-        "ok": True,
-        "set_name": set_name,
-        "name": set_name,  # backward-compat
-        "modes": modes,
-        "pages": pages,
-        "artifacts": {
-            "json": f"/sets/{enc}.json",
-            "audio_count": audio_count
-        },
-        "cdn_base": current_app.config.get("R2_CDN_BASE", "") or ""
-    }
-    if warnings:
-        resp["warnings"] = warnings
-    return jsonify(resp), 201
+        pages = {}
+        if "learn" in modes:
+            pages["learn"] = f"/flashcards/{enc}/"
+        if "speak" in modes:
+            pages["speak"] = f"/practice/{enc}/"
+        if "read" in modes:
+            pages["read"] = f"/reading/{enc}/"
+        if "listen" in modes:
+            pages["listen"] = f"/listening/{enc}/"
 
+        # Count audio artifacts we generated locally (any mode)
+        audio_count = 0
+        try:
+            for sub in ("audio", "reading", "listening"):
+                p = STATIC_DIR / set_name / sub
+                if p.exists():
+                    audio_count += len([x for x in p.glob("*.mp3") if x.is_file()])
+        except Exception:
+            pass
 
-# ---------- Update set ----------
+        resp = {
+            "ok": True,
+            "set_name": set_name,
+            "name": set_name,  # backward-compat
+            "modes": modes,
+            "pages": pages,
+            "artifacts": {
+                "json": f"/sets/{enc}.json",
+                "audio_count": audio_count,
+            },
+            "cdn_base": current_app.config.get("R2_CDN_BASE", "") or "",
+        }
+        if warnings:
+            resp["warnings"] = warnings
+        return jsonify(resp), 201
+
+    except Exception as e:
+        # Surface unexpected errors to the client during create
+        return jsonify({"error": "create_set_failed", "detail": str(e)}), 500
+
+    # ---------- Update set ----------
 
 @api_bp.route("/update_set", methods=["POST", "PUT", "PATCH"])
 @token_required
