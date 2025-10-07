@@ -9,6 +9,123 @@ from .constants import (
     PAGES_DIR, SETS_DIR, STATIC_DIR, SET_MODES_JSON, SYSTEM_CUE_NAMES
 )
 from .utils import asset_url  # builds full CDN URL from a key (uses Config.R2_CDN_BASE)
+# --- Normalization helpers ---------------------------------------------------
+def _norm_str(x) -> str:
+    return str(x or "").strip()
+
+def normalize_cards(data: list[dict]) -> list[dict]:
+    """
+    Canonical for flashcards/practice:
+      { "phrase": str, "meaning": str, "pronunciation"?: str, "audio"?: str | "audio_url"?: str }
+    Accept synonyms: phrase|polish|front, meaning|english|back, pronunciation|pron.
+    Deduplicates by (phrase, meaning).
+    """
+    out, seen = [], set()
+    for it in data or []:
+        phrase  = _norm_str(it.get("phrase")  or it.get("polish") or it.get("front"))
+        meaning = _norm_str(it.get("meaning") or it.get("english") or it.get("back"))
+        if not phrase or not meaning:
+            continue
+        obj = {"phrase": phrase, "meaning": meaning}
+        pron = _norm_str(it.get("pronunciation") or it.get("pron"))
+        if pron:
+            obj["pronunciation"] = pron
+        # pass through audio if provided
+        au = it.get("audio_url") or it.get("audio")
+        if au:
+            au = _norm_str(au)
+            if au.startswith("http"):
+                obj["audio_url"] = au
+            else:
+                obj["audio"] = au
+        key = (phrase.lower(), meaning.lower())
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(obj)
+    return out
+
+def normalize_passages(data: list[dict]) -> list[dict]:
+    """
+    Canonical for reading:
+      { "polish": str, "english"?: str, "title"?: str }
+    Accept synonyms: polish|phrase|front, english|meaning|back, title|name
+    Deduplicates by (polish, english).
+    """
+    out, seen = [], set()
+    for it in data or []:
+        polish  = _norm_str(it.get("polish") or it.get("phrase") or it.get("front"))
+        if not polish:
+            continue
+        obj = {"polish": polish}
+        en  = _norm_str(it.get("english") or it.get("meaning") or it.get("back"))
+        if en: obj["english"] = en
+        title = _norm_str(it.get("title") or it.get("name"))
+        if title: obj["title"] = title
+        key = (polish.lower(), (obj.get("english") or "").lower())
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(obj)
+    return out
+
+def normalize_for_modes(modes: list[str], data: list[dict]) -> list[dict]:
+    """
+    If the set is read-only (only 'read'), return passages; otherwise assume cards.
+    """
+    ms = {str(m).lower() for m in (modes or [])}
+    is_read_only = (ms == {"read"}) or (list(ms) == ["read"])
+    return normalize_passages(data) if is_read_only else normalize_cards(data)
+
+# --- Azure TTS (REST) with gTTS fallback ------------------------------------
+import os
+def _azure_tts_enabled() -> bool:
+    return bool(os.getenv("AZURE_SPEECH_KEY") and os.getenv("AZURE_SPEECH_REGION"))
+
+def _tts_to_mp3(text: str, out_path: Path, *, voice: str | None = None) -> bool:
+    """
+    Try Azure Speech REST → fallback to gTTS. Returns True on success.
+    Configure via env:
+      AZURE_SPEECH_KEY, AZURE_SPEECH_REGION, AZURE_TTS_VOICE (e.g., 'pl-PL-ZofiaNeural')
+    """
+    t = _norm_str(text)
+    if not t:
+        return False
+
+    # Azure REST
+    if _azure_tts_enabled():
+        try:
+            import requests  # type: ignore
+            key    = os.getenv("AZURE_SPEECH_KEY")
+            region = os.getenv("AZURE_SPEECH_REGION")
+            voice  = voice or os.getenv("AZURE_TTS_VOICE", "pl-PL-ZofiaNeural")
+            url    = f"https://{region}.tts.speech.microsoft.com/cognitiveservices/v1"
+            ssml   = f"<speak version='1.0' xml:lang='pl-PL'><voice xml:lang='pl-PL' xml:gender='Female' name='{voice}'>{t}</voice></speak>"
+            headers = {
+                "Ocp-Apim-Subscription-Key": key,
+                "Content-Type": "application/ssml+xml",
+                "X-Microsoft-OutputFormat": "audio-48khz-192kbitrate-mono-mp3",
+                "User-Agent": "LearnPolish-Server/1.0"
+            }
+            r = requests.post(url, data=ssml.encode("utf-8"), headers=headers, timeout=20)
+            if r.status_code == 200:
+                out_path.parent.mkdir(parents=True, exist_ok=True)
+                out_path.write_bytes(r.content)
+                return True
+            else:
+                print(f"⚠️ Azure TTS failed {r.status_code}: {r.text[:200]}")
+        except Exception as e:
+            print(f"⚠️ Azure TTS error: {e}")
+
+    # gTTS fallback
+    try:
+        from gtts import gTTS  # type: ignore
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        gTTS(text=t, lang="pl").save(str(out_path))
+        return True
+    except Exception as e:
+        print(f"⚠️ gTTS error: {e}")
+        return False
 
 # --- R2 client (safe import) -------------------------------------------------
 try:
@@ -152,12 +269,14 @@ def load_set_data(set_name: str) -> Tuple[list[dict], list[str]]:
 def save_set_wrapper(set_name: str, modes: list[str], data: list[dict]) -> Path:
     """
     Save the canonical on-disk shape:
-      - read-only → {"name", "modes", "meta.modes", "passages": [...]}
-      - else      → {"name", "modes", "meta.modes", "cards": [...]}
+      - read-only → {"name","modes","meta.modes","passages":[...]}
+      - else      → {"name","modes","meta.modes","cards":[...]}
+    Applies normalization so callers can send forgiving keys.
     """
     safe = sanitize_filename(set_name)
     body: dict = {"name": safe, "modes": [], "meta": {"modes": []}}
-    # enforce pairing and order
+
+    # enforce pairing + canonical order
     m = set([str(x).lower() for x in (modes or [])])
     if "learn" in m or "speak" in m:
         m.update({"learn", "speak"})
@@ -165,11 +284,14 @@ def save_set_wrapper(set_name: str, modes: list[str], data: list[dict]) -> Path:
     body["modes"] = ordered
     body["meta"]["modes"] = ordered
 
+    # normalize data
+    norm = normalize_for_modes(ordered, data or [])
+
     is_read_only = (set(ordered) == {"read"}) or (ordered == ["read"])
     if is_read_only:
-        body["passages"] = data
+        body["passages"] = norm
     else:
-        body["cards"] = data
+        body["cards"] = norm
 
     out = _set_file_path(safe)
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -213,7 +335,7 @@ def _ensure_flashcard_audio(set_name: str, data: List[Dict[str, Any]]) -> None:
         if out.exists():
             continue
         try:
-            gTTS(text=phrase, lang="pl").save(str(out))
+            _tts_to_mp3(phrase, out)
         except Exception as e:
             print(f"⚠️ Failed to create TTS for '{phrase}': {e}")
 
@@ -238,7 +360,7 @@ def _ensure_reading_audio(set_name: str, data: List[Dict[str, Any]]) -> None:
         if out.exists():
             continue
         try:
-            gTTS(text=polish, lang="pl").save(str(out))
+            _tts_to_mp3(polish, out)
         except Exception as e:
             print(f"⚠️ Failed to create reading TTS for idx {i}: {e}")
 

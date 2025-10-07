@@ -235,16 +235,32 @@
   <script src="static/js/api.js"></script>
   <script src="static/js/page-chrome.js" defer></script>
 
-  <script>
-    // Auth wiring
-    (async () => {
-      const logoutBtn = document.getElementById('logoutBtn');
-      const loginLink = document.getElementById('loginLink');
-      const registerLink = document.getElementById('registerLink');
-      try { const r = await api.fetch('/api/me'); if (r.ok) { loginLink.style.display='none'; registerLink.style.display='none'; logoutBtn.style.display='inline-block'; } } catch(_) {}
-      logoutBtn?.addEventListener('click', async (e)=>{ e.preventDefault(); try{ await api.fetch('/api/logout',{method:'POST'});}catch(_){}
-        localStorage.removeItem('lp_token'); location.href='login.html'; });
-    })();
+<script>
+  // Auth wiring (guard + header state)
+  (async () => {
+    await api.requireAuth('login.html');  // redirect if 401
+
+    const logoutBtn   = document.getElementById('logoutBtn');
+    const loginLink   = document.getElementById('loginLink');
+    const registerLink= document.getElementById('registerLink');
+
+    try {
+      const r = await api.fetch('/api/me');
+      if (r.ok) {
+        loginLink.style.display='none';
+        registerLink.style.display='none';
+        logoutBtn.style.display='inline-block';
+      }
+    } catch(_) {}
+
+    logoutBtn?.addEventListener('click', async (e)=>{
+      e.preventDefault();
+      try { await api.fetch('/api/logout',{method:'POST'});} catch(_){}
+      api.clearToken();  // clears lp_token + authToken
+      location.href='login.html';
+    });
+  })();
+
 
     // Groups logic
     (function(){
@@ -269,12 +285,16 @@
 
       async function fetchInviteLink(groupId){
         const tries = [
+          // Preferred canonical endpoints
+          {m:'GET',  u:`/api/groups/${groupId}/invite_code`},
+          // Fallbacks (older or alternate routes)
           {m:'POST', u:`/api/groups/${groupId}/invite_link`},
           {m:'GET',  u:`/api/groups/${groupId}/invite_link`},
           {m:'GET',  u:`/api/my/groups/${groupId}/invite_link`},
           {m:'GET',  u:`/api/my/groups/invite_link?group_id=${encodeURIComponent(groupId)}`},
           {m:'POST', u:`/api/groups/${groupId}/share`},
         ];
+
         for(const t of tries){
           try{
             const r=await api.fetch(t.u,{method:t.m}); if(!r.ok) continue;
@@ -289,11 +309,15 @@
       }
       async function sendInvites(groupId, emails){
         const bodies = [
-          { url:`/api/groups/${groupId}/invite`,           body:{ emails } },
-          { url:`/api/my/groups/${groupId}/invite`,        body:{ emails } },
-          { url:`/api/groups/invite`,                      body:{ group_id:groupId, emails } },
-          { url:`/api/my/groups/invite`,                   body:{ group_id:groupId, emails } },
+          // Preferred canonical endpoint
+          { url:`/api/groups/${groupId}/invite_emails`, body:{ emails } },
+          // Fallbacks
+          { url:`/api/groups/${groupId}/invite`,        body:{ emails } },
+          { url:`/api/my/groups/${groupId}/invite`,     body:{ emails } },
+          { url:`/api/groups/invite`,                   body:{ group_id:groupId, emails } },
+          { url:`/api/my/groups/invite`,                body:{ group_id:groupId, emails } },
         ];
+
         for(const b of bodies){
           try{ const r=await api.fetch(b.url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b.body)}); if(r.ok) return {ok:true}; }catch(_){}
         }
