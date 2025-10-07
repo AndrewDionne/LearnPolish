@@ -33,7 +33,6 @@ def _safe_remove(p: Path) -> bool:
             p.unlink(missing_ok=True)
             print(f"🧹 Deleted file: {p}")
             return True
-        # not found
         return False
     except Exception as e:
         print(f"⚠️ Failed to delete {p}: {e}")
@@ -43,15 +42,15 @@ def _safe_remove(p: Path) -> bool:
 def _set_paths_for_delete(set_name: str) -> List[Path]:
     """
     All paths we want to remove for a set:
-      - docs/sets/<set>.json         (flat JSON)
-      - docs/static/<set>/...        (audio etc.)
-      - docs/<mode>/<set>/...        (generated pages per mode)
+      - docs/sets/<set>.json
+      - docs/static/<set>/...
+      - docs/<mode>/<set>/...
       - (legacy) docs/output/<set>/...
     """
     paths: List[Path] = [
         REPO_PATH / "docs" / "sets" / f"{set_name}.json",
         REPO_PATH / "docs" / "static" / set_name,
-        REPO_PATH / "docs" / "output" / set_name,  # legacy; safe to remove if present
+        REPO_PATH / "docs" / "output" / set_name,  # legacy
     ]
     for mode in MODES:
         paths.append(REPO_PATH / "docs" / mode / set_name)
@@ -62,8 +61,85 @@ def _repo_or_none() -> Optional[Repo]:
     try:
         return Repo(REPO_PATH)
     except (InvalidGitRepositoryError, NoSuchPathError):
-        print("ℹ️ Not a Git repository (skipping commit/push).")
+        print(f"ℹ️ Not a Git repository at {REPO_PATH} (skipping commit/push).")
         return None
+
+
+def _git_config(repo: Repo) -> None:
+    """Set identity + safe.directory to avoid 'dubious ownership'."""
+    try:
+        name = os.getenv("GIT_AUTHOR_NAME", "Render Bot")
+        email = os.getenv("GIT_AUTHOR_EMAIL", "bot@example.com")
+        repo.git.config("user.name", name)
+        repo.git.config("user.email", email)
+        # Mark the checkout as safe (Render uses a system user)
+        repo.git.config("--global", "safe.directory", str(REPO_PATH))
+    except Exception as e:
+        print(f"⚠️ git config failed: {e}")
+
+
+def _ensure_branch(repo: Repo) -> str:
+    """Checkout the desired branch; handle detached HEAD."""
+    desired = os.getenv("GIT_BRANCH", "main")
+    try:
+        try:
+            current = repo.active_branch.name
+        except Exception:
+            current = None  # detached HEAD
+
+        if current == desired:
+            return desired
+
+        if desired in [h.name for h in repo.heads]:
+            repo.git.checkout(desired)
+        else:
+            # Create or reset branch at current HEAD
+            repo.git.checkout("-B", desired)
+        return desired
+    except Exception as e:
+        print(f"⚠️ could not switch to branch {desired}: {e}")
+        return desired
+
+
+def _ensure_remote(repo: Repo) -> None:
+    """
+    Make sure 'origin' exists and uses a URL with credentials.
+    Priority:
+      1) GIT_REMOTE (recommended): e.g. https://oauth2:${GH_TOKEN}@github.com/user/repo.git
+      2) Else, if GH_TOKEN set and origin is https, rewrite URL to include token.
+    """
+    try:
+        token = os.getenv("GH_TOKEN", "").strip()
+        configured_remote = os.getenv("GIT_REMOTE", "").strip()
+
+        if "origin" in [r.name for r in repo.remotes]:
+            origin = repo.remote("origin")
+        else:
+            if not configured_remote:
+                print("❌ No 'origin' remote and GIT_REMOTE not provided; cannot push.")
+                return
+            origin = repo.create_remote("origin", configured_remote)
+
+        # If GIT_REMOTE is provided, use it as source of truth
+        if configured_remote:
+            if origin.url != configured_remote:
+                repo.git.remote("set-url", "origin", configured_remote)
+            return
+
+        # Else, inject token into existing HTTPS URL
+        if token and origin.url.startswith("https://"):
+            authed = origin.url
+            if "@github.com" in authed:
+                prefix, rest = authed.split("@github.com", 1)
+                if "://" in prefix:
+                    scheme = prefix.split("://", 1)[0]
+                    authed = f"{scheme}://oauth2:{token}@github.com{rest}"
+            else:
+                authed = authed.replace("https://", f"https://oauth2:{token}@", 1)
+            if origin.url != authed:
+                repo.git.remote("set-url", "origin", authed)
+    except Exception as e:
+        print(f"⚠️ ensure_remote failed: {e}")
 
 
 # ---------------------------
@@ -88,17 +164,16 @@ def cancel_push_in_progress():
 
 
 # ---------------------------
-# Commit & push
+# Commit & push (single, authoritative implementation)
 # ---------------------------
 
 def commit_and_push_changes(message: str, paths: Optional[Iterable[Path]] = None):
     """
     Commit and push repo changes.
     - If `paths` is provided, stage only those; otherwise stage all.
-    - Respects a PUSH lock to avoid concurrent pushes.
-    - Skips commit/push if not a git repo.
+    - Ensures branch + remote credentials before pushing.
+    - Respects DISABLE_GIT_PUSH=1 to skip push in certain envs.
     """
-    # Environment override: disable pushing (useful in CI/dev)
     if os.getenv("DISABLE_GIT_PUSH") == "1":
         print("⏩ DISABLE_GIT_PUSH=1 set — skipping commit/push.")
         return
@@ -109,9 +184,13 @@ def commit_and_push_changes(message: str, paths: Optional[Iterable[Path]] = None
     try:
         repo = _repo_or_none()
         if not repo:
-            return  # Not a repo, nothing to do
+            return
 
-        # Stage
+        _git_config(repo)
+        branch = _ensure_branch(repo)
+        _ensure_remote(repo)
+
+        # Stage specific paths or all
         if paths:
             for p in paths:
                 try:
@@ -121,24 +200,29 @@ def commit_and_push_changes(message: str, paths: Optional[Iterable[Path]] = None
         else:
             repo.git.add(all=True)
 
-        # Commit if needed
+        # Commit if anything changed
         if repo.is_dirty(untracked_files=True):
             repo.index.commit(message)
             print(f"✅ Committed: {message}")
-            # Push
-            try:
-                origin = repo.remote(name="origin")
-                origin.push()
-                print("🚀 Pushed to origin.")
-            except Exception as e:
-                print(f"❌ Push failed: {e}")
         else:
             print("ℹ️ No changes to commit.")
+
+        # Push (explicit refspec ensures branch:branch update)
+        try:
+            origin = repo.remote("origin")
+            origin.push(refspec=f"{branch}:{branch}")
+            print(f"🚀 Pushed to origin/{branch}.")
+        except Exception as e:
+            print(f"❌ Push failed: {e}")
+
     except GitCommandError as e:
         print(f"❌ Git error: {e}")
     finally:
-        if PUSH_LOCK.exists():
-            PUSH_LOCK.unlink()
+        try:
+            if PUSH_LOCK.exists():
+                PUSH_LOCK.unlink()
+        except Exception:
+            pass
 
 
 # ---------------------------
@@ -175,7 +259,7 @@ def delete_multiple_sets_and_push(set_names: Iterable[str]):
     if all_deleted:
         commit_and_push_changes(
             f"🗑️ Deleted sets: {', '.join(set_names)}",
-            paths=all_deleted
+            paths=all_deleted,
         )
     else:
         print("ℹ️ Nothing to delete.")
