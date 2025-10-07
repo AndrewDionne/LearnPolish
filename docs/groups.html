@@ -284,52 +284,29 @@
       }
 
       async function fetchInviteLink(groupId){
-        const tries = [
-          // Preferred canonical endpoints
-          {m:'GET',  u:`/api/groups/${groupId}/invite_code`},
-          // Fallbacks (older or alternate routes)
-          {m:'POST', u:`/api/groups/${groupId}/invite_link`},
-          {m:'GET',  u:`/api/groups/${groupId}/invite_link`},
-          {m:'GET',  u:`/api/my/groups/${groupId}/invite_link`},
-          {m:'GET',  u:`/api/my/groups/invite_link?group_id=${encodeURIComponent(groupId)}`},
-          {m:'POST', u:`/api/groups/${groupId}/share`},
-        ];
-
-        for(const t of tries){
-          try{
-            const r=await api.fetch(t.u,{method:t.m}); if(!r.ok) continue;
-            const j=await r.json();
-            const url=j.url||j.invite_url||j.link||j.href;
-            if(typeof url==='string') return url;
-            const token=j.token||j.invite_token||j.code;
-            if(token) return baseAbs(`join?token=${encodeURIComponent(token)}`);
-          }catch(_){}
-        }
-        return baseAbs('groups.html');
-      }
-      async function sendInvites(groupId, emails){
-        const bodies = [
-          // Preferred canonical endpoint
-          { url:`/api/groups/${groupId}/invite_emails`, body:{ emails } },
-          // Fallbacks
-          { url:`/api/groups/${groupId}/invite`,        body:{ emails } },
-          { url:`/api/my/groups/${groupId}/invite`,     body:{ emails } },
-          { url:`/api/groups/invite`,                   body:{ group_id:groupId, emails } },
-          { url:`/api/my/groups/invite`,                body:{ group_id:groupId, emails } },
-        ];
-
-        for(const b of bodies){
-          try{ const r=await api.fetch(b.url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b.body)}); if(r.ok) return {ok:true}; }catch(_){}
-        }
-        return {ok:false};
-      }
-      async function leaveGroup(groupId){
         try{
-          let r = await api.fetch(`/api/groups/${groupId}/leave`, {method:'DELETE'});
-          if(!r.ok) r = await api.fetch(`/api/my/groups/${groupId}/leave`, {method:'DELETE'});
-          return r.ok;
-        }catch(_){ return false; }
+          const r = await api.fetch(`/api/groups/${groupId}/invite_code`);
+          if (!r.ok) return baseAbs('groups.html');
+          const j = await r.json();
+          const code = (j && j.code || '').trim();
+          if (!code) return baseAbs('groups.html');
+          const url = new URL('groups.html', document.baseURI);
+          url.searchParams.set('code', code);
+          return url.href;
+        }catch(_){ return baseAbs('groups.html'); }
       }
+
+      async function sendInvites(groupId, emails){
+        try{
+          const r = await api.fetch(`/api/groups/${groupId}/invite_emails`, {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ emails })
+          });
+          return { ok: r.ok };
+        }catch(_){ return { ok:false }; }
+      }
+
 
       // DOM
       const dom = {
