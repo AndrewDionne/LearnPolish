@@ -91,11 +91,15 @@ def create_app():
 
     # Instance folder & DB path
     os.makedirs(app.instance_path, exist_ok=True)
-    db_uri = os.getenv("DATABASE_URL")
-    if db_uri and db_uri.startswith("postgres://"):
-        # SQLAlchemy requires postgresql://
-        db_uri = db_uri.replace("postgres://", "postgresql://", 1)
-    if not db_uri:
+        # Prefer DATABASE_URL; fall back to SQLALCHEMY_DATABASE_URI; else local SQLite
+    db_uri = os.getenv("DATABASE_URL") or os.getenv("SQLALCHEMY_DATABASE_URI")
+    if db_uri:
+        # SQLAlchemy prefers "postgresql+psycopg2://"
+        if db_uri.startswith("postgres://"):
+            db_uri = db_uri.replace("postgres://", "postgresql+psycopg2://", 1)
+        elif db_uri.startswith("postgresql://"):
+            db_uri = db_uri.replace("postgresql://", "postgresql+psycopg2://", 1)
+    else:
         db_uri = f"sqlite:///{Path(app.instance_path) / 'learnpolish.db'}"
 
     # Apply/override runtime config
@@ -104,7 +108,9 @@ def create_app():
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
         JSON_AS_ASCII=False,
         TEMPLATES_AUTO_RELOAD=True,
+        SQLALCHEMY_ENGINE_OPTIONS={"pool_pre_ping": True},
     )
+
     # Ensure FRONTEND_BASE_URL has a value even if Config omitted it
     app.config.setdefault("FRONTEND_BASE_URL", os.getenv("FRONTEND_BASE_URL", "http://localhost:5000"))
     # If JWT_SECRET missing, fall back to SECRET_KEY (keeps old behavior)
@@ -141,6 +147,22 @@ def create_app():
     app.register_blueprint(api_bp, url_prefix="/api")
     app.register_blueprint(sets_api, url_prefix="/api")
     app.register_blueprint(routes_bp)  # top-level routes for per-set pages
+
+        # --- Ensure DB schema exists (dev-friendly) ---
+    AUTO_INIT_DB = os.getenv("AUTO_INIT_DB", "1") == "1"
+
+    def _ensure_schema():
+        try:
+            with app.app_context():
+                # Import models so metadata is populated
+                from . import models  # noqa: F401
+                db.create_all()
+                app.logger.info("DB schema ensured (create_all).")
+        except Exception as e:
+            app.logger.error(f"DB auto-init failed: {e}")
+
+    if AUTO_INIT_DB:
+        _ensure_schema()
 
     # ----------------------------
     # Convenience static routes (local dev parity)

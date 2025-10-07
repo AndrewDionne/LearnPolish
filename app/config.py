@@ -32,7 +32,7 @@ GITHUB_PAGES_ORIGIN = "https://andrewdionne.github.io"
 
 if IN_RENDER:
     # API lives on Render; frontend on GitHub Pages by default (overridable via env)
-    API_BASE_URL = RENDER_URL or os.getenv("API_BASE_URL", "https://flashcards-5c95.onrender.com")
+    API_BASE_URL = RENDER_URL or os.getenv("API_BASE_URL", "https://path-to-polish.onrender.com")
     FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL", GITHUB_PAGES_SITE)
 elif os.getenv("GITHUB_ACTIONS"):
     API_BASE_URL = os.getenv("API_BASE_URL", "")
