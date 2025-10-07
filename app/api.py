@@ -7,6 +7,7 @@ from werkzeug.security import generate_password_hash
 from shutil import rmtree
 from pathlib import Path
 import os, json, re, jwt, random, string
+from urllib.parse import quote
 
 from .auth import token_required
 from .models import db, Score, UserSet, GroupMembership, Group, Rating, User, SessionState
@@ -804,6 +805,106 @@ def invite_emails(current_user, group_id):
         print("Email send failed:", repr(e))
         return jsonify({"ok": False, "error": "EMAIL_SEND_FAILED"}), 500
 
+from urllib.parse import urljoin
+
+def _ensure_group_code_and_link(g):
+    """Ensure group has a code and return (code, invite_url)."""
+    if not g:
+        return None, None
+
+    code = None
+    if hasattr(g, "join_code"):
+        code = (getattr(g, "join_code") or "").strip()
+    if not code and hasattr(g, "invite_code"):
+        code = (getattr(g, "invite_code") or "").strip()
+
+    if not code:
+        code = "".join(random.choices(string.ascii_uppercase + string.digits, k=8))
+        if hasattr(g, "join_code"):
+            g.join_code = code
+        elif hasattr(g, "invite_code"):
+            g.invite_code = code
+        db.session.commit()
+
+    base = (
+        current_app.config.get("FRONTEND_BASE_URL")
+        or current_app.config.get("APP_BASE_URL")
+        or os.environ.get("APP_BASE_URL")
+        or request.host_url
+    ).rstrip("/")
+    # groups.html lives in /docs; the page reads ?code= and calls /api/groups/join
+    invite_url = f"{base}/groups.html?code={code}"
+    return code, invite_url
+
+
+@api_bp.route("/groups/<int:group_id>/invite_link", methods=["GET", "POST"])
+@token_required
+def group_invite_link(current_user, group_id):
+    """Compat for UI: returns {'url': '<.../groups.html?code=XXXX>', 'code': 'XXXX'}"""
+    g = Group.query.get(group_id)
+    if not g:
+        return jsonify({"error": "not_found"}), 404
+    # must be a member
+    if not GroupMembership.query.filter_by(user_id=current_user.id, group_id=group_id).first():
+        return jsonify({"error": "forbidden"}), 403
+
+    code, link = _ensure_group_code_and_link(g)
+    return jsonify({"url": link, "code": code})
+
+
+# Aliases the UI may try
+@api_bp.route("/my/groups/<int:group_id>/invite_link", methods=["GET", "POST"])
+@token_required
+def my_group_invite_link(current_user, group_id):
+    return group_invite_link(current_user, group_id)
+
+
+@api_bp.route("/my/groups/invite_link", methods=["GET"])
+@token_required
+def my_groups_invite_link_qs(current_user):
+    try:
+        group_id = int(request.args.get("group_id"))
+    except Exception:
+        return jsonify({"error": "group_id_required"}), 400
+    return group_invite_link(current_user, group_id)
+
+
+@api_bp.route("/groups/<int:group_id>/share", methods=["GET", "POST"])
+@token_required
+def group_share(current_user, group_id):
+    """Another alias the UI probes."""
+    return group_invite_link(current_user, group_id)
+
+
+# ---- Email invite wrappers matching the UI's POST targets ----
+
+@api_bp.route("/groups/<int:group_id>/invite", methods=["POST"])
+@token_required
+def group_invite_compat(current_user, group_id):
+    """Compat wrapper → reuses existing invite_emails logic."""
+    return invite_emails(current_user, group_id)
+
+
+@api_bp.route("/groups/invite", methods=["POST"])
+@token_required
+def groups_invite_compat_body(current_user):
+    data = request.get_json(silent=True) or {}
+    group_id = data.get("group_id")
+    if not group_id:
+        return jsonify({"ok": False, "error": "group_id_required"}), 400
+    # Rebuild a request for the existing handler
+    request_data = {"emails": data.get("emails", "")}
+    # Temporarily swap request.json (simple, works in Flask) or just call the logic inline.
+    # Here we call the underlying function with the same request body available.
+    with current_app.test_request_context(json=request_data):
+        return invite_emails(current_user, int(group_id))
+
+
+@api_bp.route("/my/groups/invite", methods=["POST"])
+@token_required
+def my_groups_invite_compat(current_user):
+    return groups_invite_compat_body(current_user)
+
 # ---------------------------
 # Sets (library + global + create/update)
 # ---------------------------
@@ -1027,18 +1128,32 @@ def create_set(current_user):
         except Exception as e:
             warnings.append(f"publish_error: {e}")
 
-    # Build response metadata
-    enc = re.sub(r'\s', '%20', set_name)  # basic escape for spaces in UI links
+     # Build response metadata
+    enc = quote(set_name, safe="")  # robust encoding for spaces/unicode
     pages = {}
     if "learn" in modes:
-        pages["learn"]  = f"/flashcards/{enc}/"
+        pages["learn"]  = f"/flashcards/{enc}/index.html"
     if "speak" in modes:
-        pages["speak"]  = f"/practice/{enc}/"
+        pages["speak"]  = f"/practice/{enc}/index.html"
     if "read" in modes:
-        pages["read"]   = f"/reading/{enc}/"
+        pages["read"]   = f"/reading/{enc}/index.html"
     if "listen" in modes:
-        pages["listen"] = f"/listening/{enc}/"
+        pages["listen"] = f"/listening/{enc}/index.html"
 
+    # ...artifacts can also use quote for consistency:
+    resp = {
+        "ok": True,
+        "set_name": set_name,
+        "name": set_name,
+        "modes": modes,
+        "pages": pages,
+        "artifacts": {
+            "json": f"/sets/{enc}.json",
+            "audio_count": audio_count
+        },
+        "cdn_base": current_app.config.get("R2_CDN_BASE", "") or ""
+    }
+    
     # Count audio artifacts we generated locally (any mode)
     audio_count = 0
     try:
