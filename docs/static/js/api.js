@@ -118,10 +118,11 @@
     return CDN_BASE ? (CDN_BASE + p) : p;
   }
 
+
   // Quick health check (non-fatal)
-  apiFetch('/ping')
-    .then(r => { if (!r.ok) throw 0; })
-    .catch(() => console.warn('[api] Ping failed. Check API_BASE:', API_BASE));
+    apiFetch('/api/token')
+      .then(r => { if (!r.ok) throw 0; })
+      .catch(() => console.warn('[api] Ping failed. Check API_BASE:', API_BASE));
 
   // Public API
   window.api = {
