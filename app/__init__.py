@@ -91,14 +91,22 @@ def create_app():
 
     # Instance folder & DB path
     os.makedirs(app.instance_path, exist_ok=True)
-        # Prefer DATABASE_URL; fall back to SQLALCHEMY_DATABASE_URI; else local SQLite
+  
+    #  Prefer DATABASE_URL; fall back to SQLALCHEMY_DATABASE_URI; else local SQLite
     db_uri = os.getenv("DATABASE_URL") or os.getenv("SQLALCHEMY_DATABASE_URI")
     if db_uri:
-        # SQLAlchemy prefers "postgresql+psycopg2://"
+        # Normalize to psycopg v3 driver
         if db_uri.startswith("postgres://"):
-            db_uri = db_uri.replace("postgres://", "postgresql+psycopg2://", 1)
+            db_uri = db_uri.replace("postgres://", "postgresql://", 1)
+        if db_uri.startswith("postgresql+psycopg2://"):
+            db_uri = db_uri.replace("postgresql+psycopg2://", "postgresql+psycopg://", 1)
         elif db_uri.startswith("postgresql://"):
-            db_uri = db_uri.replace("postgresql://", "postgresql+psycopg2://", 1)
+            db_uri = db_uri.replace("postgresql://", "postgresql+psycopg://", 1)
+
+        # On Render, require SSL unless explicitly provided
+        if os.getenv("RENDER") and "sslmode=" not in db_uri:
+            sep = "&" if "?" in db_uri else "?"
+            db_uri = f"{db_uri}{sep}sslmode=require"
     else:
         db_uri = f"sqlite:///{Path(app.instance_path) / 'learnpolish.db'}"
 
