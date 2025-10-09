@@ -131,19 +131,21 @@ def create_app():
     # Init DB
     db.init_app(app)
 
-    # --- CORS setup (expanded for Safari/iOS) ---
+    # --- CORS setup ---
+    # Allow GH Pages + local dev + Render’s own host by default.
+    # (CORS_ALLOWED_ORIGINS comes from config.py; includes GH by default.)
+    cors_resources = {r"/api/*": {"origins": CORS_ALLOWED_ORIGINS}}
+
     CORS(
-    app,
-    resources={
-      r"/api/*": {"origins": CORS_ALLOWED_ORIGINS},
-      r"/ping":  {"origins": CORS_ALLOWED_ORIGINS},
-    },
-    supports_credentials=False,
-    methods=["GET","POST","PUT","PATCH","DELETE","OPTIONS"],
-    allow_headers=["Content-Type","Authorization","Accept","Origin","X-Requested-With"],
-    expose_headers=["Content-Type","Content-Length","ETag"],
-    max_age=86400,
+        app,
+        resources=cors_resources,
+        supports_credentials=False,  # we auth via Authorization header, not cookies
+        methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"],
+        expose_headers=["Content-Type", "Content-Length", "ETag"],
+        max_age=86400,
     )
+
 
 
     # ----------------------------
