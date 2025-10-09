@@ -13,10 +13,10 @@ from .auth import token_required
 from .models import db, Score, UserSet, GroupMembership, Group, Rating, User, SessionState
 from .emailer import send_email
 from .listening import create_listening_set
-
+from .git_utils import commit_and_push_changes
 # Project paths & helpers
 from .constants import SETS_DIR, PAGES_DIR, STATIC_DIR
-from .sets_utils import regenerate_set_pages, sanitize_filename
+from .sets_utils import regenerate_set_pages, sanitize_filename, build_all_mode_indexes, rebuild_set_modes_map
 # Optional git publish
 try:
     from .git_utils import commit_and_push_changes
@@ -1097,6 +1097,19 @@ def create_set(current_user):
             create_listening_set(slug, data)
     except Exception as e:
         warnings.append(f"listening_generate_failed: {e}")
+   
+    # Refresh landing/index pages & set->modes map (so GH Pages shows the new set)
+    try:
+        try:
+            build_all_mode_indexes()
+        except Exception as e:
+            warnings.append(f"build_indexes_failed: {e}")
+        try:
+            rebuild_set_modes_map()
+        except Exception as e:
+            warnings.append(f"rebuild_modes_map_failed: {e}")
+    except Exception:
+        pass
 
     # Optional publish (commit + push)
     def _env_default_publish():
@@ -1115,12 +1128,25 @@ def create_set(current_user):
             stat_dir = STATIC_DIR / slug
             if stat_dir.exists():
                 changed_paths.append(stat_dir)
-            try:
-                commit_and_push_changes(f"✨ Create set: {display_name} [{slug}] ({', '.join(modes)})", paths=changed_paths)
-            except Exception as e:
-                warnings.append(f"publish_failed: {e}")
+
+            # 🆕 Also stage global listings that may have been rebuilt
+            for p in (
+                PAGES_DIR / "flashcards" / "index.html",
+                PAGES_DIR / "practice" / "index.html",
+                PAGES_DIR / "reading" / "index.html",
+                PAGES_DIR / "listening" / "index.html",
+                PAGES_DIR / "set_modes.json",
+            ):
+                if p.exists():
+                    changed_paths.append(p)
+
+            commit_and_push_changes(
+                f"✨ Create set: {display_name} [{slug}] ({', '.join(modes)})",
+                paths=changed_paths,
+            )
         except Exception as e:
-            warnings.append(f"publish_error: {e}")
+            warnings.append(f"publish_failed: {e}")
+
 
     # Build response with robust URL encoding of the slug
     enc = quote(slug, safe="")

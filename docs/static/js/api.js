@@ -119,10 +119,11 @@
   }
 
 
-  // Quick health check (non-fatal)
-    apiFetch('/api/token')
-      .then(r => { if (!r.ok) throw 0; })
-      .catch(() => console.warn('[api] Ping failed. Check API_BASE:', API_BASE));
+  // apiFetch('/ping')
+  apiFetch('/api/token')
+    .then(r => { if (!r.ok) throw 0; })
+    .catch(() => console.warn('[api] Ping failed. Check API_BASE:', API_BASE));
+
 
   // Public API
   window.api = {

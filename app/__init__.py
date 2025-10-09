@@ -138,13 +138,17 @@ def create_app():
 
     CORS(
         app,
-        resources=cors_resources,
-        supports_credentials=False,  # we auth via Authorization header, not cookies
+        resources={
+            r"/api/*": {"origins": CORS_ALLOWED_ORIGINS},
+            r"/ping":  {"origins": CORS_ALLOWED_ORIGINS},  # allow cross-origin ping
+        },
+        supports_credentials=False,
         methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"],
         expose_headers=["Content-Type", "Content-Length", "ETag"],
         max_age=86400,
     )
+
 
 
 
