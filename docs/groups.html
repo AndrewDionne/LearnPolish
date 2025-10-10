@@ -232,9 +232,9 @@
   </nav>
 
   <!-- Scripts -->
-  <script src="static/js/app-config.js"></script>
-  <script src="static/js/api.js"></script>
-  <script src="static/js/page-chrome.js" defer></script>
+<script src="static/js/app-config.js"></script>
+<script src="static/js/api.js"></script>
+<script src="static/js/page-chrome.js" defer></script>
 
 <script>
   // Auth wiring (guard + header state)
@@ -257,33 +257,48 @@
     logoutBtn?.addEventListener('click', async (e)=>{
       e.preventDefault();
       try { await api.fetch('/api/logout',{method:'POST'});} catch(_){}
-      api.clearToken();  // clears lp_token + authToken
+      api.clearToken();
       location.href='login.html';
     });
   })();
 
   // Groups logic
   (function(){
-    // ---- CONFIG: flip to false if backend allows only 1 group ----
     const MULTI_GROUPS = true;
 
     const $ = (id)=> document.getElementById(id);
     const baseAbs = (path) => new URL(path, document.baseURI).href;
 
-    // Helpers
     function modeLabel(m){ m=(m||'').toLowerCase(); if(m==='practice'||m==='speak') return 'Speak'; if(m==='reading'||m==='read') return 'Read'; if(m==='listening'||m==='listen') return 'Listen'; return 'Learn'; }
     function shortDate(iso){ if(!iso) return ''; const d=new Date(iso); return d.toLocaleString(); }
     function normalizeEmails(raw){
       return (raw||'').split(/[\n,; ]+/g).map(s=>s.trim()).filter(Boolean)
         .filter(e=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)).slice(0,200);
     }
-    async function copyToClipboard(text){
-      try{ if(navigator.clipboard?.writeText){ await navigator.clipboard.writeText(text); return true; } }catch(_){}
-      const ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.left='-9999px'; document.body.appendChild(ta);
-      ta.select(); ta.setSelectionRange(0,99999); const ok=document.execCommand('copy'); document.body.removeChild(ta); return ok;
+
+    async function tryClipboardCopy(text){
+      // Try modern API first (requires HTTPS + user gesture)
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(text);
+          return true;
+        }
+      } catch(_){}
+      // Fallback to legacy execCommand
+      try {
+        const ta=document.createElement('textarea');
+        ta.value=text;
+        ta.setAttribute('readonly', '');
+        ta.style.position='fixed'; ta.style.left='-9999px';
+        document.body.appendChild(ta);
+        ta.select(); ta.setSelectionRange(0, 99999);
+        const ok=document.execCommand('copy');
+        document.body.removeChild(ta);
+        if (ok) return true;
+      } catch(_){}
+      return false;
     }
 
-    // API shims (with graceful fallbacks)
     async function createGroup(name){
       const body = JSON.stringify({ name });
       try{
@@ -317,11 +332,10 @@
           headers: {'Content-Type':'application/json'},
           body: JSON.stringify({ emails })
         });
-        if (!r.ok) return { ok: false };
-        const j = await r.json();
-        return { ok: !!j.ok, sent: j.sent || 0 };
-      }catch(_){
-        return { ok: false };
+        const j = await r.json().catch(()=> ({}));
+        return { ok: r.ok && !!(j.ok ?? true), sent: j.sent || 0, error: j.error };
+      }catch(err){
+        return { ok: false, error: ''+err };
       }
     }
 
@@ -394,7 +408,7 @@
       dom.inviteName.textContent=current.group_name||current.name||'';
       dom.inviteLinkW.style.display='none';
       dom.inviteModal.style.display='flex';
-      // Prefetch link ASAP so copy can work within the gesture
+      // Prefetch invite URL immediately so we can copy within user gesture
       (async ()=>{
         try{
           const url = await fetchInviteLink(current.group_id || current.id);
@@ -408,7 +422,10 @@
     function closeInvite(){ dom.inviteModal.style.display='none'; }
 
     async function loadGroups(){
-      try{ const r=await api.fetch('/api/my/groups'); groups = r.ok ? await r.json() : []; }catch(_){ groups=[]; }
+      try{
+        const r=await api.fetch('/api/my/groups');
+        groups = r.ok ? await r.json() : [];
+      }catch(_){ groups=[]; }
 
       dom.multiNote.style.display = groups.length > 1 ? 'block' : 'none';
       current = groups[0] || null;
@@ -427,7 +444,6 @@
       const size = current.member_count ?? current.size;
       dom.meta.textContent = (size != null) ? `${size} member${size===1?'':'s'}` : ' ';
 
-      // Button placement logic
       if (MULTI_GROUPS){
         dom.inviteBtn.style.display='inline-flex';
         dom.leaveBtn.style.display='inline-flex';
@@ -447,7 +463,6 @@
       await showActivity();
     }
 
-    // Views
     async function showActivity(){
       if(!current) return;
       dom.tabA.classList.add('btn-primary'); dom.tabL.classList.remove('btn-primary');
@@ -550,7 +565,7 @@
     });
     dom.inpJoinCode?.addEventListener('keydown', (e)=>{ if(e.key==='Enter') dom.btnJoin?.click(); });
 
-    dom.inviteBtn?.addEventListener('click', async (e)=>{
+    dom.inviteBtn?.addEventListener('click', (e)=>{
       e.preventDefault();
       if(!current) return;
       openInvite();
@@ -565,30 +580,35 @@
     dom.btnInvClose?.addEventListener('click', (e)=>{ e.preventDefault(); closeInvite(); });
     dom.inviteModal?.addEventListener('click', (e)=>{ if(e.target===dom.inviteModal) closeInvite(); });
 
-    // Single, consolidated copy handler (removed duplicate)
     dom.btnCopy?.addEventListener('click', async ()=>{
       if(!current) return;
       dom.inviteStat.textContent='Generating invite link…';
       const url = latestInviteUrl || await fetchInviteLink(current.group_id || current.id);
       latestInviteUrl = url;
-      const ok  = await copyToClipboard(url);
       dom.inviteLink.href = url; dom.inviteLink.textContent = url; dom.inviteLinkW.style.display='block';
-      dom.inviteStat.textContent = ok ? 'Invite link copied! 🎉' : 'Could not copy automatically—long-press the link and copy.';
+
+      const ok = await tryClipboardCopy(url);
+      dom.inviteStat.textContent = ok
+        ? 'Invite link copied! 🎉'
+        : 'Copy blocked by the OS — long-press the link to copy.';
     });
 
-    dom.btnSend?.addEventListener('click', async ()=>{
+    dom.btnSend?.addEventListener('click', async (e)=>{
+      e.preventDefault();
       if(!current) return;
       const emails = normalizeEmails(dom.inviteTA.value);
       if(!emails.length){ dom.inviteStat.textContent='Add at least one valid email or use “Copy invite link”.'; return; }
       dom.inviteStat.textContent='Sending invites…';
       const res = await sendInvites(current.group_id || current.id, emails);
-      dom.inviteStat.textContent = res.ok ? 'Invites sent! 🎉' : 'Could not send via API. Copy and share the link instead.';
+      dom.inviteStat.textContent = res.ok
+        ? `Invites sent! 🎉 (${res.sent} email${res.sent===1?'':'s'})`
+        : `Could not send via API. ${res.error ? 'Details: '+res.error : ''} Copy and share the link instead.`;
       if(res.ok) dom.inviteTA.value='';
     });
 
-    // Boot
     (async function boot(){ await loadGroups(); })();
   })();
 </script>
+
 </body>
 </html>
