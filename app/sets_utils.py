@@ -151,12 +151,12 @@ except Exception:
             SET_MODES_JSON.write_text("{}", encoding="utf-8")
         except Exception as e:
             print(f"⚠️ Failed to (re)write docs/set_modes.json: {e}")
-    # Legacy compat: older code calls build_all_mode_indexes(); forward to set_modes rebuild.
-    def build_all_mode_indexes():
-        try:
-            rebuild_set_modes_map()
-        except Exception as e:
-            print(f"⚠️ build_all_mode_indexes fallback failed: {e}")
+# Legacy compat: older code calls build_all_mode_indexes(); forward to set_modes rebuild.
+def build_all_mode_indexes():
+    try:
+        rebuild_set_modes_map()
+    except Exception as e:
+        print(f"⚠️ build_all_mode_indexes fallback failed: {e}")
 
 # ---------------- Utilities --------------------------------------------------
 
