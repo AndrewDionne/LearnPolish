@@ -109,11 +109,16 @@ def send_email(
             smtp.ehlo()
             smtp.starttls(context=ssl.create_default_context())
             smtp.ehlo()
-            try: smtp.noop()
-            except Exception: pass
+            try:
+                smtp.noop()  # harmless keepalive; helps on flaky nets
+            except Exception:
+                pass
             smtp.login(GMAIL_USER, GMAIL_APP_PASSWORD)
-
+            result = smtp.send_message(msg, to_addrs=rcpts)
+            if result:  # dict of refused recipients
+                raise smtplib.SMTPRecipientsRefused(result)
         return
     except Exception as e:
         # If 587 also fails, raise the most informative error
         raise last_err or e
+
