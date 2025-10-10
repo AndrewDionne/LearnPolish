@@ -33,7 +33,7 @@ def generate_flashcard_html(set_name, data):
         except Exception:
             entry["audio_file"] = f"{idx}_.mp3"
 
-    cards_json = json.dumps(data, ensure_ascii=False)
+    cards_json = json.dumps(data, ensure_ascii=False).replace("</", "<\\/")
 
     # --------- LEARN PAGE (index.html) ----------
     html = f"""<!DOCTYPE html>
@@ -142,14 +142,17 @@ def generate_flashcard_html(set_name, data):
     function audioPath(index) {{
       const e = cards[index] || {{}};
       const fn = String(index) + "_" + sanitizeFilename(e.phrase || "") + ".mp3";
+      const setEnc = encodeURIComponent(setName);
+      const fnEnc  = encodeURIComponent(fn);
+
       const candidates = [
-        "audio/" + setName + "/" + fn, // primary
-        setName + "/audio/" + fn,      // alt
-        "audio/" + fn,                 // flat
-        fn                             // bare
+        `audio/${{setName}}/${{fn}}`,   // primary
+        `${{setName}}/audio/${{fn}}`,   // alt
+        `audio/${{fn}}`,              // flat
+        fn                          // bare
       ];
 
-      // 1) Exact file map match
+      // 1) Exact file map
       if (r2Manifest && r2Manifest.files) {{
         for (const k of candidates) {{
           const k1 = k.replace(/^\//, "");
@@ -159,19 +162,19 @@ def generate_flashcard_html(set_name, data):
       }}
 
       // 2) CDN base from manifest or app-config
-      const base = (
+      const base =
         (r2Manifest && (r2Manifest.assetsBase || r2Manifest.cdn || r2Manifest.base)) ||
         assetsCDNBase ||
-        null
-      );
+        null;
       if (base) {{
         const clean = String(base).replace(/\/$/, "");
-        return clean + "/" + candidates[0]; // default "audio/<set>/<fn>"
+        return `${{clean}}/audio/${{setEnc}}/${{fnEnc}}`;
       }}
 
-      // 3) Fallback to local static (existing behavior)
-      return "../../static/" + encodeURIComponent(setName) + "/audio/" + encodeURIComponent(fn);
+      // 3) Local
+      return `../../static/${{setEnc}}/audio/${{fnEnc}}`;
     }}
+
 
 
     function setNavUI() {{

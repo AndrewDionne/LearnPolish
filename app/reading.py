@@ -30,7 +30,8 @@ def generate_reading_html(set_name, data=None):
             raise FileNotFoundError(f"No set JSON for reading: {sets_file}")
         data = json.loads(sets_file.read_text(encoding="utf-8"))
 
-    passages_json = json.dumps(data, ensure_ascii=False)
+    passages_json = json.dumps(data, ensure_ascii=False).replace("</", "<\\/")
+
 
     html = f"""<!DOCTYPE html>
 <html lang="pl">
