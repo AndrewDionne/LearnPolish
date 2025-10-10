@@ -1,31 +1,39 @@
 // docs/static/js/api.js
 (function () {
-  // ---- Configuration -------------------------------------------------------
-  const RUNTIME = (typeof window !== 'undefined' ? (window.PTP_CONFIG || {}) : {});
-  const CONFIG_API_BASE = (RUNTIME.API_BASE || '').replace(/\/+$/, '');
-  const CONFIG_CDN_BASE = (RUNTIME.CDN_BASE || '').replace(/\/+$/, '');
-
-
-  // ---- Utilities -----------------------------------------------------------
+  // ---- Small helpers -------------------------------------------------------
   const stripTrail = (s) => (s || '').replace(/\/+$/, '');
-  const ensureLead = (s) => (s.startsWith('/') ? s : '/' + s);
+  const ensureLead = (s) => (s && s.startsWith('/') ? s : '/' + (s || ''));
+
+  // ---- Configuration -------------------------------------------------------
+  // Accept either name; some pages set APP_CONFIG, others PTP_CONFIG.
+  const RUNTIME = (typeof window !== 'undefined' ? (window.APP_CONFIG || window.PTP_CONFIG || {}) : {});
+  const CONFIG_API_BASE = stripTrail(RUNTIME.API_BASE || '');
+  const CONFIG_CDN_BASE = stripTrail(
+    RUNTIME.CDN_BASE || RUNTIME.assetsBase || RUNTIME.R2_BASE || RUNTIME.cdn || RUNTIME.base || ''
+  );
+
+  // Single source of truth when not same-origin
+  const DEFAULT_RENDER_API = CONFIG_API_BASE || 'https://path-to-polish.onrender.com';
+  const CDN_BASE = CONFIG_CDN_BASE;
 
   function detectApiBase() {
+    // Manual override for debugging
     const override = stripTrail(localStorage.getItem('API_BASE') || '');
     if (override) return override;
 
-    const host = location.hostname;
-    const isGH = /\.github\.io$/i.test(host);
+    const host = (typeof location !== 'undefined' ? location.hostname : '');
+    const isGH    = /\.github\.io$/i.test(host);
     const isLocal = /^(localhost|127\.0\.0\.1)$/i.test(host);
-    const isRender = /onrender\.com$/i.test(host);
+    const isRender= /onrender\.com$/i.test(host);
 
     if (isGH) return DEFAULT_RENDER_API; // static frontend → remote API
-    if (isLocal || isRender) return '';  // same-origin API during dev or on Render
+    if (isLocal || isRender) return '';  // same-origin on dev or Render
     return DEFAULT_RENDER_API;           // safe fallback
   }
 
-  const API_BASE = detectApiBase();
+  const API_BASE = stripTrail(detectApiBase());
 
+  // ---- Token helpers -------------------------------------------------------
   function getToken() {
     return localStorage.getItem('lp_token')
         || localStorage.getItem('authToken')
@@ -33,20 +41,21 @@
   }
   function setToken(tok) {
     if (!tok) return;
-    localStorage.setItem('lp_token', tok);
-    localStorage.setItem('authToken', tok);
+    try { localStorage.setItem('lp_token', tok); } catch {}
+    try { localStorage.setItem('authToken', tok); } catch {}
   }
   function clearToken() {
-    localStorage.removeItem('lp_token');
-    localStorage.removeItem('authToken');
+    try { localStorage.removeItem('lp_token'); } catch {}
+    try { localStorage.removeItem('authToken'); } catch {}
   }
 
+  // ---- Fetch core ----------------------------------------------------------
   function joinUrl(base, path) {
+    if (/^https?:\/\//i.test(path)) return path; // already absolute
     const p = ensureLead(path || '/');
     return base ? stripTrail(base) + p : p;
   }
 
-  // Core fetch (adds Authorization, sane defaults, JSON shortcut)
   async function apiFetch(path, opts = {}) {
     const url = joinUrl(API_BASE, path);
     const headers = new Headers(opts.headers || {});
@@ -72,7 +81,7 @@
     return fetch(url, fetchOpts);
   }
 
-  // JSON helpers
+  // ---- JSON helpers --------------------------------------------------------
   async function requestJSON(path, opts = {}) {
     const res = await apiFetch(path, opts);
     if (!res.ok) {
@@ -84,25 +93,22 @@
     }
     const ct = (res.headers.get('Content-Type') || '').toLowerCase();
     if (ct.includes('application/json')) return res.json();
-    // allow empty 204, or non-JSON OK
-    return null;
+    return null; // allow 204s / non-JSON OKs
   }
-  const get  = (p, o={}) => requestJSON(p, o);
-  const post = (p, json) => requestJSON(p, { method: 'POST', json });
-  const put  = (p, json) => requestJSON(p, { method: 'PUT',  json });
-  const patch= (p, json) => requestJSON(p, { method: 'PATCH',json });
-  const del  = (p, json) => requestJSON(p, { method: 'DELETE', json });
+  const get   = (p, o={}) => requestJSON(p, o);
+  const post  = (p, json) => requestJSON(p, { method: 'POST', json });
+  const put   = (p, json) => requestJSON(p, { method: 'PUT',  json });
+  const patch = (p, json) => requestJSON(p, { method: 'PATCH',json });
+  const del   = (p, json) => requestJSON(p, { method: 'DELETE', json });
 
-  // Simple auth check you can call at page load; on 401 redirect to login
+  // ---- Auth helper ---------------------------------------------------------
   async function requireAuth(loginFile = 'login.html') {
     try {
       await get('/api/me');
       return true;
     } catch (e) {
       if (e && e.status === 401) {
-        // If on GitHub Pages under /LearnPolish/, keep the subpath
-        const root = location.pathname.startsWith('/LearnPolish/')
-          ? '/LearnPolish/' : '/';
+        const root = location.pathname.startsWith('/LearnPolish/') ? '/LearnPolish/' : '/';
         location.href = root + loginFile;
         return false;
       }
@@ -110,27 +116,25 @@
     }
   }
 
-  // Build media (R2) absolute URL from a relative path like "audio/foo.mp3"
+  // ---- Media (CDN) helper --------------------------------------------------
   function mediaUrl(relPath) {
     const p = ensureLead(relPath || '');
     return CDN_BASE ? (CDN_BASE + p) : p;
   }
 
-
-  // apiFetch('/ping')
+  // ---- Lightweight ping (debug) -------------------------------------------
   apiFetch('/api/token')
     .then(r => { if (!r.ok) throw 0; })
     .catch(() => console.warn('[api] Ping failed. Check API_BASE:', API_BASE));
 
-
-  // Public API
-  window.api = {
+  // ---- Public API ----------------------------------------------------------
+  window.api = window.api || {
     fetch: apiFetch,
     get, post, put, patch, del,
     getToken, setToken, clearToken,
     requireAuth,
     mediaUrl,
-    API_BASE: API_BASE,
-    CDN_BASE: CDN_BASE
+    API_BASE,
+    CDN_BASE
   };
 })();
