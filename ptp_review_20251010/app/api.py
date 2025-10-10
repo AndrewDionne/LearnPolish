@@ -13,23 +13,20 @@ from .auth import token_required
 from .models import db, Score, UserSet, GroupMembership, Group, Rating, User, SessionState
 from .emailer import send_email
 from .listening import create_listening_set
+from .git_utils import commit_and_push_changes
 # Project paths & helpers
 from .constants import SETS_DIR, PAGES_DIR, STATIC_DIR
 from .sets_utils import regenerate_set_pages, sanitize_filename, build_all_mode_indexes, rebuild_set_modes_map
-
-# Optional git publish (safe import)
+# Optional git publish
 try:
-    from .git_utils import commit_and_push_changes  # noqa: F401
+    from .git_utils import commit_and_push_changes
 except Exception:
     def commit_and_push_changes(*_args, **_kwargs):
+        # GitPython or repo may be unavailable; publishing will be skipped gracefully.
         print("ℹ️ commit_and_push_changes unavailable — skipping publish.")
 
 
 api_bp = Blueprint("api", __name__)
-
-@api_bp.route("/healthz", methods=["GET"])
-def healthz():
-    return jsonify({"ok": True, "time": datetime.utcnow().isoformat()})
 
 # ---------------------------
 # Helpers
@@ -805,13 +802,10 @@ def invite_emails(current_user, group_id):
         )
         return jsonify({"ok": True, "sent": len(emails)})
     except Exception as e:
-        err_msg = getattr(e, "smtp_error", None)
-        if isinstance(err_msg, (bytes, bytearray)):
-            try: err_msg = err_msg.decode("utf-8", "ignore")
-            except Exception: err_msg = None
-        detail = err_msg or str(e)
         print("Email send failed:", repr(e))
-        return jsonify({"ok": False, "error": "EMAIL_SEND_FAILED", "detail": detail[:200]}), 500
+        return jsonify({"ok": False, "error": "EMAIL_SEND_FAILED"}), 500
+
+from urllib.parse import urljoin
 
 def _ensure_group_code_and_link(g):
     """Ensure group has a code and return (code, invite_url)."""

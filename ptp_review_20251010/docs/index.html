@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Dual-host <base> (GitHub Pages vs Flask) -->
+  <script>
+    (function () {
+      var isGH = /\.github\.io$/i.test(location.hostname);
+      var baseHref = isGH ? '/LearnPolish/' : '/';
+      document.write('<base href="' + baseHref + '">');
+    })();
+  </script>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;700&family=Manrope:wght@700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+
+  <!-- Shared styles -->
+  <link rel="stylesheet" href="static/app.css?v=5">
+  <title>Home • Path to POLISH</title>
+
+  <style>
+    /* ----- MINI STREAK + WEEKLY BAR (top chips row) ----- */
+    .chips-row{
+      max-width:1100px; margin:6px auto 12px; padding:0 var(--pad);
+      display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    }
+    .pill{
+      display:inline-flex; align-items:center; gap:10px;
+      padding:6px 10px; border-radius:999px;
+      border:1px solid var(--border); background:var(--card); color:var(--muted);
+      font-size:13px;
+    }
+    .pill .coinstack{ width:22px; height:18px; display:inline-block; vertical-align:middle }
+    .miniBar{
+      display:inline-block; height:8px; width:140px; min-width:120px;
+      border-radius:999px; overflow:hidden; border:1px solid var(--border); background:#e9ecf6;
+    }
+    .miniBar > i{ display:block; height:100%; width:0%; background:var(--brand); }
+    .chest{ width:22px; height:18px; display:inline-flex; align-items:center; opacity:.45 }
+    .chest.achieved{ opacity:1 }
+
+    /* ----- SNAPSHOT CARDS LAYOUT & SPACING ----- */
+    .snapshots{
+      max-width:1100px; margin:0 auto 90px; padding:0 var(--pad);
+      display:grid; grid-template-columns:1fr; gap:24px;   /* <- more space between cards */
+    }
+    @media (min-width:900px){
+      .snapshots{ grid-template-columns:1fr 1fr; }
+    }
+
+    /* Tighten table look inside cards a bit */
+    .card h3{ margin:0 0 10px }
+    #statsEmpty,#groupEmpty{ padding:8px 0 }
+  </style>
+</head>
+
+<body
+  data-header="Path to Polish"
+  data-note-lead="Cześć!"
+  data-note-tail="Learn, Speak, Read, and Listen — bite-sized collections you can create and learn from."
+  data-note-no-sep
+  data-note-tight 
+  style="
+    --logo-size: 48px;
+    --banner-font: 'Manrope', -apple-system, system-ui, Segoe UI, Roboto, Helvetica, Arial;
+    --banner-weight: 800;
+    --banner-track: .01em;
+    --banner-case: none;
+    --banner-size: 28px;
+    --banner-size-lg: 36px;
+    --banner-nudge-x: 10px;
+
+    --note-lead-font: 'Inter', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    --note-lead-size: 18px;
+    --note-lead-weight: 700;
+    --note-lead-track: .02em;
+    --note-lead-case: none;
+    --note-lead-color: var(--text);
+
+    --note-font: 'Source Serif 4', ui-serif, Georgia, 'Times New Roman', serif;
+    --note-weight: 400;
+  "
+>
+  <!-- Header -->
+  <header class="topbar no-nav">
+    <div class="row container">
+      <div class="header-left">
+        <a class="brand" href="index.html" aria-label="Path to Polish — Home">
+          <svg class="brand-mark" aria-hidden="true" focusable="false">
+            <use href="static/brand.svg#ptp-mark"></use>
+          </svg>
+          <span id="headerBanner" class="header-banner"></span>
+        </a>
+      </div>
+      <nav class="head-actions">
+        <a href="profile.html"  id="profileBtn">Profile</a>
+        <a href="login.html"    id="loginLink">Sign In</a>
+        <a href="register.html" id="registerLink">Register</a>
+        <button id="logoutBtn" style="display:none;">Logout</button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Page note -->
+  <div class="wrap">
+    <div id="pageNote" class="page-note"></div>
+  </div>
+
+  <!-- Mini streak + weekly progress -->
+  <section class="chips-row" aria-label="Quick progress">
+    <div id="streakPill" class="pill" style="display:none;">🔥 <span id="streakText">Streak: 0 days</span></div>
+
+    <div id="progressPill" class="pill" style="display:none;">
+      <span class="coinstack" aria-hidden="true">
+        <svg viewBox="0 0 64 48">
+          <ellipse cx="18" cy="18" rx="14" ry="8" fill="var(--gold-soft)" stroke="var(--gold)" stroke-width="2"/>
+          <ellipse cx="34" cy="24" rx="14" ry="8" fill="var(--gold-soft)" stroke="var(--gold)" stroke-width="2"/>
+          <ellipse cx="46" cy="16" rx="14" ry="8" fill="var(--gold-soft)" stroke="var(--gold)" stroke-width="2"/>
+        </svg>
+      </span>
+      <span id="weeklyText">0 / 500 gold this week</span>
+      <span class="miniBar"><i id="weeklyMini"></i></span>
+      <span id="chestWrap" class="chest" title="Weekly bonus">
+        <svg viewBox="0 0 64 48" aria-hidden="true">
+          <path d="M6 16h52V9a7 7 0 0 0-7-7H13A7 7 0 0 0 6 9v7z" fill="currentColor" opacity=".12" stroke="currentColor" stroke-width="2"/>
+          <rect x="6" y="16" width="52" height="26" rx="4" ry="4" fill="currentColor" opacity=".06" stroke="currentColor" stroke-width="2"/>
+          <g>
+            <circle cx="18" cy="30" r="3" fill="var(--gold)"/>
+            <circle cx="25" cy="31" r="3" fill="var(--gold)"/>
+            <circle cx="22" cy="26" r="3" fill="var(--gold)"/>
+          </g>
+          <rect x="30" y="26" width="4" height="10" fill="currentColor"/>
+        </svg>
+      </span>
+    </div>
+  </section>
+
+  <!-- Snapshots grid (more gap) -->
+  <section class="snapshots" aria-label="Snapshots">
+    <!-- Learning stat snapshot -->
+    <div class="card" id="learningCard">
+      <h3>Learning stat snapshot</h3>
+
+      <div id="statsEmpty" class="muted">No activity yet. Try an activity and come back!</div>
+
+      <div class="table-wrap">
+        <table id="statsTable">
+          <thead>
+            <tr>
+              <th>Rating</th>
+              <th>Collection</th>
+              <th>Activity</th>
+              <th>Top score</th>
+              <th>Trials</th>
+              <th>
+                <span class="head">
+                  <span>Status</span>
+                  <button id="srInfoBtn" class="info-btn" title="About the repetition schedule">i</button>
+                </span>
+              </th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="small" style="margin-top:10px">
+        <a href="dashboard.html">Go to Dashboard for full learning stats</a>
+      </div>
+    </div>
+
+    <!-- Group learning snapshot -->
+    <div class="card" id="groupCard">
+      <h3 id="groupTitle">Group learning snapshot</h3>
+      <div id="groupEmpty" class="muted">Not in any groups yet.</div>
+      <div class="table-wrap">
+        <table id="groupTable">
+          <thead>
+            <tr>
+              <th>Person</th>
+              <th>Collection</th>
+              <th>Activity</th>
+              <th>Score</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="small" style="margin-top:10px">
+        <a href="groups.html">Open Groups</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Notification bar -->
+  <section style="max-width:1100px;margin:0 auto 74px;padding:0 16px;">
+    <style>
+      /* notice layout + close icon reset */
+      .notice {
+        display:flex; align-items:center; justify-content:space-between; gap:12px;
+        border:1px solid var(--border); background:var(--card);
+        border-radius:12px; padding:10px 12px;
+      }
+      .notice #noticeText { flex:1; }
+
+      /* make the X an icon (don’t inherit global button chrome) */
+      .notice .close {
+        border:none; background:transparent; padding:4px; margin:0;
+        line-height:1; font-size:16px; cursor:pointer; color:var(--muted);
+      }
+      .notice .close:hover { color:var(--text); }
+      .notice .close:focus-visible { outline:2px solid var(--brand); outline-offset:2px; }
+
+      .notice .actions { display:flex; align-items:center; gap:8px; }
+    </style>
+
+    <div id="noticeWrap" class="notice" style="display:none;">
+      <span id="noticeText"></span>
+      <div class="actions">
+        <a id="noticeAction" href="manage_sets/" class="btn">See what's new</a>
+        <button id="noticeClose" class="close" aria-label="Dismiss">✕</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Bottom nav -->
+  <nav class="bottom" aria-label="Primary">
+    <a href="index.html" aria-current="page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a 1 1 0 0 1-1-1v-10.5Z" stroke-width="1.5"/></svg>
+      <span>Home</span>
+    </a>
+    <a href="learn.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 12h16M4 18h9" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <span>Learn</span>
+    </a>
+    <a href="manage_sets/index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="16" rx="2" ry="2" stroke-width="1.5"/><path d="M7 8h10M7 12h10M7 16h7" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <span>Library</span>
+    </a>
+    <a href="dashboard.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 14h6V4H4v10Zm10 6h6V4h-6v16Z" stroke-width="1.5"/></svg>
+      <span>Dashboard</span>
+    </a>
+    <a href="groups.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm-9 9a9 9 0 0 1 18 0" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <span>Groups</span>
+    </a>
+  </nav>
+
+  <!-- Site scripts -->
+  <script src="static/js/api.js"></script>
+  <script src="static/js/page-chrome.js" defer></script>
+
+  <!-- Personalize “Cześć” with the user’s name -->
+  <script>
+    (async function(){
+      try{
+        const r = await api.fetch('api/me');
+        if (!r.ok) return;
+        const me = await r.json();
+        if (!me || !me.name) return;
+        const lead = document.querySelector('#pageNote .note-lead');
+        if (!lead) return;
+        const base = lead.textContent.trim().replace(/[!?.:;]+$/, '');
+        lead.textContent = `${base}, ${me.name}!`;
+      }catch(_){}
+    })();
+  </script>
+
+  <!-- SR info modal -->
+  <div id="srModal" role="dialog" aria-modal="true" aria-labelledby="srModalTitle"
+       style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); align-items:center; justify-content:center; padding:20px; z-index:50">
+    <div class="box" style="background:var(--card); color:var(--text); border:1px solid var(--border); border-radius:14px; max-width:520px; width:100%; padding:16px; box-shadow:var(--shadow)">
+      <h4 id="srModalTitle" style="margin:0 0 8px">Why repetition works</h4>
+      <p style="margin:8px 0; font-size:14px; color:var(--muted)">We use a spaced repetition pattern of <b>1–2–3–7–30 days</b>. After you learn a collection, you’ll review it when memory is most likely to fade. Pass the 30-day check to mark it <b>Mastered</b>.</p>
+      <p style="margin:8px 0; font-size:14px; color:var(--muted)"><b>Green = Complete</b>. <b>Red = Repetition due</b>. Final red is <b>Test your knowledge retention</b> at day 30.</p>
+      <div class="actions" style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px">
+        <button id="srClose" class="btn" type="button">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Page logic -->
+  <script>
+    // Small helper used by the table
+    function modeLabel(mode){
+      const m = String(mode||'').toLowerCase();
+      if (m==='flashcards'||m==='vocab'||m==='learn') return 'Learn';
+      if (m==='practice'||m==='speak') return 'Speak';
+      if (m==='reading'||m==='read')  return 'Read';
+      if (m==='listening'||m==='listen') return 'Listen';
+      return m ? m[0].toUpperCase()+m.slice(1) : '-';
+    }
+    function pathFor(mode, setName){
+      const enc = encodeURIComponent(setName || '');
+      if (!enc) return './learn.html';
+      if (mode === 'reading' || mode === 'read')     return './reading/'   + enc + '/';
+      if (mode === 'listening' || mode === 'listen') return './listening/' + enc + '/';
+      if (mode === 'practice'  || mode === 'speak')  return './practice/'  + enc + '/';
+      return './flashcards/' + enc + '/';
+    }
+
+    // Ratings cache
+    function loadLocalRatings(){ try{ return JSON.parse(localStorage.getItem('lp.setRatings') || '{}'); }catch(_){ return {}; } }
+    function saveLocalRatings(map){ try{ localStorage.setItem('lp.setRatings', JSON.stringify(map)); }catch(_){} }
+    const myRatings = loadLocalRatings();
+    function stars(n){ if (typeof n !== 'number' || isNaN(n)) return '☆☆☆☆☆'; const full=Math.max(0, Math.min(5, Math.round(n))); return '★'.repeat(full)+'☆'.repeat(5-full); }
+    function goRate(setName){ try{ localStorage.setItem('lp.manage.q', setName || ''); }catch(_){ } location.href = './manage_sets/'; }
+
+    // Spaced repetition helpers
+    const PASS_SCORE = 100, SR_STEPS=[1,2,3,7,30], SR_KEY='lp_sr_map';
+    function loadSR(){ try{ return JSON.parse(localStorage.getItem(SR_KEY) || '{}'); }catch(_){ return {}; } }
+    function saveSR(m){ try{ localStorage.setItem(SR_KEY, JSON.stringify(m)); }catch(_){} }
+    function nextDueDate(lastPass, stage){ if(stage>=SR_STEPS.length) return null; const d=new Date(lastPass); d.setDate(d.getDate()+SR_STEPS[stage]); return d; }
+    function computeSRFromScores(events, prev){
+      let stage=Math.max(0, Math.min((prev?.stage ?? 0), SR_STEPS.length));
+      let lastPass=prev?.last_pass_ts ? new Date(prev.last_pass_ts) : null;
+      const byTime=[...events].sort((a,b)=> new Date(a.timestamp)-new Date(b.timestamp));
+      for(const e of byTime){
+        const ts=new Date(e.timestamp);
+        if (Number(e.score)>=PASS_SCORE){
+          if(!lastPass){ lastPass=ts; }
+          else{ const due=nextDueDate(lastPass, stage); if(due && ts>=due){ stage=Math.min(stage+1, SR_STEPS.length); } lastPass=ts; }
+        }
+      }
+      return {stage, last_pass_ts: lastPass ? lastPass.toISOString() : null};
+    }
+    function makeSRStatus(stage, lastPass, href){
+      if (stage>=SR_STEPS.length) return '<span class="badge gold">🏅 Mastered</span>';
+      if (!lastPass) return `<a class="badge red" href="${href}">🔴 Repetition due</a>`;
+      const due=nextDueDate(lastPass, stage), now=new Date();
+      if (now < due) return '<span class="badge green">🟢 Complete</span>';
+      if (stage===SR_STEPS.length-1) return '<span class="badge red">🧪 Test your knowledge retention</span>';
+      return `<a class="badge red" href="${href}">🔴 Repetition due</a>`;
+    }
+
+    // Personalize auth buttons + mini chips data
+    (async function authAndQuick(){
+      // auth chrome
+      const loginLink=document.getElementById('loginLink');
+      const registerLink=document.getElementById('registerLink');
+      const logoutBtn=document.getElementById('logoutBtn');
+      let me=null;
+      try{ const r=await api.fetch('/api/me'); if(r.ok) me=await r.json(); }catch(_){}
+      if(me){ loginLink&&(loginLink.style.display='none'); registerLink&&(registerLink.style.display='none'); logoutBtn&&(logoutBtn.style.display='inline-block'); }
+      else{ loginLink&&(loginLink.style.display='inline-block'); registerLink&&(registerLink.style.display='inline-block'); logoutBtn&&(logoutBtn.style.display='none'); }
+      logoutBtn?.addEventListener('click', async ()=>{ try{ await api.fetch('/api/logout',{method:'POST'});}catch(_){}
+        localStorage.removeItem('lp_token'); location.href='./login.html'; });
+
+      // mini streak + weekly
+      try{
+        const r = await api.fetch('/api/my/stats');
+        if(r.ok){
+          const s = await r.json();
+          const streak = Number(s.streak_days || 0);
+          if(streak >= 0){
+            document.getElementById('streakText').textContent = 'Streak: ' + streak + ' ' + (streak === 1 ? 'day' : 'days');
+            document.getElementById('streakPill').style.display = 'inline-flex';
+          }
+          const weekly = Number(s.weekly_points || s.weekly_gold || 0);
+          const goal = Number(s.goal_points || s.goal_gold || 500) || 500;
+          const pct = Math.max(0, Math.min(100, Math.round((weekly/goal)*100)));
+          document.getElementById('weeklyText').textContent = `${weekly} / ${goal} gold this week`;
+          document.getElementById('weeklyMini').style.width = pct + '%';
+          document.getElementById('progressPill').style.display = 'inline-flex';
+          const chest = document.getElementById('chestWrap');
+          if (weekly >= goal) chest.classList.add('achieved'); else chest.classList.remove('achieved');
+        }
+      }catch(_){}
+    })();
+
+    // Main content (stats snapshot + groups + notice)
+    (async function initHome(){
+      // Sync ratings (mine → local)
+      try {
+        const rrMine = await api.fetch('/api/my/ratings');
+        if (rrMine.ok) {
+          const mine = await rrMine.json();
+          (mine||[]).forEach(r => { myRatings[r.set_name] = { stars:r.stars, comment:r.comment||'', ts: Date.now() }; });
+          saveLocalRatings(myRatings);
+        }
+      } catch (_){}
+
+      // Global avg ratings lookup
+      const globalRatings = {};
+      try {
+        let rr = await api.fetch('/api/sets/ratings/averages');
+        if (!rr.ok) rr = await api.fetch('/api/sets/ratings');
+        if (rr.ok) {
+          const arr = await rr.json();
+          (arr||[]).forEach(x=>{
+            const avg = typeof x.avg==='number' ? x.avg
+                     : typeof x.rating==='number' ? x.rating
+                     : (typeof x.average==='number' ? x.average : null);
+            if (avg!=null) globalRatings[x.set_name] = avg;
+          });
+        }
+      } catch (_){}
+
+      // Resume target (best effort)
+      let resume=null;
+      try{
+        const r=await api.fetch('/api/my/continue');
+        if(r.ok){ const j=await r.json(); if(j && j.found){ resume={ set_name:j.set_name, mode:String(j.mode||'').toLowerCase(), href:(j.href || pathFor(j.mode, j.set_name)) + '?resume=1' }; } }
+      }catch(_){}
+      if(!resume){
+        try{
+          const r=await api.fetch('/api/session_state/my');
+          if(r.ok){ const arr=await r.json(); if(Array.isArray(arr) && arr.length){ const s=arr[0]; resume={ set_name:s.set_name, mode:String(s.mode||'').toLowerCase(), href:(s.href || pathFor(s.mode, s.set_name)) + '?resume=1' }; } }
+        }catch(_){}
+      }
+      if(!resume){
+        try{ const local=JSON.parse(localStorage.getItem('lp_last')||'null'); if(local?.set_name && local?.mode){ resume={ set_name:local.set_name, mode:String(local.mode||'').toLowerCase(), href:pathFor(local.mode, local.set_name) + '?resume=1' }; } }catch(_){}
+      }
+
+      // Build learning snapshot
+      try{
+        const sr = await api.fetch('/api/my/scores?limit=200');
+        const raw = sr.ok ? await sr.json() : [];
+        const groups = new Map();
+        for (const r of raw){
+          if (!r.set_name) continue;
+          const mode = (r.mode || 'flashcards').toLowerCase();
+          const key  = `${r.set_name}│${mode}`;
+          if (!groups.has(key)) groups.set(key, []);
+          groups.get(key).push(r);
+        }
+        const srMap = loadSR();
+        const rows=[], seenKey=new Set();
+        for (const [key, evts] of groups){
+          const setName=evts[0].set_name, mode=(evts[0].mode||'flashcards').toLowerCase();
+          seenKey.add(key);
+          const trials=evts.length;
+          const top=evts.reduce((m,e)=> Math.max(m, Number(e.score||0)), 0);
+          const href=pathFor(mode, setName);
+          // SR
+          const prev=srMap[key] || null;
+          const srState=computeSRFromScores(evts, prev);
+          srMap[key]=srState;
+          const lastPass = srState.last_pass_ts ? new Date(srState.last_pass_ts) : null;
+
+          // Status
+          let statusHtml='';
+          const isResume = resume && resume.set_name===setName && resume.mode===mode;
+          if(isResume) statusHtml = `<a class="badge blue" href="${resume.href}">▶ Resume</a>`;
+          else if (trials===0) statusHtml = `<span class="badge blue">New</span>`;
+          else if (top<PASS_SCORE) statusHtml = `<span class="badge">Score ${top}</span>`;
+          else statusHtml = makeSRStatus(srState.stage, lastPass, href);
+
+          // Rating cell
+          const gAvg=globalRatings[setName]; const mine=myRatings[setName];
+          let ratingCell = `<div class="nowrap" title="${gAvg!=null?'Global rating':'Unrated'}">${stars(gAvg)}</div>`;
+          if(!mine){ ratingCell += `<div class="tiny"><a href="javascript:void(0)" onclick="goRate(${JSON.stringify(setName)})">add your rating</a></div>`; }
+
+          rows.push({ setName, mode, trials, top, href, statusHtml, ratingCell,
+                      latest: Math.max(...evts.map(e=> +new Date(e.timestamp||0))) });
+        }
+        if(resume){
+          const k = `${resume.set_name}│${resume.mode}`;
+          if(!seenKey.has(k)){
+            const setName=resume.set_name, mode=resume.mode, href=pathFor(mode, setName);
+            let ratingCell = `<div class="nowrap" title="Unrated">${stars(null)}</div>`;
+            if(!myRatings[setName]) ratingCell += `<div class="tiny"><a href="javascript:void(0)" onclick="goRate(${JSON.stringify(setName)})">add your rating</a></div>`;
+            rows.unshift({ setName, mode, trials:0, top:0, href,
+                           statusHtml:`<a class="badge blue" href="${resume.href}">▶ Resume</a>`,
+                           ratingCell, latest: Date.now() });
+          }
+        }
+        saveSR(srMap);
+
+        const urgencyRank = (html)=>{
+          if (html.includes('Repetition due') || html.includes('🧪')) return 0;
+          if (html.includes('▶ Resume')) return 1;
+          if (html.includes('New')) return 2;
+          if (html.includes('Score')) return 3;
+          if (html.includes('🟢 Complete')) return 4;
+          if (html.includes('🏅 Mastered')) return 5;
+          return 6;
+        };
+        rows.sort((a,b)=> (urgencyRank(a.statusHtml)-urgencyRank(b.statusHtml)) || (b.latest-a.latest));
+        const display = rows.slice(0,5);
+
+        const table=document.getElementById('statsTable');
+        const empty=document.getElementById('statsEmpty');
+        const tb=table.querySelector('tbody');
+        if(display.length){
+          empty.style.display='none'; table.style.display='table';
+          tb.innerHTML = display.map(r => `
+            <tr>
+              <td>${r.ratingCell}</td>
+              <td><a href="${r.href}">${r.setName}</a></td>
+              <td>${modeLabel(r.mode)}</td>
+              <td>${r.top}</td>
+              <td>${r.trials}</td>
+              <td>${r.statusHtml}</td>
+            </tr>`).join('');
+        }else{
+          table.style.display='none';
+        }
+      }catch(_){}
+
+      // Group snapshot
+      try{
+        const gr=await api.fetch('/api/my/groups');
+        const groups=gr.ok ? await gr.json() : [];
+        const titleEl=document.getElementById('groupTitle');
+        const emptyEl=document.getElementById('groupEmpty');
+        const table=document.getElementById('groupTable');
+        const tbody=table.querySelector('tbody');
+
+        if(!groups.length){
+          emptyEl.style.display='block'; table.style.display='none';
+        }else{
+          const g0=groups[0];
+          titleEl.textContent = g0.group_name ? g0.group_name : 'Group learning snapshot';
+          let acts=[];
+          try{
+            let r=await api.fetch(`/api/groups/${g0.group_id}/recent_activity?limit=5`);
+            if(!r.ok) r=await api.fetch('/api/my/groups/recent?limit=5');
+            if(r.ok) acts=await r.json();
+          }catch(_){}
+          if(Array.isArray(acts) && acts.length){
+            emptyEl.style.display='none'; table.style.display='table';
+            tbody.innerHTML = acts.slice(0,5).map(a=>`
+              <tr>
+                <td>${a.user_name || a.user || '—'}</td>
+                <td>${a.set_name || '—'}</td>
+                <td>${modeLabel(a.mode || a.activity || '')}</td>
+                <td>${(a.score ?? '—')}</td>
+              </tr>`).join('');
+          }else{
+            emptyEl.textContent='No recent group activity.';
+            emptyEl.style.display='block'; table.style.display='none';
+          }
+        }
+      }catch(_){}
+
+      // Notice about new global collections
+      try{
+        let global=[]; let r=await api.fetch('/api/global_sets');
+        if(r.ok) global=await r.json();
+        if(!Array.isArray(global) || !global.length){
+          r=await api.fetch('/api/sets/available'); if(r.ok){ const arr=await r.json(); global=Array.isArray(arr)?arr.map(x=>({name:x.name})):[]; }
+        }
+        const count=(global||[]).length; const key='lp_seen_global_count';
+        let seen=0; try{ seen=Number(localStorage.getItem(key) || 0);}catch(_){}
+        if(count>seen){
+          const wrap=document.getElementById('noticeWrap');
+          const text=document.getElementById('noticeText');
+          const close=document.getElementById('noticeClose');
+          text.innerHTML='📣 <b>' + (count-seen) + '</b> new ' + ((count-seen)===1?'collection has':'collections have') + ' been added to the global library.';
+          wrap.style.display='flex';
+          function markSeen(){ try{ localStorage.setItem(key, String(count)); }catch(_){ } wrap.style.display='none'; }
+          close.addEventListener('click', markSeen);
+          document.getElementById('noticeAction').addEventListener('click', markSeen);
+        }
+        if(seen===0){ try{ localStorage.setItem(key, String(count)); }catch(_){} }
+      }catch(_){}
+
+      // SR info modal
+      const srBtn=document.getElementById('srInfoBtn');
+      const srModal=document.getElementById('srModal');
+      const srClose=document.getElementById('srClose');
+      srBtn?.addEventListener('click', ()=>{ srModal.style.display='flex'; });
+      srClose?.addEventListener('click', ()=>{ srModal.style.display='none'; });
+      srModal?.addEventListener('click', (e)=>{ if(e.target===srModal) srModal.style.display='none'; });
+    })();
+  </script>
+</body>
+</html>

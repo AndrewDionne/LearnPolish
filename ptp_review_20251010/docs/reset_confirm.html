@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Set New Password • Path to POLISH</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root{
+      --brand:#2d6cdf; --bg:#f7f7fb; --card:#ffffff; --text:#0c0f14; --muted:#5a6472; --border:#e6e6ef;
+      --shadow:0 8px 24px rgba(0,0,0,.08); --radius:14px; --pad:16px; --focus:0 0 0 3px rgba(45,108,223,.35);
+    }
+    @media (prefers-color-scheme: dark){
+      :root{ --bg:#0b0c10; --card:#121418; --text:#e9ecf1; --muted:#8b94a7; --border:#2a2f37; --shadow:0 8px 24px rgba(0,0,0,.35) }
+    }
+    *{box-sizing:border-box}
+    body{margin:0; background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Inter,system-ui,sans-serif}
+    main{max-width:420px; margin:40px auto; padding:0 16px}
+    .card{background:var(--card); border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow); padding:20px}
+    h2{margin:0 0 12px; color:var(--brand); text-align:center}
+    label{display:block; font-size:14px; color:var(--muted); margin-bottom:6px}
+    .row{display:flex; gap:10px; align-items:center}
+    input{width:100%; height:44px; padding:0 12px; border:1px solid var(--border); border-radius:10px; background:transparent; color:var(--text)}
+    input:focus{outline:none; box-shadow:var(--focus); border-color:var(--brand)}
+    button{width:100%; height:44px; border:none; border-radius:10px; background:var(--brand); color:#fff; cursor:pointer; font-weight:600}
+    button:disabled{opacity:.6; cursor:not-allowed}
+    .msg{margin-top:10px; font-size:14px; text-align:center}
+    .success{color:#137a3a}
+    .error{color:#b4232a}
+    .links{margin-top:12px; text-align:center; font-size:14px}
+    .links a{color:var(--brand); text-decoration:none}
+  </style>
+</head>
+<body>
+  <main>
+    <div class="card">
+      <h2>Choose a New Password</h2>
+      <form id="form">
+        <label for="password">New password</label>
+        <div class="row">
+          <input id="password" type="password" placeholder="••••••••" required minlength="8" />
+          <button id="toggle1" type="button" title="Show/Hide" style="width:auto;padding:0 10px;background:transparent;color:var(--brand);border:1px solid var(--border)">Show</button>
+        </div>
+
+        <label for="confirm" style="margin-top:10px">Confirm password</label>
+        <div class="row">
+          <input id="confirm" type="password" placeholder="••••••••" required minlength="8" />
+          <button id="toggle2" type="button" title="Show/Hide" style="width:auto;padding:0 10px;background:transparent;color:var(--brand);border:1px solid var(--border)">Show</button>
+        </div>
+
+        <button id="submit" type="submit" style="margin-top:14px">Update Password</button>
+      </form>
+      <div id="msg" class="msg"></div>
+      <div class="links">
+        <a href="login.html">🔑 Back to login</a> ·
+        <a href="reset.html">Get a new reset link</a>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const API_BASE =
+      (location.hostname === "127.0.0.1" || location.hostname === "localhost")
+        ? "http://127.0.0.1:5000/api"
+        : "https://flashcards-5c95.onrender.com/api";
+
+    const params = new URLSearchParams(location.search);
+    const token = params.get("token");
+
+    const el = {
+      form: document.getElementById("form"),
+      pwd: document.getElementById("password"),
+      cfm: document.getElementById("confirm"),
+      btn: document.getElementById("submit"),
+      msg: document.getElementById("msg"),
+      t1: document.getElementById("toggle1"),
+      t2: document.getElementById("toggle2"),
+    };
+
+    // Missing token guard
+    if (!token) {
+      el.msg.textContent = "❌ This link is missing a token. Please request a new password reset.";
+      el.msg.className = "msg error";
+      el.btn.disabled = true;
+    }
+
+    // Show/hide helpers
+    const toggle = (input, btn) => {
+      input.type = (input.type === "password") ? "text" : "password";
+      btn.textContent = (input.type === "password") ? "Show" : "Hide";
+    };
+    el.t1.addEventListener("click", ()=>toggle(el.pwd, el.t1));
+    el.t2.addEventListener("click", ()=>toggle(el.cfm, el.t2));
+
+    el.form.onsubmit = async (e) => {
+      e.preventDefault();
+      if (!token) return;
+
+      const p = el.pwd.value.trim();
+      const c = el.cfm.value.trim();
+      el.msg.textContent = "";
+      el.msg.className = "msg";
+
+      if (p.length < 8) {
+        el.msg.textContent = "❌ Password must be at least 8 characters.";
+        el.msg.className = "msg error";
+        return;
+      }
+      if (p !== c) {
+        el.msg.textContent = "❌ Passwords do not match.";
+        el.msg.className = "msg error";
+        return;
+      }
+
+      el.btn.disabled = true;
+      try {
+        const res = await fetch(`${API_BASE}/reset_confirm`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token, password: p }),
+        });
+        const data = await res.json().catch(()=>({}));
+
+        if (res.ok) {
+          el.msg.textContent = "✅ Password updated! Redirecting to sign in…";
+          el.msg.className = "msg success";
+          setTimeout(()=> location.href = "login.html", 1200);
+        } else {
+          el.msg.textContent = "❌ " + (data.message || data.error || res.status);
+          el.msg.className = "msg error";
+          el.btn.disabled = false;
+        }
+      } catch (err) {
+        el.msg.textContent = "❌ Network error. Please try again.";
+        el.msg.className = "msg error";
+        el.btn.disabled = false;
+      }
+    };
+  </script>
+</body>
+</html>

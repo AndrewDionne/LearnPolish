@@ -387,14 +387,6 @@ def _iter_local_assets(set_name: str):
             key = f"reading/{set_name}/{p.name}"
             yield p, key, "audio/mpeg", "public,max-age=31536000,immutable"
 
-    # listening (if create_listening_set wrote local audio)
-    ls_dir = STATIC_DIR / set_name / "listening"
-    if ls_dir.exists():
-        for p in sorted(ls_dir.glob("*.mp3")):
-            key = f"listening/{set_name}/{p.name}"
-            yield p, key, "audio/mpeg", "public,max-age=31536000,immutable"
-
-
 def _write_r2_manifest(set_name: str, key_to_url: Dict[str, str]) -> Path:
     """
     Write docs/static/<set>/r2_manifest.json with structure:

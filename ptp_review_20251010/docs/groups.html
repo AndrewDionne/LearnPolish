@@ -198,7 +198,7 @@
       </div>
 
       <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:10px;">
-        <button id="copyInviteBtn" class="btn" type="button" oncontextmenu="return false">Copy invite link</button>
+        <button id="copyInviteBtn"  class="btn">Copy invite link</button>
         <button id="sendInviteBtn"  class="btn btn-primary">Send invites</button>
         <button id="inviteCloseBtn" class="btn">Close</button>
       </div>
@@ -373,7 +373,6 @@
 
       let groups = [];
       let current = null;
-      let latestInviteUrl = '';
 
       // Modal helpers
       function showGroupModal(which='create'){
@@ -387,22 +386,9 @@
 
       function openInvite(){
         if(!current) return;
-        dom.inviteTA.value=''; dom.inviteStat.textContent='';
-        dom.inviteName.textContent=current.group_name||current.name||'';
-        dom.inviteLinkW.style.display='none';
+        dom.inviteTA.value=''; dom.inviteStat.textContent=''; dom.inviteName.textContent=current.group_name||current.name||''; dom.inviteLinkW.style.display='none';
         dom.inviteModal.style.display='flex';
-        // Prefetch link ASAP so copy can happen without awaiting network
-        (async ()=>{
-          try{
-            const url = await fetchInviteLink(current.group_id || current.id);
-            latestInviteUrl = url;
-            dom.inviteLink.href = url;
-            dom.inviteLink.textContent = url;
-            dom.inviteLinkW.style.display='block';
-          }catch(_){}
-        })();
       }
-
       function closeInvite(){ dom.inviteModal.style.display='none'; }
 
       async function loadGroups(){
@@ -529,24 +515,16 @@
       dom.btnClose?.addEventListener('click',  (e)=>{ e.preventDefault(); hideGroupModal(); });
       dom.groupModal?.addEventListener('click',(e)=>{ if(e.target===dom.groupModal) hideGroupModal(); });
 
-      dom.btnCopy?.addEventListener('click', async ()=>{
-        if(!current) return;
-        // If we pre-fetched a link, copy it immediately (stays within the user gesture)
-        const immediate = latestInviteUrl;
-        if (immediate) {
-          const ok = await copyToClipboard(immediate);
-          dom.inviteStat.textContent = ok ? 'Invite link copied! 🎉' : 'Could not copy automatically—long-press the link and copy.';
-          return;
-        }
-        // Fallback: fetch then copy (may lose gesture on some iOS versions)
-        dom.inviteStat.textContent='Generating invite link…';
-        const url = await fetchInviteLink(current.group_id || current.id);
-        latestInviteUrl = url;
-        dom.inviteLink.href = url; dom.inviteLink.textContent = url; dom.inviteLinkW.style.display='block';
-        const ok  = await copyToClipboard(url);
-        dom.inviteStat.textContent = ok ? 'Invite link copied! 🎉' : 'Could not copy automatically—long-press the link and copy.';
+      dom.btnCreate?.addEventListener('click', async (e)=>{
+        e.preventDefault();
+        const name=(dom.inpGroupName.value||'').trim(); if(!name) return;
+        try{
+          const r=await api.fetch('/api/groups',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
+          if(r.ok){ dom.inpGroupName.value=''; hideGroupModal(); await loadGroups(); alert('Group created'); }
+          else { let j={}; try{ j=await r.json(); }catch(_){}
+            alert('Failed to create group: ' + (j.error || r.status)); }
+        }catch(_){ alert('Failed to create group'); }
       });
-
       dom.inpGroupName?.addEventListener('keydown', (e)=>{ if(e.key==='Enter') dom.btnCreate?.click(); });
 
       dom.btnJoin?.addEventListener('click', async (e)=>{

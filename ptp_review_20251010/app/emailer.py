@@ -95,7 +95,7 @@ def send_email(
     last_err = None
     try:
         context = ssl.create_default_context()
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context, timeout=20) as smtp:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as smtp:
             smtp.login(GMAIL_USER, GMAIL_APP_PASSWORD)
             result = smtp.send_message(msg, to_addrs=rcpts)
             if result:  # dict of refused recipients
@@ -105,14 +105,14 @@ def send_email(
         last_err = e
 
     try:
-        with smtplib.SMTP("smtp.gmail.com", 587, timeout=20) as smtp:
+        with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
             smtp.ehlo()
             smtp.starttls(context=ssl.create_default_context())
             smtp.ehlo()
-            try: smtp.noop()
-            except Exception: pass
             smtp.login(GMAIL_USER, GMAIL_APP_PASSWORD)
-
+            result = smtp.send_message(msg, to_addrs=rcpts)
+            if result:
+                raise smtplib.SMTPRecipientsRefused(result)
         return
     except Exception as e:
         # If 587 also fails, raise the most informative error
