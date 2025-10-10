@@ -72,7 +72,7 @@
 
       try {
         // Correct backend endpoint is /api/register
-        const data = await api.post('/api/register', { name, email, password });
+        const data = await api.post('/api/signup', { name, email, password });
         api.setToken(data.token);
         messageBox.textContent = '✅ Registration successful! Redirecting...';
         messageBox.classList.add('success');
