@@ -235,3 +235,20 @@ def reset_confirm():
         return jsonify({"message": "Reset token has expired"}), 400
     except jwt.InvalidTokenError:
         return jsonify({"message": "Invalid reset token"}), 400
+# --- Compatibility + convenience routes ---
+
+@auth_bp.route("/logout", methods=["POST", "OPTIONS"])
+def logout():
+    """
+    Frontend calls this and then clears its own token.
+    We don't keep server-side sessions, so just return 204.
+    """
+    return ("", 204)
+
+@auth_bp.route("/register", methods=["POST", "OPTIONS"])
+def register():
+    """
+    Frontend compatibility for older /api/register callers.
+    Delegates to signup() so the logic stays in one place.
+    """
+    return signup()

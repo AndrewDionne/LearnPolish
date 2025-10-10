@@ -333,11 +333,13 @@
           body: JSON.stringify({ emails })
         });
         const j = await r.json().catch(()=> ({}));
-        return { ok: r.ok && !!(j.ok ?? true), sent: j.sent || 0, error: j.error };
-      }catch(err){
-        return { ok: false, error: ''+err };
+        return { ok: r.ok && !!j.ok, sent: j.sent || 0, error: j.error };
+      }catch(e){
+        return { ok: false, error: String(e) };
       }
     }
+
+
 
     // DOM
     const dom = {
@@ -593,18 +595,26 @@
         : 'Copy blocked by the OS — long-press the link to copy.';
     });
 
-    dom.btnSend?.addEventListener('click', async (e)=>{
-      e.preventDefault();
+    dom.btnSend?.addEventListener('click', async ()=>{
       if(!current) return;
       const emails = normalizeEmails(dom.inviteTA.value);
-      if(!emails.length){ dom.inviteStat.textContent='Add at least one valid email or use “Copy invite link”.'; return; }
-      dom.inviteStat.textContent='Sending invites…';
-      const res = await sendInvites(current.group_id || current.id, emails);
-      dom.inviteStat.textContent = res.ok
-        ? `Invites sent! 🎉 (${res.sent} email${res.sent===1?'':'s'})`
-        : `Could not send via API. ${res.error ? 'Details: '+res.error : ''} Copy and share the link instead.`;
-      if(res.ok) dom.inviteTA.value='';
+      if(!emails.length){
+        dom.inviteStat.textContent = 'Add at least one valid email or use “Copy invite link”.';
+        return;
+      }
+      dom.inviteStat.textContent = 'Sending invites…';
+      dom.btnSend.disabled = true;
+      try{
+        const res = await sendInvites(current.group_id || current.id, emails);
+        dom.inviteStat.textContent = res.ok
+          ? 'Invites sent! 🎉'
+          : (res.error || 'Could not send via API. Copy and share the link instead.');
+        if(res.ok) dom.inviteTA.value = '';
+      } finally {
+        dom.btnSend.disabled = false;
+      }
     });
+
 
     (async function boot(){ await loadGroups(); })();
   })();
