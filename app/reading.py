@@ -391,7 +391,7 @@ function replayMe() {{
   const a = byId("replayAudio");
   if (!a.src) return;
   a.currentTime = 0;
-  a.play().catch(()=>{});
+  a.play().catch(()=>{{}});
 }}
 
 function toggleEN() {{
