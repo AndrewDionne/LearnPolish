@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- 1) Dual-host <base> (GitHub Pages vs Flask) -->
+  <!-- Dual-host <base> (GitHub Pages vs Flask/Render) -->
   <script>
     (function () {
       var isGH = /\.github\.io$/i.test(location.hostname);
@@ -13,12 +13,12 @@
     })();
   </script>
 
-  <!-- 2) Fonts (optional) -->
+  <!-- Fonts (optional) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;700&family=Manrope:wght@700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
 
-  <!-- 3) Styles -->
+  <!-- Styles -->
   <link rel="stylesheet" href="static/app.css?v=5">
   <title>Learn • Path to POLISH</title>
 </head>
@@ -28,7 +28,7 @@
   data-note-lead="Get ready to Learn!"
   data-note-tail="Scroll your collections to find the right one for you."
   data-note-no-sep
-  data-note-tight 
+  data-note-tight
   style="
     --logo-size: 48px;
     --banner-font: 'Manrope', -apple-system, system-ui, Segoe UI, Roboto, Helvetica, Arial;
@@ -74,9 +74,8 @@
     <div id="pageNote" class="page-note"></div>
   </div>
 
-  <!-- Main content (wrapped so width matches Library/Dashboard) -->
+  <!-- Main content -->
   <div class="wrap">
-    <!-- Filters / search (shared toolbar pattern) -->
     <div class="toolbar">
       <div class="search-bar">
         <input id="q" type="text" placeholder="Search collections…" />
@@ -91,7 +90,6 @@
       </div>
     </div>
 
-    <!-- Table -->
     <div class="card" id="learningCard">
       <div class="table-wrap">
         <table id="setsTable">
@@ -136,12 +134,13 @@
     </a>
   </nav>
 
-  <!-- Scripts -->
+  <!-- Load runtime config first, then API helpers -->
+  <script src="static/js/app-config.js"></script>
   <script src="static/js/api.js"></script>
   <script src="static/js/page-chrome.js" defer></script>
 
   <script>
-  // ---------- Header auth (safe: no #hello dependency) ----------
+  // ---------- Header auth ----------
   (async function wireHeader(){
     const loginLink    = document.getElementById('loginLink');
     const registerLink = document.getElementById('registerLink');
@@ -159,7 +158,7 @@
     }
     logoutBtn?.addEventListener('click', async () => {
       try{ await api.fetch('/api/logout', {method:'POST'});}catch(_){}
-      localStorage.removeItem('lp_token');
+      api.clearToken();
       location.href = 'login.html';
     });
   })();
@@ -202,7 +201,6 @@
     return 'long ago';
   }
 
-  // SRS (coarse, based on perfect dates)
   function srsStatus(perfectDates){
     const sorted = (perfectDates||[]).map(d=>new Date(d)).sort((a,b)=>b-a);
     const last = sorted[0];
@@ -250,7 +248,6 @@
         return { unauth:false, data: (arr||[]).map(x => ({ name: x.set_name || x.name || '', modes: x.modes || null, type: x.type || null })) };
       }
     }catch(_){}
-    // legacy fallback
     try{
       const r2 = await api.fetch('/api/my_sets');
       if (r2 && r2.ok){
@@ -266,7 +263,6 @@
       let r = await api.fetch('/api/global_sets');
       if (r.ok) return await r.json();
     }catch(_){}
-    // fallback
     try{
       const r2 = await api.fetch('/api/sets/available');
       if (r2.ok){
@@ -309,7 +305,6 @@
 
   // ---------- Rendering ----------
   let activityModesFor = (name) => {
-    // temporary fallback; replaced after we build combined map
     const t = detectTypeByName(name);
     if (t==='reading')   return ['read'];
     if (t==='listening') return ['listen'];
@@ -321,7 +316,7 @@
     return `<span class="acts">${
       modes.map((m, idx) => {
         const label = m==='learn' ? 'Learn' : m==='speak' ? 'Speak' : m==='read' ? 'Read' : 'Listen';
-        const primary = idx === 0 ? 'btn-primary' : ''; // only first is primary
+        const primary = idx === 0 ? 'btn-primary' : '';
         return `<a class="btn ${primary}" href="${pathFor(m, name)}">${label}</a>`;
       }).join('')
     }</span>`;
@@ -341,7 +336,6 @@
     if (srs.link && srs.label === 'Repetition due'){
       return `<a class="badge red" href="${href}">${srs.label}</a>`;
     }
-    // map "Great"/"Complete"/"Due soon" -> green/blue
     const cls = srs.cls === 'green' ? 'green' : (srs.cls === 'red' ? 'red' : 'blue');
     return `<span class="badge ${cls}">${srs.label}</span>`;
   }
@@ -372,7 +366,6 @@
     body.innerHTML = rows.map(r => trFor(r, statsMap.get(r.name), ratingsMap[r.name], myRatedSet.has(r.name))).join('');
   }
 
-  // Filter helpers use the *current* activityModesFor variable (now-safe)
   function applyFilters(list, filterMode, q){
     const QQ = (q||'').trim().toLowerCase();
     return list.filter(m => {
@@ -386,7 +379,6 @@
 
   // ---------- Main ----------
   (async function init(){
-    // 1) Fetch
     const [libRes, globalSetsRes, scoresRes] = await Promise.all([
       fetchMyLibrary(),
       fetchGlobal(),
@@ -398,10 +390,8 @@
     const globalSets  = Array.isArray(globalSetsRes) ? globalSetsRes : [];
     const scores      = Array.isArray(scoresRes) ? scoresRes : [];
 
-    // 2) Stats
     const statsMapLocal = buildStatsBySet(scores || []);
 
-    // 3) Build authoritative name->modes map (prefer global, then mine)
     const combinedModeMap = Object.create(null);
     const modesFromType = (t)=>{
       const tt = String(t || '').toLowerCase();
@@ -427,35 +417,29 @@
       }
     });
 
-    // 4) Replace the temporary activityModesFor with the combined map version
     activityModesFor = (name)=>{
       const arr = combinedModeMap[name];
       if (Array.isArray(arr) && arr.length) return arr;
-      // last-resort inference by name
       const t = detectTypeByName(name);
       if (t==='reading')   return ['read'];
       if (t==='listening') return ['listen'];
       return ['learn','speak'];
     };
 
-    // 5) Normalize mine rows
     const mine = mineRaw.map(x => {
       const n = nameOf(x);
       const m = Array.isArray(x.modes) && x.modes.length ? x.modes : (combinedModeMap[n] || null);
       return { name: n, modes: m, type: x.type || null };
     });
 
-    // 6) Ratings
     const currentNames = mine.map(r => r.name).slice(0, 400);
     const [ratingsMapLocal, myRatedSetLocal] = await Promise.all([
       fetchRatingsBatch(currentNames),
       fetchMyRatings(),
     ]);
 
-    // 7) Sign-in prompt if needed
     if (unauth){ const el = document.getElementById('emptyMine'); if (el) el.style.display='block'; }
 
-    // 8) Filters UI
     const qEl = document.getElementById('q');
     const filterBtns = {
       all:    document.getElementById('f_all'),
@@ -470,12 +454,10 @@
       try{
         var m = (new URLSearchParams(location.search).get('mode') || '').toLowerCase();
         if (m && filterBtns[m]) {
-          // mirror the click so aria-pressed and .active update
           filterBtns[m].click();
           return;
         }
       }catch(_){}
-      // fallback = All
       filterBtns.all && filterBtns.all.click();
     })();
 

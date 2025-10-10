@@ -104,6 +104,7 @@ def generate_flashcard_html(set_name, data):
   <script src="https://aka.ms/csspeech/jsbrowserpackageraw"></script>
 
   <!-- Correct relative paths from /flashcards/{set}/index.html -->
+   <script src="../../static/js/app-config.js"></script>
   <script src="../../static/js/api.js"></script>
   <script src="../../static/js/session_state.js"></script>
 
@@ -117,6 +118,7 @@ def generate_flashcard_html(set_name, data):
     // R2 manifest (if present)
     // Shape: {{ files: {{ "audio/<set>/<file>": "https://cdn..." }}, assetsBase: "https://cdn..." }}
     let r2Manifest = null;
+    let assetsCDNBase = (window.APP_CONFIG && (APP_CONFIG.assetsBase || APP_CONFIG.CDN_BASE || APP_CONFIG.R2_BASE)) || null;
 
     // Scoring + points
     const PASS = 75;
@@ -136,22 +138,41 @@ def generate_flashcard_html(set_name, data):
         .replace(/^_+|_+$/g, "");
     }}
 
-    // Prefer CDN URL from r2_manifest.json → else assetsBase → else local ../../static
+    // Prefer CDN URL from r2_manifest.json / APP_CONFIG → else local ../../static
     function audioPath(index) {{
       const e = cards[index] || {{}};
       const fn = String(index) + "_" + sanitizeFilename(e.phrase || "") + ".mp3";
-      const key = "audio/" + setName + "/" + fn;
+      const candidates = [
+        "audio/" + setName + "/" + fn, // primary
+        setName + "/audio/" + fn,      // alt
+        "audio/" + fn,                 // flat
+        fn                             // bare
+      ];
 
-      if (r2Manifest && r2Manifest.files && r2Manifest.files[key]) {{
-        return r2Manifest.files[key];               // absolute CDN URL
+      // 1) Exact file map match
+      if (r2Manifest && r2Manifest.files) {{
+        for (const k of candidates) {{
+          const k1 = k.replace(/^\//, "");
+          if (r2Manifest.files[k1])       return r2Manifest.files[k1];
+          if (r2Manifest.files["/" + k1]) return r2Manifest.files["/" + k1];
+        }}
       }}
-      if (r2Manifest && r2Manifest.assetsBase) {{
-        const base = r2Manifest.assetsBase.replace(/\\/$/, "");
-        return base + "/" + key;                    // build from CDN base
+
+      // 2) CDN base from manifest or app-config
+      const base = (
+        (r2Manifest && (r2Manifest.assetsBase || r2Manifest.cdn || r2Manifest.base)) ||
+        assetsCDNBase ||
+        null
+      );
+      if (base) {{
+        const clean = String(base).replace(/\/$/, "");
+        return clean + "/" + candidates[0]; // default "audio/<set>/<fn>"
       }}
-      // Fallback to local static (existing behavior)
+
+      // 3) Fallback to local static (existing behavior)
       return "../../static/" + encodeURIComponent(setName) + "/audio/" + encodeURIComponent(fn);
     }}
+
 
     function setNavUI() {{
       document.getElementById("prevBtn").disabled = (currentIndex === 0);
@@ -178,9 +199,11 @@ def generate_flashcard_html(set_name, data):
 
       if (!window.SpeechSDK) {{ targetEl.textContent = "❌ Azure SDK not loaded."; return; }}
       try {{
-        const r = await api.fetch("/api/token");
+        let data = null;
+        let r = await api.fetch("/api/speech_token");  // new preferred
+        if (!r.ok) r = await api.fetch("/api/token");  // legacy fallback
         if (!r.ok) throw new Error("token");
-        const data = await r.json();
+        data = await r.json();
 
         const speechConfig = SpeechSDK.SpeechConfig.fromAuthorizationToken(data.token, data.region);
         speechConfig.speechRecognitionLanguage = "pl-PL";
@@ -245,12 +268,17 @@ def generate_flashcard_html(set_name, data):
 
     // Wiring
     document.addEventListener("DOMContentLoaded", async () => {{
-      // Try to load r2_manifest.json (same-origin relative to this page)
+            // Try to load per-set r2_manifest.json, then a global one; derive CDN base
       try {{
-        const manUrl = "../../static/" + encodeURIComponent(setName) + "/r2_manifest.json";
-        const res = await fetch(manUrl, {{ cache: "no-store" }});
+        const perSet = "../../static/" + encodeURIComponent(setName) + "/r2_manifest.json";
+        let res = await fetch(perSet, {{ cache: "no-store" }});
+        if (!res.ok) {{
+          const globalMan = "../../static/r2_manifest.json";
+          res = await fetch(globalMan, {{ cache: "no-store" }});
+        }}
         if (res.ok) {{
           r2Manifest = await res.json();
+          assetsCDNBase = assetsCDNBase || r2Manifest.assetsBase || r2Manifest.cdn || r2Manifest.base || null;
           console.log("R2 manifest loaded:", r2Manifest);
         }} else {{
           console.log("No R2 manifest (fallback to local):", res.status);
@@ -258,6 +286,7 @@ def generate_flashcard_html(set_name, data):
       }} catch (e) {{
         console.log("R2 manifest fetch error (fallback to local):", e);
       }}
+
 
       renderCard();
 
@@ -432,21 +461,35 @@ def generate_flashcard_html(set_name, data):
 
       let done = false, awarded = urlAwarded;
 
-      // Server last score first
+      // Server last score first (new API, then legacy fallback)
       try {{
-        const r = await api.fetch('/api/get_scores?set_name=' + encodeURIComponent(setName) + '&limit=1');
+        // new: array payload
+        let r = await api.fetch('/api/my/scores?limit=1&set_name=' + encodeURIComponent(setName));
+        if (!r.ok) {{
+          // legacy: object with {{ scores: [...] }}
+          r = await api.fetch('/api/get_scores?set_name=' + encodeURIComponent(setName) + '&limit=1');
+        }}
         if (r.ok) {{
-          const arr = await r.json();
-          const last = Array.isArray(arr.scores) ? arr.scores[0] : null;
-          if (last && last.set_name === setName) {{
+          const payload = await r.json();
+          const last = Array.isArray(payload)
+            ? payload[0]
+            : (payload && Array.isArray(payload.scores) ? payload.scores[0] : null);
+
+          if (last && (last.set_name === setName || !last.set_name)) {{
             const d = last.details || {{}};
             if (awarded == null && d.points_awarded != null) awarded = Number(d.points_awarded);
-            apply(Math.round(Number(last.score)||0), Number(last.attempts)||0, Number(d.total)||undefined,
-                  Number(d.points_total)||undefined, awarded);
+            apply(
+              Math.round(Number(last.score) || 0),
+              Number(last.attempts) || 0,
+              Number(d.total) || undefined,
+              Number(d.points_total) || undefined,
+              awarded
+            );
             done = true;
           }}
         }}
       }} catch (_) {{}}
+
 
       if (!done) {{
         // Fallback to local cache saved before redirect

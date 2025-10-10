@@ -1,10 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <link rel="stylesheet" href="static/app.css">
-  <title>Password Reset - LearnPolish</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8" />
+  <title>Password Reset • Path to POLISH</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Dual-host <base> (GitHub Pages vs Flask/Render) -->
+  <script>
+    (function () {
+      var isGH = /\.github\.io$/i.test(location.hostname);
+      var baseHref = isGH ? '/LearnPolish/' : '/';
+      document.write('<base href="' + baseHref + '">');
+    })();
+  </script>
+
+  <link rel="stylesheet" href="static/app.css" />
+
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, sans-serif;
@@ -21,7 +32,7 @@
     }
     h2 {
       margin-top: 0;
-      color: #007bff;
+      color: #2d6cdf;
       text-align: center;
     }
     input {
@@ -35,7 +46,7 @@
     button {
       width: 100%;
       padding: 12px;
-      background: #007bff;
+      background: #2d6cdf;
       color: white;
       border: none;
       border-radius: 6px;
@@ -43,76 +54,75 @@
       font-size: 1em;
       margin-top: 10px;
     }
-    button:hover {
-      background: #0056b3;
-    }
+    button:hover { background: #2156b3; }
     .msg {
       margin-top: 10px;
       text-align: center;
       font-size: 0.95em;
     }
-    .error { color: red; }
-    .success { color: green; }
+    .error { color: #b4232a; }
+    .success { color: #137a3a; }
     .link {
       text-align: center;
       margin-top: 15px;
       font-size: 0.9em;
     }
-    .link a {
-      color: #007bff;
-      text-decoration: none;
-    }
-    .link a:hover {
-      text-decoration: underline;
-    }
+    .link a { color: #2d6cdf; text-decoration: none; }
+    .link a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
   <div class="container">
     <h2>Reset Password</h2>
     <form id="resetForm">
-      <input type="email" id="email" placeholder="Enter your email" required>
+      <input type="email" id="email" placeholder="Enter your email" required />
       <button type="submit">Send Reset Link</button>
     </form>
     <div id="message" class="msg"></div>
     <div class="link">
-      <a href="login.html">🔑 Back to Login</a>
+      <a id="backLogin" href="login.html">🔑 Back to Login</a>
     </div>
   </div>
 
-<script>
-  const API_BASE =
-    window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost"
-      ? "http://127.0.0.1:5000/api"
-      : "https://flashcards-5c95.onrender.com/api";
+  <!-- Runtime config then API helper -->
+  <script src="static/js/app-config.js"></script>
+  <script src="static/js/api.js"></script>
 
-  document.getElementById("resetForm").onsubmit = async (e) => {
-    e.preventDefault();
-    const email = document.getElementById("email").value;
-    const messageBox = document.getElementById("message");
-    messageBox.textContent = "";
-
-    try {
-      const res = await fetch(`${API_BASE}/reset_request`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email })
-      });
-      const data = await res.json();
-
-      if (res.ok) {
-        messageBox.textContent = "✅ Reset link sent! Check your email.";
-        messageBox.style.color = "green";
+  <script>
+    // Optional: normalize Login link for GH Pages subpath
+    (function fixLoginLink(){
+      var a = document.getElementById('backLogin');
+      var isGH = /\.github\.io$/i.test(location.hostname);
+      if (isGH) {
+        var repo = location.pathname.split('/').filter(Boolean)[0] || 'LearnPolish';
+        a.href = '/' + repo + '/login.html';
       } else {
-        messageBox.textContent = "❌ " + data.message;
-        messageBox.style.color = "red";
+        a.href = 'login.html';
       }
-    } catch (err) {
-      messageBox.textContent = "❌ Network error: " + err;
-      messageBox.style.color = "red";
-    }
-  };
-</script>
+    })();
 
+    const form = document.getElementById('resetForm');
+    const msg  = document.getElementById('message');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      msg.textContent = '';
+      msg.className = 'msg';
+
+      const email = (document.getElementById('email').value || '').trim().toLowerCase();
+      if (!email) return;
+
+      try {
+        // Uses api.post wrapper; path is same-origin on Render or remote on GH Pages
+        await api.post('/api/reset_request', { email });
+        msg.textContent = '✅ Reset link sent! Check your email.';
+        msg.classList.add('success');
+      } catch (err) {
+        const text = (err && err.message) ? err.message : 'Something went wrong';
+        msg.textContent = '❌ ' + text;
+        msg.classList.add('error');
+      }
+    });
+  </script>
 </body>
 </html>

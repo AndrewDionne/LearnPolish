@@ -23,7 +23,8 @@
 
   <!-- 3) Styles (now safe to load relatively thanks to <base>) -->
   <link rel="stylesheet" href="static/app.css?v=5">
-  <title>Page Title • Path to POLISH</title>
+  <title>Library • Path to POLISH</title>
+
 </head>
 
 <body
@@ -149,6 +150,7 @@
   </nav>
 
   <!-- Site scripts (order matters): API helper, then chrome (banner/note/auth), then page-specific JS -->
+  <script src="static/js/app-config.js"></script>
   <script src="static/js/api.js"></script>
   <script src="static/js/page-chrome.js" defer></script>
 
@@ -222,8 +224,9 @@
     }
     logoutBtn?.addEventListener('click', async () => {
       try { await api.fetch('/api/logout', { method:'POST' }); } catch(_){}
-      localStorage.removeItem('lp_token');
-      location.href = '/login.html';
+      api.clearToken();        // clears lp_token + any future storage
+      location.href = 'login.html';
+
     });
   })();
 
@@ -393,7 +396,7 @@
 
   async function fetchMy(){
     let r = await api.fetch('/api/my_sets'); // legacy
-    if (r.status === 401) { alert('Please sign in to manage your sets.'); location.href = '../login.html'; return []; }
+    if (r.status === 401) { alert('Please sign in to manage your sets.'); location.href = 'login.html'; return []; }
     if (r.ok) { const raw = await r.json(); return normalizeMy(raw); }
     r = await api.fetch('/api/my/sets');    // new
     if (r.ok) { const raw = await r.json(); return normalizeMy(raw); }

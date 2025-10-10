@@ -3,10 +3,21 @@
 <head>
   <meta charset="UTF-8" />
   <link rel="stylesheet" href="static/app.css" />
+  <script src="static/js/app-config.js"></script>
   <script src="static/js/api.js"></script>
+
 
   <title>Create a Collection • Path to POLISH</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Dual-host <base> (GitHub Pages vs Flask) -->
+  <script>
+    (function () {
+      var isGH = /\.github\.io$/i.test(location.hostname);
+      var baseHref = isGH ? '/LearnPolish/' : '/';
+      document.write('<base href="' + baseHref + '">');
+    })();
+  </script>
+
   <style>
     :root{
       --brand:#2d6cdf; --bg:#f7f7fb; --card:#fff; --text:#0c0f14; --muted:#5a6472; --border:#e6e6ef;

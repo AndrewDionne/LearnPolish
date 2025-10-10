@@ -12,10 +12,12 @@ def generate_reading_html(set_name, data=None):
       - Start/Stop continuous recognition with word-level scoring.
       - Per-word color highlights; WPM; status panel.
       - "Listen (Polish)" playback:
-          1) Prefer CDN via R2 manifest (reading/<set>/<idx>.mp3)
-          2) Fallback to local static (GH Pages / dev)
+          1) Prefer CDN via R2 manifest (reading/<set>/<idx>.mp3) or direct item.audio_url
+          2) Fallback to local static ../../static/<set>/reading/<idx>.mp3
           3) Fallback to Azure TTS if file not found
       - "Replay Me" of user's recording (robust, memory-leak safe).
+      - Uses api.fetch('/api/token') so GH Pages works without hardcoded hosts.
+      - Loads app-config.js to honor APP_CONFIG.assetsBase as a global CDN base.
     """
     out_dir = PAGES_DIR / "reading" / set_name
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -49,7 +51,7 @@ def generate_reading_html(set_name, data=None):
   .w-good {{ background: rgba(0,180,0,.12); }}
   .w-mid  {{ background: rgba(255,165,0,.15); }}
   .w-bad  {{ background: rgba(255,0,0,.12); }}
-  .meta {{ color:#666; font-size: .9rem; margin-top: -4px; }}
+  .meta {{ color:#666; font-size: .9rem; }}
   .stats {{ margin-top: 12px; padding: 10px; border: 1px solid #eee; border-radius: 10px; background:#fafafa; }}
   .translation {{ margin-top: 12px; color:#333; display:none; }}
   .translation.visible {{ display:block; }}
@@ -59,6 +61,9 @@ def generate_reading_html(set_name, data=None):
   a.home {{ position:absolute; right:16px; top:16px; text-decoration:none; background:#007bff; color:#fff; padding:6px 10px; border-radius:8px; }}
 </style>
 <script src="https://aka.ms/csspeech/jsbrowserpackageraw"></script>
+<!-- Config + API helper (relative to docs/reading/<set>/index.html) -->
+<script src="../../static/js/app-config.js"></script>
+<script src="../../static/js/api.js"></script>
 </head>
 <body>
   <a class="home" href="#" onclick="goHome(); return false;">🏠 Home</a>
@@ -102,45 +107,31 @@ let wordsSpans = [];
 let wordsMeta = []; // {{ text, idx, score }}
 
 // R2 manifest (if present)
-let r2Manifest = null; // {{ files: { "reading/<set>/<i>.mp3": "https://cdn..." }, assetsBase: "https://cdn..." }}
+let r2Manifest = null; // {{ files: {{ "reading/<set>/<i>.mp3": "https://cdn..." }}, assetsBase: "https://cdn..." }}
+let assetsCDNBase = (window.APP_CONFIG && (APP_CONFIG.assetsBase || APP_CONFIG.CDN_BASE || APP_CONFIG.R2_BASE)) || null;
 
 // ---------- Helpers ----------
 function byId(id) {{ return document.getElementById(id); }}
 
-function repoBase() {{
-  if (window.location.hostname === "andrewdionne.github.io") {{
-    const parts = window.location.pathname.split("/").filter(Boolean);
-    const repo = parts.length ? parts[0] : "LearnPolish";
-    return "/" + repo;
-  }}
-  return "";
-}}
-
-function apiBase() {{
-  return (window.location.hostname === "andrewdionne.github.io") ? "https://flashcards-5c95.onrender.com" : "";
-}}
-
-// Prefer R2 → fallback static (GH Pages / dev)
+// Prefer R2 → fallback global base → fallback local static (relative)
 function getReadingAudioPath(index) {{
   const key = `reading/${{setName}}/${{index}}.mp3`;
-  if (r2Manifest && r2Manifest.files && r2Manifest.files[key]) return r2Manifest.files[key];
-  if (r2Manifest && r2Manifest.assetsBase) {{
-    return r2Manifest.assetsBase.replace(/\\/$/,'') + '/' + key;
-  }}
-  if (window.location.hostname === "andrewdionne.github.io") {{
-    return repoBase() + `/static/${{setName}}/reading/${{index}}.mp3`;
-  }} else {{
-    return `/custom_static/${{setName}}/reading/${{index}}.mp3`;
-  }}
+  if (r2Manifest?.files?.[key]) return r2Manifest.files[key];
+  const base = r2Manifest?.assetsBase || r2Manifest?.cdn || r2Manifest?.base || assetsCDNBase;
+  if (base) return String(base).replace(/\\/$/, '') + '/' + key;
+  return `../../static/${{encodeURIComponent(setName)}}/reading/${{encodeURIComponent(index)}}.mp3`;
 }}
 
 async function loadR2Manifest() {{
   try {{
-    const url = (window.location.hostname === "andrewdionne.github.io")
-      ? repoBase() + `/static/${{setName}}/r2_manifest.json`
-      : `/custom_static/${{setName}}/r2_manifest.json`;
-    const res = await fetch(url, {{ cache: "no-store" }});
-    if (res.ok) r2Manifest = await res.json();
+    let res = await fetch(`../../static/${{encodeURIComponent(setName)}}/r2_manifest.json`, {{ cache: "no-store" }});
+    if (!res.ok) {{
+      res = await fetch(`../../static/r2_manifest.json`, {{ cache: "no-store" }});
+    }}
+    if (res.ok) {{
+      r2Manifest = await res.json();
+      assetsCDNBase = assetsCDNBase || r2Manifest.assetsBase || r2Manifest.cdn || r2Manifest.base || null;
+    }}
   }} catch(_) {{}}
 }}
 
@@ -217,7 +208,7 @@ function updateStats(final=false) {{
 
 // ---------- Azure token & TTS ----------
 async function fetchToken() {{
-  const res = await fetch(`${{apiBase()}}/api/token`);
+  const res = await api.fetch('/api/token');
   if (!res.ok) throw new Error("token http " + res.status);
   return await res.json();
 }}
@@ -297,7 +288,6 @@ function stopRecordingMyAudio() {{
     if (!mediaRecorder) return resolve(null);
     mediaRecorder.onstop = () => {{
       try {{ if (replayUrl) URL.revokeObjectURL(replayUrl); }} catch(_){{}}
-      // Use a broadly supported container; most modern browsers accept audio/webm Opus
       const blob = new Blob(recordedChunks, {{ type: "audio/webm" }});
       replayUrl = URL.createObjectURL(blob);
       resolve(replayUrl);
@@ -326,7 +316,7 @@ function attachRecognitionHandlers() {{
           wordsMeta[matchIdx].score = score;
           const span = wordsSpans[matchIdx];
           span.classList.remove("w-good","w-mid","w-bad");
-          const cls = colorByScore(score);
+          const cls = (score>=80) ? "w-good" : (score>=60) ? "w-mid" : "w-bad";
           if (cls) span.classList.add(cls);
           highlightWord(matchIdx);
         }}
@@ -382,21 +372,17 @@ async function startReading() {{
 }}
 
 function stopReading() {{
-  try {{
-    if (recognizer) recognizer.stopContinuousRecognitionAsync();
-  }} catch(_){{}}
+  try {{ if (recognizer) recognizer.stopContinuousRecognitionAsync(); }} catch(_){{}}
 }}
 
 function listenPolish() {{
-  // Try pre-rendered file first (R2 → local); fall back to Azure TTS if not found/blocked
   const a = byId("ttsAudio");
-  const src = getReadingAudioPath(currentIndex);
-  const tryTTS = () => {{
-    const p = passages[currentIndex] || {{}};
-    speakPolish(p.polish || "");
-  }};
+  const p = passages[currentIndex] || {{}};
+  const direct = p.audio_url || p.audio;
+  const src = (direct && /^https?:\\/\\//i.test(direct)) ? direct : getReadingAudioPath(currentIndex);
+  const tryTTS = () => speakPolish(p.polish || "");
   a.onerror = tryTTS;
-  a.onended = () => {{ /* no-op */ }};
+  a.onended = () => {{}};
   a.src = src; a.load();
   a.play().catch(tryTTS);
 }}
@@ -405,7 +391,7 @@ function replayMe() {{
   const a = byId("replayAudio");
   if (!a.src) return;
   a.currentTime = 0;
-  a.play().catch(()=>{{}});
+  a.play().catch(()=>{});
 }}
 
 function toggleEN() {{
@@ -426,7 +412,6 @@ function wireUI() {{
   byId("btnReplay").addEventListener("click", replayMe);
   byId("btnToggleEN").addEventListener("click", toggleEN);
 
-  // Clean up mic/recognizer if user navigates away
   window.addEventListener("beforeunload", () => {{
     try {{ if (recognizer) recognizer.stopContinuousRecognitionAsync(); }} catch(_){{}}
     try {{ if (replayUrl) URL.revokeObjectURL(replayUrl); }} catch(_){{}}
@@ -438,13 +423,7 @@ function wireUI() {{
   }});
 }}
 
-function goHome() {{
-  if (window.location.hostname === "andrewdionne.github.io") {{
-    window.location.href = repoBase() + "/";
-  }} else {{
-    window.location.href = "/";
-  }}
-}}
+function goHome() {{ window.location.href = "../../index.html"; }}
 
 (async function init() {{
   if (!SpeechSDK) {{

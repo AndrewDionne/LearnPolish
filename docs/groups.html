@@ -31,8 +31,8 @@
     }
     .hint{ font-size:12px; color:var(--muted); margin-top:6px }
     .tabs .btn{ min-width:96px }
-    /* Top-right page action (like Library's "My collections") */
-    .page-actions{ max-width:1100px; padding:0 var(--pad); display:flex; justify-content:flex; }
+    /* Top-right page action */
+    .page-actions{ max-width:1100px; padding:0 var(--pad); display:flex; justify-content:flex-end; }
   </style>
 </head>
 
@@ -232,6 +232,7 @@
   </nav>
 
   <!-- Scripts -->
+  <script src="static/js/app-config.js"></script>
   <script src="static/js/api.js"></script>
   <script src="static/js/page-chrome.js" defer></script>
 
@@ -261,347 +262,333 @@
     });
   })();
 
+  // Groups logic
+  (function(){
+    // ---- CONFIG: flip to false if backend allows only 1 group ----
+    const MULTI_GROUPS = true;
 
-    // Groups logic
-    (function(){
-      // ---- CONFIG: flip to false if backend allows only 1 group ----
-      const MULTI_GROUPS = true;
+    const $ = (id)=> document.getElementById(id);
+    const baseAbs = (path) => new URL(path, document.baseURI).href;
 
-      const $ = (id)=> document.getElementById(id);
-      const baseAbs = (path) => new URL(path, document.baseURI).href;
+    // Helpers
+    function modeLabel(m){ m=(m||'').toLowerCase(); if(m==='practice'||m==='speak') return 'Speak'; if(m==='reading'||m==='read') return 'Read'; if(m==='listening'||m==='listen') return 'Listen'; return 'Learn'; }
+    function shortDate(iso){ if(!iso) return ''; const d=new Date(iso); return d.toLocaleString(); }
+    function normalizeEmails(raw){
+      return (raw||'').split(/[\n,; ]+/g).map(s=>s.trim()).filter(Boolean)
+        .filter(e=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)).slice(0,200);
+    }
+    async function copyToClipboard(text){
+      try{ if(navigator.clipboard?.writeText){ await navigator.clipboard.writeText(text); return true; } }catch(_){}
+      const ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.left='-9999px'; document.body.appendChild(ta);
+      ta.select(); ta.setSelectionRange(0,99999); const ok=document.execCommand('copy'); document.body.removeChild(ta); return ok;
+    }
 
-      // Helpers
-      function modeLabel(m){ m=(m||'').toLowerCase(); if(m==='practice'||m==='speak') return 'Speak'; if(m==='reading'||m==='read') return 'Read'; if(m==='listening'||m==='listen') return 'Listen'; return 'Learn'; }
-      function shortDate(iso){ if(!iso) return ''; const d=new Date(iso); return d.toLocaleString(); }
-      function normalizeEmails(raw){
-        return (raw||'').split(/[\n,; ]+/g).map(s=>s.trim()).filter(Boolean)
-          .filter(e=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)).slice(0,200);
+    // API shims (with graceful fallbacks)
+    async function createGroup(name){
+      const body = JSON.stringify({ name });
+      try{
+        let r = await api.fetch('/api/groups', { method:'POST', headers:{'Content-Type':'application/json'}, body });
+        if (!r.ok) r = await api.fetch('/api/groups/create', { method:'POST', headers:{'Content-Type':'application/json'}, body });
+        return r.ok;
+      }catch(_){ return false; }
+    }
+    async function leaveGroup(groupId){
+      try{
+        const r = await api.fetch(`/api/groups/${groupId}/leave`, { method:'POST' });
+        return r.ok;
+      }catch(_){ return false; }
+    }
+    async function fetchInviteLink(groupId){
+      try{
+        const r = await api.fetch(`/api/groups/${groupId}/invite_code`);
+        if (!r.ok) return baseAbs('groups.html');
+        const j = await r.json();
+        const code = (j.code || '').trim();
+        if (!code) return baseAbs('groups.html');
+        return new URL('groups.html?code=' + encodeURIComponent(code), document.baseURI).href;
+      }catch(_){
+        return baseAbs('groups.html');
       }
-      async function copyToClipboard(text){
-        try{ if(navigator.clipboard?.writeText){ await navigator.clipboard.writeText(text); return true; } }catch(_){}
-        const ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.left='-9999px'; document.body.appendChild(ta);
-        ta.select(); ta.setSelectionRange(0,99999); const ok=document.execCommand('copy'); document.body.removeChild(ta); return ok;
+    }
+    async function sendInvites(groupId, emails){
+      try{
+        const r = await api.fetch(`/api/groups/${groupId}/invite_emails`, {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ emails })
+        });
+        if (!r.ok) return { ok: false };
+        const j = await r.json();
+        return { ok: !!j.ok, sent: j.sent || 0 };
+      }catch(_){
+        return { ok: false };
       }
+    }
 
-      async function fetchInviteLink(groupId){
-        // Your API exposes /api/groups/<id>/invite_code -> { code: "ABCDEFGH" }
-        try{
-          const r = await api.fetch(`/api/groups/${groupId}/invite_code`);
-          if (!r.ok) return baseAbs('groups.html');
-          const j = await r.json();
-          const code = (j.code || '').trim();
-          if (!code) return baseAbs('groups.html');
-          // Build a frontend link that auto-joins via ?code=
-          const base =
-            (location.hostname === "andrewdionne.github.io")
-              ? ('/' + location.pathname.split('/').filter(Boolean)[0])
-              : '';
-          // Use absolute URL to your Pages site if you prefer:
-          // const base = 'https://andrewdionne.github.io/LearnPolish';
-          return `${base}/groups.html?code=${encodeURIComponent(code)}`;
-        }catch(_){
-          return baseAbs('groups.html');
-        }
-      }
+    // DOM
+    const dom = {
+      globalBtn:   $('globalGroupBtn'),
+      name:        $('groupNameHdr'),
+      meta:        $('groupMeta'),
+      multiNote:   $('multiNote'),
 
-      async function sendInvites(groupId, emails){
-        // Your API exposes /api/groups/<id>/invite_emails with { emails: [...] }
-        try{
-          const r = await api.fetch(`/api/groups/${groupId}/invite_emails`, {
-            method: 'POST',
-            headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({ emails })
-          });
-          if (!r.ok) return { ok: false };
-          const j = await r.json();
-          return { ok: !!j.ok, sent: j.sent || 0 };
-        }catch(_){
-          return { ok: false };
-        }
-      }
+      tabA:        $('tabActivity'),
+      tabL:        $('tabLeaderboard'),
+      panA:        $('panelActivity'),
+      panL:        $('panelLeaderboard'),
 
+      actTable:    $('activityTable'),
+      actBody:     document.querySelector('#activityTable tbody'),
+      actEmpty:    $('emptyActivity'),
 
+      lbTable:     $('lbTable'),
+      lbBody:      document.querySelector('#lbTable tbody'),
+      lbEmpty:     $('emptyLb'),
 
-      // DOM
-      const dom = {
-        globalBtn:   $('globalGroupBtn'),
-        name:        $('groupNameHdr'),
-        meta:        $('groupMeta'),
-        multiNote:   $('multiNote'),
+      inviteBtn:   $('inviteBtn'),
+      leaveBtn:    $('leaveBtn'),
 
-        tabA:        $('tabActivity'),
-        tabL:        $('tabLeaderboard'),
-        panA:        $('panelActivity'),
-        panL:        $('panelLeaderboard'),
+      // Create/Join modal
+      groupModal:  $('groupModal'),
+      tabCreate:   $('tabCreate'),
+      tabJoin:     $('tabJoin'),
+      viewCreate:  $('viewCreate'),
+      viewJoin:    $('viewJoin'),
+      btnCreate:   $('btnCreate'),
+      btnJoin:     $('btnJoin'),
+      inpGroupName:$('inpGroupName'),
+      inpJoinCode: $('inpJoinCode'),
+      btnClose:    $('btnClose'),
+      modalTitle:  $('modalTitle'),
 
-        actTable:    $('activityTable'),
-        actBody:     document.querySelector('#activityTable tbody'),
-        actEmpty:    $('emptyActivity'),
+      // Invite modal
+      inviteModal: $('inviteModal'),
+      inviteTitle: $('inviteTitle'),
+      inviteName:  $('inviteGroupName'),
+      inviteTA:    $('inviteEmails'),
+      inviteLinkW: $('inviteLinkWrap'),
+      inviteLink:  $('inviteLink'),
+      btnCopy:     $('copyInviteBtn'),
+      btnSend:     $('sendInviteBtn'),
+      btnInvClose: $('inviteCloseBtn'),
+      inviteStat:  $('inviteStatus'),
+    };
 
-        lbTable:     $('lbTable'),
-        lbBody:      document.querySelector('#lbTable tbody'),
-        lbEmpty:     $('emptyLb'),
+    let groups = [];
+    let current = null;
+    let latestInviteUrl = '';
 
-        inviteBtn:   $('inviteBtn'),
-        leaveBtn:    $('leaveBtn'),
+    // Modal helpers
+    function showGroupModal(which='create'){
+      dom.groupModal.style.display='flex';
+      if(which==='join'){ showJoinTab(); setTimeout(()=>dom.inpJoinCode?.focus(),0); }
+      else { showCreateTab(); setTimeout(()=>dom.inpGroupName?.focus(),0); }
+    }
+    function hideGroupModal(){ dom.groupModal.style.display='none'; }
+    function showCreateTab(){ dom.tabCreate.classList.add('btn-primary'); dom.tabJoin.classList.remove('btn-primary'); dom.viewCreate.style.display='block'; dom.viewJoin.style.display='none'; dom.modalTitle.textContent='Create a group'; }
+    function showJoinTab(){ dom.tabJoin.classList.add('btn-primary'); dom.tabCreate.classList.remove('btn-primary'); dom.viewJoin.style.display='block'; dom.viewCreate.style.display='none'; dom.modalTitle.textContent='Join a group'; }
 
-        // Create/Join modal
-        groupModal:  $('groupModal'),
-        tabCreate:   $('tabCreate'),
-        tabJoin:     $('tabJoin'),
-        viewCreate:  $('viewCreate'),
-        viewJoin:    $('viewJoin'),
-        btnCreate:   $('btnCreate'),
-        btnJoin:     $('btnJoin'),
-        inpGroupName:$('inpGroupName'),
-        inpJoinCode: $('inpJoinCode'),
-        btnClose:    $('btnClose'),
-        modalTitle:  $('modalTitle'),
-
-        // Invite modal
-        inviteModal: $('inviteModal'),
-        inviteTitle: $('inviteTitle'),
-        inviteName:  $('inviteGroupName'),
-        inviteTA:    $('inviteEmails'),
-        inviteLinkW: $('inviteLinkWrap'),
-        inviteLink:  $('inviteLink'),
-        btnCopy:     $('copyInviteBtn'),
-        btnSend:     $('sendInviteBtn'),
-        btnInvClose: $('inviteCloseBtn'),
-        inviteStat:  $('inviteStatus'),
-      };
-
-      let groups = [];
-      let current = null;
-      let latestInviteUrl = '';
-
-      // Modal helpers
-      function showGroupModal(which='create'){
-        dom.groupModal.style.display='flex';
-        if(which==='join'){ showJoinTab(); setTimeout(()=>dom.inpJoinCode?.focus(),0); }
-        else { showCreateTab(); setTimeout(()=>dom.inpGroupName?.focus(),0); }
-      }
-      function hideGroupModal(){ dom.groupModal.style.display='none'; }
-      function showCreateTab(){ dom.tabCreate.classList.add('btn-primary'); dom.tabJoin.classList.remove('btn-primary'); dom.viewCreate.style.display='block'; dom.viewJoin.style.display='none'; dom.modalTitle.textContent='Create a group'; }
-      function showJoinTab(){ dom.tabJoin.classList.add('btn-primary'); dom.tabCreate.classList.remove('btn-primary'); dom.viewJoin.style.display='block'; dom.viewCreate.style.display='none'; dom.modalTitle.textContent='Join a group'; }
-
-      function openInvite(){
-        if(!current) return;
-        dom.inviteTA.value=''; dom.inviteStat.textContent='';
-        dom.inviteName.textContent=current.group_name||current.name||'';
-        dom.inviteLinkW.style.display='none';
-        dom.inviteModal.style.display='flex';
-        // Prefetch link ASAP so copy can happen without awaiting network
-        (async ()=>{
-          try{
-            const url = await fetchInviteLink(current.group_id || current.id);
-            latestInviteUrl = url;
-            dom.inviteLink.href = url;
-            dom.inviteLink.textContent = url;
-            dom.inviteLinkW.style.display='block';
-          }catch(_){}
-        })();
-      }
-
-      function closeInvite(){ dom.inviteModal.style.display='none'; }
-
-      async function loadGroups(){
-        try{ const r=await api.fetch('/api/my/groups'); groups = r.ok ? await r.json() : []; }catch(_){ groups=[]; }
-
-        dom.multiNote.style.display = groups.length > 1 ? 'block' : 'none';
-        current = groups[0] || null;
-
-        if(!current){
-          dom.name.textContent='No group yet';
-          dom.meta.textContent='Create or join to get started.';
-          dom.inviteBtn.style.display='none';
-          dom.leaveBtn.style.display='none';
-          // Top-right button label for single-group mode
-          if(MULTI_GROUPS){
-            dom.globalBtn.textContent='Create / Join';
-            dom.globalBtn.onclick = ()=> showGroupModal('create');
-          }else{
-            dom.globalBtn.textContent='Create / Join';
-            dom.globalBtn.onclick = ()=> showGroupModal('create');
-          }
-          return;
-        }
-
-        dom.name.textContent = current.group_name || current.name || ('Group ' + (current.group_id || current.id));
-        const size = current.member_count ?? current.size;
-        dom.meta.textContent = (size != null) ? `${size} member${size===1?'':'s'}` : ' ';
-
-        // Button placement logic
-        if (MULTI_GROUPS){
-          dom.inviteBtn.style.display='inline-flex';
-          dom.leaveBtn.style.display='inline-flex';
-          dom.globalBtn.textContent='Create / Join';
-          dom.globalBtn.onclick = ()=> showGroupModal('create');
-        }else{
-          dom.inviteBtn.style.display='inline-flex';
-          dom.leaveBtn.style.display='none';
-          dom.globalBtn.textContent='Leave group';
-          dom.globalBtn.onclick = async ()=>{
-            if(!confirm('Leave this group?')) return;
-            const ok = await leaveGroup(current.group_id || current.id);
-            if(ok){ await loadGroups(); } else { alert('Failed to leave group'); }
-          };
-        }
-
-        await showActivity();
-      }
-
-      // Views
-      async function showActivity(){
-        if(!current) return;
-        dom.tabA.classList.add('btn-primary'); dom.tabL.classList.remove('btn-primary');
-        dom.panA.style.display='block'; dom.panL.style.display='none';
-        dom.actTable.style.display='none'; dom.actEmpty.style.display='block'; dom.actBody.innerHTML='';
-        try{
-          let r = await api.fetch(`/api/groups/${current.group_id}/recent_activity?limit=50`);
-          if(!r.ok) r = await api.fetch('/api/my/groups/recent?limit=50');
-          if(r.ok){
-            const acts=await r.json();
-            if(Array.isArray(acts) && acts.length){
-              dom.actEmpty.style.display='none'; dom.actTable.style.display='table';
-              dom.actBody.innerHTML = acts.map(a=>`
-                <tr>
-                  <td>${shortDate(a.timestamp || a.when)}</td>
-                  <td>${a.user_name || a.user || '—'}</td>
-                  <td>${a.set_name || '—'}</td>
-                  <td>${modeLabel(a.mode || a.activity || '')}</td>
-                  <td>${(a.score ?? '—')}</td>
-                </tr>`).join('');
-            }
-          }
-        }catch(_){}
-      }
-      async function showLeaderboard(){
-        if(!current) return;
-        dom.tabL.classList.add('btn-primary'); dom.tabA.classList.remove('btn-primary');
-        dom.panL.style.display='block'; dom.panA.style.display='none';
-        dom.lbTable.style.display='none'; dom.lbEmpty.style.display='block'; dom.lbBody.innerHTML='';
-        try{
-          const r=await api.fetch(`/api/groups/${current.group_id}/leaderboard?window=week`);
-          if(r.ok){
-            const data=await r.json(); const rows=data.leaderboard||data||[];
-            if(Array.isArray(rows) && rows.length){
-              dom.lbEmpty.style.display='none'; dom.lbTable.style.display='table';
-              dom.lbBody.innerHTML = rows.map((x,i)=>`
-                <tr>
-                  <td>${i+1}</td>
-                  <td>${x.name || x.user_name || '—'}</td>
-                  <td>${x.points ?? x.gold ?? 0}</td>
-                </tr>`).join('');
-            }
-          }
-        }catch(_){}
-      }
-
-      // Auto-join via ?code=
-      (async function autoJoinFromQuery(){
-        const params = new URLSearchParams(location.search);
-        const code = (params.get('code') || '').trim();
-        if(!code) return;
-        try{
-          const r=await api.fetch('/api/groups/join',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code})});
-          if(r.ok){
-            alert('Joined the group!');
-            params.delete('code');
-            const q=params.toString();
-            history.replaceState({},'',location.pathname+(q?`?${q}`:''));
-          }else{
-            let j={}; try{ j=await r.json(); }catch(_){}
-            showGroupModal('join'); dom.inpJoinCode.value = code;
-            alert('Could not join: ' + (j.error || r.status));
-          }
-        }catch(_){}
-      })();
-
-      // Bindings
-      dom.tabActivity?.addEventListener('click', (e)=>{ e.preventDefault(); showActivity(); });
-      dom.tabLeaderboard?.addEventListener('click', (e)=>{ e.preventDefault(); showLeaderboard(); });
-
-      dom.globalBtn?.addEventListener('click', (e)=>{ /* action is set in loadGroups() */ });
-
-      dom.tabCreate?.addEventListener('click', (e)=>{ e.preventDefault(); showCreateTab(); });
-      dom.tabJoin?.addEventListener('click',   (e)=>{ e.preventDefault(); showJoinTab(); });
-      dom.btnClose?.addEventListener('click',  (e)=>{ e.preventDefault(); hideGroupModal(); });
-      dom.groupModal?.addEventListener('click',(e)=>{ if(e.target===dom.groupModal) hideGroupModal(); });
-
-      dom.btnCopy?.addEventListener('click', async ()=>{
-        if(!current) return;
-        // If we pre-fetched a link, copy it immediately (stays within the user gesture)
-        const immediate = latestInviteUrl;
-        if (immediate) {
-          const ok = await copyToClipboard(immediate);
-          dom.inviteStat.textContent = ok ? 'Invite link copied! 🎉' : 'Could not copy automatically—long-press the link and copy.';
-          return;
-        }
-        // Fallback: fetch then copy (may lose gesture on some iOS versions)
-        dom.inviteStat.textContent='Generating invite link…';
-        const url = await fetchInviteLink(current.group_id || current.id);
-        latestInviteUrl = url;
-        dom.inviteLink.href = url; dom.inviteLink.textContent = url; dom.inviteLinkW.style.display='block';
-        const ok  = await copyToClipboard(url);
-        dom.inviteStat.textContent = ok ? 'Invite link copied! 🎉' : 'Could not copy automatically—long-press the link and copy.';
-      });
-
-      dom.inpGroupName?.addEventListener('keydown', (e)=>{ if(e.key==='Enter') dom.btnCreate?.click(); });
-
-      dom.btnJoin?.addEventListener('click', async (e)=>{
-        e.preventDefault();
-        const code=(dom.inpJoinCode.value||'').trim(); if(!code) return;
-        try{
-          const r=await api.fetch('/api/groups/join',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code})});
-          if(r.ok){ dom.inpJoinCode.value=''; hideGroupModal(); await loadGroups(); alert('Joined!'); }
-          else { let j={}; try{ j=await r.json(); }catch(_){}
-            alert('Failed to join group: ' + (j.error || r.status)); }
-        }catch(_){ alert('Failed to join group'); }
-      });
-      dom.inpJoinCode?.addEventListener('keydown', (e)=>{ if(e.key==='Enter') dom.btnJoin?.click(); });
-
-      dom.inviteBtn?.addEventListener('click', async (e)=>{
-        e.preventDefault();
-        if(!current) return;
-        openInvite();
+    function openInvite(){
+      if(!current) return;
+      dom.inviteTA.value=''; dom.inviteStat.textContent='';
+      dom.inviteName.textContent=current.group_name||current.name||'';
+      dom.inviteLinkW.style.display='none';
+      dom.inviteModal.style.display='flex';
+      // Prefetch link ASAP so copy can work within the gesture
+      (async ()=>{
         try{
           const url = await fetchInviteLink(current.group_id || current.id);
-          dom.inviteLink.href = url; dom.inviteLink.textContent = url; dom.inviteLinkW.style.display='block';
+          latestInviteUrl = url;
+          dom.inviteLink.href = url;
+          dom.inviteLink.textContent = url;
+          dom.inviteLinkW.style.display='block';
         }catch(_){}
-      });
-      dom.leaveBtn?.addEventListener('click', async ()=>{
-        if(!current) return;
-        if(!confirm('Leave this group?')) return;
-        const ok = await leaveGroup(current.group_id || current.id);
-        if(ok){ await loadGroups(); } else { alert('Failed to leave group'); }
-      });
+      })();
+    }
+    function closeInvite(){ dom.inviteModal.style.display='none'; }
 
-      dom.btnInvClose?.addEventListener('click', (e)=>{ e.preventDefault(); closeInvite(); });
-      dom.inviteModal?.addEventListener('click', (e)=>{ if(e.target===dom.inviteModal) closeInvite(); });
+    async function loadGroups(){
+      try{ const r=await api.fetch('/api/my/groups'); groups = r.ok ? await r.json() : []; }catch(_){ groups=[]; }
 
-      dom.btnCopy?.addEventListener('click', async ()=>{
-        if(!current) return;
-        dom.inviteStat.textContent='Generating invite link…';
-        const url = await fetchInviteLink(current.group_id || current.id);
-        const ok  = await copyToClipboard(url);
-        dom.inviteLink.href = url; dom.inviteLink.textContent = url; dom.inviteLinkW.style.display='block';
-        dom.inviteStat.textContent = ok ? 'Invite link copied!' : 'Could not copy automatically—long-press the link and copy.';
-      });
+      dom.multiNote.style.display = groups.length > 1 ? 'block' : 'none';
+      current = groups[0] || null;
 
-      dom.btnSend?.addEventListener('click', async ()=>{
-        if(!current) return;
-        const emails = normalizeEmails(dom.inviteTA.value);
-        if(!emails.length){ dom.inviteStat.textContent='Add at least one valid email or use “Copy invite link”.'; return; }
-        dom.inviteStat.textContent='Sending invites…';
-        const res = await sendInvites(current.group_id || current.id, emails);
-        dom.inviteStat.textContent = res.ok ? 'Invites sent! 🎉' : 'Could not send via API. Copy and share the link instead.';
-        if(res.ok) dom.inviteTA.value='';
-      });
+      if(!current){
+        dom.name.textContent='No group yet';
+        dom.meta.textContent='Create or join to get started.';
+        dom.inviteBtn.style.display='none';
+        dom.leaveBtn.style.display='none';
+        dom.globalBtn.textContent='Create / Join';
+        dom.globalBtn.onclick = ()=> showGroupModal('create');
+        return;
+      }
 
-      // Boot
-      (async function boot(){ await loadGroups(); })();
+      dom.name.textContent = current.group_name || current.name || ('Group ' + (current.group_id || current.id));
+      const size = current.member_count ?? current.size;
+      dom.meta.textContent = (size != null) ? `${size} member${size===1?'':'s'}` : ' ';
+
+      // Button placement logic
+      if (MULTI_GROUPS){
+        dom.inviteBtn.style.display='inline-flex';
+        dom.leaveBtn.style.display='inline-flex';
+        dom.globalBtn.textContent='Create / Join';
+        dom.globalBtn.onclick = ()=> showGroupModal('create');
+      }else{
+        dom.inviteBtn.style.display='inline-flex';
+        dom.leaveBtn.style.display='none';
+        dom.globalBtn.textContent='Leave group';
+        dom.globalBtn.onclick = async ()=>{
+          if(!confirm('Leave this group?')) return;
+          const ok = await leaveGroup(current.group_id || current.id);
+          if(ok){ await loadGroups(); } else { alert('Failed to leave group'); }
+        };
+      }
+
+      await showActivity();
+    }
+
+    // Views
+    async function showActivity(){
+      if(!current) return;
+      dom.tabA.classList.add('btn-primary'); dom.tabL.classList.remove('btn-primary');
+      dom.panA.style.display='block'; dom.panL.style.display='none';
+      dom.actTable.style.display='none'; dom.actEmpty.style.display='block'; dom.actBody.innerHTML='';
+      try{
+        let r = await api.fetch(`/api/groups/${current.group_id || current.id}/recent_activity?limit=50`);
+        if(!r.ok) r = await api.fetch('/api/my/groups/recent?limit=50');
+        if(r.ok){
+          const acts=await r.json();
+          if(Array.isArray(acts) && acts.length){
+            dom.actEmpty.style.display='none'; dom.actTable.style.display='table';
+            dom.actBody.innerHTML = acts.map(a=>`
+              <tr>
+                <td>${shortDate(a.timestamp || a.when)}</td>
+                <td>${a.user_name || a.user || '—'}</td>
+                <td>${a.set_name || '—'}</td>
+                <td>${modeLabel(a.mode || a.activity || '')}</td>
+                <td>${(a.score ?? '—')}</td>
+              </tr>`).join('');
+          }
+        }
+      }catch(_){}
+    }
+    async function showLeaderboard(){
+      if(!current) return;
+      dom.tabL.classList.add('btn-primary'); dom.tabA.classList.remove('btn-primary');
+      dom.panL.style.display='block'; dom.panA.style.display='none';
+      dom.lbTable.style.display='none'; dom.lbEmpty.style.display='block'; dom.lbBody.innerHTML='';
+      try{
+        const r=await api.fetch(`/api/groups/${current.group_id || current.id}/leaderboard?window=week`);
+        if(r.ok){
+          const data=await r.json(); const rows=data.leaderboard||data||[];
+          if(Array.isArray(rows) && rows.length){
+            dom.lbEmpty.style.display='none'; dom.lbTable.style.display='table';
+            dom.lbBody.innerHTML = rows.map((x,i)=>`
+              <tr>
+                <td>${i+1}</td>
+                <td>${x.name || x.user_name || '—'}</td>
+                <td>${x.points ?? x.gold ?? 0}</td>
+              </tr>`).join('');
+          }
+        }
+      }catch(_){}
+    }
+
+    // Auto-join via ?code=
+    (async function autoJoinFromQuery(){
+      const params = new URLSearchParams(location.search);
+      const code = (params.get('code') || '').trim();
+      if(!code) return;
+      try{
+        const r=await api.fetch('/api/groups/join',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code})});
+        if(r.ok){
+          alert('Joined the group!');
+          params.delete('code');
+          const q=params.toString();
+          history.replaceState({},'',location.pathname+(q?`?${q}`:''));
+          await loadGroups();
+        }else{
+          let j={}; try{ j=await r.json(); }catch(_){}
+          showGroupModal('join'); dom.inpJoinCode.value = code;
+          alert('Could not join: ' + (j.error || r.status));
+        }
+      }catch(_){}
     })();
-  </script>
+
+    // Bindings
+    dom.tabActivity?.addEventListener('click', (e)=>{ e.preventDefault(); showActivity(); });
+    dom.tabLeaderboard?.addEventListener('click', (e)=>{ e.preventDefault(); showLeaderboard(); });
+
+    dom.globalBtn?.addEventListener('click', ()=>{ /* action is set in loadGroups() */ });
+
+    dom.tabCreate?.addEventListener('click', (e)=>{ e.preventDefault(); showCreateTab(); });
+    dom.tabJoin?.addEventListener('click',   (e)=>{ e.preventDefault(); showJoinTab(); });
+    dom.btnClose?.addEventListener('click',  (e)=>{ e.preventDefault(); hideGroupModal(); });
+    dom.groupModal?.addEventListener('click',(e)=>{ if(e.target===dom.groupModal) hideGroupModal(); });
+
+    dom.btnCreate?.addEventListener('click', async (e)=>{
+      e.preventDefault();
+      const name=(dom.inpGroupName.value||'').trim();
+      if(!name) return;
+      dom.btnCreate.disabled = true;
+      const ok = await createGroup(name);
+      dom.btnCreate.disabled = false;
+      if(ok){ dom.inpGroupName.value=''; hideGroupModal(); await loadGroups(); alert('Group created!'); }
+      else { alert('Failed to create group'); }
+    });
+    dom.inpGroupName?.addEventListener('keydown', (e)=>{ if(e.key==='Enter') dom.btnCreate?.click(); });
+
+    dom.btnJoin?.addEventListener('click', async (e)=>{
+      e.preventDefault();
+      const code=(dom.inpJoinCode.value||'').trim(); if(!code) return;
+      try{
+        const r=await api.fetch('/api/groups/join',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code})});
+        if(r.ok){ dom.inpJoinCode.value=''; hideGroupModal(); await loadGroups(); alert('Joined!'); }
+        else { let j={}; try{ j=await r.json(); }catch(_){}
+          alert('Failed to join group: ' + (j.error || r.status)); }
+      }catch(_){ alert('Failed to join group'); }
+    });
+    dom.inpJoinCode?.addEventListener('keydown', (e)=>{ if(e.key==='Enter') dom.btnJoin?.click(); });
+
+    dom.inviteBtn?.addEventListener('click', async (e)=>{
+      e.preventDefault();
+      if(!current) return;
+      openInvite();
+    });
+    dom.leaveBtn?.addEventListener('click', async ()=>{
+      if(!current) return;
+      if(!confirm('Leave this group?')) return;
+      const ok = await leaveGroup(current.group_id || current.id);
+      if(ok){ await loadGroups(); } else { alert('Failed to leave group'); }
+    });
+
+    dom.btnInvClose?.addEventListener('click', (e)=>{ e.preventDefault(); closeInvite(); });
+    dom.inviteModal?.addEventListener('click', (e)=>{ if(e.target===dom.inviteModal) closeInvite(); });
+
+    // Single, consolidated copy handler (removed duplicate)
+    dom.btnCopy?.addEventListener('click', async ()=>{
+      if(!current) return;
+      dom.inviteStat.textContent='Generating invite link…';
+      const url = latestInviteUrl || await fetchInviteLink(current.group_id || current.id);
+      latestInviteUrl = url;
+      const ok  = await copyToClipboard(url);
+      dom.inviteLink.href = url; dom.inviteLink.textContent = url; dom.inviteLinkW.style.display='block';
+      dom.inviteStat.textContent = ok ? 'Invite link copied! 🎉' : 'Could not copy automatically—long-press the link and copy.';
+    });
+
+    dom.btnSend?.addEventListener('click', async ()=>{
+      if(!current) return;
+      const emails = normalizeEmails(dom.inviteTA.value);
+      if(!emails.length){ dom.inviteStat.textContent='Add at least one valid email or use “Copy invite link”.'; return; }
+      dom.inviteStat.textContent='Sending invites…';
+      const res = await sendInvites(current.group_id || current.id, emails);
+      dom.inviteStat.textContent = res.ok ? 'Invites sent! 🎉' : 'Could not send via API. Copy and share the link instead.';
+      if(res.ok) dom.inviteTA.value='';
+    });
+
+    // Boot
+    (async function boot(){ await loadGroups(); })();
+  })();
+</script>
 </body>
 </html>

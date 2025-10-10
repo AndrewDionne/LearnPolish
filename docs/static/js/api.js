@@ -1,12 +1,10 @@
 // docs/static/js/api.js
 (function () {
   // ---- Configuration -------------------------------------------------------
-  // Default API when running on GitHub Pages (overrideable via localStorage.API_BASE)
-  const DEFAULT_RENDER_API = 'https://flashcards-5c95.onrender.com';
+  const RUNTIME = (typeof window !== 'undefined' ? (window.PTP_CONFIG || {}) : {});
+  const CONFIG_API_BASE = (RUNTIME.API_BASE || '').replace(/\/+$/, '');
+  const CONFIG_CDN_BASE = (RUNTIME.CDN_BASE || '').replace(/\/+$/, '');
 
-  // Optional CDN base for media (R2). You can set this in the console:
-  //   localStorage.CDN_BASE = 'https://<your-r2-public-domain>/<bucket>'
-  const CDN_BASE = (localStorage.getItem('CDN_BASE') || '').replace(/\/+$/, '');
 
   // ---- Utilities -----------------------------------------------------------
   const stripTrail = (s) => (s || '').replace(/\/+$/, '');

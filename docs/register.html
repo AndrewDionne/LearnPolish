@@ -1,79 +1,46 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <link rel="stylesheet" href="static/app.css">
-  <title>Register - LearnPolish</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8" />
+
+  <!-- Dual-host <base> (GitHub Pages vs same-origin) -->
+  <script>
+    (function () {
+      var isGH = /\.github\.io$/i.test(location.hostname);
+      var baseHref = isGH ? '/LearnPolish/' : '/';
+      document.write('<base href="' + baseHref + '">');
+    })();
+  </script>
+
+  <link rel="stylesheet" href="static/app.css" />
+  <title>Register • Path to POLISH</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Config (optional) then API helper (required) -->
+  <script src="static/js/app-config.js"></script>
+  <script src="static/js/api.js"></script>
+
   <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-      padding: 20px;
-      background-color: #f8f9fa;
-    }
-    .container {
-      max-width: 400px;
-      margin: 0 auto;
-      background: white;
-      padding: 25px;
-      border-radius: 10px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-    h2 {
-      margin-top: 0;
-      color: #007bff;
-      text-align: center;
-    }
-    input {
-      width: 100%;
-      padding: 10px;
-      margin: 8px 0;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 1em;
-    }
-    button {
-      width: 100%;
-      padding: 12px;
-      background: #007bff;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 1em;
-      margin-top: 10px;
-    }
-    button:hover {
-      background: #0056b3;
-    }
-    .link {
-      text-align: center;
-      margin-top: 15px;
-      font-size: 0.9em;
-    }
-    .link a {
-      color: #007bff;
-      text-decoration: none;
-    }
-    .link a:hover {
-      text-decoration: underline;
-    }
-    .message {
-      margin-top: 10px;
-      text-align: center;
-      font-size: 0.95em;
-    }
-    .error { color: red; }
-    .success { color: green; }
+    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background:#f8f9fa; padding:20px; }
+    .container { max-width:400px; margin:0 auto; background:#fff; padding:25px; border-radius:10px; box-shadow:0 2px 5px rgba(0,0,0,.1); }
+    h2 { margin:0 0 12px; color:#0c63e4; text-align:center; }
+    input { width:100%; padding:10px; margin:8px 0; border:1px solid #ccc; border-radius:6px; font-size:1em; }
+    button { width:100%; padding:12px; background:#0c63e4; color:#fff; border:0; border-radius:6px; cursor:pointer; font-size:1em; margin-top:10px; }
+    button:hover { background:#0a58ca; }
+    .link { text-align:center; margin-top:15px; font-size:.95em; }
+    .link a { color:#0c63e4; text-decoration:none; }
+    .link a:hover { text-decoration:underline; }
+    .message { margin-top:10px; text-align:center; font-size:.95em; }
+    .error { color:#c52b2b; } .success { color:#137a25; }
   </style>
 </head>
 <body>
   <div class="container">
     <h2>Create Account</h2>
     <form id="signupForm">
-      <input type="text" id="name" placeholder="Full Name">
-      <input type="email" id="email" placeholder="Email" required>
-      <input type="password" id="password" placeholder="Password" required>
+      <input type="text" id="name" placeholder="Full Name" />
+      <input type="email" id="email" placeholder="Email" required />
+      <input type="password" id="password" placeholder="Password" required />
       <button type="submit">Sign Up</button>
     </form>
     <div id="message" class="message"></div>
@@ -82,57 +49,40 @@
     </div>
   </div>
 
- <script>
-  const isGH = location.hostname.endsWith('github.io');
-  const API_BASE = isGH
-    ? 'https://flashcards-5c95.onrender.com/api'
-    : '/api';
-
-  function homeHref() {
-    if (isGH) {
-      const repo = location.pathname.split('/').filter(Boolean)[0] || 'LearnPolish';
-      return '/' + repo + '/';
+  <script>
+    function homeHref() {
+      var b = document.querySelector('base');
+      return b ? b.href : '/';
     }
-    return '/';
-  }
 
-  const messageBox = document.getElementById("message");
+    // If already logged in, bounce to home
+    (async () => {
+      try { await api.get('/api/me'); location.href = homeHref(); } catch (_) {}
+    })();
 
-  document.getElementById("signupForm").onsubmit = async (e) => {
-    e.preventDefault();
-    const name = document.getElementById("name").value.trim();
-    const email = document.getElementById("email").value.trim().toLowerCase();
-    const password = document.getElementById("password").value;
+    const messageBox = document.getElementById('message');
 
-    messageBox.textContent = "";
-    messageBox.className = "message";
+    document.getElementById('signupForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      messageBox.textContent = ''; messageBox.className = 'message';
 
-    try {
-      console.log('[signup] POST', `${API_BASE}/signup`);
-      const res = await fetch(`${API_BASE}/signup`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password })
-      });
+      const name = document.getElementById('name').value.trim();
+      const email = document.getElementById('email').value.trim().toLowerCase();
+      const password = document.getElementById('password').value;
 
-      const data = await res.json().catch(() => ({}));
-
-      if (res.ok) {
-        localStorage.setItem("lp_token", data.token);
-        messageBox.textContent = "✅ Registration successful! Redirecting...";
-        messageBox.classList.add("success");
-        setTimeout(() => (window.location.href = homeHref()), 800);
-      } else {
-        messageBox.textContent = "❌ " + (data.message || "Error signing up");
-        messageBox.classList.add("error");
+      try {
+        // Correct backend endpoint is /api/register
+        const data = await api.post('/api/register', { name, email, password });
+        api.setToken(data.token);
+        messageBox.textContent = '✅ Registration successful! Redirecting...';
+        messageBox.classList.add('success');
+        setTimeout(() => (location.href = homeHref()), 800);
+      } catch (err) {
+        messageBox.textContent = '❌ ' + (err.message || 'Error signing up');
+        messageBox.classList.add('error');
+        console.error('[signup] error', err);
       }
-    } catch (err) {
-      messageBox.textContent = "❌ Network error: " + err;
-      messageBox.classList.add("error");
-    }
-  };
-</script>
-
-
+    });
+  </script>
 </body>
 </html>

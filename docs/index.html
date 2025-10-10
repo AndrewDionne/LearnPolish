@@ -252,6 +252,7 @@
   </nav>
 
   <!-- Site scripts -->
+  <script src="static/js/app-config.js"></script>
   <script src="static/js/api.js"></script>
   <script src="static/js/page-chrome.js" defer></script>
 
@@ -259,7 +260,7 @@
   <script>
     (async function(){
       try{
-        const r = await api.fetch('api/me');
+        const r = await api.fetch('/api/me');
         if (!r.ok) return;
         const me = await r.json();
         if (!me || !me.name) return;

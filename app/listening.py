@@ -400,32 +400,47 @@ def generate_listening_html(set_name: str, data=None):
     }}
     return "";
   }}
+  function apiFetch(path, init) {{
+    // Prefer global api.js helper if present
+    if (window.api && typeof window.api.fetch === 'function') {{
+      return window.api.fetch(path, init);
+    }}
+    // Otherwise, try app-config.js (APP_CONFIG.apiBase or APP_CONFIG.API_BASE)
+    const base = (window.APP_CONFIG && (APP_CONFIG.apiBase || APP_CONFIG.API_BASE)) || '';
+    const prefix = base ? base.replace(/\\/$/, '') : '';
+    return fetch(prefix + path, init);
+  }}
 
-  function resolveAudioUrl(it){{
-    // absolute URL is honored as-is
+
+  function resolveAudioUrl(it) {{
+    // 1) absolute URL is honored as-is (audio_url)
     const abs = (it.audio_url || '').trim();
-    if (abs && /^(https?:)?\\/\\//i.test(abs)) return abs;
+    if (abs && /^(https?:)?\\/\\/|^\\/\\//i.test(abs)) return abs;
 
-    // set-relative static key (e.g., "listening/d001.mp3")
+    // 2) also honor absolute in `audio` (after normalization/coercion)
+    const absAudio = (it.audio || '').trim();
+    if (absAudio && /^(https?:)?\\/\\/|^\\/\\//i.test(absAudio)) return absAudio;
+
+    // 3) set-relative static key (e.g., "listening/d001.mp3")
     const rel = (it.audio || '').trim().replace(/^\\/+/, '');
     if (!rel) return '';
 
-    // R2 manifest lookup: listening/<set>/<file>
+    // 4) R2 manifest lookup: listening/<set>/<file>
     const file = rel.split('/').pop();
     const key = `listening/${{SET_NAME}}/${{file}}`;
 
     if (r2Manifest && r2Manifest.files && r2Manifest.files[key]) return r2Manifest.files[key];
     if (r2Manifest && r2Manifest.assetsBase) {{
-      return r2Manifest.assetsBase.replace(/\\/$/,'') + '/' + key;
+      return r2Manifest.assetsBase.replace(/\\/$/, '') + '/' + key;
     }}
 
-    // Fallback to static (GH Pages vs local dev)
+    // 5) Fallback to static (GH Pages vs local dev)
     if (location.hostname === "andrewdionne.github.io") {{
       return repoBase() + `/static/${{SET_NAME}}/${{rel}}`;
-    }} else {{
-      return `/custom_static/${{SET_NAME}}/${{rel}}`;
     }}
+    return `/custom_static/${{SET_NAME}}/${{rel}}`;
   }}
+
 
   // ---- Config ----
   const CONFIG = {{
@@ -643,24 +658,25 @@ def generate_listening_html(set_name: str, data=None):
   $("restartBtn").onclick = ()=>{{ location.reload(); }};
 
   // gold bar (if token present)
-  (async function wireGold(){{
-    try{{
-      const t = localStorage.getItem('lp_token')||'';
-      if(!t) return;
-      const r = await fetch('/api/my/stats', {{ headers: {{ Authorization: 'Bearer '+t }} }});
-      if(!r.ok) return;
+  (async function wireGold() {{
+    try {{
+      const t = localStorage.getItem('lp_token') || '';
+      if (!t) return;
+      const r = await apiFetch('/api/my/stats', {{ headers: {{ Authorization: 'Bearer ' + t }} }});
+      if (!r.ok) return;
       const s = await r.json();
       const got = Number(s.weekly_gold || s.weekly_points || 0);
       const goal = Number(s.goal_gold || s.goal_points || 500) || 500;
-      const pct = Math.max(0, Math.min(100, Math.round((got/goal)*100)));
+      const pct = Math.max(0, Math.min(100, Math.round((got / goal) * 100)));
       const fill = document.getElementById('goldFill');
       const lab  = document.getElementById('goldLabel');
-      if(fill) fill.style.width = pct + '%';
-      if(lab)  lab.textContent = `${{got}} / ${{goal}}`;
-    }}catch(_){{
+      if (fill) fill.style.width = pct + '%';
+      if (lab)  lab.textContent = `${{got}} / ${{goal}}`;
+    }} catch (_err) {{
       /* no-op */
     }}
   }})();
+
 
   // mount
   (async function init(){{

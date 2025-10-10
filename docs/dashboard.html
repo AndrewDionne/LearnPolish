@@ -273,23 +273,35 @@
   </nav>
 
   <!-- Scripts: API helper, chrome (banner/note/auth), then page JS -->
+  <script src="static/js/app-config.js"></script>
   <script src="static/js/api.js"></script>
   <script src="static/js/page-chrome.js" defer></script>
 
   <script>
-    // Auth button show/hide (safe, no-throw)
+    // Require sign-in (redirect to login if 401)
     (async () => {
-      const logoutBtn = document.getElementById('logoutBtn');
-      const loginLink = document.getElementById('loginLink');
-      const registerLink = document.getElementById('registerLink');
+      await api.requireAuth('login.html');
+      const logoutBtn   = document.getElementById('logoutBtn');
+      const loginLink   = document.getElementById('loginLink');
+      const registerLink= document.getElementById('registerLink');
+
       try {
         const r = await api.fetch('/api/me');
-        if (r.ok) { loginLink.style.display='none'; registerLink.style.display='none'; logoutBtn.style.display='inline-flex'; }
+        if (r.ok) {
+          loginLink.style.display='none';
+          registerLink.style.display='none';
+          logoutBtn.style.display='inline-flex';
+        }
       } catch(_) {}
-      logoutBtn?.addEventListener('click', async ()=>{ try{ await api.fetch('/api/logout',{method:'POST'});}catch(_){}
-        localStorage.removeItem('lp_token'); location.href='login.html'; });
+
+      logoutBtn?.addEventListener('click', async ()=>{
+        try { await api.fetch('/api/logout',{method:'POST'}); } catch(_){}
+        api.clearToken();        // ← clears lp_token + future storage
+        location.href='login.html';
+      });
     })();
   </script>
+
 
   <script>
     /* ---------- Dashboard logic (robust, GH+Flask) ---------- */

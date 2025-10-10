@@ -2,9 +2,19 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <link rel="stylesheet" href="static/app.css">
   <title>Path to POLISH • Profile</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Dual-host <base> (GitHub Pages vs Flask/Render) -->
+  <script>
+    (function () {
+      var isGH = /\.github\.io$/i.test(location.hostname);
+      var baseHref = isGH ? '/LearnPolish/' : '/';
+      document.write('<base href="' + baseHref + '">');
+    })();
+  </script>
+
+  <link rel="stylesheet" href="static/app.css">
   <style>
     :root{
       --brand:#2d6cdf;
@@ -86,7 +96,7 @@
         </div>
       </div>
       <div class="row" style="margin-top:8px">
-        <a class="btn" href="./reset.html">Reset password</a>
+        <a class="btn" href="reset.html">Reset password</a>
         <button id="logoutBtn" class="btn">Log out</button>
       </div>
       <div class="tiny" style="margin-top:6px" id="joinDate">Joined —</div>
@@ -158,51 +168,31 @@
     </section>
   </main>
 
-  <!-- Bottom nav (same as Home) -->
-  <nav class="bottom">
-    <a href="./index.html">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1v-10.5Z" stroke-width="1.5"/></svg>
-      <span>Home</span>
-    </a>
-    <a href="./learn.html">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 12h16M4 18h9" stroke-width="1.5" stroke-linecap="round"/></svg>
-      <span>Learn</span>
-    </a>
-    <a href="./manage_sets/">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="16" rx="2" ry="2" stroke-width="1.5"/><path d="M7 8h10M7 12h10M7 16h7" stroke-width="1.5" stroke-linecap="round"/></svg>
-      <span>Library</span>
-    </a>
-    <a href="./dashboard.html">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 14h6V4H4v10Zm10 6h6V4h-6v16Z" stroke-width="1.5"/></svg>
-      <span>Dashboard</span>
-    </a>
-    <a href="./groups.html">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-        <circle cx="8" cy="8" r="3" stroke-width="1.5"/>
-        <path d="M2 20v-1c0-3 3-5 6-5" stroke-width="1.5" stroke-linecap="round"/>
-        <circle cx="16" cy="10" r="3" stroke-width="1.5"/>
-        <path d="M11 20v-1c0-2.5 2.5-4.5 5-5" stroke-width="1.5" stroke-linecap="round"/>
-      </svg>
-      <span>Groups</span>
-    </a>
+  <!-- Bottom nav -->
+  <nav class="bottom" aria-label="Primary">
+    <a href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1v-10.5Z" stroke-width="1.5"/></svg><span>Home</span></a>
+    <a href="learn.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 12h16M4 18h9" stroke-width="1.5" stroke-linecap="round"/></svg><span>Learn</span></a>
+    <a href="manage_sets/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="16" rx="2" ry="2" stroke-width="1.5"/><path d="M7 8h10M7 12h10M7 16h7" stroke-width="1.5" stroke-linecap="round"/></svg><span>Library</span></a>
+    <a href="dashboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 14h6V4H4v10Zm10 6h6V4h-6v16Z" stroke-width="1.5"/></svg><span>Dashboard</span></a>
+    <a href="groups.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="8" cy="8" r="3" stroke-width="1.5"/><path d="M2 20v-1c0-3 3-5 6-5" stroke-width="1.5" stroke-linecap="round"/><circle cx="16" cy="10" r="3" stroke-width="1.5"/><path d="M11 20v-1c0-2.5 2.5-4.5 5-5" stroke-width="1.5" stroke-linecap="round"/></svg><span>Groups</span></a>
   </nav>
 
-  <script src="./static/js/api.js"></script>
+  <!-- Load runtime config first, then API helpers -->
+  <script src="static/js/app-config.js"></script>
+  <script src="static/js/api.js"></script>
+
   <script>
     // Require sign-in (redirects to login.html on 401)
     (async () => { await api.requireAuth('login.html'); })();
 
-    // --- tiny helpers ---
-
     function shortDate(iso){ if(!iso) return '—'; const d=new Date(iso); return d.toLocaleDateString(); }
     function msg(el, t){ el.textContent=t; setTimeout(()=>{ el.textContent=''; }, 1800); }
 
-    // Preset avatar catalog (id + emoji). You can swap for SVGs later.
     const AVATARS = [
-      {id:'scout',   glyph:'🧭'}, {id:'fox',     glyph:'🦊'}, {id:'owl', glyph:'🦉'},
-      {id:'bear',    glyph:'🐻'}, {id:'koala',   glyph:'🐨'}, {id:'dragon', glyph:'🐉'},
-      {id:'mage',    glyph:'🧙‍♂️'}, {id:'ninja', glyph:'🥷'}, {id:'robot', glyph:'🤖'},
-      {id:'books',   glyph:'📚'}, {id:'rocket',  glyph:'🚀'}, {id:'clover', glyph:'🍀'}
+      {id:'scout',glyph:'🧭'},{id:'fox',glyph:'🦊'},{id:'owl',glyph:'🦉'},
+      {id:'bear',glyph:'🐻'},{id:'koala',glyph:'🐨'},{id:'dragon',glyph:'🐉'},
+      {id:'mage',glyph:'🧙‍♂️'},{id:'ninja',glyph:'🥷'},{id:'robot',glyph:'🤖'},
+      {id:'books',glyph:'📚'},{id:'rocket',glyph:'🚀'},{id:'clover',glyph:'🍀'}
     ];
     function renderAvatarGrid(selected){
       const wrap = document.getElementById('avatars');
@@ -221,13 +211,11 @@
     function selectAvatar(id){
       state.avatar_id = id;
       document.getElementById('avatarBig').textContent = (AVATARS.find(a=>a.id===id)?.glyph) || '🙂';
-      // update active class
       [...document.querySelectorAll('.ava')].forEach(el=>{
         if (el.getAttribute('aria-label') === id) el.classList.add('active'); else el.classList.remove('active');
       });
     }
 
-    // Local fallback
     function loadLocalProfile(){
       try { return JSON.parse(localStorage.getItem('lp.profile') || '{}'); } catch(_){ return {}; }
     }
@@ -238,12 +226,10 @@
     const state = { avatar_id:null, weekly_goal:500 };
 
     async function initProfile(){
-      // Me
       let me=null;
       try{ const r=await api.fetch('/api/me'); if(r.ok) me=await r.json(); }catch(_){}
       const loc = loadLocalProfile();
 
-      // seed UI
       renderAvatarGrid(me?.avatar_id || loc.avatar_id || 'scout');
       selectAvatar(me?.avatar_id || loc.avatar_id || 'scout');
 
@@ -251,7 +237,6 @@
       document.getElementById('email').value = (me?.email || loc.email || '') || '';
       document.getElementById('joinDate').textContent = 'Joined ' + shortDate(me?.created_at || loc.created_at);
 
-      // Stats/goal
       try{
         const r = await api.fetch('/api/my/stats');
         if(r.ok){
@@ -277,17 +262,15 @@
         state.weekly_goal = Number(document.getElementById('weeklyGoal').value) || 500;
       }
 
-      // Language (optional; saved locally unless server supports)
-      const uiLang = loc.ui_lang || 'en';
+      const uiLang = (loc.ui_lang || 'en');
       document.getElementById('uiLang').value = uiLang;
     }
 
-    // Save
     document.getElementById('saveBtn').addEventListener('click', async ()=>{
       const saveMsg = document.getElementById('saveMsg');
       const body = {
         display_name: document.getElementById('displayName').value.trim(),
-        name: document.getElementById('displayName').value.trim(), // compatibility
+        name: document.getElementById('displayName').value.trim(),
         weekly_goal: Number(document.getElementById('weeklyGoal').value) || 500,
         avatar_id: state.avatar_id,
         ui_lang: document.getElementById('uiLang').value
@@ -297,7 +280,6 @@
         const r = await api.fetch('/api/me', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
         ok = r.ok;
       }catch(_){}
-      // fallback local
       const loc = loadLocalProfile();
       const merged = Object.assign({}, loc, body, { email: document.getElementById('email').value, created_at: loc.created_at || new Date().toISOString() });
       saveLocalProfile(merged);
@@ -305,7 +287,6 @@
       msg(saveMsg, ok ? 'Saved!' : 'Saved locally (offline)');
     });
 
-    // Upload (optional)
     document.getElementById('uploadBtn').addEventListener('click', async ()=>{
       const fileIn = document.getElementById('avatarFile');
       const msgEl  = document.getElementById('saveMsg');
@@ -316,7 +297,6 @@
         const r = await api.fetch('/api/me/avatar_upload', { method:'POST', body: fd });
         if(r.ok){
           const j = await r.json();
-          // If backend returns avatar_id or avatar_url, reflect it. We fall back to using the big preview.
           if (j.avatar_id){ selectAvatar(j.avatar_id); }
           msg(msgEl, 'Avatar uploaded!');
         }else{
@@ -327,14 +307,12 @@
       }
     });
 
-    // Logout
     document.getElementById('logoutBtn').addEventListener('click', async ()=>{
       try{ await api.fetch('/api/logout', {method:'POST'});}catch(_){}
-      api.clearToken(); // clears lp_token + authToken
-      location.href = './login.html';
+      api.clearToken();
+      location.href = 'login.html';
     });
 
-    // Export / Delete (optional endpoints)
     document.getElementById('exportBtn').addEventListener('click', async ()=>{
       const msgEl = document.getElementById('accountMsg');
       try{
@@ -347,7 +325,6 @@
           URL.revokeObjectURL(url);
           msg(msgEl, 'Exported!');
         }else{
-          // Fallback: compile local profile only
           const j = loadLocalProfile();
           const blob = new Blob([JSON.stringify(j,null,2)], {type:'application/json'});
           const url = URL.createObjectURL(blob);
@@ -363,7 +340,7 @@
       if(!confirm('Delete your account? This cannot be undone.')) return;
       try{
         const r = await api.fetch('/api/me', { method:'DELETE' });
-        if(r.ok){ alert('Account deleted'); localStorage.clear(); location.href='./register.html'; }
+        if(r.ok){ alert('Account deleted'); localStorage.clear(); location.href='register.html'; }
         else{ msg(msgEl, 'Server refused deletion'); }
       }catch(_){ msg(msgEl, 'Deletion failed'); }
     });
