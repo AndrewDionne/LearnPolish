@@ -4,12 +4,12 @@
 # SessionState unchanged except for cleanup.
 
 from __future__ import annotations
+from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import random, string
 
-from . import db
-from .config import ADMIN_EMAIL  # used elsewhere during signup to flag admin
-from sqlalchemy import func
+# Single global SQLAlchemy instance lives here.
+db = SQLAlchemy()
 
 # -----------------------------------------------------------------------------
 # Helpers
@@ -33,13 +33,13 @@ class User(db.Model):
     is_admin = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # NEW (optional profile fields used by Profile/Dashboard UIs)
+    # Optional profile fields used by Profile/Dashboard UIs
     display_name = db.Column(db.String(100), nullable=True)
     weekly_goal  = db.Column(db.Integer, nullable=True, default=500)   # used by /api/my/stats goal
     avatar_id    = db.Column(db.String(40), nullable=True)             # preset picker id (e.g., "scout")
     ui_lang      = db.Column(db.String(12), nullable=True, default="en")
 
-    # Relationships (declared for convenience – no cascade deletes by default)
+    # Relationships (declared for convenience)
     scores = db.relationship("Score", backref="user", lazy=True)
     ratings = db.relationship("Rating", backref="user", lazy=True)
     memberships = db.relationship("GroupMembership", backref="user", lazy=True)
