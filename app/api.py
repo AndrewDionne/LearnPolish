@@ -3,11 +3,11 @@ from flask import Blueprint, request, jsonify, current_app
 from sqlalchemy import func
 from datetime import datetime, timedelta, time as dtime
 from collections import defaultdict
-from werkzeug.security import generate_password_hash
 from shutil import rmtree
 from pathlib import Path
 import os, json, re, jwt, random, string
 from urllib.parse import quote
+from sqlalchemy.exc import OperationalError
 
 from .auth import token_required
 from .models import db, Score, UserSet, GroupMembership, Group, Rating, User, SessionState
@@ -34,6 +34,22 @@ def healthz():
 # ---------------------------
 # Helpers
 # ---------------------------
+def safe_commit():
+    """Commit once; on DB disconnect/idle-ssl errors, rollback and retry once."""
+    try:
+        db.session.commit()
+    except OperationalError as e:
+        db.session.rollback()
+        current_app.logger.warning("Commit failed (retrying once): %s", e)
+        try:
+            db.session.commit()
+        except Exception as e2:
+            db.session.rollback()
+            raise e2
+
+def _chunks(seq, size):
+    for i in range(0, len(seq), size):
+        yield seq[i:i+size]
 
 def _cap_points(v):
     try:
@@ -316,7 +332,7 @@ def me_patch(current_user):
         changed |= _safe_set(current_user, "avatar_id", (data.get("avatar_id") or "").strip() or None)
 
     if changed:
-        db.session.commit()
+        safe_commit()
 
     return jsonify({"ok": True})
 
@@ -330,7 +346,7 @@ def me_delete(current_user):
     UserSet.query.filter_by(user_id=uid).delete()
     GroupMembership.query.filter_by(user_id=uid).delete()
     db.session.delete(current_user)
-    db.session.commit()
+    safe_commit()
     return jsonify({"ok": True})
 
 @api_bp.route("/my/export", methods=["GET"])
@@ -407,7 +423,7 @@ def submit_score(current_user):
         details=details if isinstance(details, dict) else {"raw": details},
     )
     db.session.add(s)
-    db.session.commit()
+    safe_commit()
     return jsonify({"message": "saved", "score_id": s.id}), 201
 
 @api_bp.route("/scores", methods=["POST"])
@@ -561,7 +577,7 @@ def create_group(current_user):
     db.session.flush()
     if not GroupMembership.query.filter_by(user_id=current_user.id, group_id=g.id).first():
         db.session.add(GroupMembership(user_id=current_user.id, group_id=g.id, role="owner"))
-    db.session.commit()
+    safe_commit()
 
     resp = {"id": g.id, "name": g.name}
     if hasattr(g, "join_code"):
@@ -586,7 +602,7 @@ def join_group(current_user):
     existing = GroupMembership.query.filter_by(user_id=current_user.id, group_id=g.id).first()
     if not existing:
         db.session.add(GroupMembership(user_id=current_user.id, group_id=g.id, role="member"))
-        db.session.commit()
+        safe_commit()
     return jsonify({"ok": True, "group_id": g.id, "group_name": g.name})
 
 @api_bp.route("/groups/<int:group_id>/leave", methods=["DELETE"])
@@ -606,7 +622,7 @@ def leave_group(current_user, group_id):
     if not remaining:
         if g:
             db.session.delete(g)
-        db.session.commit()
+        safe_commit()
         return jsonify({"ok": True, "deleted": True})
 
     if owner_left and g:
@@ -614,7 +630,7 @@ def leave_group(current_user, group_id):
         g.owner_id = new_owner.user_id
         new_owner.role = "owner"
 
-    db.session.commit()
+    safe_commit()
     return jsonify({"ok": True, "deleted": False})
 
 @api_bp.route("/groups/<int:group_id>/invite_code", methods=["GET"])
@@ -770,7 +786,7 @@ def invite_emails(current_user, group_id):
             g.join_code = code
         elif hasattr(g, "invite_code"):
             g.invite_code = code
-        db.session.commit()
+        safe_commit()
 
     base = (
         current_app.config.get("FRONTEND_BASE_URL")
@@ -795,22 +811,27 @@ def invite_emails(current_user, group_id):
         visible_to = [os.environ["GMAIL_USER"]]
 
     try:
-        send_email(
-            subject=subject,
-            text=text,
-            html=html,
-            to=visible_to,
-            bcc=emails,
-            reply_to=(current_user.email or None),
-        )
-        return jsonify({"ok": True, "sent": len(emails)})
+        # Batch BCC to stay within SMTP/SES recipient caps
+        max_rcpts = int(os.getenv("EMAIL_MAX_RCPTS", "40"))
+        sent_total = 0
+        for chunk in _chunks(emails, max_rcpts):
+            send_email(
+                subject=subject,
+                text=text,
+                html=html,
+                to=visible_to,
+                bcc=chunk,
+                reply_to=(current_user.email or None),
+            )
+            sent_total += len(chunk)
+        return jsonify({"ok": True, "sent": sent_total})
     except Exception as e:
         err_msg = getattr(e, "smtp_error", None)
         if isinstance(err_msg, (bytes, bytearray)):
             try: err_msg = err_msg.decode("utf-8", "ignore")
             except Exception: err_msg = None
-        detail = err_msg or str(e)
-        print("Email send failed:", repr(e))
+        detail = (err_msg or str(e) or "email_send_failed").strip()
+        current_app.logger.exception("Invite send failed: %s", detail)
         return jsonify({"ok": False, "error": "EMAIL_SEND_FAILED", "detail": detail[:200]}), 500
 
 def _ensure_group_code_and_link(g):
@@ -830,7 +851,7 @@ def _ensure_group_code_and_link(g):
             g.join_code = code
         elif hasattr(g, "invite_code"):
             g.invite_code = code
-        db.session.commit()
+        safe_commit()
 
     base = (
         current_app.config.get("FRONTEND_BASE_URL")
@@ -901,7 +922,6 @@ def groups_invite_compat_body(current_user):
     # Rebuild a request for the existing handler
     request_data = {"emails": data.get("emails", "")}
     # Temporarily swap request.json (simple, works in Flask) or just call the logic inline.
-    # Here we call the underlying function with the same request body available.
     with current_app.test_request_context(json=request_data):
         return invite_emails(current_user, int(group_id))
 
@@ -966,7 +986,7 @@ def my_sets_add(current_user):
         db.session.add(row)
     else:
         row.is_owner = is_owner or row.is_owner
-    db.session.commit()
+    safe_commit()
     return jsonify({"ok": True})
 
 @api_bp.route("/my/sets/<path:set_name>", methods=["DELETE"])
@@ -977,8 +997,24 @@ def my_sets_remove(current_user, set_name):
     if not row:
         return jsonify({"ok": True, "message": "Already not in library"})
     db.session.delete(row)
-    db.session.commit()
+    safe_commit()
     return jsonify({"ok": True})
+
+# ---- Underscore aliases the UI may hit ----
+@api_bp.route("/my_sets", methods=["GET"])
+@token_required
+def my_sets_get_alias(current_user):
+    return my_sets_get(current_user)
+
+@api_bp.route("/my_sets", methods=["POST"])
+@token_required
+def my_sets_add_alias(current_user):
+    return my_sets_add(current_user)
+
+@api_bp.route("/my_sets/<path:set_name>", methods=["DELETE"])
+@token_required
+def my_sets_remove_alias(current_user, set_name):
+    return my_sets_remove(current_user, set_name)
 
 @api_bp.route("/sets/available", methods=["GET"])
 @token_required
@@ -1087,7 +1123,7 @@ def create_set(current_user):
     # Library attach (store slug as set_name in DB so everything is consistent)
     if not UserSet.query.filter_by(user_id=current_user.id, set_name=slug).first():
         db.session.add(UserSet(user_id=current_user.id, set_name=slug, is_owner=True))
-        db.session.commit()
+        safe_commit()
 
     warnings = []
 
@@ -1153,7 +1189,6 @@ def create_set(current_user):
         except Exception as e:
             warnings.append(f"publish_failed: {e}")
 
-
     # Build response with robust URL encoding of the slug
     enc = quote(slug, safe="")
 
@@ -1189,7 +1224,27 @@ def create_set(current_user):
         resp["warnings"] = warnings
     return jsonify(resp), 201
 
-    # ---------- Update set ----------
+# ---------- Create set (compat wrapper) ----------
+
+@api_bp.route("/create_set_v2", methods=["POST"])
+@token_required
+def create_set_v2(current_user):
+    """
+    Compatibility wrapper for newer UI payloads.
+    Accepts any of: name|title|set_name ; data|cards|items ; modes|set_type ; publish
+    """
+    p = request.get_json(silent=True) or {}
+    normalized = {
+        "set_name": (p.get("set_name") or p.get("name") or p.get("title") or "").strip(),
+        "data":     p.get("data") or p.get("cards") or p.get("items"),
+        "modes":    p.get("modes"),
+        "set_type": p.get("set_type"),
+        "publish":  p.get("publish"),
+    }
+    with current_app.test_request_context(json=normalized):
+        return create_set(current_user)
+
+# ---------- Update set ----------
 
 @api_bp.route("/update_set", methods=["POST", "PUT", "PATCH"])
 @token_required
@@ -1296,7 +1351,7 @@ def rate_set(current_user):
     else:
         row = Rating(user_id=current_user.id, set_name=set_name, stars=stars, comment=comment)
         db.session.add(row)
-    db.session.commit()
+    safe_commit()
 
     return jsonify({
         "ok": True,
@@ -1431,7 +1486,7 @@ def upsert_session_state(current_user):
         db.session.add(row)
     else:
         row.progress = progress
-    db.session.commit()
+    safe_commit()
     return jsonify({"ok": True})
 
 @api_bp.route("/session_state/complete", methods=["POST"])
@@ -1444,7 +1499,7 @@ def complete_session_state(current_user):
         return jsonify({"message": "set_name and mode are required"}), 400
 
     SessionState.query.filter_by(user_id=current_user.id, set_name=set_name, mode=mode).delete()
-    db.session.commit()
+    safe_commit()
     return jsonify({"ok": True})
 
 @api_bp.route("/my/continue", methods=["GET"])

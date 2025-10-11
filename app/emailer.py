@@ -2,43 +2,48 @@
 """
 Unified email sender for Path to POLISH.
 
-Supports providers:
-- EMAIL_PROVIDER=ses_smtp   (AWS SES via SMTP; recommended for prod)
-- EMAIL_PROVIDER=gmail      (Gmail SMTP with app password)
-- EMAIL_PROVIDER=console    (prints to stdout; good for dev)
+Usage:
+    from .emailer import send_email
 
-Render env (SES):
-  EMAIL_PROVIDER=ses_smtp
-  SES_SMTP_SERVER=email-smtp.eu-north-1.amazonaws.com
-  SES_SMTP_USER=<<from SES SMTP credentials>>
-  SES_SMTP_PASS=<<from SES SMTP credentials>>
-  FROM_EMAIL=no-reply@polishpath.com
-  FROM_NAME=Path to POLISH
+    send_email(
+        subject="Hello",
+        text="Plain text body",
+        html="<p>HTML body</p>",
+        to=["person@example.com"],     # optional
+        bcc=["a@x.com","b@y.com"],    # optional
+        reply_to="you@domain.com"     # optional
+    )
+
+Providers:
+- EMAIL_PROVIDER=ses_smtp   (requires SES_SMTP_USER/SES_SMTP_PASS; optionally SES_REGION/SES_SMTP_HOST/PORT)
+- EMAIL_PROVIDER=gmail      (requires GMAIL_USER/GMAIL_APP_PASSWORD)
+- EMAIL_PROVIDER=console    (prints to logs; dev only)
 """
 
 from __future__ import annotations
-import os, ssl, smtplib
+import os, ssl, smtplib, socket
 from email.message import EmailMessage
 
-# ---- Provider + config ----
+# -------- env --------
 PROVIDER = (os.environ.get("EMAIL_PROVIDER") or "console").lower()
 
-# Common "From"
+# Common “from”
 FROM_EMAIL = os.environ.get("FROM_EMAIL") or os.environ.get("GMAIL_USER") or "no-reply@localhost"
-FROM_NAME  = os.environ.get("FROM_NAME") or "Path to POLISH"
+FROM_NAME  = os.environ.get("FROM_NAME")  or "Path to POLISH"
 
-# Gmail (optional)
+# Gmail
 GMAIL_USER = os.environ.get("GMAIL_USER")
 GMAIL_APP_PASSWORD = (os.environ.get("GMAIL_APP_PASSWORD") or "").replace(" ", "")
 
 # SES SMTP
-SES_SMTP_SERVER = (
-    os.environ.get("SES_SMTP_SERVER")
-    or f"email-smtp.{os.environ.get('AWS_SES_REGION','eu-north-1')}.amazonaws.com"
-)
-SES_SMTP_USER = os.environ.get("SES_SMTP_USER")
-SES_SMTP_PASS = os.environ.get("SES_SMTP_PASS")
+SES_REGION     = os.environ.get("SES_REGION") or "eu-north-1"
+SES_SMTP_HOST  = os.environ.get("SES_SMTP_HOST") or f"email-smtp.{SES_REGION}.amazonaws.com"
+SES_SMTP_PORT  = int(os.environ.get("SES_SMTP_PORT") or "587")   # STARTTLS default
+SES_SMTP_USER  = os.environ.get("SES_SMTP_USER") or ""
+SES_SMTP_PASS  = os.environ.get("SES_SMTP_PASS") or ""
 
+# Timeouts (seconds)
+SMTP_TIMEOUT = int(os.environ.get("SMTP_TIMEOUT") or "30")
 
 def _as_list(x) -> list[str]:
     if not x:
@@ -47,58 +52,79 @@ def _as_list(x) -> list[str]:
         return [str(i).strip() for i in x if i]
     return [s.strip() for s in str(x).split(",") if s.strip()]
 
-
-def _build_message(*, subject: str, text: str | None, html: str | None,
-                   to_list: list[str], bcc_list: list[str], reply_to: str | None) -> EmailMessage:
-    msg = EmailMessage()
-    msg["Subject"] = subject
-    msg["From"] = f"{FROM_NAME} <{FROM_EMAIL}>"
-    # Always include a To header (even with BCC-only)
-    msg["To"] = ", ".join(to_list) if to_list else "undisclosed-recipients:;"
-    if reply_to:
-        msg["Reply-To"] = reply_to
-
-    msg.set_content(text or "")
-    if html:
-        msg.add_alternative(html, subtype="html")
-    # Do NOT set Return-Path; SES handles it via your MAIL FROM domain.
-    return msg
-
-
-def _send_via_smtp(server: str, username: str, password: str, msg: EmailMessage, rcpts: list[str]) -> None:
-    """Try SMTPS (465) first, then STARTTLS (587)."""
+def _build_message(*, subject:str, text:str|None, html:str|None, to:list[str], bcc:list[str], reply_to:str|None) -> tuple[EmailMessage, list[str]]:
+    rcpts = [*(to or []), *(bcc or [])]
     if not rcpts:
         raise ValueError("No recipients provided (need 'to' and/or 'bcc').")
 
+    msg = EmailMessage()
+    msg["Subject"] = subject
+    from_header = f"{FROM_NAME} <{FROM_EMAIL}>" if FROM_NAME else FROM_EMAIL
+    msg["From"] = from_header
+    # Always include a To header (even with BCC-only)
+    msg["To"] = ", ".join(to) if to else "undisclosed-recipients:;"
+    if reply_to:
+        msg["Reply-To"] = reply_to
+
+    # Text + optional HTML
+    msg.set_content(text or "")
+    if html:
+        msg.add_alternative(html, subtype="html")
+    return msg, rcpts
+
+def _send_smtp_starttls(host:str, port:int, user:str, password:str, msg:EmailMessage, rcpts:list[str]) -> None:
+    ctx = ssl.create_default_context()
+    with smtplib.SMTP(host, port, timeout=SMTP_TIMEOUT) as smtp:
+        smtp.ehlo()
+        smtp.starttls(context=ctx)
+        smtp.ehlo()
+        smtp.login(user, password)
+        refused = smtp.send_message(msg, to_addrs=rcpts)
+        if refused:
+            # Dict of refused recipients -> raise an informative error
+            raise smtplib.SMTPRecipientsRefused(refused)
+
+def _send_smtp_ssl(host:str, port:int, user:str, password:str, msg:EmailMessage, rcpts:list[str]) -> None:
+    ctx = ssl.create_default_context()
+    with smtplib.SMTP_SSL(host, port, context=ctx, timeout=SMTP_TIMEOUT) as smtp:
+        smtp.login(user, password)
+        refused = smtp.send_message(msg, to_addrs=rcpts)
+        if refused:
+            raise smtplib.SMTPRecipientsRefused(refused)
+
+def _send_gmail(msg:EmailMessage, rcpts:list[str]) -> None:
+    if not GMAIL_USER or not GMAIL_APP_PASSWORD:
+        raise RuntimeError("GMAIL_USER / GMAIL_APP_PASSWORD are not set")
+
+    # Try SMTPS 465, then STARTTLS 587
     last_err = None
     try:
-        context = ssl.create_default_context()
-        with smtplib.SMTP_SSL(server, 465, context=context, timeout=20) as smtp:
-            smtp.login(username, password)
-            result = smtp.send_message(msg, to_addrs=rcpts)
-            if result:  # dict of refused recipients
-                raise smtplib.SMTPRecipientsRefused(result)
+        _send_smtp_ssl("smtp.gmail.com", 465, GMAIL_USER, GMAIL_APP_PASSWORD, msg, rcpts)
         return
     except Exception as e:
         last_err = e
-
     try:
-        with smtplib.SMTP(server, 587, timeout=20) as smtp:
-            smtp.ehlo()
-            smtp.starttls(context=ssl.create_default_context())
-            smtp.ehlo()
-            try:
-                smtp.noop()
-            except Exception:
-                pass
-            smtp.login(username, password)
-            result = smtp.send_message(msg, to_addrs=rcpts)
-            if result:
-                raise smtplib.SMTPRecipientsRefused(result)
+        _send_smtp_starttls("smtp.gmail.com", 587, GMAIL_USER, GMAIL_APP_PASSWORD, msg, rcpts)
         return
     except Exception as e:
         raise last_err or e
 
+def _send_ses(msg:EmailMessage, rcpts:list[str]) -> None:
+    if not SES_SMTP_USER or not SES_SMTP_PASS:
+        raise RuntimeError("SES_SMTP_USER / SES_SMTP_PASS are not set")
+    # Prefer STARTTLS: SES is happiest on 587 in many PaaS networks
+    last_err = None
+    try:
+        _send_smtp_starttls(SES_SMTP_HOST, SES_SMTP_PORT, SES_SMTP_USER, SES_SMTP_PASS, msg, rcpts)
+        return
+    except (socket.timeout, smtplib.SMTPServerDisconnected, smtplib.SMTPConnectError) as e:
+        last_err = e
+    # Fallback: SSL on 465
+    try:
+        _send_smtp_ssl(SES_SMTP_HOST, 465, SES_SMTP_USER, SES_SMTP_PASS, msg, rcpts)
+        return
+    except Exception as e:
+        raise last_err or e
 
 def send_email(
     *,
@@ -110,14 +136,18 @@ def send_email(
     reply_to: str | None = None,
 ) -> None:
     """Send an email using the configured provider."""
-    to_list = _as_list(to)
+    to_list  = _as_list(to)
     bcc_list = _as_list(bcc)
-    rcpts = [*to_list, *bcc_list]
+
+    msg, rcpts = _build_message(
+        subject=subject, text=text, html=html,
+        to=to_list, bcc=bcc_list, reply_to=reply_to
+    )
 
     if PROVIDER == "console":
         print("---- EMAIL (console) ----")
-        print("From:", f"{FROM_NAME} <{FROM_EMAIL}>")
-        print("To:", ", ".join(to_list) if to_list else "undisclosed-recipients:;")
+        print("From:", msg["From"])
+        print("To:", msg["To"])
         print("Bcc:", ", ".join(bcc_list))
         print("Subject:", subject)
         print("Text:", (text or "")[:500])
@@ -125,22 +155,12 @@ def send_email(
         print("-------------------------")
         return
 
-    msg = _build_message(
-        subject=subject, text=text, html=html,
-        to_list=to_list, bcc_list=bcc_list, reply_to=reply_to
-    )
-
-    if PROVIDER in ("ses", "ses_smtp"):
-        if not (SES_SMTP_USER and SES_SMTP_PASS and SES_SMTP_SERVER):
-            raise RuntimeError("SES SMTP env vars missing: SES_SMTP_SERVER, SES_SMTP_USER, SES_SMTP_PASS")
-        _send_via_smtp(SES_SMTP_SERVER, SES_SMTP_USER, SES_SMTP_PASS, msg, rcpts)
+    if PROVIDER == "gmail":
+        _send_gmail(msg, rcpts)
         return
 
-    if PROVIDER == "gmail":
-        if not (GMAIL_USER and GMAIL_APP_PASSWORD):
-            raise RuntimeError("GMAIL_USER / GMAIL_APP_PASSWORD are not set")
-        # When using Gmail SMTP, ensure FROM_EMAIL matches GMAIL_USER or an allowed alias
-        _send_via_smtp("smtp.gmail.com", GMAIL_USER, GMAIL_APP_PASSWORD, msg, rcpts)
+    if PROVIDER in {"ses", "ses_smtp"}:
+        _send_ses(msg, rcpts)
         return
 
     raise RuntimeError(f"Unsupported EMAIL_PROVIDER={PROVIDER!r}. Use 'ses_smtp', 'gmail', or 'console'.")

@@ -1,261 +1,125 @@
 # app/__init__.py
-"""
-Flask app factory for LearnPolish.
-
-- Serves the static site from /docs (same layout as GitHub Pages).
-- Exposes JSON APIs under /api (auth, scores, sets).
-- Provides convenience routes so local dev mirrors GH Pages.
-"""
-
 import os
-from pathlib import Path
-from .config import CORS_ORIGINS
-from flask import Flask, send_from_directory
-from flask_cors import CORS, cross_origin
-from flask_sqlalchemy import SQLAlchemy
-from .constants import PAGES_DIR  # PAGES_DIR = Path("docs")
-# Load .env for local dev (safe no-op in prod)
-try:
-    from dotenv import load_dotenv
-    from pathlib import Path
-    import os
-
-    ROOT = Path(__file__).resolve().parents[1]
-    DOTENV = ROOT / ".env"
-
-    IN_RENDER = bool(os.getenv("RENDER"))
-    IS_DEV = (
-        os.getenv("FLASK_ENV") == "development"
-        or os.getenv("FLASK_DEBUG") == "1"
-        or os.getenv("APP_ENV", "development") == "development"
-    )
-    # Allow manual override via env if needed
-    FORCE = (os.getenv("DOTENV_OVERRIDE", "").lower() in {"1", "true", "yes"})
-
-    # In dev (and not on Render) let .env win; otherwise let OS env win
-    load_dotenv(dotenv_path=DOTENV, override=(FORCE or (IS_DEV and not IN_RENDER)))
-except Exception:
-    # Don't hard-fail if python-dotenv isn't installed
-    pass
+from urllib.parse import urlparse
+from flask import Flask, jsonify
+from flask_cors import CORS
+from .models import db
 
 
+def _normalize_db_url(u: str | None) -> str | None:
+    if not u:
+        return None
+    # psycopg3 prefers postgresql://
+    if u.startswith("postgres://"):
+        u = u.replace("postgres://", "postgresql://", 1)
+    # enforce SSL on Render
+    if "sslmode=" not in u:
+        sep = "&" if "?" in u else "?"
+        u = f"{u}{sep}sslmode=require"
+    return u
 
-# ----------------------------
-# Config
-# ----------------------------
-try:
-    # Prefer a single canonical Config in app/config.py
-    from .config import Config
-except Exception as e:
-    # Minimal fallback if config.py is missing; OK for dev only
-    import secrets
-    class Config:
-        SECRET_KEY = os.getenv("SECRET_KEY") or ("dev-" + secrets.token_urlsafe(32))
-        JWT_SECRET = os.getenv("JWT_SECRET") or SECRET_KEY
-        FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL", "http://localhost:5000")
-        SQLALCHEMY_TRACK_MODIFICATIONS = False
-        JSON_AS_ASCII = False
-        TEMPLATES_AUTO_RELOAD = True
 
-# CORS origins (from config.py if provided; else sensible defaults)
-try:
-    from .config import CORS_ALLOWED_ORIGINS
-except Exception:
-    CORS_ALLOWED_ORIGINS = [
-        "http://localhost:5000",
-        "http://127.0.0.1:5000",
+def _derive_allowed_origins() -> list[str]:
+    # If explicitly provided, honor it
+    env_origins = os.getenv("CORS_ALLOWED_ORIGINS", "")
+    if env_origins.strip():
+        return [o.strip() for o in env_origins.split(",") if o.strip()]
+
+    # Otherwise, infer from FRONTEND_BASE_URL + localhost dev ports
+    base = os.getenv("FRONTEND_BASE_URL", "").strip()
+    origins = {
         "http://localhost:3000",
         "http://127.0.0.1:3000",
-        "https://andrewdionne.github.io",
-    ]
+        "http://localhost:5000",
+        "http://127.0.0.1:5000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    }
+    if base:
+        try:
+            u = urlparse(base)
+            if u.scheme and u.netloc:
+                origins.add(f"{u.scheme}://{u.netloc}")
+        except Exception:
+            pass
+        # Loosen slightly for GH Pages repos (optional; harmless if unused)
+        if "github.io" in base:
+            origins.add("https://*.github.io")
 
-# Global SQLAlchemy instance (imported by models.py)
-db = SQLAlchemy()
+    return sorted(origins)
 
 
 def create_app():
-    """Flask application factory."""
-    # Resolve important paths
-    root_dir = Path(__file__).resolve().parent.parent
-    docs_dir = root_dir / "docs"
+    app = Flask(__name__)
 
-    # Serve the static site directly from /docs (parity with GH Pages)
-    app = Flask(
-        __name__,
-        static_folder=str(docs_dir),
-        static_url_path="",  # make docs content available at /
+    # --- Secrets / misc ---
+    app.config["SECRET_KEY"] = (
+        os.getenv("SECRET_KEY")
+        or os.getenv("JWT_SECRET")  # fallback if you only set JWT_SECRET
+        or "dev-secret-change-me"
     )
 
-    # Load base config first
-    app.config.from_object(Config)
+    # Bridge Cloudflare R2 endpoint naming:
+    # prefer R2_ENDPOINT; fall back to your existing R2_S3_ENDPOINT
+    if not os.getenv("R2_ENDPOINT") and os.getenv("R2_S3_ENDPOINT"):
+        os.environ["R2_ENDPOINT"] = os.getenv("R2_S3_ENDPOINT")
 
-    # Instance folder & DB path
-    os.makedirs(app.instance_path, exist_ok=True)
-  
-    #  Prefer DATABASE_URL; fall back to SQLALCHEMY_DATABASE_URI; else local SQLite
-    db_uri = os.getenv("DATABASE_URL") or os.getenv("SQLALCHEMY_DATABASE_URI")
-    if db_uri:
-        # Normalize to psycopg v3 driver
-        if db_uri.startswith("postgres://"):
-            db_uri = db_uri.replace("postgres://", "postgresql://", 1)
-        if db_uri.startswith("postgresql+psycopg2://"):
-            db_uri = db_uri.replace("postgresql+psycopg2://", "postgresql+psycopg://", 1)
-        elif db_uri.startswith("postgresql://"):
-            db_uri = db_uri.replace("postgresql://", "postgresql+psycopg://", 1)
-
-        # On Render, require SSL unless explicitly provided
-        if os.getenv("RENDER") and "sslmode=" not in db_uri:
-            sep = "&" if "?" in db_uri else "?"
-            db_uri = f"{db_uri}{sep}sslmode=require"
-    else:
-        db_uri = f"sqlite:///{Path(app.instance_path) / 'learnpolish.db'}"
-
-    # Apply/override runtime config
+    # --- Database ---
+    db_url = _normalize_db_url(os.getenv("DATABASE_URL", ""))
+    if not db_url:
+        raise RuntimeError("DATABASE_URL not set")
     app.config.update(
-        SQLALCHEMY_DATABASE_URI=db_uri,
+        SQLALCHEMY_DATABASE_URI=db_url,
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
-        JSON_AS_ASCII=False,
-        TEMPLATES_AUTO_RELOAD=True,
-        SQLALCHEMY_ENGINE_OPTIONS={"pool_pre_ping": True},
+        SQLALCHEMY_ENGINE_OPTIONS={"pool_pre_ping": True, "pool_recycle": 300},
     )
-
-    # Ensure FRONTEND_BASE_URL has a value even if Config omitted it
-    app.config.setdefault("FRONTEND_BASE_URL", os.getenv("FRONTEND_BASE_URL", "http://localhost:5000"))
-    # If JWT_SECRET missing, fall back to SECRET_KEY (keeps old behavior)
-    app.config.setdefault("JWT_SECRET", app.config.get("SECRET_KEY"))
-
-    # Kill static caching in dev to avoid stale HTML/JS
-    if os.getenv("FLASK_DEBUG") == "1" or os.getenv("FLASK_ENV") == "development":
-        app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
-
-    # Init DB
     db.init_app(app)
 
-    # --- CORS setup ---
-    # Allow GH Pages + local dev + Render’s own host by default.
-    # (CORS_ALLOWED_ORIGINS comes from config.py; includes GH by default.)
-    cors_resources = {r"/api/*": {"origins": CORS_ALLOWED_ORIGINS}}
-
+    # --- CORS ---
+    allowed = _derive_allowed_origins()
     CORS(
         app,
-        resources={
-            r"/api/*": {"origins": CORS_ALLOWED_ORIGINS},
-            r"/ping":  {"origins": CORS_ALLOWED_ORIGINS},  # allow cross-origin ping
-        },
-        supports_credentials=False,
-        methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-        allow_headers=["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"],
-        expose_headers=["Content-Type", "Content-Length", "ETag"],
-        max_age=86400,
+        resources={r"/api/*": {"origins": allowed}, r"/ping": {"origins": allowed}},
+        supports_credentials=True,
+        expose_headers=["Content-Type", "Authorization"],
     )
 
+    # --- Health route for Render ---
+    @app.get("/ping")
+    def ping():
+        return jsonify({"ok": True})
 
-
-
-    # ----------------------------
-    # Blueprints
-    # ----------------------------
+    # --- Blueprints ---
     from .auth import auth_bp
-    from .api import api_bp             # scores, groups, misc API
-    from .sets_api import sets_api      # sets CRUD for user/global
-    from .routes import routes_bp       # token endpoint, /custom_static, per-set pages
+    from .api import api_bp
+    try:
+        from .sets_api import sets_api as sets_bp
+    except Exception:
+        sets_bp = None
+    try:
+        from .routes import routes_bp
+    except Exception:
+        routes_bp = None
 
     app.register_blueprint(auth_bp, url_prefix="/api")
-    app.register_blueprint(api_bp, url_prefix="/api")
-    app.register_blueprint(sets_api, url_prefix="/api")
-    app.register_blueprint(routes_bp)  # top-level routes for per-set pages
+    app.register_blueprint(api_bp,  url_prefix="/api")
+    if sets_bp:
+        app.register_blueprint(sets_bp, url_prefix="/api")
+    if routes_bp:
+        app.register_blueprint(routes_bp)  # usually no prefix
 
-        # --- Ensure DB schema exists (dev-friendly) ---
-    AUTO_INIT_DB = os.getenv("AUTO_INIT_DB", "1") == "1"
+    # --- Optional DB init (dev/local only) ---
+    if os.getenv("AUTO_INIT_DB", "0").lower() in ("1", "true", "yes"):
+        with app.app_context():
+            db.create_all()
 
-    def _ensure_schema():
-        try:
-            with app.app_context():
-                # Import models so metadata is populated
-                from . import models  # noqa: F401
-                db.create_all()
-                app.logger.info("DB schema ensured (create_all).")
-        except Exception as e:
-            app.logger.error(f"DB auto-init failed: {e}")
-
-    if AUTO_INIT_DB:
-        _ensure_schema()
-
-    # ----------------------------
-    # Convenience static routes (local dev parity)
-    # ----------------------------
-    @app.route("/")
-    def docs_root():
-        return send_from_directory(docs_dir, "index.html")
-
-    @app.route("/docs/<path:filename>")
-    def docs_files(filename: str):
-        return send_from_directory(docs_dir, filename)
-
-    @app.route("/manage_sets/")
-    def docs_manage_sets_index():
-        p = docs_dir / "manage_sets" / "index.html"
-        return send_from_directory(p.parent, p.name) if p.exists() \
-            else send_from_directory(docs_dir, "manage_sets.html")
-
-    @app.route("/create_page")
-    def docs_create_index():
-        p = docs_dir / "create" / "index.html"
-        return send_from_directory(p.parent, p.name) if p.exists() \
-            else send_from_directory(docs_dir, "create.html")
-
-    # Auth pages served from /docs
-    @app.route("/login.html")
-    def docs_login():
-        return send_from_directory(docs_dir, "login.html")
-
-    @app.route("/register.html")
-    def docs_register():
-        return send_from_directory(docs_dir, "register.html")
-
-    @app.route("/reset.html")
-    def docs_reset():
-        return send_from_directory(docs_dir, "reset.html")
-
-    @app.route("/reset_confirm.html")
-    def docs_reset_confirm():
-        return send_from_directory(docs_dir, "reset_confirm.html")
-
-    # ---------- Mode landing pages (docs/<mode>/index.html) ----------
-    def _serve_mode_index(mode: str):
-        p = docs_dir / mode / "index.html"
-        if not p.exists():
-            # Optional: auto-build if missing
-            try:
-                from .utils import build_mode_index
-                build_mode_index(mode)
-            except Exception as e:
-                print(f"⚠️ Couldn't auto-build {mode} index: {e}")
-        return send_from_directory(p.parent, p.name)
-
-    def _register_mode_index_routes(app: Flask):
-        routes = {
-            "docs_flashcards_index": ("/flashcards/",  lambda: _serve_mode_index("flashcards")),
-            "docs_practice_index":   ("/practice/",   lambda: _serve_mode_index("practice")),
-            "docs_reading_index":    ("/reading/",    lambda: _serve_mode_index("reading")),
-            "docs_listening_index":  ("/listening/",  lambda: _serve_mode_index("listening")),
-            "docs_test_index":       ("/test/",       lambda: _serve_mode_index("test")),
-        }
-        for endpoint, (rule, view) in routes.items():
-            if endpoint not in app.view_functions:   # guard prevents duplicates
-                app.add_url_rule(rule, endpoint, view)
-
-    _register_mode_index_routes(app)
-
-    # Healthcheck
-    @app.route("/ping")
-    @cross_origin(origins=CORS_ALLOWED_ORIGINS)
-    def ping():
-        return "✅ LearnPolish API is running"
-
-
-    # Optional debug prints (don’t print actual secret values)
-    print("🔑 AZURE_SPEECH_KEY set:", bool(os.getenv("AZURE_SPEECH_KEY")))
-    print("🌎 AZURE_SPEECH_REGION:", os.getenv("AZURE_SPEECH_REGION"))
+    # --- JSON for unexpected errors (keeps logs clean for Render) ---
+    @app.errorhandler(Exception)
+    def on_error(e):
+        from werkzeug.exceptions import HTTPException
+        if isinstance(e, HTTPException):
+            return e  # let Flask handle HTTP errors normally
+        app.logger.exception("Unhandled error: %s", e)
+        return jsonify({"ok": False, "error": "internal_error"}), 500
 
     return app
