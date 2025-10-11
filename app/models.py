@@ -4,12 +4,14 @@
 # SessionState unchanged except for cleanup.
 
 from __future__ import annotations
+from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import random, string
 
-from . import db
 from .config import ADMIN_EMAIL  # used elsewhere during signup to flag admin
 from sqlalchemy import func
+
+db = SQLAlchemy()
 
 # -----------------------------------------------------------------------------
 # Helpers
