@@ -278,29 +278,29 @@
   <script src="static/js/page-chrome.js" defer></script>
 
   <script>
-    // Require sign-in (redirect to login if 401)
-    (async () => {
-      await api.requireAuth('login.html');
-      const logoutBtn   = document.getElementById('logoutBtn');
-      const loginLink   = document.getElementById('loginLink');
-      const registerLink= document.getElementById('registerLink');
+  // Require sign-in (redirect to login if 401)
+  (async () => {
+    await api.requireAuth('login.html');
+    const logoutBtn   = document.getElementById('logoutBtn');
+    const loginLink   = document.getElementById('loginLink');
+    const registerLink= document.getElementById('registerLink');
 
-      try {
-        const r = await api.fetch('/api/me');
-        if (r.ok) {
-          loginLink.style.display='none';
-          registerLink.style.display='none';
-          logoutBtn.style.display='inline-flex';
-        }
-      } catch(_) {}
+    try {
+      const r = await api.fetch('/api/me');
+      if (r.ok) {
+        loginLink.style.display='none';
+        registerLink.style.display='none';
+        logoutBtn.style.display='inline-flex';
+      }
+    } catch(_) {}
 
-      logoutBtn?.addEventListener('click', async ()=>{
-        try { await api.fetch('/api/logout',{method:'POST'}); } catch(_){}
-        api.clearToken();        // ← clears lp_token + future storage
-        location.href='login.html';
-      });
-    })();
-  </script>
+    logoutBtn?.addEventListener('click', async ()=>{
+      try { await api.fetch('/api/logout',{method:'POST'}); } catch(_){}
+      api.clearToken();        // ← clears lp_token + future storage
+      location.href='login.html';
+    });
+  })();
+</script>
 
 
   <script>
@@ -441,6 +441,82 @@
             btn.textContent = 'Claimed';
           }catch(_){ btn.textContent='Claimed'; }
         });
+      }catch(_){}
+
+      // ===== Learning statistics =====
+      const globalRatings = {};
+      try{
+        let rr = await api.fetch('/api/sets/ratings/averages');
+        if (!rr.ok) rr = await api.fetch('/api/sets/ratings');
+        if (rr.ok){
+          const arr = await rr.json();
+          (arr||[]).forEach(x=>{
+            const avg = typeof x.avg === 'number' ? x.avg
+                    : typeof x.rating === 'number' ? x.rating
+                    : (typeof x.average === 'number' ? x.average : null);
+            if (avg!=null) globalRatings[x.set_name] = avg;
+          });
+        }
+      }catch(_){}
+
+      try{
+        const sr = await api.fetch('/api/my/scores?limit=2000');
+        const raw = sr.ok ? await sr.json() : [];
+        // Group by (set_name, mode)
+        const groups = new Map();
+        for (const e of raw){
+          if (!e.set_name) continue;
+          const mode = (e.mode || 'flashcards').toLowerCase();
+          const key  = `${e.set_name}│${mode}`;
+          if (!groups.has(key)) groups.set(key, []);
+          groups.get(key).push(e);
+        }
+
+        const rows = [];
+        for (const [key, evts] of groups){
+          const setName = evts[0].set_name;
+          const mode    = (evts[0].mode || 'flashcards').toLowerCase();
+          const trials  = evts.length;
+          const top     = evts.reduce((m,e)=> Math.max(m, Number(e.score||0)), 0);
+          const last    = evts.reduce((m,e)=> Math.max(m, +new Date(e.timestamp||0)), 0);
+          const href    = pathFor(mode, setName);
+
+          const srState = computeSRFromScores(evts);
+          const lastPass = srState.last_pass_ts ? new Date(srState.last_pass_ts) : null;
+
+          const gAvg = globalRatings[setName];
+          const mine = myRatings[setName];
+          let ratingCell = gAvg != null ? `<div class="nowrap" title="Global rating">${stars(gAvg)}</div>` : `<div class="tiny">no ratings</div>`;
+          if (!mine){ ratingCell += `<div class="tiny"><a href="manage_sets/">add your rating</a></div>`; }
+
+          rows.push({
+            setName, mode, trials, top, last,
+            statusHtml: statusBadge(srState.stage, lastPass, href),
+            ratingCell, href
+          });
+        }
+
+        // Sort: urgency (repetition due first) then recency
+        const urgency = (h)=> h.includes('Repetition') || h.includes('🧪') ? 0 : h.includes('Complete') ? 2 : h.includes('Mastered') ? 3 : 1;
+        rows.sort((a,b)=> (urgency(a.statusHtml) - urgency(b.statusHtml)) || (b.last - a.last));
+
+        const tb = document.querySelector('#statsTable tbody');
+        const empty = document.getElementById('statsEmpty');
+        if (!rows.length){ empty.style.display='block'; }
+        else{
+          empty.style.display='none';
+          tb.innerHTML = rows.map(r => `
+            <tr>
+              <td>${r.ratingCell}</td>
+              <td><a href="${r.href}">${r.setName}</a></td>
+              <td>${modeLabel(r.mode)}</td>
+              <td>${r.top}</td>
+              <td>${r.trials}</td>
+              <td>${r.statusHtml}</td>
+              <td class="nowrap">${new Date(r.last).toLocaleString()}</td>
+            </tr>
+          `).join('');
+        }
       }catch(_){}
 
       // ===== Learning statistics =====

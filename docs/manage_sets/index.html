@@ -713,7 +713,7 @@
     renderTable();
   }
 
-  // Search (debounced)
+ // Search (debounced)
   els.search.addEventListener('input', (function debounce(fn,ms){ let t; return ()=>{ clearTimeout(t); t=setTimeout(fn,ms) } })(()=>{
     localStorage.setItem('lp.manage.q', els.search.value);
     renderTable();

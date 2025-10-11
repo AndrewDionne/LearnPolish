@@ -279,52 +279,52 @@
       status.style.color = '';
       success.style.display = 'none';
 
-      const setName = document.getElementById('set_name').value.trim();
-      const group = currentGroup();
-      if (!setName){ status.textContent='❌ Collection name is required.'; status.style.color='crimson'; return; }
-      if (!group){ status.textContent='❌ Pick a learning method.'; status.style.color='crimson'; return; }
+    const setName = document.getElementById('set_name').value.trim();
+    const group = currentGroup();
+    if (!setName){ status.textContent='❌ Collection name is required.'; status.style.color='crimson'; return; }
+    if (!group){ status.textContent='❌ Pick a learning method.'; status.style.color='crimson'; return; }
 
-      let data;
-      try { data = JSON.parse(ta.value); }
-      catch { status.textContent='❌ Invalid JSON.'; status.style.color='crimson'; return; }
+    let data;
+    try { data = JSON.parse(ta.value); }
+    catch { status.textContent='❌ Invalid JSON.'; status.style.color='crimson'; return; }
 
-      // Validate before normalize
-      const err =
-        group==='ls'    ? validateLS(data) :
-        group==='read'  ? validateRead(data) :
-        group==='listen'? validateListen(data) : 'Unknown learning method.';
-      if (err){ status.textContent='❌ ' + err; status.style.color='crimson'; return; }
+    // Validate before normalize
+    const err =
+      group==='ls'    ? validateLS(data) :
+      group==='read'  ? validateRead(data) :
+      group==='listen'? validateListen(data) : 'Unknown learning method.';
+    if (err){ status.textContent='❌ ' + err; status.style.color='crimson'; return; }
 
-      // Modes for UI links
-      const modes = (group==='ls') ? ['learn','speak'] : (group==='read') ? ['read'] : ['listen'];
-      // Backend type for generator selection
-      const set_type = (group==='ls') ? 'flashcards' : (group==='read') ? 'reading' : 'listening';
+    // Modes for UI links
+    const modes = (group==='ls') ? ['learn','speak'] : (group==='read') ? ['read'] : ['listen'];
+    // Backend type for generator selection
+    const set_type = (group==='ls') ? 'flashcards' : (group==='read') ? 'reading' : 'listening';
 
-      // Normalize payload per group
-      let payloadData = data;
-      if (group === 'listen'){
-        payloadData = data.map((it) => {
-          const polish = (it.polish ?? it.phrase ?? '').toString().trim();
-          const english = (it.english ?? it.meaning ?? '').toString().trim();
-          return english ? { polish, english } : { polish };
-        });
-      } else if (group === 'read'){
-        payloadData = data.map(it => {
-          const out = { polish: (it.polish ?? '').toString() };
-          if (it.english) out.english = it.english.toString();
-          if (it.title)   out.title   = it.title.toString();
-          return out;
-        });
-      } else {
-        payloadData = data.map(it => {
-          const out = {
-            phrase: (it.phrase ?? it.polish ?? it.front ?? '').toString(),
-            meaning:(it.meaning ?? it.english ?? it.back  ?? '').toString()
-          };
-          if (it.pronunciation) out.pronunciation = it.pronunciation.toString();
-          return out;
-        });
-      }
+    // Normalize payload per group
+    let payloadData = data;
+    if (group === 'listen'){
+      payloadData = data.map((it) => {
+        const polish = (it.polish ?? it.phrase ?? '').toString().trim();
+        const english = (it.english ?? it.meaning ?? '').toString().trim();
+        return english ? { polish, english } : { polish };
+      });
+    } else if (group === 'read'){
+      payloadData = data.map(it => {
+        const out = { polish: (it.polish ?? '').toString() };
+        if (it.english) out.english = it.english.toString();
+        if (it.title)   out.title   = it.title.toString();
+        return out;
+      });
+    } else {
+      payloadData = data.map(it => {
+        const out = {
+          phrase: (it.phrase ?? it.polish ?? it.front ?? '').toString(),
+          meaning:(it.meaning ?? it.english ?? it.back  ?? '').toString()
+        };
+        if (it.pronunciation) out.pronunciation = it.pronunciation.toString();
+        return out;
+      });
+    }
 
       try{
         // NEW: use /api/create_set_v2 and api.post for consistency
