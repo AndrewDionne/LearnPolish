@@ -3,6 +3,8 @@ import os
 from urllib.parse import urlparse
 from flask import Flask, jsonify
 from flask_cors import CORS
+
+from .config import Config
 from .models import db
 
 
@@ -99,13 +101,17 @@ def _derive_allowed_origins() -> list[str]:
 
 def create_app():
     app = Flask(__name__)
+    app.config.from_object(Config)
 
     # --- Secrets / misc ---
-    app.config["SECRET_KEY"] = (
+    secret = (
         os.getenv("SECRET_KEY")
         or os.getenv("JWT_SECRET")  # fallback if you only set JWT_SECRET
+        or app.config.get("SECRET_KEY")
         or "dev-secret-change-me"
     )
+    app.config["SECRET_KEY"] = secret
+    app.config["JWT_SECRET"] = os.getenv("JWT_SECRET") or secret
 
     # Bridge Cloudflare R2 endpoint naming:
     # prefer R2_ENDPOINT; fall back to your existing R2_S3_ENDPOINT
