@@ -9,6 +9,10 @@ from .models import db
 def _normalize_db_url(u: str | None) -> str | None:
     if not u:
         return None
+
+    scheme = u.split(":", 1)[0]
+    is_postgres = scheme.startswith("postgres")
+
     # psycopg3 prefers the explicit driver marker.  Normalize the
     # DATABASE_URL so we always end up with postgresql+psycopg:// which
     # works with the psycopg package already listed in requirements.
@@ -16,10 +20,51 @@ def _normalize_db_url(u: str | None) -> str | None:
         u = u.replace("postgres://", "postgresql://", 1)
     if u.startswith("postgresql://") and "+" not in u.split(":", 1)[0]:
         u = u.replace("postgresql://", "postgresql+psycopg://", 1)
-    # enforce SSL on Render
-    if "sslmode=" not in u:
+
+    # Enforce SSL defaults for postgres connections (Render et al). Avoid
+    # touching sqlite or other schemes which do not understand sslmode.
+    if is_postgres and "sslmode=" not in u:
         sep = "&" if "?" in u else "?"
         u = f"{u}{sep}sslmode=require"
+
+    return u
+
+
+def _resolve_db_url() -> str | None:
+    """Return the first configured database URL with Render-friendly tweaks."""
+
+    candidates = [
+        "DATABASE_URL",
+        "DATABASE_CONNECTION_STRING",
+        "DATABASE_INTERNAL_URL",
+        "DATABASE_URL_INTERNAL",
+        "DB_URL",
+        "POSTGRES_URL",
+        "POSTGRESQL_URL",
+    ]
+
+    for name in candidates:
+        raw = os.getenv(name)
+        if raw:
+            normalized = _normalize_db_url(raw)
+            if normalized:
+                return normalized
+
+    fallback = os.getenv("SQLALCHEMY_DATABASE_URI")
+    if fallback:
+        return _normalize_db_url(fallback) or fallback
+
+    try:
+        from .config import Config
+
+        default = getattr(Config, "SQLALCHEMY_DATABASE_URI", "")
+        if default:
+            normalized = _normalize_db_url(default)
+            return normalized or default
+    except Exception:
+        pass
+
+    return None
 
 
 def _derive_allowed_origins() -> list[str]:
@@ -68,9 +113,12 @@ def create_app():
         os.environ["R2_ENDPOINT"] = os.getenv("R2_S3_ENDPOINT")
 
     # --- Database ---
-    db_url = _normalize_db_url(os.getenv("DATABASE_URL", ""))
+    db_url = _resolve_db_url()
     if not db_url:
-        raise RuntimeError("DATABASE_URL not set")
+        raise RuntimeError(
+            "DATABASE_URL not configured. Set one of: "
+            "DATABASE_URL, DATABASE_CONNECTION_STRING, DATABASE_INTERNAL_URL."
+        )
     app.config.update(
         SQLALCHEMY_DATABASE_URI=db_url,
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
