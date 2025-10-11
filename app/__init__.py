@@ -1,125 +1,121 @@
 # app/__init__.py
+from __future__ import annotations
 import os
-from urllib.parse import urlparse
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
+from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_cors import CORS
+
 from .models import db
 
-
-def _normalize_db_url(u: str | None) -> str | None:
-    if not u:
-        return None
-    # psycopg3 prefers postgresql://
-    if u.startswith("postgres://"):
-        u = u.replace("postgres://", "postgresql://", 1)
-    # enforce SSL on Render
-    if "sslmode=" not in u:
-        sep = "&" if "?" in u else "?"
-        u = f"{u}{sep}sslmode=require"
-    return u
-
-
-def _derive_allowed_origins() -> list[str]:
-    # If explicitly provided, honor it
-    env_origins = os.getenv("CORS_ALLOWED_ORIGINS", "")
-    if env_origins.strip():
-        return [o.strip() for o in env_origins.split(",") if o.strip()]
-
-    # Otherwise, infer from FRONTEND_BASE_URL + localhost dev ports
-    base = os.getenv("FRONTEND_BASE_URL", "").strip()
-    origins = {
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:5000",
-        "http://127.0.0.1:5000",
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    }
-    if base:
-        try:
-            u = urlparse(base)
-            if u.scheme and u.netloc:
-                origins.add(f"{u.scheme}://{u.netloc}")
-        except Exception:
-            pass
-        # Loosen slightly for GH Pages repos (optional; harmless if unused)
-        if "github.io" in base:
-            origins.add("https://*.github.io")
-
-    return sorted(origins)
-
+def _as_list(x):
+    if not x:
+        return []
+    if isinstance(x, (list, tuple)):
+        return list(x)
+    return [x]
 
 def create_app():
     app = Flask(__name__)
+    # Load config object
+    app.config.from_object("config.Config")
 
-    # --- Secrets / misc ---
-    app.config["SECRET_KEY"] = (
-        os.getenv("SECRET_KEY")
-        or os.getenv("JWT_SECRET")  # fallback if you only set JWT_SECRET
-        or "dev-secret-change-me"
-    )
-
-    # Bridge Cloudflare R2 endpoint naming:
-    # prefer R2_ENDPOINT; fall back to your existing R2_S3_ENDPOINT
-    if not os.getenv("R2_ENDPOINT") and os.getenv("R2_S3_ENDPOINT"):
-        os.environ["R2_ENDPOINT"] = os.getenv("R2_S3_ENDPOINT")
-
-    # --- Database ---
-    db_url = _normalize_db_url(os.getenv("DATABASE_URL", ""))
-    if not db_url:
-        raise RuntimeError("DATABASE_URL not set")
-    app.config.update(
-        SQLALCHEMY_DATABASE_URI=db_url,
-        SQLALCHEMY_TRACK_MODIFICATIONS=False,
-        SQLALCHEMY_ENGINE_OPTIONS={"pool_pre_ping": True, "pool_recycle": 300},
-    )
-    db.init_app(app)
+    # Respect Render’s proxy headers so url_for / scheme are correct
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
     # --- CORS ---
-    allowed = _derive_allowed_origins()
+    # Accept frontends from GitHub Pages + any configured origins
+    # You can control the list with env var CORS_ORIGINS or CORS_ALLOWED_ORIGINS (comma-separated).
+    # We support both, using values computed in config.py if present.
+    try:
+        # If you added CORS_ORIGINS to Config, use it; otherwise import from module-level in config.py
+        origins = _as_list(app.config.get("CORS_ORIGINS"))
+        if not origins:
+            from config import CORS_ORIGINS as _cfg_origins  # type: ignore
+            origins = _as_list(_cfg_origins)
+    except Exception:
+        origins = []
+
+    if not origins:
+        # Last-resort dev default (fine locally; avoid in prod)
+        origins = ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5000",
+                   "https://andrewdionne.github.io"]
+
+    cors_resources = {
+        r"/api/*":  {"origins": origins},
+        r"/auth/*": {"origins": origins},
+    }
     CORS(
         app,
-        resources={r"/api/*": {"origins": allowed}, r"/ping": {"origins": allowed}},
-        supports_credentials=True,
+        resources=cors_resources,
+        supports_credentials=True,  # harmless even if you use Authorization header
         expose_headers=["Content-Type", "Authorization"],
+        allow_headers=["Content-Type", "Authorization"],
+        methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        max_age=86400,
     )
 
-    # --- Health route for Render ---
-    @app.get("/ping")
-    def ping():
-        return jsonify({"ok": True})
+    # --- DB ---
+    db.init_app(app)
+
+    @app.teardown_appcontext
+    def shutdown_session(_exc=None):
+        # Ensure pooled connections are returned and sessions are cleared
+        try:
+            db.session.remove()
+        except Exception:
+            pass
 
     # --- Blueprints ---
-    from .auth import auth_bp
+    # API endpoints
     from .api import api_bp
+    app.register_blueprint(api_bp, url_prefix="/api")
+
+    # Auth endpoints (login/register/refresh etc.) if you have them
     try:
-        from .sets_api import sets_api as sets_bp
+        from .auth import auth_bp  # make sure your auth blueprint is named auth_bp
+        app.register_blueprint(auth_bp, url_prefix="/auth")
     except Exception:
-        sets_bp = None
-    try:
-        from .routes import routes_bp
-    except Exception:
-        routes_bp = None
+        # If you don't have an auth blueprint, this is fine.
+        pass
 
-    app.register_blueprint(auth_bp, url_prefix="/api")
-    app.register_blueprint(api_bp,  url_prefix="/api")
-    if sets_bp:
-        app.register_blueprint(sets_bp, url_prefix="/api")
-    if routes_bp:
-        app.register_blueprint(routes_bp)  # usually no prefix
+    # Simple root and healthz (root is nice to verify the service is up)
+    @app.get("/healthz")
+    def root_health():
+        return jsonify({"ok": True})
 
-    # --- Optional DB init (dev/local only) ---
-    if os.getenv("AUTO_INIT_DB", "0").lower() in ("1", "true", "yes"):
-        with app.app_context():
-            db.create_all()
+    @app.get("/")
+    def index():
+        return jsonify({
+            "ok": True,
+            "service": "Path to POLISH API",
+            "docs": "See /api/healthz and /auth/*",
+        })
 
-    # --- JSON for unexpected errors (keeps logs clean for Render) ---
-    @app.errorhandler(Exception)
-    def on_error(e):
-        from werkzeug.exceptions import HTTPException
-        if isinstance(e, HTTPException):
-            return e  # let Flask handle HTTP errors normally
-        app.logger.exception("Unhandled error: %s", e)
-        return jsonify({"ok": False, "error": "internal_error"}), 500
+    # --- JSON error handlers (so the frontend never sees HTML error pages) ---
+    def _json_err(status: int, message: str):
+        return jsonify({"error": message, "status": status, "path": request.path}), status
+
+    @app.errorhandler(400)
+    def _bad_request(e): return _json_err(400, "bad_request")
+
+    @app.errorhandler(401)
+    def _unauth(e): return _json_err(401, "unauthorized")
+
+    @app.errorhandler(403)
+    def _forbidden(e): return _json_err(403, "forbidden")
+
+    @app.errorhandler(404)
+    def _not_found(e): return _json_err(404, "not_found")
+
+    @app.errorhandler(405)
+    def _method_not_allowed(e): return _json_err(405, "method_not_allowed")
+
+    @app.errorhandler(500)
+    def _server_err(e): return _json_err(500, "server_error")
 
     return app
+
+
+# For gunicorn: `gunicorn "app.__init__:app"`
+# or Render’s default: `app` must be a module-global
+app = create_app()
