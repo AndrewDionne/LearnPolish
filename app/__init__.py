@@ -9,14 +9,17 @@ from .models import db
 def _normalize_db_url(u: str | None) -> str | None:
     if not u:
         return None
-    # psycopg3 prefers postgresql://
+    # psycopg3 prefers the explicit driver marker.  Normalize the
+    # DATABASE_URL so we always end up with postgresql+psycopg:// which
+    # works with the psycopg package already listed in requirements.
     if u.startswith("postgres://"):
         u = u.replace("postgres://", "postgresql://", 1)
+    if u.startswith("postgresql://") and "+" not in u.split(":", 1)[0]:
+        u = u.replace("postgresql://", "postgresql+psycopg://", 1)
     # enforce SSL on Render
     if "sslmode=" not in u:
         sep = "&" if "?" in u else "?"
         u = f"{u}{sep}sslmode=require"
-    return u
 
 
 def _derive_allowed_origins() -> list[str]:
