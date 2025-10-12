@@ -32,6 +32,19 @@
   }
 
   const API_BASE = stripTrail(detectApiBase());
+   
+  // Warm the backend without Authorization (avoids preflight on cold start)
+  async function warmup() {
+    const base = API_BASE.replace(/\/$/, '');
+    try {
+      await fetch(base + '/api/healthz', {
+        method: 'GET',
+        cache: 'no-store',
+        credentials: 'omit', // no cookies/creds
+        headers: {}          // no Authorization
+      });
+    } catch (_) { /* best-effort */ }
+  }
 
   // ---- Token helpers -------------------------------------------------------
   function getToken() {
@@ -59,7 +72,8 @@
   async function apiFetch(path, opts = {}) {
     const url = joinUrl(API_BASE, path);
     const headers = new Headers(opts.headers || {});
-    const token = getToken();
+    const noAuth = !!opts.noAuth;
+    const token = noAuth ? '' : getToken();
     if (token && !headers.has('Authorization')) {
       headers.set('Authorization', `Bearer ${token}`);
     }
@@ -80,6 +94,7 @@
 
     return fetch(url, fetchOpts);
   }
+
 
   // ---- JSON helpers --------------------------------------------------------
   async function requestJSON(path, opts = {}) {
@@ -103,6 +118,7 @@
 
   // ---- Auth helper ---------------------------------------------------------
   async function requireAuth(loginFile = 'login.html') {
+    await warmup(); // avoid first-call preflight on cold dyno
     try {
       await get('/api/me');
       return true;
@@ -121,12 +137,6 @@
     const p = ensureLead(relPath || '');
     return CDN_BASE ? (CDN_BASE + p) : p;
   }
-
-  // ---- Lightweight ping (debug) -------------------------------------------
-  apiFetch('/api/token')
-    .then(r => { if (!r.ok) throw 0; })
-    .catch(() => console.warn('[api] Ping failed. Check API_BASE:', API_BASE));
-
   // ---- Public API ----------------------------------------------------------
   window.api = window.api || {
     fetch: apiFetch,

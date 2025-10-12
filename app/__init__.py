@@ -4,7 +4,7 @@ import re
 from urllib.parse import urlparse
 from flask import Flask, jsonify
 from flask_cors import CORS
-
+from datetime import datetime, timezone
 from .config import Config
 from .models import db
 
@@ -171,7 +171,11 @@ def create_app():
     cors_origins = cors_allow_list if (strict_cors and cors_allow_list) else "*"
     supports_credentials = bool(cors_origins != "*")
 
-    resources = {r"/api/*": {"origins": cors_origins}, r"/ping": {"origins": cors_origins}}
+    resources = {
+        r"/api/*": {"origins": cors_origins},
+        r"/api/healthz": {"origins": cors_origins},
+        r"/ping": {"origins": cors_origins},
+    }
 
     CORS(
         app,
@@ -229,11 +233,20 @@ def create_app():
                 resp.headers.setdefault("Access-Control-Allow-Credentials", "true")
             resp.headers.setdefault("Vary", "Origin")
         return resp
+     
+        # --- Fast CORS preflight for any /api/* route ---
+    @app.route("/api/<path:_subpath>", methods=["OPTIONS"])
+    def _cors_preflight(_subpath):
+        return ("", 204)
 
-    # --- Health route for Render ---
-    @app.get("/ping")
-    def ping():
-        return jsonify({"ok": True})
+    # --- Health routes (fast, no DB, no auth) ---
+    @app.get("/api/healthz")
+    def healthz():
+        return jsonify(status="ok", time=datetime.now(timezone.utc).isoformat()), 200
+
+    # Keep legacy /ping working by pointing it to the same handler
+    app.add_url_rule("/ping", view_func=healthz, methods=["GET"])
+
 
     # --- Blueprints ---
     from .auth import auth_bp

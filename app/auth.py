@@ -82,7 +82,7 @@ def login_required(f):
 # API routes
 # ----------------------------
 
-@auth_bp.route("/signup", methods=["POST"])
+@auth_bp.route("/signup", methods=["POST", "OPTIONS"])
 @cross_origin()
 def signup():
     data = request.get_json() or {}
@@ -114,7 +114,7 @@ def signup():
     }), 201
 
 
-@auth_bp.route("/login", methods=["POST"])
+@auth_bp.route("/login", methods=["POST", "OPTIONS"])
 @cross_origin()
 def login():
     data = request.get_json() or {}
