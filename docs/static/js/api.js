@@ -33,18 +33,34 @@
 
   const API_BASE = stripTrail(detectApiBase());
    
-  // Warm the backend without Authorization (avoids preflight on cold start)
+  // App root (GitHub Pages subpath aware)
+  const ROOT = (typeof location !== 'undefined' && location.pathname.startsWith('/LearnPolish/'))
+    ? '/LearnPolish/' : '/';
+
+  // Warm the backend without Authorization (no preflight)
   async function warmup() {
     const base = API_BASE.replace(/\/$/, '');
     try {
       await fetch(base + '/api/healthz', {
-        method: 'GET',
-        cache: 'no-store',
-        credentials: 'omit', // no cookies/creds
-        headers: {}          // no Authorization
+        method: 'GET', cache: 'no-store', credentials: 'omit', headers: {}
       });
     } catch (_) { /* best-effort */ }
   }
+
+  // Keep the dyno warm while the tab is open (best-effort)
+  function startKeepalive() {
+    const tick = () => warmup();
+    tick(); // immediately
+    setInterval(tick, 55_000);
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') tick();
+      });
+    }
+  }
+  // kick off on load
+  try { startKeepalive(); } catch {}
+
 
   // ---- Token helpers -------------------------------------------------------
   function getToken() {
@@ -69,7 +85,7 @@
     return base ? stripTrail(base) + p : p;
   }
 
-  async function apiFetch(path, opts = {}) {
+    async function apiFetch(path, opts = {}) {
     const url = joinUrl(API_BASE, path);
     const headers = new Headers(opts.headers || {});
     const noAuth = !!opts.noAuth;
@@ -86,30 +102,66 @@
       body = JSON.stringify(opts.json);
     }
 
+    const controller = new AbortController();
+    const timeoutMs = (opts.timeoutMs || 12_000);
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+
     const fetchOpts = Object.assign(
       { method: opts.method || 'GET', credentials: 'omit', mode: 'cors', cache: 'no-store' },
       opts,
-      { headers, body }
+      { headers, body, signal: controller.signal }
     );
 
-    return fetch(url, fetchOpts);
+    try {
+      return await fetch(url, fetchOpts);
+    } finally {
+      clearTimeout(timer);
+    }
   }
+
 
 
   // ---- JSON helpers --------------------------------------------------------
-  async function requestJSON(path, opts = {}) {
-    const res = await apiFetch(path, opts);
-    if (!res.ok) {
-      let msg = `HTTP ${res.status}`;
-      try { const j = await res.json(); msg = j.message || j.error || msg; } catch {}
-      const e = new Error(msg);
-      e.status = res.status;
-      throw e;
-    }
-    const ct = (res.headers.get('Content-Type') || '').toLowerCase();
-    if (ct.includes('application/json')) return res.json();
-    return null; // allow 204s / non-JSON OKs
+  function isTransientNetworkError(e) {
+    if (!e) return false;
+    const msg = String(e && (e.message || e)).toLowerCase();
+    return e.name === 'AbortError'
+        || msg.includes('network')
+        || msg.includes('load failed')
+        || msg.includes('failed to fetch')
+        || msg.includes('connection was lost');
   }
+
+  const delay = (ms) => new Promise(res => setTimeout(res, ms));
+
+  async function requestJSON(path, opts = {}) {
+    let attempt = 0, lastErr;
+    while (attempt < 3) {
+      if (attempt > 0) {
+        // Re-warm before retrying (cold dyno / preflight races)
+        await warmup();
+        await delay(300 * Math.pow(2, attempt - 1)); // 300ms, 600ms backoff
+      }
+      try {
+        const res = await apiFetch(path, opts);
+        if (!res.ok) {
+          // Pass through 401/4xx/5xx as real errors (no infinite loops)
+          let msg = `HTTP ${res.status}`;
+          try { const j = await res.json(); msg = j.message || j.error || msg; } catch {}
+          const e = new Error(msg); e.status = res.status; throw e;
+        }
+        const ct = (res.headers.get('Content-Type') || '').toLowerCase();
+        return ct.includes('application/json') ? res.json() : null;
+      } catch (e) {
+        lastErr = e;
+        if (!isTransientNetworkError(e)) break; // only retry transient fetch/network problems
+        attempt++;
+        continue;
+      }
+    }
+    throw lastErr;
+  }
+
   const get   = (p, o={}) => requestJSON(p, o);
   const post  = (p, json) => requestJSON(p, { method: 'POST', json });
   const put   = (p, json) => requestJSON(p, { method: 'PUT',  json });
@@ -123,14 +175,16 @@
       await get('/api/me');
       return true;
     } catch (e) {
+      // Only redirect on explicit 401. Network hiccups should not log you out.
       if (e && e.status === 401) {
-        const root = location.pathname.startsWith('/LearnPolish/') ? '/LearnPolish/' : '/';
-        location.href = root + loginFile;
+        location.href = ROOT + loginFile;
         return false;
       }
+      // transient error -> let caller decide (UI can retry)
       throw e;
     }
   }
+
 
   // ---- Media (CDN) helper --------------------------------------------------
   function mediaUrl(relPath) {
@@ -145,6 +199,9 @@
     requireAuth,
     mediaUrl,
     API_BASE,
-    CDN_BASE
+    CDN_BASE,
+    warmup,              // ← add
+    ROOT,                 // ← add (handy for building links)
+    setUrl: (mode, slug) => `${ROOT}${mode}/${encodeURIComponent(slug)}/`,
   };
 })();
