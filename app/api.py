@@ -51,6 +51,11 @@ def _chunks(seq, size):
     for i in range(0, len(seq), size):
         yield seq[i:i+size]
 
+def _call_view(fn, *args, **kwargs):
+    """Invoke the original view function, bypassing stacked @token_required wrappers."""
+    target = getattr(fn, "__wrapped__", fn)
+    return target(*args, **kwargs)
+
 def _cap_points(v):
     try:
         iv = int(v or 0)
@@ -883,7 +888,7 @@ def group_invite_link(current_user, group_id):
 @api_bp.route("/my/groups/<int:group_id>/invite_link", methods=["GET", "POST"])
 @token_required
 def my_group_invite_link(current_user, group_id):
-    return group_invite_link(current_user, group_id)
+    return _call_view(group_invite_link, current_user, group_id)
 
 
 @api_bp.route("/my/groups/invite_link", methods=["GET"])
@@ -893,14 +898,14 @@ def my_groups_invite_link_qs(current_user):
         group_id = int(request.args.get("group_id"))
     except Exception:
         return jsonify({"error": "group_id_required"}), 400
-    return group_invite_link(current_user, group_id)
+    return _call_view(group_invite_link, current_user, group_id)
 
 
 @api_bp.route("/groups/<int:group_id>/share", methods=["GET", "POST"])
 @token_required
 def group_share(current_user, group_id):
     """Another alias the UI probes."""
-    return group_invite_link(current_user, group_id)
+    return _call_view(group_invite_link, current_user, group_id)
 
 
 # ---- Email invite wrappers matching the UI's POST targets ----
@@ -909,7 +914,7 @@ def group_share(current_user, group_id):
 @token_required
 def group_invite_compat(current_user, group_id):
     """Compat wrapper → reuses existing invite_emails logic."""
-    return invite_emails(current_user, group_id)
+    return _call_view(group_invite_link, current_user, group_id)
 
 
 @api_bp.route("/groups/invite", methods=["POST"])
@@ -923,13 +928,13 @@ def groups_invite_compat_body(current_user):
     request_data = {"emails": data.get("emails", "")}
     # Temporarily swap request.json (simple, works in Flask) or just call the logic inline.
     with current_app.test_request_context(json=request_data):
-        return invite_emails(current_user, int(group_id))
+        return _call_view(invite_emails, current_user, int(group_id))
 
 
 @api_bp.route("/my/groups/invite", methods=["POST"])
 @token_required
 def my_groups_invite_compat(current_user):
-    return groups_invite_compat_body(current_user)
+    return _call_view(groups_invite_compat_body, current_user)
 
 # ---------------------------
 # Sets (library + global + create/update)
@@ -1004,17 +1009,17 @@ def my_sets_remove(current_user, set_name):
 @api_bp.route("/my_sets", methods=["GET"])
 @token_required
 def my_sets_get_alias(current_user):
-    return my_sets_get(current_user)
+    return _call_view(my_sets_get, current_user)
 
 @api_bp.route("/my_sets", methods=["POST"])
 @token_required
 def my_sets_add_alias(current_user):
-    return my_sets_add(current_user)
+    return _call_view(my_sets_add, current_user)
 
 @api_bp.route("/my_sets/<path:set_name>", methods=["DELETE"])
 @token_required
 def my_sets_remove_alias(current_user, set_name):
-    return my_sets_remove(current_user, set_name)
+    return _call_view(my_sets_remove, current_user, set_name)
 
 @api_bp.route("/sets/available", methods=["GET"])
 @token_required
@@ -1242,7 +1247,7 @@ def create_set_v2(current_user):
         "publish":  p.get("publish"),
     }
     with current_app.test_request_context(json=normalized):
-        return create_set(current_user)
+        return _call_view(create_set, current_user)
 
 # ---------- Update set ----------
 

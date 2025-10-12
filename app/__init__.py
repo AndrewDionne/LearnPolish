@@ -21,7 +21,6 @@ def _normalize_db_url(u: str | None) -> str | None:
     # works with the psycopg package already listed in requirements.
     if u.startswith("postgres://"):
         u = u.replace("postgres://", "postgresql://", 1)
-    
     if u.startswith("postgresql://") and "+" not in u.split(":", 1)[0]:
         u = u.replace("postgresql://", "postgresql+psycopg://", 1)
 
@@ -32,6 +31,7 @@ def _normalize_db_url(u: str | None) -> str | None:
         u = f"{u}{sep}sslmode=require"
 
     return u
+
 
 def _resolve_db_url() -> str | None:
     """Return the first configured database URL with Render-friendly tweaks."""
@@ -91,8 +91,10 @@ def _derive_allowed_origins() -> list[str]:
         "https://path-to-polish.onrender.com",
         "https://pathtopolish.com",
         "https://www.pathtopolish.com",
-        r"https://.*pathtopolish\.com$",
-        r"https://.*polishpath\.com$",
+        "https://*.pathtopolish.com",
+        "https://*.polishpath.com",
+        "https://*.github.io",
+        "https://andrewdionne.github.io",
     ]
     for candidate in filter(None, (base, app_base, api_base)):
         try:
@@ -104,6 +106,7 @@ def _derive_allowed_origins() -> list[str]:
         except Exception:
             continue
         # Loosen slightly for GH Pages repos (optional; harmless if unused)
+
         if "github.io" in candidate:
             if "https://*.github.io" not in origins:
                 origins.append("https://*.github.io")
@@ -156,7 +159,16 @@ def create_app():
     # --- CORS ---
     allowed = _derive_allowed_origins()
     strict_cors = os.getenv("CORS_STRICT", "0").lower() in ("1", "true", "yes", "on")
-    cors_origins = allowed if (strict_cors and allowed) else "*"
+    cors_allow_list: list[object] = []
+    for item in allowed:
+        if isinstance(item, str) and item.startswith("regex:"):
+            try:
+                cors_allow_list.append(re.compile(item.split(":", 1)[1]))
+            except re.error:
+                continue
+        else:
+            cors_allow_list.append(item)
+    cors_origins = cors_allow_list if (strict_cors and cors_allow_list) else "*"
     supports_credentials = bool(cors_origins != "*")
 
     resources = {r"/api/*": {"origins": cors_origins}, r"/ping": {"origins": cors_origins}}
@@ -177,8 +189,13 @@ def create_app():
     }
     wildcard_patterns = []
     for item in allowed:
-        if isinstance(item, str) and "*" in item:
-            pattern = "^" + re.escape(item).replace(r"\\*", ".*") + "$"
+        if isinstance(item, str) and item.startswith("regex:"):
+            try:
+                wildcard_patterns.append(re.compile(item.split(":", 1)[1]))
+            except re.error:
+                continue
+        elif isinstance(item, str) and "*" in item:
+            pattern = "^" + re.escape(item).replace("\\*", ".*") + "$"
             wildcard_patterns.append(re.compile(pattern))
         elif hasattr(item, "match"):
             wildcard_patterns.append(item)
@@ -199,7 +216,7 @@ def create_app():
         origin = flask_request.headers.get("Origin")
 
         if _origin_allowed(origin):
-            allow_origin = origin if supports_credentials else "*"
+            allow_origin = origin or "*"
             resp.headers.setdefault("Access-Control-Allow-Origin", allow_origin)
             resp.headers.setdefault(
                 "Access-Control-Allow-Methods",
@@ -236,7 +253,6 @@ def create_app():
         app.register_blueprint(sets_bp, url_prefix="/api")
     if routes_bp:
         app.register_blueprint(routes_bp)  # usually no prefix
-
     # --- Optional DB init (dev/local only) ---
     if os.getenv("AUTO_INIT_DB", "0").lower() in ("1", "true", "yes"):
         with app.app_context():
