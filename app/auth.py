@@ -125,7 +125,22 @@ def login():
         return jsonify({"message": "Email and password are required"}), 400
 
     user = User.query.filter_by(email=email).first()
-    if not user or not check_password_hash(user.password_hash, password):
+    if not user:
+        return jsonify({"message": "Invalid email or password"}), 401
+
+    if not getattr(user, "password_hash", None):
+        current_app.logger.warning("User %s missing password hash", email)
+        return jsonify({
+            "message": "Password not set for this account. Use the reset link to create one."
+        }), 400
+
+    try:
+        valid = check_password_hash(user.password_hash, password)
+    except Exception as exc:
+        current_app.logger.exception("Password hash check failed for user %s: %s", user.id, exc)
+        return jsonify({"message": "Invalid email or password"}), 401
+
+    if not valid:
         return jsonify({"message": "Invalid email or password"}), 401
 
     token = create_token(user.id)
@@ -133,6 +148,13 @@ def login():
         "token": token,
         "user": {"id": user.id, "email": user.email, "name": user.name, "is_admin": user.is_admin}
     }), 200
+
+
+@auth_bp.route("/token", methods=["GET"])
+@cross_origin()
+def token_ping():
+    """Simple reachability endpoint used by the static frontend."""
+    return jsonify({"ok": True, "authenticated": bool(_get_bearer_token())})
 
 
 @auth_bp.route("/me", methods=["GET"])

@@ -444,7 +444,8 @@
       }catch(_){}
 
       // ===== Learning statistics =====
-      const globalRatings = {};
+      var globalRatings = window.globalRatings || {};
+      window.globalRatings = globalRatings;
       try{
         let rr = await api.fetch('/api/sets/ratings/averages');
         if (!rr.ok) rr = await api.fetch('/api/sets/ratings');

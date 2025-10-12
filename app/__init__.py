@@ -1,5 +1,6 @@
 # app/__init__.py
 import os
+import re
 from urllib.parse import urlparse
 from flask import Flask, jsonify
 from flask_cors import CORS
@@ -20,6 +21,7 @@ def _normalize_db_url(u: str | None) -> str | None:
     # works with the psycopg package already listed in requirements.
     if u.startswith("postgres://"):
         u = u.replace("postgres://", "postgresql://", 1)
+    
     if u.startswith("postgresql://") and "+" not in u.split(":", 1)[0]:
         u = u.replace("postgresql://", "postgresql+psycopg://", 1)
 
@@ -30,7 +32,6 @@ def _normalize_db_url(u: str | None) -> str | None:
         u = f"{u}{sep}sslmode=require"
 
     return u
-
 
 def _resolve_db_url() -> str | None:
     """Return the first configured database URL with Render-friendly tweaks."""
@@ -77,26 +78,46 @@ def _derive_allowed_origins() -> list[str]:
 
     # Otherwise, infer from FRONTEND_BASE_URL + localhost dev ports
     base = os.getenv("FRONTEND_BASE_URL", "").strip()
-    origins = {
+    app_base = os.getenv("APP_BASE_URL", "").strip()
+    api_base = os.getenv("API_BASE_URL", "").strip()
+    origins: list[object] = [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "http://localhost:5000",
         "http://127.0.0.1:5000",
         "http://localhost:5173",
         "http://127.0.0.1:5173",
-    }
-    if base:
-        try:
-            u = urlparse(base)
-            if u.scheme and u.netloc:
-                origins.add(f"{u.scheme}://{u.netloc}")
-        except Exception:
-            pass
-        # Loosen slightly for GH Pages repos (optional; harmless if unused)
-        if "github.io" in base:
-            origins.add("https://*.github.io")
 
-    return sorted(origins)
+        "https://path-to-polish.onrender.com",
+        "https://pathtopolish.com",
+        "https://www.pathtopolish.com",
+        r"https://.*pathtopolish\.com$",
+        r"https://.*polishpath\.com$",
+    ]
+    for candidate in filter(None, (base, app_base, api_base)):
+        try:
+            u = urlparse(candidate)
+            if u.scheme and u.netloc:
+                origin = f"{u.scheme}://{u.netloc}"
+                if origin not in origins:
+                    origins.append(origin)
+        except Exception:
+            continue
+        # Loosen slightly for GH Pages repos (optional; harmless if unused)
+        if "github.io" in candidate:
+            if "https://*.github.io" not in origins:
+                origins.append("https://*.github.io")
+
+    # Preserve insertion order while deduplicating for readability in logs/tests.
+    seen = set()
+    deduped = []
+    for item in origins:
+        key = item.pattern if isinstance(item, re.Pattern) else item
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(item)
+    return deduped
 
 
 def create_app():
@@ -134,12 +155,63 @@ def create_app():
 
     # --- CORS ---
     allowed = _derive_allowed_origins()
+    strict_cors = os.getenv("CORS_STRICT", "0").lower() in ("1", "true", "yes", "on")
+    cors_origins = allowed if (strict_cors and allowed) else "*"
+    supports_credentials = bool(cors_origins != "*")
+
+    resources = {r"/api/*": {"origins": cors_origins}, r"/ping": {"origins": cors_origins}}
+
     CORS(
         app,
-        resources={r"/api/*": {"origins": allowed}, r"/ping": {"origins": allowed}},
-        supports_credentials=True,
+        origins=cors_origins,
+        resources=resources,
+        supports_credentials=supports_credentials,
+        allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
         expose_headers=["Content-Type", "Authorization"],
+        send_wildcard=(cors_origins == "*"),
+        vary_header=True,
     )
+
+    literal_origins = {
+        o for o in allowed if isinstance(o, str) and "*" not in o and not o.startswith("regex:")
+    }
+    wildcard_patterns = []
+    for item in allowed:
+        if isinstance(item, str) and "*" in item:
+            pattern = "^" + re.escape(item).replace(r"\\*", ".*") + "$"
+            wildcard_patterns.append(re.compile(pattern))
+        elif hasattr(item, "match"):
+            wildcard_patterns.append(item)
+
+    def _origin_allowed(origin: str | None) -> bool:
+        if not origin:
+            return False
+        if cors_origins == "*":
+            return True
+        if origin in literal_origins:
+            return True
+        return any(p.match(origin) for p in wildcard_patterns)
+
+    from flask import request as flask_request
+
+    @app.after_request
+    def ensure_cors_headers(resp):
+        origin = flask_request.headers.get("Origin")
+
+        if _origin_allowed(origin):
+            allow_origin = origin if supports_credentials else "*"
+            resp.headers.setdefault("Access-Control-Allow-Origin", allow_origin)
+            resp.headers.setdefault(
+                "Access-Control-Allow-Methods",
+                "DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT",
+            )
+            resp.headers.setdefault(
+                "Access-Control-Allow-Headers", "Authorization, Content-Type, X-Requested-With"
+            )
+            if supports_credentials:
+                resp.headers.setdefault("Access-Control-Allow-Credentials", "true")
+            resp.headers.setdefault("Vary", "Origin")
+        return resp
 
     # --- Health route for Render ---
     @app.get("/ping")
