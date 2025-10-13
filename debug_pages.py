@@ -78,39 +78,85 @@ def check_outputs(slug: str, modes: List[str]) -> bool:
 
 def build_with_app(slug: str, modes: List[str]) -> bool:
     """
-    Call your generator inside Flask app context:
-      from app.sets_utils import regenerate_set_pages
-      regenerate_set_pages(slug, modes=[...], force=True)
+    Call your generator inside Flask app context, adapting to the actual signature.
+    Falls back to mode-specific builders if needed.
     """
+    import inspect
     try:
         app = load_app()
     except Exception as e:
         err(f"Could not create Flask app: {e}")
         return False
 
-    try:
-        with app.app_context():
-            try:
-                from app.sets_utils import regenerate_set_pages
-            except Exception as e:
-                err(f"Could not import regenerate_set_pages from app.sets_utils: {e}")
-                return False
+    with app.app_context():
+        ok(f"Building pages for slug '{slug}' in modes {modes} ...")
 
-            ok(f"Building pages for slug '{slug}' in modes {modes} ...")
-            # Many projects use this signature; if yours differs, we’ll try fallback calls
-            try:
-                rc = regenerate_set_pages(slug, modes=modes, force=True, verbose=True)
-            except TypeError:
-                # Try simpler signatures
+        # 1) Try sets_utils.regenerate_set_pages with flexible call shapes
+        try:
+            from app.sets_utils import regenerate_set_pages as regen
+            sig = inspect.signature(regen)
+            params = set(sig.parameters.keys())
+
+            # Try the most likely order without keywords
+            tried = []
+            if "modes" in params and "force" in params and "verbose" in params:
+                tried.append(("regen(slug, modes=..., force=True, verbose=True)", lambda: regen(slug, modes=modes, force=True, verbose=True)))
+            if "force" in params and "verbose" in params:
+                tried.append(("regen(slug, force=True, verbose=True)", lambda: regen(slug, force=True, verbose=True)))
+            if "force" in params:
+                tried.append(("regen(slug, force=True)", lambda: regen(slug, force=True)))
+            tried.append(("regen(slug)", lambda: regen(slug)))
+
+            for label, call in tried:
                 try:
-                    rc = regenerate_set_pages(slug, modes=modes, force=True)
-                except TypeError:
-                    rc = regenerate_set_pages(slug, modes=modes)
-            ok(f"regenerate_set_pages returned: {rc}")
-            return True
-    except Exception as e:
-        err(f"Build failed: {e}")
-        return False
+                    rc = call()
+                    ok(f"regenerate_set_pages OK via {label}: {rc}")
+                    return True
+                except TypeError as te:
+                    warn(f"Signature mismatch for {label}: {te}")
+                except Exception as e:
+                    warn(f"Call failed for {label}: {e}")
+        except Exception as e:
+            warn(f"No sets_utils.regenerate_set_pages available: {e}")
+
+        # 2) Fallback: per-mode builders (best-effort)
+        def try_mode(mod_name, func_names):
+            try:
+                mod = __import__(f"app.{mod_name}", fromlist=["*"])
+                for fn in func_names:
+                    if hasattr(mod, fn):
+                        f = getattr(mod, fn)
+                        try:
+                            rc = f(slug)  # most common shape
+                            ok(f"{mod_name}.{fn}('{slug}') OK: {rc}")
+                            return True
+                        except TypeError:
+                            # try force kw if exists
+                            try:
+                                rc = f(slug, force=True)
+                                ok(f"{mod_name}.{fn}('{slug}', force=True) OK: {rc}")
+                                return True
+                            except Exception as e:
+                                warn(f"{mod_name}.{fn} signature failed: {e}")
+            except Exception as e:
+                warn(f"Could not import app.{mod_name}: {e}")
+            return False
+
+        tried_any = False
+        for m in modes:
+            if m == "flashcards":
+                tried_any |= try_mode("flashcards", ["generate_set_pages", "generate_pages", "build_pages"])
+            elif m == "practice":
+                tried_any |= try_mode("practice", ["generate_set_pages", "generate_pages", "build_pages"])
+            elif m == "reading":
+                tried_any |= try_mode("reading", ["generate_set_pages", "generate_pages", "build_pages"])
+            elif m == "listening":
+                tried_any |= try_mode("listening", ["create_listening_set", "generate_set_pages", "generate_pages", "build_pages"])
+            else:
+                warn(f"Unknown mode: {m}")
+
+        return bool(tried_any)
+
 
 def git_status():
     try:

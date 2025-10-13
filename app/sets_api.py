@@ -1,25 +1,31 @@
 # app/sets_api.py
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from pathlib import Path
-import json
 from shutil import rmtree
+import subprocess
 
 from .modes import SET_TYPES
 from .models import db, UserSet
 from .auth import token_required
 from .utils import build_all_mode_indexes
 
-# ❗ Centralized paths + constants
+# Try to use your git_utils if available; fall back to subprocess
+try:
+    from .git_utils import Repo  # GitPython-like wrapper in your repo
+except Exception:
+    Repo = None
+
+# Centralized paths + constants
 from .constants import SETS_DIR, PAGES_DIR, SET_MODES_JSON
 
-# Canonical helpers from sets_utils (no fallbacks)
+# Canonical helpers from sets_utils
 from .sets_utils import (
     sanitize_filename,
     create_set as util_create_set,
     delete_set_file,
-    list_global_sets,     # canonical global listing
-    get_set_metadata,     # enrich items in /my_sets and other listings
+    list_global_sets,
+    get_set_metadata,
 )
 
 # Keep the map-builder explicit (no silent fallback)
@@ -44,14 +50,13 @@ def _with_deprecation_headers(resp, successor_path: str):
         resp.headers["Deprecation"] = "true"
         resp.headers["Link"] = f'<{successor_path}>; rel="successor-version"'
     except Exception:
-        # in case resp is a tuple or something unexpected
         pass
     return resp
 
 def _apply_list_params(items: list[dict]):
     """
-    Non-breaking optional filters for listings:
-      ?q=<substring>   (case-insensitive match on name)
+    Optional filters for listings:
+      ?q=<substring> (case-insensitive match on name)
       ?limit=, ?offset=
       ?sort=name|count  (default=name)
       ?order=asc|desc   (default=asc)
@@ -68,12 +73,10 @@ def _apply_list_params(items: list[dict]):
     except Exception:
         offset = 0
 
-    # filter
     out = items
     if q:
         out = [x for x in out if q in (x.get("name") or "").lower()]
 
-    # sort
     keyfunc = (lambda x: (x.get("name") or "").lower())
     if sort == "count":
         keyfunc = (lambda x: (
@@ -82,7 +85,6 @@ def _apply_list_params(items: list[dict]):
         ))
     out.sort(key=keyfunc, reverse=(order == "desc"))
 
-    # slice
     if offset > 0 or (limit and limit > 0):
         start = max(offset, 0)
         end = start + max(limit, 0) if limit and limit > 0 else None
@@ -127,7 +129,6 @@ def _delete_set_files_everywhere(set_name: str):
     try:
         delete_set_file(set_name)
     except Exception:
-        # fall back to manual unlink, if delete_set_file isn't present/failed
         try:
             (SETS_DIR / f"{set_name}.json").unlink(missing_ok=True)
         except Exception:
@@ -140,10 +141,97 @@ def _delete_set_files_everywhere(set_name: str):
     _safe_rmtree(DOCS_ROOT / "listening"  / set_name)
     _safe_rmtree(DOCS_ROOT / "static"     / set_name)
 
+# --- GIT PUBLISH HELPER (module-level) ---
+def _git_add_commit_push(paths: list[Path], message: str) -> None:
+    """
+    Add/commit/push a set of paths. Tries your git_utils.Repo first, then subprocess.
+    """
+    root = Path(current_app.root_path).parent  # repo root (one above app/)
+    to_add = [str(p) for p in paths if p.exists()]
+    if not to_add:
+        current_app.logger.info("Nothing to add; no paths exist.")
+        return
+
+    if Repo is not None:
+        repo = Repo(str(root))
+        # ensure identity (avoids "please tell me who you are")
+        try:
+            repo.git.config("--local", "user.email", "bot@pathtopolish.app")
+            repo.git.config("--local", "user.name",  "Path to POLISH Bot")
+        except Exception:
+            pass
+
+        repo.git.add(to_add)
+        if repo.is_dirty():
+            repo.index.commit(message)
+            repo.remote().push()
+        else:
+            current_app.logger.info("No changes to commit.")
+        return
+
+    # Fallback to subprocess
+    def run(args): return subprocess.check_output(args, cwd=str(root))
+
+    # ensure identity
+    try:
+        run(["git","config","user.email","bot@pathtopolish.app"])
+        run(["git","config","user.name","Path to POLISH Bot"])
+    except Exception:
+        pass
+
+    run(["git", "add"] + to_add)
+    try:
+        run(["git", "commit", "-m", message])
+    except subprocess.CalledProcessError as e:
+        if b"nothing to commit" not in (getattr(e, "output", b"") or b""):
+            raise
+    run(["git", "push"])
+
+# --- PAGE REGEN HELPER (module-level) ---
+def _regen_pages_for_slug(slug: str, modes: list[str]) -> None:
+    """
+    Rebuild pages for this slug, adapting to whichever generator signature exists.
+    Prefers sets_utils.regenerate_set_pages; falls back to per-mode modules.
+    """
+    from . import sets_utils
+
+    regen = getattr(sets_utils, "regenerate_set_pages", None)
+    if regen:
+        try: regen(slug, modes=modes, force=True, verbose=True); return
+        except TypeError: pass
+        try: regen(slug, force=True, verbose=True); return
+        except TypeError: pass
+        try: regen(slug, force=True); return
+        except TypeError: pass
+        regen(slug); return
+
+    def _try_module(mod_name, funcs):
+        try:
+            mod = __import__(f"app.{mod_name}", fromlist=["*"])
+        except Exception:
+            return False
+        for fn in funcs:
+            f = getattr(mod, fn, None)
+            if not f: continue
+            try: f(slug); return True
+            except TypeError:
+                try: f(slug, force=True); return True
+                except Exception: continue
+        return False
+
+    for m in modes:
+        if m == "flashcards":
+            _try_module("flashcards", ["generate_set_pages", "generate_pages", "build_pages"])
+        elif m == "practice":
+            _try_module("practice",   ["generate_set_pages", "generate_pages", "build_pages"])
+        elif m == "reading":
+            _try_module("reading",    ["generate_set_pages", "generate_pages", "build_pages"])
+        elif m == "listening":
+            _try_module("listening",  ["create_listening_set", "generate_set_pages", "generate_pages", "build_pages"])
+
 # ----------------------------
 # API
 # ----------------------------
-
 
 # 0) Global sets (canonical shape)
 @sets_api.route("/global_sets", methods=["GET"])
@@ -156,10 +244,9 @@ def global_sets():
     Optional filters: ?q=&limit=&offset=&sort=name|count&order=asc|desc
     """
     glist = list_global_sets()
-    glist = _apply_list_params(glist)  # non-breaking filter/sort
+    glist = _apply_list_params(glist)
     glist = [_ensure_modes(x) for x in glist]
     resp = jsonify(glist)
-    # Point clients to the new minimal listing at /api/sets/available
     return _with_deprecation_headers(resp, "/api/sets/available")
 
 # 1) My sets (canonical shape, mark ownership and enrich private)
@@ -172,8 +259,6 @@ def my_sets(current_user):
       - If UserSet.is_owner == True -> created_by = "me"
       - Else if present in global -> keep global's created_by (usually "system")
       - Else (not in global) -> treat as private -> created_by = "me"
-
-    Optional filters: ?q=&limit=&offset=&sort=name|count&order=asc|desc
     """
     rows = UserSet.query.filter_by(user_id=current_user.id).all()
     user_names = [r.set_name for r in rows]
@@ -188,17 +273,16 @@ def my_sets(current_user):
             meta = gmap[name].copy()
             if ownership.get(name):
                 meta["created_by"] = "me"
-            meta = _ensure_modes(meta)         # <— add
+            meta = _ensure_modes(meta)
             out.append(meta)
         else:
             meta = get_set_metadata(name)
             meta["created_by"] = "me"
-            meta = _ensure_modes(meta)         # <— add
+            meta = _ensure_modes(meta)
             out.append(meta)
 
-    out = _apply_list_params(out)  # non-breaking filter/sort
+    out = _apply_list_params(out)
     resp = jsonify(out)
-    # Suggest RESTful successor for new clients
     return _with_deprecation_headers(resp, "/api/my/sets")
 
 # 2) Add a set to user library
@@ -219,7 +303,6 @@ def add_set(current_user):
     db.session.add(UserSet(user_id=current_user.id, set_name=set_name, is_owner=False))
     db.session.commit()
     resp = jsonify({"message": f"Set '{set_name}' added to your collection"})
-    # Successor: POST /api/my/sets  { set_name, is_owner? }
     return _with_deprecation_headers(resp, "/api/my/sets")
 
 # 3) Remove a set from user library
@@ -240,7 +323,6 @@ def remove_set(current_user):
     db.session.delete(user_set)
     db.session.commit()
     resp = jsonify({"message": f"Set '{set_name}' removed from your collection"})
-    # Successor: DELETE /api/my/sets/<set_name>
     return _with_deprecation_headers(resp, f"/api/my/sets/{set_name}")
 
 # 4) Create a set (owner-only on create)
@@ -250,7 +332,7 @@ def create_set(current_user):
     """
     Body: { set_type: "<one of SET_TYPES>", set_name: str, data: [ ... ] }
     - Saves docs/sets/<name>.json
-    - Generates audio + pages for implied modes
+    - Generates assets/pages for implied modes
     - Adds to user's collection with is_owner=True
     """
     body = request.get_json(silent=True) or {}
@@ -258,7 +340,6 @@ def create_set(current_user):
     set_name = (body.get("set_name") or "").strip()
     data = body.get("data")
 
-    # ✅ single source of truth
     if set_type not in SET_TYPES:
         return jsonify({"message": f"Invalid set_type. Allowed: {sorted(SET_TYPES)}"}), 400
     if not set_name:
@@ -270,7 +351,6 @@ def create_set(current_user):
     if not safe_name:
         return jsonify({"message": "Invalid set_name"}), 400
 
-    # Prevent collision with an existing global set file
     p = SETS_DIR / f"{safe_name}.json"
     if p.exists():
         return jsonify({"message": f"Set '{safe_name}' already exists"}), 409
@@ -278,7 +358,6 @@ def create_set(current_user):
     try:
         meta = util_create_set(set_type, safe_name, data)  # saves + generates assets/pages
 
-        # Add to user's library and mark as owner
         existing = UserSet.query.filter_by(user_id=current_user.id, set_name=safe_name).first()
         if not existing:
             db.session.add(UserSet(user_id=current_user.id, set_name=safe_name, is_owner=True))
@@ -286,17 +365,15 @@ def create_set(current_user):
             existing.is_owner = True
         db.session.commit()
 
-        # Refresh landing/index pages
         try:
             build_all_mode_indexes()
         except Exception as e:
-            print("⚠️ Failed to rebuild mode indexes:", e)
+            current_app.logger.warning("Failed to rebuild mode indexes: %s", e)
 
-        # Keep docs/set_modes.json current
         try:
             rebuild_set_modes_map()
         except Exception as e:
-            print("⚠️ Failed to rebuild set_modes.json after create:", e)
+            current_app.logger.warning("Failed to rebuild set_modes.json after create: %s", e)
 
         meta["created_by"] = "me"
         return jsonify(meta), 201
@@ -309,36 +386,28 @@ def create_set(current_user):
 def delete_set(current_user, set_name):
     """
     Owner action:
-    - If only the owner has this set: delete files and unlink all rows.
-    - If others also have it: transfer ownership to another user, unlink current owner (or set is_owner=False), keep files.
-    Returns:
-      { ok: true, deleted: true }  OR
-      { ok: true, handover: true, new_owner_id: <id> }
+      - If only the owner has this set: delete files and unlink all rows.
+      - If others also have it: transfer ownership to another user, unlink current owner, keep files.
     """
     safe_name = sanitize_filename(set_name or "")
     if not safe_name:
         return jsonify({"message": "Invalid set name"}), 400
 
-    # who has this set?
     links = UserSet.query.filter_by(set_name=safe_name).all()
     if not links:
-        # Nothing in DB: best-effort file cleanup
         try:
             _delete_set_files_everywhere(safe_name)
         except Exception:
             pass
         return jsonify({"ok": True, deleted: True}), 200
 
-    # ensure caller is/was owner
     me_link = next((l for l in links if l.user_id == current_user.id), None)
     if not me_link or not getattr(me_link, "is_owner", False):
         return jsonify({"message": "Only the owner can delete this set"}), 403
 
-    # others?
     others = [l for l in links if l.user_id != current_user.id]
 
     if not others:
-        # Sole owner -> delete files + unlink all rows
         for l in links:
             db.session.delete(l)
         db.session.commit()
@@ -346,33 +415,84 @@ def delete_set(current_user, set_name):
             _delete_set_files_everywhere(safe_name)
         except Exception:
             pass
-        # rebuild indices
         try:
             build_all_mode_indexes()
         except Exception as e:
-            print("⚠️ Failed to rebuild mode indexes after delete:", e)
+            current_app.logger.warning("Failed to rebuild mode indexes after delete: %s", e)
         try:
             rebuild_set_modes_map()
         except Exception as e:
-            print("⚠️ Failed to rebuild set_modes.json after delete:", e)
+            current_app.logger.warning("Failed to rebuild set_modes.json after delete: %s", e)
         return jsonify({"ok": True, deleted: True}), 200
 
-    # there are other users -> transfer ownership
-    new_owner_link = sorted(others, key=lambda l: l.id)[0]  # stable heuristic
+    new_owner_link = sorted(others, key=lambda l: l.id)[0]
     me_link.is_owner = False
     new_owner_link.is_owner = True
-    # Optionally also remove the owner's membership (acts like "remove from my library")
     db.session.delete(me_link)
     db.session.commit()
 
-    # Keep files; nothing to rebuild except indexes (optional, cheap)
     try:
         build_all_mode_indexes()
     except Exception as e:
-        print("⚠️ Failed to rebuild mode indexes after handover:", e)
+        current_app.logger.warning("Failed to rebuild mode indexes after handover: %s", e)
     try:
         rebuild_set_modes_map()
     except Exception as e:
-        print("⚠️ Failed to rebuild set_modes.json after handover:", e)
+        current_app.logger.warning("Failed to rebuild set_modes.json after handover: %s", e)
 
     return jsonify({"ok": True, handover: True, new_owner_id: new_owner_link.user_id}), 200
+
+# 6) Admin build & publish (server-side)
+@sets_api.route("/admin/build_publish", methods=["POST", "OPTIONS"])
+@token_required
+def admin_build_publish(current_user):
+    """
+    Admin-only: rebuild static pages for a slug and push to GitHub.
+    Body: { "slug": "10LS", "modes": ["flashcards","reading","listening","practice"]? }
+    """
+    if not getattr(current_user, "is_admin", False):
+        return jsonify({"ok": False, "error": "forbidden"}), 403
+
+    body = request.get_json(silent=True) or {}
+    slug = sanitize_filename((body.get("slug") or "").strip())
+    modes = body.get("modes") or ["flashcards"]
+
+    if not slug:
+        return jsonify({"ok": False, "error": "slug required"}), 400
+
+    json_path = SETS_DIR / f"{slug}.json"
+    if not json_path.exists():
+        current_app.logger.warning("Set JSON not found at %s; generator may still handle DB-based sets.", json_path)
+
+    try:
+        _regen_pages_for_slug(slug, modes)
+
+        try:
+            build_all_mode_indexes()
+        except Exception as e:
+            current_app.logger.warning("Failed to rebuild mode indexes: %s", e)
+        try:
+            rebuild_set_modes_map()
+        except Exception as e:
+            current_app.logger.warning("Failed to rebuild set_modes.json: %s", e)
+
+        changed = [json_path]
+        for m in modes:
+            changed.append(PAGES_DIR / m / slug)
+        for p in [
+            PAGES_DIR / "flashcards" / "index.html",
+            PAGES_DIR / "practice" / "index.html",
+            PAGES_DIR / "reading" / "index.html",
+            PAGES_DIR / "listening" / "index.html",
+            PAGES_DIR / "set_modes.json",
+        ]:
+            if p.exists():
+                changed.append(p)
+
+        _git_add_commit_push(changed, f"build: {slug} [{','.join(modes)}]")
+
+        return jsonify({"ok": True}), 200
+
+    except Exception as e:
+        current_app.logger.exception("admin_build_publish failed for %s", slug)
+        return jsonify({"ok": False, "error": str(e)}), 500
