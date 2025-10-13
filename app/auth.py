@@ -77,6 +77,24 @@ def login_required(f):
         return f(user, *args, **kwargs)
     return decorated_function
 
+# ----------------------------
+# API bootstrap admin
+# ----------------------------
+
+@auth_bp.route("/admin/promote_me", methods=["POST", "OPTIONS"])
+@token_required
+def promote_me(current_user):
+    # Only allow if the caller matches the configured ADMIN_EMAIL
+    admin_email = (current_app.config.get("ADMIN_EMAIL") or "").strip().lower()
+    if not admin_email:
+        return jsonify({"ok": False, "error": "ADMIN_EMAIL not set"}), 400
+
+    if (current_user.email or "").lower() != admin_email:
+        return jsonify({"ok": False, "error": "forbidden"}), 403
+
+    current_user.is_admin = True
+    db.session.commit()
+    return jsonify({"ok": True, "email": current_user.email, "is_admin": True})
 
 # ----------------------------
 # API routes
