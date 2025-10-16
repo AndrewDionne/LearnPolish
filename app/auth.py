@@ -185,6 +185,165 @@ def me(current_user):
         "name": current_user.name,
         "is_admin": current_user.is_admin
     })
+# --- SES email identity helpers (admin-only) --------------------------------
+# Add these imports at the top of auth.py if not present:
+# import os, re
+# import boto3
+# from botocore.exceptions import ClientError
+
+EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+def _guess_ses_region() -> str:
+    """
+    Prefer explicit env, else try to extract from SES_SMTP_SERVER like:
+      email-smtp.eu-north-1.amazonaws.com -> eu-north-1
+    Fallback to 'us-east-1' if nothing else is set.
+    """
+    region = (
+        os.getenv("AWS_SES_REGION")
+        or os.getenv("AWS_REGION")
+        or os.getenv("AWS_DEFAULT_REGION")
+        or ""
+    )
+    if region:
+        return region
+
+    host = os.getenv("SES_SMTP_SERVER", "")
+    # e.g. email-smtp.eu-north-1.amazonaws.com
+    m = re.search(r"email-smtp\.([a-z0-9-]+)\.amazonaws\.com", host)
+    return m.group(1) if m else "us-east-1"
+
+def _ses_client():
+    # Requires IAM creds in env: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY (and optional AWS_SESSION_TOKEN)
+    region = _guess_ses_region()
+    return boto3.client("sesv2", region_name=region)
+
+@auth_bp.route("/admin/ses/create_identity", methods=["POST", "OPTIONS"])
+@cross_origin()
+@token_required
+def ses_create_identity(current_user):
+    """
+    Trigger SES to send a verification email to a recipient (Sandbox requirement).
+    Body: { "email": "tester@example.com" }
+    Returns SES response (trimmed) or an error.
+    """
+    if not getattr(current_user, "is_admin", False):
+        return jsonify({"ok": False, "error": "forbidden"}), 403
+
+    data = request.get_json(silent=True) or {}
+    email = (data.get("email") or "").strip()
+    if not EMAIL_RE.match(email):
+        return jsonify({"ok": False, "error": "invalid_email"}), 400
+
+    try:
+        ses = _ses_client()
+        resp = ses.create_email_identity(EmailIdentity=email)
+        # Optional: attach a default configuration set if you use one
+        cfg = (os.getenv("SES_DEFAULT_CONFIG_SET") or "").strip()
+        if cfg:
+            try:
+                ses.put_email_identity_configuration_set_attributes(
+                    EmailIdentity=email,
+                    ConfigurationSetName=cfg
+                )
+            except ClientError as e:
+                # Non-fatal: return as warning
+                return jsonify({
+                    "ok": True,
+                    "email": email,
+                    "create": {
+                        "IdentityType": resp.get("IdentityType"),
+                        "VerifiedForSendingStatus": resp.get("VerifiedForSendingStatus"),
+                    },
+                    "warning": f"config_set_attach_failed: {e.response.get('Error', {}).get('Message', str(e))}"
+                }), 200
+
+        return jsonify({
+            "ok": True,
+            "email": email,
+            "create": {
+                "IdentityType": resp.get("IdentityType"),
+                "VerifiedForSendingStatus": resp.get("VerifiedForSendingStatus"),
+            }
+        }), 200
+
+    except ClientError as e:
+        code = e.response.get("Error", {}).get("Code", "ClientError")
+        msg  = e.response.get("Error", {}).get("Message", str(e))
+        return jsonify({"ok": False, "error": code, "message": msg}), 400
+    except Exception as e:
+        return jsonify({"ok": False, "error": "exception", "message": str(e)}), 500
+
+@auth_bp.route("/admin/ses/get_identity", methods=["GET"])
+@cross_origin()
+@token_required
+def ses_get_identity(current_user):
+    """
+    Check verification status.
+    Query: ?email=tester@example.com
+    """
+    if not getattr(current_user, "is_admin", False):
+        return jsonify({"ok": False, "error": "forbidden"}), 403
+
+    email = (request.args.get("email") or "").strip()
+    if not EMAIL_RE.match(email):
+        return jsonify({"ok": False, "error": "invalid_email"}), 400
+
+    try:
+        ses = _ses_client()
+        resp = ses.get_email_identity(EmailIdentity=email)
+        # Typical fields: 'VerifiedStatus' (e.g., PENDING | SUCCESS | FAILED | TEMPORARY_FAILURE)
+        return jsonify({
+            "ok": True,
+            "email": email,
+            "status": resp.get("VerifiedStatus"),
+            "sending_enabled": resp.get("VerifiedForSendingStatus"),
+            "identity_type": resp.get("IdentityType"),
+        }), 200
+    except ClientError as e:
+        code = e.response.get("Error", {}).get("Code", "ClientError")
+        msg  = e.response.get("Error", {}).get("Message", str(e))
+        return jsonify({"ok": False, "error": code, "message": msg}), 400
+    except Exception as e:
+        return jsonify({"ok": False, "error": "exception", "message": str(e)}), 500
+
+@auth_bp.route("/admin/ses/list_emails", methods=["GET"])
+@cross_origin()
+@token_required
+def ses_list_emails(current_user):
+    """
+    List email-address identities (not domains).
+    """
+    if not getattr(current_user, "is_admin", False):
+        return jsonify({"ok": False, "error": "forbidden"}), 403
+
+    try:
+        ses = _ses_client()
+        out = []
+        token = None
+        while True:
+            kwargs = {"PageSize": 50}
+            if token:
+                kwargs["NextToken"] = token
+            resp = ses.list_email_identities(**kwargs)
+            for item in resp.get("Items", []):
+                if item.get("IdentityType") == "EMAIL_ADDRESS":
+                    out.append({
+                        "email": item.get("IdentityName"),
+                        "sending_enabled": item.get("SendingEnabled"),
+                    })
+            token = resp.get("NextToken")
+            if not token:
+                break
+
+        return jsonify({"ok": True, "items": out}), 200
+
+    except ClientError as e:
+        code = e.response.get("Error", {}).get("Code", "ClientError")
+        msg  = e.response.get("Error", {}).get("Message", str(e))
+        return jsonify({"ok": False, "error": code, "message": msg}), 400
+    except Exception as e:
+        return jsonify({"ok": False, "error": "exception", "message": str(e)}), 500
 
 # ----------------------------
 # Password reset
