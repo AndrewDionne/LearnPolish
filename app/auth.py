@@ -8,7 +8,17 @@ from .config import ADMIN_EMAIL   # still fine to use for initial admin flag
 from flask_cors import cross_origin
 
 from .emailer import send_email
+import os, re
 
+try:
+    import boto3
+    from botocore.exceptions import ClientError
+except Exception:
+    # Keep app booting even if boto3 isn't installed;
+    # SES routes will respond with a clear error when called.
+    boto3 = None
+    class ClientError(Exception):
+        pass
 auth_bp = Blueprint("auth", __name__)
 
 # ----------------------------
@@ -186,32 +196,47 @@ def me(current_user):
         "is_admin": current_user.is_admin
     })
 # --- SES email identity helpers (admin-only) --------------------------------
-# Add these imports at the top of auth.py if not present:
-# import os, re
-# import boto3
-# from botocore.exceptions import ClientError
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 def _guess_ses_region() -> str:
     """
-    Prefer explicit env, else try to extract from SES_SMTP_SERVER like:
-      email-smtp.eu-north-1.amazonaws.com -> eu-north-1
-    Fallback to 'us-east-1' if nothing else is set.
+    Prefer explicit SES vars, then generic AWS vars, then parse SMTP host,
+    else default to eu-north-1 (your setup).
     """
-    region = (
-        os.getenv("AWS_SES_REGION")
+    return (
+        os.getenv("SES_REGION")
+        or os.getenv("AWS_SES_REGION")
         or os.getenv("AWS_REGION")
         or os.getenv("AWS_DEFAULT_REGION")
-        or ""
+        or (re.search(r"email-smtp\.([a-z0-9-]+)\.amazonaws\.com",
+                      os.getenv("SES_SMTP_SERVER","") or os.getenv("SES_SMTP_HOST","") or "")
+            or [None, "eu-north-1"])[1]
     )
-    if region:
-        return region
 
-    host = os.getenv("SES_SMTP_SERVER", "")
-    # e.g. email-smtp.eu-north-1.amazonaws.com
-    m = re.search(r"email-smtp\.([a-z0-9-]+)\.amazonaws\.com", host)
-    return m.group(1) if m else "us-east-1"
+def _ses_client():
+    """
+    Build a boto3 SESv2 client using SES-specific creds if provided,
+    falling back to generic AWS_* only if SES_* are not set.
+    This prevents your Cloudflare R2 AWS_* from interfering.
+    """
+    if boto3 is None:
+        raise RuntimeError("boto3 is not installed; add 'boto3>=1.34' to requirements.txt")
+
+    region = _guess_ses_region()
+    # Prefer SES-specific keys so R2's AWS_* don't collide
+    ak = os.getenv("SES_AWS_ACCESS_KEY_ID") or os.getenv("AWS_ACCESS_KEY_ID")
+    sk = os.getenv("SES_AWS_SECRET_ACCESS_KEY") or os.getenv("AWS_SECRET_ACCESS_KEY")
+    if not ak or not sk:
+        raise RuntimeError("Missing SES API creds: set SES_AWS_ACCESS_KEY_ID and SES_AWS_SECRET_ACCESS_KEY")
+
+    session = boto3.Session(
+        aws_access_key_id=ak,
+        aws_secret_access_key=sk,
+        region_name=region,
+    )
+    return session.client("sesv2")
+
 
 def _ses_client():
     # Requires IAM creds in env: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY (and optional AWS_SESSION_TOKEN)
