@@ -98,7 +98,7 @@ _ENV_CORS = [s.strip() for s in os.getenv("CORS_ORIGINS", "").split(",") if s.st
 CORS_ORIGINS = _ENV_CORS or CORS_ALLOWED_ORIGINS or ["*"]
 
 # ---------- admin ----------
-ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@example.com")
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "andrewdionne@gmail.com")
 
 # ---------- Azure ----------
 AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
@@ -147,6 +147,10 @@ class Config:
     # Secrets
     SECRET_KEY = os.getenv("SECRET_KEY") or ("dev-" + secrets.token_urlsafe(32))
     JWT_SECRET = os.getenv("JWT_SECRET") or SECRET_KEY
+
+    # APP ADMIN
+    ADMIN_EMAIL = ADMIN_EMAIL
+
 
     # Base URLs
     FRONTEND_BASE_URL = FRONTEND_BASE_URL
