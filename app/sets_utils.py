@@ -147,10 +147,13 @@ try:
     from .create_set_modes import main as rebuild_set_modes_map
 except Exception:
     def rebuild_set_modes_map():
+        """Rebuild docs/set_modes.json by scanning docs/sets/*.json."""
         try:
-            SET_MODES_JSON.write_text("{}", encoding="utf-8")
+            from .create_set_modes import main as _build
+            _build()
         except Exception as e:
-            print(f"⚠️ Failed to (re)write docs/set_modes.json: {e}")
+            print(f"⚠️ Failed to rebuild set_modes.json: {e}")
+
 # Legacy compat: older code calls build_all_mode_indexes(); forward to set_modes rebuild.
 def build_all_mode_indexes():
     try:
@@ -502,34 +505,30 @@ def regenerate_set_pages(set_name: str) -> bool:
 
 def create_set(set_type: str, set_name: str, data: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
-    Create a new set wrapper file and generate its pages/audio.
-    set_type is only used for basic validation; modes are saved explicitly elsewhere.
+    Create a new set: save wrapper JSON, then generate pages/audio.
+    Returns metadata for the caller.
     """
+    from .modes import modes_for_type
+
     safe_name = sanitize_filename(set_name)
     if not safe_name:
         raise ValueError("Invalid set name")
 
-    # Minimal validation by set_type
-    if set_type == "flashcards":
-        for entry in data:
-            if not all(k in entry for k in ("phrase", "meaning")):  # pronunciation optional
-                raise ValueError("Flashcards require keys: phrase, meaning")
-    elif set_type == "reading":
-        for item in data:
-            if "polish" not in item:
-                raise ValueError("Reading requires key: polish")
+    # Normalize modes from declared set_type (kept forgiving)
+    modes = modes_for_type(set_type) or ["flashcards"]
 
-    # This helper saves modes + data in canonical shape (caller decides modes)
-    # Left here for completeness; your API writes wrapper directly via _body_for_set
-    # If you use this, pass modes explicitly you want saved.
-    # save_set_wrapper(safe_name, modes, data)
+    # 1) Save canonical wrapper (cards or passages with explicit modes)
+    save_set_wrapper(safe_name, modes, data or [])
 
+    # 2) Generate static pages + audio and publish to R2 (if enabled)
     regenerate_set_pages(safe_name)
 
-    # Metadata for caller
+    # 3) Return metadata
     meta = get_set_metadata(safe_name)
-    meta["type"] = set_type or meta["type"]
+    meta["type"] = set_type or meta.get("type") or "flashcards"
+    meta["modes"] = modes
     return meta
+
 
 def delete_set_file(set_name: str) -> bool:
     """
