@@ -144,48 +144,72 @@ def _delete_set_files_everywhere(set_name: str):
 # --- GIT PUBLISH HELPER (module-level) ---
 def _git_add_commit_push(paths: list[Path], message: str) -> None:
     """
-    Add/commit/push a set of paths. Tries your git_utils.Repo first, then subprocess.
+    Add/commit/push a set of paths.
+    - Uses git_utils.Repo if present; else subprocess.
+    - Honors GIT_REMOTE and GIT_BRANCH (for Render).
     """
-    root = Path(current_app.root_path).parent  # repo root (one above app/)
-    to_add = [str(p) for p in paths if p.exists()]
+    root = Path(current_app.root_path).parent  # repo root
+    to_add = [str(p) for p in paths if p and Path(p).exists()]
     if not to_add:
         current_app.logger.info("Nothing to add; no paths exist.")
         return
 
+    remote_url = (current_app.config.get("GIT_REMOTE") or "").strip()
+    branch     = (current_app.config.get("GIT_BRANCH") or "main").strip() or "main"
+    author_n   = current_app.config.get("GIT_AUTHOR_NAME", "Path to POLISH Bot")
+    author_e   = current_app.config.get("GIT_AUTHOR_EMAIL", "bot@pathtopolish.app")
+
     if Repo is not None:
         repo = Repo(str(root))
-        # ensure identity (avoids "please tell me who you are")
+        # ensure identity
         try:
-            repo.git.config("--local", "user.email", "bot@pathtopolish.app")
-            repo.git.config("--local", "user.name",  "Path to POLISH Bot")
+            repo.git.config("--local", "user.email", author_e)
+            repo.git.config("--local", "user.name",  author_n)
         except Exception:
             pass
 
+        # ensure remote if provided
+        if remote_url:
+            try:
+                repo.git.remote("remove", "origin")
+            except Exception:
+                pass
+            repo.git.remote("add", "origin", remote_url)
+
         repo.git.add(to_add)
         if repo.is_dirty():
-            repo.index.commit(message)
-            repo.remote().push()
+            repo.index.commit(message, author=author_n, author_email=author_e)
+            repo.git.push("origin", f"HEAD:{branch}")
         else:
             current_app.logger.info("No changes to commit.")
         return
 
-    # Fallback to subprocess
+    # subprocess fallback
     def run(args): return subprocess.check_output(args, cwd=str(root))
 
-    # ensure identity
+    # identity
     try:
-        run(["git","config","user.email","bot@pathtopolish.app"])
-        run(["git","config","user.name","Path to POLISH Bot"])
+        run(["git", "config", "user.email", author_e])
+        run(["git", "config", "user.name",  author_n])
     except Exception:
         pass
+
+    # remote
+    if remote_url:
+        try:
+            run(["git", "remote", "remove", "origin"])
+        except Exception:
+            pass
+        run(["git", "remote", "add", "origin", remote_url])
 
     run(["git", "add"] + to_add)
     try:
         run(["git", "commit", "-m", message])
     except subprocess.CalledProcessError as e:
-        if b"nothing to commit" not in (getattr(e, "output", b"") or b""):
+        out = (getattr(e, "output", b"") or b"").decode("utf-8", "ignore")
+        if "nothing to commit" not in out:
             raise
-    run(["git", "push"])
+    run(["git", "push", "origin", f"HEAD:{branch}"])
 
 # --- PAGE REGEN HELPER (module-level) ---
 def _regen_pages_for_slug(slug: str, modes: list[str]) -> None:
@@ -334,6 +358,7 @@ def create_set(current_user):
     - Saves docs/sets/<name>.json
     - Generates assets/pages for implied modes
     - Adds to user's collection with is_owner=True
+    - Commits & pushes changes so GitHub Pages serves it
     """
     body = request.get_json(silent=True) or {}
     set_type = (body.get("set_type") or "").strip().lower()
@@ -351,13 +376,15 @@ def create_set(current_user):
     if not safe_name:
         return jsonify({"message": "Invalid set_name"}), 400
 
-    p = SETS_DIR / f"{safe_name}.json"
-    if p.exists():
-        return jsonify({"message": f"Set '{safe_name}' already exists"}), 409
+    json_path = SETS_DIR / f"{safe_name}.json"
+    if json_path.exists():
+        return jsonify({"message": "set_already_exists"}), 409  # frontend expects this key
 
     try:
-        meta = util_create_set(set_type, safe_name, data)  # saves + generates assets/pages
+        # 1) Write JSON (+ any assets your util_create_set generates)
+        meta = util_create_set(set_type, safe_name, data)
 
+        # 2) Link to user as owner
         existing = UserSet.query.filter_by(user_id=current_user.id, set_name=safe_name).first()
         if not existing:
             db.session.add(UserSet(user_id=current_user.id, set_name=safe_name, is_owner=True))
@@ -365,18 +392,44 @@ def create_set(current_user):
             existing.is_owner = True
         db.session.commit()
 
+        # 3) Regenerate static pages for implied mode(s)
+        implied = {
+            "flashcards": ["flashcards"],
+            "reading":    ["reading"],
+            "listening":  ["listening"],
+            "practice":   ["practice"],
+        }
+        modes = implied.get(set_type, ["flashcards"])
+        _regen_pages_for_slug(safe_name, modes)
+
+        # 4) Rebuild landing/index artifacts (best-effort)
         try:
             build_all_mode_indexes()
         except Exception as e:
             current_app.logger.warning("Failed to rebuild mode indexes: %s", e)
-
         try:
             rebuild_set_modes_map()
         except Exception as e:
             current_app.logger.warning("Failed to rebuild set_modes.json after create: %s", e)
 
+        # 5) Commit & push the changed files so GH Pages serves them
+        to_commit = [json_path] + [PAGES_DIR / m / safe_name for m in modes]
+        # include common index artifacts if present
+        for p in [
+            PAGES_DIR / "flashcards" / "index.html",
+            PAGES_DIR / "practice"   / "index.html",
+            PAGES_DIR / "reading"    / "index.html",
+            PAGES_DIR / "listening"  / "index.html",
+            PAGES_DIR / "set_modes.json",
+        ]:
+            if p.exists():
+                to_commit.append(p)
+        _git_add_commit_push(to_commit, f"build: {safe_name} [{','.join(modes)}]")
+
         meta["created_by"] = "me"
+        meta["modes"] = modes
         return jsonify(meta), 201
+
     except Exception as e:
         return jsonify({"message": "Failed to create set", "error": str(e)}), 500
 
@@ -423,7 +476,7 @@ def delete_set(current_user, set_name):
             rebuild_set_modes_map()
         except Exception as e:
             current_app.logger.warning("Failed to rebuild set_modes.json after delete: %s", e)
-        return jsonify({"ok": True, deleted: True}), 200
+        return jsonify({"ok": True, "handover": True, "new_owner_id": new_owner_link.user_id}), 200
 
     new_owner_link = sorted(others, key=lambda l: l.id)[0]
     me_link.is_owner = False

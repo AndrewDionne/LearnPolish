@@ -1,122 +1,110 @@
-[
-  {
-    "name": "Cities in Poland",
-    "modes": [
-      "learn",
-      "speak"
-    ],
-    "type": "flashcards"
-  },
-  {
-    "name": "Common Polish Names",
-    "modes": [
-      "learn",
-      "speak"
-    ],
-    "type": "flashcards"
-  },
-  {
-    "name": "Countries of the World",
-    "modes": [
-      "learn",
-      "speak"
-    ],
-    "type": "flashcards"
-  },
-  {
-    "name": "Emergencies & Health",
-    "modes": [
-      "learn",
-      "speak"
-    ],
-    "type": "flashcards"
-  },
-  {
-    "name": "Food & Dining",
-    "modes": [
-      "learn",
-      "speak"
-    ],
-    "type": "flashcards"
-  },
-  {
-    "name": "Navigation & Transportation",
-    "modes": [
-      "learn",
-      "speak"
-    ],
-    "type": "flashcards"
-  },
-  {
-    "name": "Navigation - districts of Warsaw",
-    "modes": [
-      "learn",
-      "speak"
-    ],
-    "type": "flashcards"
-  },
-  {
-    "name": "Navigation - Major street names in Warsa",
-    "modes": [
-      "learn",
-      "speak"
-    ],
-    "type": "flashcards"
-  },
-  {
-    "name": "Navigation basics",
-    "modes": [
-      "learn",
-      "speak"
-    ],
-    "type": "flashcards"
-  },
-  {
-    "name": "Numbers 1-20",
-    "modes": [
-      "learn",
-      "speak"
-    ],
-    "type": "flashcards"
-  },
-  {
-    "name": "Numbers 20 - 100 - 1000",
-    "modes": [
-      "learn",
-      "speak"
-    ],
-    "type": "flashcards"
-  },
-  {
-    "name": "Pleasantries & Social Basics",
-    "modes": [
-      "learn",
-      "speak"
-    ],
-    "type": "flashcards"
-  },
-  {
-    "name": "Public transit",
-    "modes": [
-      "learn",
-      "speak"
-    ],
-    "type": "flashcards"
-  },
-  {
-    "name": "Restaurant basics",
-    "modes": [
-      "learn",
-      "speak"
-    ],
-    "type": "flashcards"
-  },
-  {
-    "name": "Shopping & Money",
-    "modes": [
-      "learn",
-      "speak"
-    ],
-    "type": "flashcards"
-  }
-]
+{
+  "10LS": [
+    "flashcards",
+    "practice"
+  ],
+  "Cities in Poland": [
+    "flashcards",
+    "practice"
+  ],
+  "Cities_in_Poland": [
+    "flashcards",
+    "practice"
+  ],
+  "Common Polish Names": [
+    "flashcards",
+    "practice"
+  ],
+  "Common_Polish_Names": [
+    "flashcards",
+    "practice"
+  ],
+  "Countries of the World": [
+    "flashcards",
+    "practice"
+  ],
+  "Emergencies & Health": [
+    "flashcards",
+    "practice"
+  ],
+  "Emergencies_Health": [
+    "flashcards",
+    "practice"
+  ],
+  "Food & Dining": [
+    "flashcards",
+    "practice"
+  ],
+  "Food_Dining": [
+    "flashcards",
+    "practice"
+  ],
+  "Navigation & Transportation": [
+    "flashcards",
+    "practice"
+  ],
+  "Navigation - Major street names in Warsa": [
+    "flashcards",
+    "practice"
+  ],
+  "Navigation - districts of Warsaw": [
+    "flashcards",
+    "practice"
+  ],
+  "Navigation basics": [
+    "flashcards",
+    "practice"
+  ],
+  "Navigation_-_districts_of_Warsaw": [
+    "flashcards",
+    "practice"
+  ],
+  "Navigation_Transportation": [
+    "flashcards",
+    "practice"
+  ],
+  "Numbers 1-20": [
+    "flashcards",
+    "practice"
+  ],
+  "Numbers 20 - 100 - 1000": [
+    "flashcards",
+    "practice"
+  ],
+  "Numbers_1-20": [
+    "flashcards",
+    "practice"
+  ],
+  "Pleasantries & Social Basics": [
+    "flashcards",
+    "practice"
+  ],
+  "Pleasantries_Social_Basics": [
+    "flashcards",
+    "practice"
+  ],
+  "Public transit": [
+    "flashcards",
+    "practice"
+  ],
+  "Public_transit": [
+    "flashcards",
+    "practice"
+  ],
+  "Restaurant basics": [
+    "flashcards",
+    "practice"
+  ],
+  "Restaurant_basics": [
+    "flashcards",
+    "practice"
+  ],
+  "Shopping & Money": [
+    "flashcards",
+    "practice"
+  ],
+  "Shopping_Money": [
+    "flashcards",
+    "practice"
+  ]
+}
