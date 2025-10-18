@@ -127,10 +127,6 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
-    from .admin_debug import admin_debug
-    app.register_blueprint(admin_debug)
-
-
     # --- Secrets / misc ---
     secret = (
         os.getenv("SECRET_KEY")
@@ -255,6 +251,7 @@ def create_app():
     # --- Blueprints ---
     from .auth import auth_bp
     from .api import api_bp
+    from .admin_debug import admin_debug   
     try:
         from .sets_api import sets_api as sets_bp
     except Exception:
@@ -266,6 +263,7 @@ def create_app():
 
     app.register_blueprint(auth_bp, url_prefix="/api")
     app.register_blueprint(api_bp,  url_prefix="/api")
+    app.register_blueprint(admin_debug) 
     if sets_bp:
         app.register_blueprint(sets_bp, url_prefix="/api")
     if routes_bp:
