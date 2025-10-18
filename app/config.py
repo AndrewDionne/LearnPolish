@@ -1,4 +1,4 @@
-# config.py
+# app/config.py
 import os, secrets
 from urllib.parse import urlparse, urlsplit, urlunsplit, parse_qsl, urlencode
 
@@ -110,14 +110,19 @@ AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 
 # ---------- Cloudflare R2 ----------
 R2_BUCKET = os.getenv("R2_BUCKET", "")
-# Prefer R2_ENDPOINT; fall back to your existing R2_S3_ENDPOINT env var.
-R2_ENDPOINT = os.getenv("R2_ENDPOINT") or os.getenv("R2_S3_ENDPOINT", "")
+# Prefer R2_ENDPOINT; fall back to your existing env names (including R2EP alias).
+R2_ENDPOINT = (
+    os.getenv("R2_ENDPOINT")
+    or os.getenv("R2_S3_ENDPOINT")
+    or os.getenv("R2EP")
+    or ""
+)
 R2_S3_ENDPOINT = R2_ENDPOINT  # keep for older code that still reads this name
 R2_CDN_BASE = os.getenv("R2_CDN_BASE", "")
 R2_ACCESS_KEY_ID = os.getenv("R2_ACCESS_KEY_ID", "")
 R2_SECRET_ACCESS_KEY = os.getenv("R2_SECRET_ACCESS_KEY", "")
 
-# ---------- email ----------
+# ---------- email (SMTP sending) ----------
 EMAIL_PROVIDER = os.getenv("EMAIL_PROVIDER", "console")  # console | gmail | ses_smtp
 GMAIL_USER = os.getenv("GMAIL_USER")
 GMAIL_APP_PASSWORD = (os.getenv("GMAIL_APP_PASSWORD") or "").replace(" ", "")
@@ -131,13 +136,26 @@ SES_SMTP_USER = os.getenv("SES_SMTP_USER", "")
 SES_SMTP_PASS = os.getenv("SES_SMTP_PASS", "")
 SMTP_TIMEOUT  = int(os.getenv("SMTP_TIMEOUT", "30"))
 
+# ---------- SES API (for admin verification endpoints) ----------
+# Use SES_* names first so we don't collide with Cloudflare R2's AWS_* creds.
+SES_AWS_ACCESS_KEY_ID     = (
+    os.getenv("SES_AWS_ACCESS_KEY_ID")
+    or os.getenv("AWS_SES_ACCESS_KEY_ID")  # optional alias
+    or ""
+)
+SES_AWS_SECRET_ACCESS_KEY = (
+    os.getenv("SES_AWS_SECRET_ACCESS_KEY")
+    or os.getenv("AWS_SES_SECRET_ACCESS_KEY")  # optional alias
+    or ""
+)
+
 # ---------- Git / publish ----------
 DISABLE_GIT_PUSH = _env_bool("DISABLE_GIT_PUSH", False)
 GIT_REMOTE = os.getenv("GIT_REMOTE", "")
 GIT_BRANCH = os.getenv("GIT_BRANCH", "main")
 GIT_AUTHOR_NAME = os.getenv("GIT_AUTHOR_NAME", "Path to Polish Bot")
 GIT_AUTHOR_EMAIL = os.getenv("GIT_AUTHOR_EMAIL", "bot@pathtopolish.app")
-GH_TOKEN = os.getenv("GH_TOKEN", "")
+GH_TOKEN = os.getenv("GH_TOKEN") or os.getenv("GITHUB_TOKEN", "")
 
 # ---------- database ----------
 DATABASE_URL = _canon_db_url(os.getenv("DATABASE_URL", ""))
@@ -151,7 +169,6 @@ class Config:
     # APP ADMIN
     ADMIN_EMAIL = ADMIN_EMAIL
 
-
     # Base URLs
     FRONTEND_BASE_URL = FRONTEND_BASE_URL
     APP_BASE_URL = API_BASE_URL
@@ -164,14 +181,14 @@ class Config:
     # DB URI + robust pool for Render Postgres over SSL
     SQLALCHEMY_DATABASE_URI = DATABASE_URL or "sqlite:///app.db"
     SQLALCHEMY_ENGINE_OPTIONS = {
-        "pool_pre_ping": True,            # validate connections before use
-        "pool_recycle": 280,              # recycle before many providers idle you out (~300s)
+        "pool_pre_ping": True,
+        "pool_recycle": 280,
         "pool_use_lifo": True,
         "pool_size": int(os.getenv("DB_POOL_SIZE", "5")),
         "max_overflow": int(os.getenv("DB_MAX_OVERFLOW", "10")),
     }
 
-    # Email
+    # Email (SMTP)
     EMAIL_PROVIDER = EMAIL_PROVIDER
     GMAIL_USER = GMAIL_USER
     GMAIL_APP_PASSWORD = GMAIL_APP_PASSWORD
@@ -183,6 +200,10 @@ class Config:
     SES_SMTP_USER = SES_SMTP_USER
     SES_SMTP_PASS = SES_SMTP_PASS
     SMTP_TIMEOUT = SMTP_TIMEOUT
+
+    # SES API creds (used by admin SES endpoints)
+    SES_AWS_ACCESS_KEY_ID = SES_AWS_ACCESS_KEY_ID
+    SES_AWS_SECRET_ACCESS_KEY = SES_AWS_SECRET_ACCESS_KEY
 
     # Azure
     AZURE_OPENAI_API_KEY = AZURE_OPENAI_API_KEY
@@ -208,6 +229,6 @@ class Config:
     GIT_AUTHOR_EMAIL = GIT_AUTHOR_EMAIL
     GH_TOKEN = GH_TOKEN
 
-    # CORS (useful if something imports these from config)
+    # CORS (exposed in case anything imports from config)
     CORS_ORIGINS = CORS_ORIGINS
     CORS_ALLOWED_ORIGINS = CORS_ALLOWED_ORIGINS
