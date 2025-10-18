@@ -69,10 +69,11 @@ def login_required(f):
     def decorated_function(*args, **kwargs):
         token = _get_bearer_token()
         if not token:
-            # redirect to the static login page (works locally + GH Pages link if FRONTEND_BASE_URL set)
             base = (current_app.config.get("FRONTEND_BASE_URL") or "").rstrip("/")
             login_url = (base + "/login.html") if base else "/login.html"
             return redirect(login_url)
+
+        user = None  # avoid unbound var in some static analysis paths
         try:
             data = jwt.decode(token, current_app.config["JWT_SECRET"], algorithms=["HS256"])
             user = User.query.get(data["sub"])
@@ -92,6 +93,7 @@ def login_required(f):
 # ----------------------------
 
 @auth_bp.route("/admin/promote_me", methods=["POST", "OPTIONS"])
+@cross_origin()
 @token_required
 def promote_me(current_user):
     # Only allow if the caller matches the configured ADMIN_EMAIL
@@ -200,19 +202,19 @@ def me(current_user):
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 def _guess_ses_region() -> str:
-    """
-    Prefer explicit SES vars, then generic AWS vars, then parse SMTP host,
-    else default to eu-north-1 (your setup).
-    """
-    return (
+    region = (
         os.getenv("SES_REGION")
         or os.getenv("AWS_SES_REGION")
         or os.getenv("AWS_REGION")
         or os.getenv("AWS_DEFAULT_REGION")
-        or (re.search(r"email-smtp\.([a-z0-9-]+)\.amazonaws\.com",
-                      os.getenv("SES_SMTP_SERVER","") or os.getenv("SES_SMTP_HOST","") or "")
-            or [None, "eu-north-1"])[1]
     )
+    if region:
+        return region
+
+    host = os.getenv("SES_SMTP_SERVER") or os.getenv("SES_SMTP_HOST") or ""
+    m = re.search(r"email-smtp\.([a-z0-9-]+)\.amazonaws\.com", host)
+    return m.group(1) if m else "eu-north-1"
+
 
 def _ses_client():
     """
@@ -224,9 +226,11 @@ def _ses_client():
         raise RuntimeError("boto3 is not installed; add 'boto3>=1.34' to requirements.txt")
 
     region = _guess_ses_region()
-    # Prefer SES-specific keys so R2's AWS_* don't collide
-    ak = os.getenv("SES_AWS_ACCESS_KEY_ID") or os.getenv("AWS_ACCESS_KEY_ID")
-    sk = os.getenv("SES_AWS_SECRET_ACCESS_KEY") or os.getenv("AWS_SECRET_ACCESS_KEY")
+
+    # Prefer SES_* (IAM keys you created for SES API), else fall back to generic AWS_* if present
+    ak = os.getenv("SES_AWS_ACCESS_KEY_ID") or os.getenv("AWS_SES_ACCESS_KEY_ID") or os.getenv("AWS_ACCESS_KEY_ID")
+    sk = os.getenv("SES_AWS_SECRET_ACCESS_KEY") or os.getenv("AWS_SES_SECRET_ACCESS_KEY") or os.getenv("AWS_SECRET_ACCESS_KEY")
+
     if not ak or not sk:
         raise RuntimeError("Missing SES API creds: set SES_AWS_ACCESS_KEY_ID and SES_AWS_SECRET_ACCESS_KEY")
 
@@ -236,12 +240,6 @@ def _ses_client():
         region_name=region,
     )
     return session.client("sesv2")
-
-
-def _ses_client():
-    # Requires IAM creds in env: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY (and optional AWS_SESSION_TOKEN)
-    region = _guess_ses_region()
-    return boto3.client("sesv2", region_name=region)
 
 @auth_bp.route("/admin/ses/create_identity", methods=["POST", "OPTIONS"])
 @cross_origin()
