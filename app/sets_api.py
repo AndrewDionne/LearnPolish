@@ -149,8 +149,11 @@ def _git_add_commit_push(paths: list[Path], message: str) -> None:
     """
     try:
         from .git_utils import commit_and_push_changes as _commit_push
+        to_add = [str(p) for p in paths if p and Path(p).exists()]
+        current_app.logger.info("git push: git_utils helper (files=%s) msg=%s", len(to_add), message)
         _commit_push(message, paths=paths)
         return
+
     except Exception:
         pass  # fall through to subprocess
 
@@ -183,6 +186,10 @@ def _git_add_commit_push(paths: list[Path], message: str) -> None:
         out = (getattr(e, "output", b"") or b"").decode("utf-8", "ignore")
         if "nothing to commit" not in out:
             raise
+    current_app.logger.info("git push: %s → %s (branch=%s) files=%s",
+                        "git_utils" if 'commit_and_push_changes' in globals() else "subprocess",
+                        (remote_url or "origin"), branch, len(to_add))
+
     run(["git", "push", "origin", f"HEAD:{branch}"])
 
 
@@ -227,6 +234,38 @@ def _regen_pages_for_slug(slug: str, modes: list[str]) -> None:
             _try_module("reading",    ["generate_set_pages", "generate_pages", "build_pages"])
         elif m == "listening":
             _try_module("listening",  ["create_listening_set", "generate_set_pages", "generate_pages", "build_pages"])
+
+    # --- Post-condition check & fallback: ensure the HTML directory exists ---
+    expected = []
+    if "flashcards" in modes: expected.append(PAGES_DIR / "flashcards" / slug / "index.html")
+    if "practice"   in modes: expected.append(PAGES_DIR / "practice"   / slug / "index.html")
+    if "reading"    in modes: expected.append(PAGES_DIR / "reading"    / slug / "index.html")
+    if "listening"  in modes: expected.append(PAGES_DIR / "listening"  / slug / "index.html")
+
+    missing = [p for p in expected if not p.exists()]
+    if missing:
+        current_app.logger.warning("create_set_v2: expected pages missing -> attempting direct generator fallback for %s", slug)
+        try:
+            from .sets_utils import load_set_data
+            items, saved_modes = load_set_data(slug)
+            from .modes import MODE_GENERATORS
+            if "flashcards" in modes or "practice" in modes:
+                gen = MODE_GENERATORS.get("flashcards")
+                if gen: gen(slug, items)
+                gen = MODE_GENERATORS.get("practice")
+                if gen: gen(slug, items)
+            if "reading" in modes:
+                gen = MODE_GENERATORS.get("reading")
+                if gen: gen(slug, items)
+            # re-check
+            missing = [p for p in expected if not p.exists()]
+            if missing:
+                current_app.logger.error("create_set_v2: fallback still missing: %s", [str(p) for p in missing])
+            else:
+                current_app.logger.info("create_set_v2: fallback produced all expected pages for %s", slug)
+        except Exception as e:
+            current_app.logger.exception("create_set_v2: direct fallback failed: %s", e)
+
 
 # ----------------------------
 # API
@@ -325,23 +364,20 @@ def remove_set(current_user):
     return _with_deprecation_headers(resp, f"/api/my/sets/{set_name}")
 
 # 4) Create a set (owner-only on create)
-current_app.logger.info("create_set_v2 called: set_type=%s set_name=%s", set_type, set_name)
-
 @sets_api.route("/create_set_v2", methods=["POST"])
 @token_required
 def create_set(current_user):
-    """
-    Body: { set_type: "<one of SET_TYPES>", set_name: str, data: [ ... ] }
-    - Saves docs/sets/<slug>.json (wrapper)
-    - Generates assets/pages for implied modes
-    - Adds to user's collection with is_owner=True
-    - Commits & pushes changes so GitHub Pages serves it
-    - Idempotent: if <slug>.json already exists, we regenerate + push and return 200
-    """
+    current_app.logger.info("create_set_v2: start")
+
     body = request.get_json(silent=True) or {}
     set_type = (body.get("set_type") or "").strip().lower()
     set_name = (body.get("set_name") or "").strip()
     data = body.get("data")
+
+    current_app.logger.info(
+        "create_set_v2: parsed set_type=%s set_name=%s items=%s",
+        set_type, set_name, (len(data) if isinstance(data, list) else "n/a")
+    )
 
     if set_type not in SET_TYPES:
         return jsonify({"message": f"Invalid set_type. Allowed: {sorted(SET_TYPES)}"}), 400
@@ -368,20 +404,28 @@ def create_set(current_user):
         try:
             _regen_pages_for_slug(safe_name, modes)
             # include common index artifacts if present
-            to_commit = [json_path] + [PAGES_DIR / m / safe_name for m in modes]
+            to_commit = [json_path]
+            for m in modes:
+                d = PAGES_DIR / m / safe_name
+                if d.exists(): to_commit.append(d)
+            # Common index artifacts
             for p in [
                 PAGES_DIR / "flashcards" / "index.html",
                 PAGES_DIR / "practice"   / "index.html",
                 PAGES_DIR / "reading"    / "index.html",
                 PAGES_DIR / "listening"  / "index.html",
                 PAGES_DIR / "set_modes.json",
+                PAGES_DIR / "static"     / safe_name / "r2_manifest.json",
             ]:
                 if p.exists():
                     to_commit.append(p)
+
             _git_add_commit_push(to_commit, f"rebuild: {safe_name} [{','.join(modes)}]")
             meta = get_set_metadata(safe_name)
             meta["modes"] = modes
             meta["note"] = "already_existed_regenerated"
+            current_app.logger.info("create_set_v2: idempotent path (exists) -> regen + push for %s", safe_name)
+
             return jsonify(meta), 200
         except Exception as e:
             current_app.logger.warning("Idempotent rebuild failed for %s: %s", safe_name, e)
@@ -413,20 +457,28 @@ def create_set(current_user):
             current_app.logger.warning("Failed to rebuild set_modes.json after create: %s", e)
 
         # 5) Commit & push
-        to_commit = [json_path] + [PAGES_DIR / m / safe_name for m in modes]
+        to_commit = [json_path]
+        for m in modes:
+            d = PAGES_DIR / m / safe_name
+            if d.exists(): to_commit.append(d)
+        # Common index artifacts
         for p in [
             PAGES_DIR / "flashcards" / "index.html",
             PAGES_DIR / "practice"   / "index.html",
             PAGES_DIR / "reading"    / "index.html",
             PAGES_DIR / "listening"  / "index.html",
             PAGES_DIR / "set_modes.json",
+            PAGES_DIR / "static"     / safe_name / "r2_manifest.json",
         ]:
             if p.exists():
                 to_commit.append(p)
+
         _git_add_commit_push(to_commit, f"build: {safe_name} [{','.join(modes)}]")
 
         meta["created_by"] = "me"
         meta["modes"] = modes
+        current_app.logger.info("create_set_v2: created -> regen + push for %s modes=%s", safe_name, modes)
+
         return jsonify(meta), 201
 
     except Exception as e:
@@ -452,7 +504,7 @@ def delete_set(current_user, set_name):
             _delete_set_files_everywhere(safe_name)
         except Exception:
             pass
-        return jsonify({"ok": True, deleted: True}), 200
+        return jsonify({"ok": True, "deleted": True}), 200
 
     me_link = next((l for l in links if l.user_id == current_user.id), None)
     if not me_link or not getattr(me_link, "is_owner", False):
@@ -476,7 +528,8 @@ def delete_set(current_user, set_name):
             rebuild_set_modes_map()
         except Exception as e:
             current_app.logger.warning("Failed to rebuild set_modes.json after delete: %s", e)
-        return jsonify({"ok": True, "handover": True, "new_owner_id": new_owner_link.user_id}), 200
+        return jsonify({"ok": True, "deleted": True}), 200
+
 
     new_owner_link = sorted(others, key=lambda l: l.id)[0]
     me_link.is_owner = False
@@ -493,8 +546,7 @@ def delete_set(current_user, set_name):
     except Exception as e:
         current_app.logger.warning("Failed to rebuild set_modes.json after handover: %s", e)
 
-    return jsonify({"ok": True, handover: True, new_owner_id: new_owner_link.user_id}), 200
-
+    return jsonify({"ok": True, "handover": True, "new_owner_id": new_owner_link.user_id}), 200
 # 6) Admin build & publish (server-side)
 @sets_api.route("/admin/build_publish", methods=["POST", "OPTIONS"])
 @token_required
