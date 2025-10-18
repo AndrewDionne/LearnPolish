@@ -144,34 +144,34 @@ def _delete_set_files_everywhere(set_name: str):
 # --- GIT PUBLISH HELPER (module-level) ---
 def _git_add_commit_push(paths: list[Path], message: str) -> None:
     """
-    Add/commit/push a set of paths.
-    Prefer git_utils.commit_and_push_changes (injects GH_TOKEN); else subprocess fallback.
+    Add/commit/push a set of paths via subprocess (explicit and noisy).
+    This avoids silent failures in helper layers.
     """
-    try:
-        from .git_utils import commit_and_push_changes as _commit_push
-        to_add = [str(p) for p in paths if p and Path(p).exists()]
-        current_app.logger.info("git push: git_utils helper (files=%s) msg=%s", len(to_add), message)
-        _commit_push(message, paths=paths)
-        return
-
-    except Exception:
-        pass  # fall through to subprocess
-
-    # -- subprocess fallback (rarely used if git_utils is present) --
     root = Path(current_app.root_path).parent  # repo root
 
     def run(args: list[str]):
+        current_app.logger.info("git: %s", " ".join(args))
         return subprocess.check_call(args, cwd=str(root))
 
     to_add = [str(p) for p in paths if p and Path(p).exists()]
     if not to_add:
-        current_app.logger.info("Nothing to add; no paths exist.")
+        current_app.logger.info("git: nothing to add (no paths exist)")
         return
 
     remote_url = (current_app.config.get("GIT_REMOTE") or "").strip()
     branch     = (current_app.config.get("GIT_BRANCH") or "main").strip() or "main"
 
-    # Optional explicit remote override
+    # Ensure identity (Render images often lack global config)
+    try:
+        run(["git", "config", "user.email"])
+    except subprocess.CalledProcessError:
+        run(["git", "config", "user.email", "bot@pathtopolish.app"])
+    try:
+        run(["git", "config", "user.name"])
+    except subprocess.CalledProcessError:
+        run(["git", "config", "user.name", "Path to POLISH Bot"])
+
+    # Optional explicit remote override (injects GH_TOKEN)
     if remote_url:
         try:
             run(["git", "remote", "remove", "origin"])
@@ -183,13 +183,11 @@ def _git_add_commit_push(paths: list[Path], message: str) -> None:
     try:
         run(["git", "commit", "-m", message])
     except subprocess.CalledProcessError as e:
+        # No changes? Carry on to push in case remote was re-pointed.
         out = (getattr(e, "output", b"") or b"").decode("utf-8", "ignore")
-        if "nothing to commit" not in out:
-            raise
-    current_app.logger.info("git push: %s → %s (branch=%s) files=%s",
-                        "git_utils" if 'commit_and_push_changes' in globals() else "subprocess",
-                        (remote_url or "origin"), branch, len(to_add))
+        current_app.logger.info("git: commit returned non-zero; continuing. details=%s", (out or "n/a")[:200])
 
+    current_app.logger.info("git push: origin (branch=%s) files=%s", branch, len(to_add))
     run(["git", "push", "origin", f"HEAD:{branch}"])
 
 
@@ -426,7 +424,10 @@ def create_set(current_user):
             meta["note"] = "already_existed_regenerated"
             current_app.logger.info("create_set_v2: idempotent path (exists) -> regen + push for %s", safe_name)
 
-            return jsonify(meta), 200
+            resp = jsonify(meta)
+            resp.headers["X-Create-Handler"] = "v2"
+            return resp, 200
+
         except Exception as e:
             current_app.logger.warning("Idempotent rebuild failed for %s: %s", safe_name, e)
             # fall through to normal path (will 500 if something is fatally wrong)
@@ -479,7 +480,9 @@ def create_set(current_user):
         meta["modes"] = modes
         current_app.logger.info("create_set_v2: created -> regen + push for %s modes=%s", safe_name, modes)
 
-        return jsonify(meta), 201
+        resp = jsonify(meta)
+        resp.headers["X-Create-Handler"] = "v2"
+        return resp, 201
 
     except Exception as e:
         current_app.logger.exception("Failed to create set %s", safe_name)
