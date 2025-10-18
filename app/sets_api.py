@@ -144,15 +144,16 @@ def _delete_set_files_everywhere(set_name: str):
 # --- GIT PUBLISH HELPER (module-level) ---
 def _git_add_commit_push(paths: list[Path], message: str) -> None:
     """
-    Add/commit/push a set of paths via subprocess (explicit and noisy).
-    This avoids silent failures in helper layers.
+    Add/commit/push a set of paths via subprocess with loud logging.
+    Avoid helper layers that may swallow errors in production images.
     """
-    root = Path(current_app.root_path).parent  # repo root
+    root = Path(current_app.root_path).parent  # repo root (the project root)
 
     def run(args: list[str]):
         current_app.logger.info("git: %s", " ".join(args))
         return subprocess.check_call(args, cwd=str(root))
 
+    # Only add paths that actually exist
     to_add = [str(p) for p in paths if p and Path(p).exists()]
     if not to_add:
         current_app.logger.info("git: nothing to add (no paths exist)")
@@ -161,7 +162,7 @@ def _git_add_commit_push(paths: list[Path], message: str) -> None:
     remote_url = (current_app.config.get("GIT_REMOTE") or "").strip()
     branch     = (current_app.config.get("GIT_BRANCH") or "main").strip() or "main"
 
-    # Ensure identity (Render images often lack global config)
+    # Ensure identity so commits don't fail on Render
     try:
         run(["git", "config", "user.email"])
     except subprocess.CalledProcessError:
@@ -171,7 +172,7 @@ def _git_add_commit_push(paths: list[Path], message: str) -> None:
     except subprocess.CalledProcessError:
         run(["git", "config", "user.name", "Path to POLISH Bot"])
 
-    # Optional explicit remote override (injects GH_TOKEN)
+    # Explicit remote override (injects GH_TOKEN)
     if remote_url:
         try:
             run(["git", "remote", "remove", "origin"])
@@ -182,10 +183,8 @@ def _git_add_commit_push(paths: list[Path], message: str) -> None:
     run(["git", "add"] + to_add)
     try:
         run(["git", "commit", "-m", message])
-    except subprocess.CalledProcessError as e:
-        # No changes? Carry on to push in case remote was re-pointed.
-        out = (getattr(e, "output", b"") or b"").decode("utf-8", "ignore")
-        current_app.logger.info("git: commit returned non-zero; continuing. details=%s", (out or "n/a")[:200])
+    except subprocess.CalledProcessError:
+        current_app.logger.info("git: commit had no changes; continuing to push (in case remote was repointed)")
 
     current_app.logger.info("git push: origin (branch=%s) files=%s", branch, len(to_add))
     run(["git", "push", "origin", f"HEAD:{branch}"])
@@ -426,7 +425,10 @@ def create_set(current_user):
 
             resp = jsonify(meta)
             resp.headers["X-Create-Handler"] = "v2"
-            return resp, 200
+            resp = jsonify(meta)
+            resp.headers["X-Create-Handler"] = "v2"
+            return resp, 200  # or 200 in the idempotent path
+
 
         except Exception as e:
             current_app.logger.warning("Idempotent rebuild failed for %s: %s", safe_name, e)
@@ -482,7 +484,10 @@ def create_set(current_user):
 
         resp = jsonify(meta)
         resp.headers["X-Create-Handler"] = "v2"
-        return resp, 201
+        resp = jsonify(meta)
+        resp.headers["X-Create-Handler"] = "v2"
+        return resp, 201  # or 200 in the idempotent path
+
 
     except Exception as e:
         current_app.logger.exception("Failed to create set %s", safe_name)
@@ -604,3 +609,31 @@ def admin_build_publish(current_user):
     except Exception as e:
         current_app.logger.exception("admin_build_publish failed for %s", slug)
         return jsonify({"ok": False, "error": str(e)}), 500
+
+@sets_api.route("/admin/git_diag", methods=["GET"])
+@token_required
+def admin_git_diag(current_user):
+    if not getattr(current_user, "is_admin", False):
+        return jsonify({"ok": False, "error": "forbidden"}), 403
+
+    import subprocess, shlex
+    root = Path(current_app.root_path).parent
+
+    def run(cmd: str):
+        try:
+            out = subprocess.check_output(shlex.split(cmd), cwd=str(root))
+            return out.decode("utf-8", "ignore").strip()
+        except Exception as e:
+            return f"ERROR: {e!r}"
+
+    data = {
+        "cwd": str(root),
+        "inside_work_tree": run("git rev-parse --is-inside-work-tree"),
+        "branch": run("git rev-parse --abbrev-ref HEAD"),
+        "status": run("git status --porcelain"),
+        "remotes": run("git remote -v"),
+        "last_commit": run("git log -1 --oneline"),
+        "git_config_user_name": run("git config user.name"),
+        "git_config_user_email": run("git config user.email"),
+    }
+    return jsonify({"ok": True, "git": data}), 200

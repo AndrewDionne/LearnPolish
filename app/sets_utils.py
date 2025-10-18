@@ -142,6 +142,15 @@ def r2_enabled() -> bool:
     except Exception:
         return False
 
+def r2_enabled() -> bool:
+    try:
+        if os.getenv("DISABLE_R2") == "1":
+            return False
+        return bool(_r2_enabled_raw() if callable(_r2_enabled_raw) else _r2_enabled_raw)
+    except Exception:
+        return False
+
+
 # --- Optional set_modes.json rewriter ---------------------------------------
 try:
     from .create_set_modes import main as rebuild_set_modes_map
