@@ -1,0 +1,17 @@
+{
+  "name": "10LS",
+  "type": "flashcards",
+  "items": [
+    {
+      "en": "hello",
+      "pl": "cześć"
+    },
+    {
+      "en": "goodbye",
+      "pl": "do widzenia"
+    }
+  ],
+  "modes": [
+    "flashcards"
+  ]
+}
