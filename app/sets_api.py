@@ -144,199 +144,85 @@ def _delete_set_files_everywhere(set_name: str):
 # --- GIT PUBLISH HELPER (module-level) ---
 def _git_add_commit_push(paths: list[Path], message: str) -> None:
     """
-    Add/commit/push a set of paths.
-    Priority:
-      1) If inside a git work tree -> git add/commit, then push via tokenized HTTPS URL.
-      2) Else -> fall back to GitHub Contents API (per-file PUTs).
-    Never logs secrets. Safe to call with files and/or directories.
+    Add/commit/push given paths.
+    Uses: GITHUB_REPO_SLUG, GITHUB_TOKEN (or GH_TOKEN), GIT_BRANCH,
+          GIT_AUTHOR_NAME, GIT_AUTHOR_EMAIL.
     """
-    import os, base64, json, re, subprocess
-    from urllib.parse import urlparse
-    import requests
+    import os
+    root = Path(current_app.root_path).parent  # project repo root
 
-    logger = current_app.logger
-    root = Path(current_app.root_path).parent  # repo root
+    def run(args: list[str]):
+        current_app.logger.info("git: %s", " ".join(args))
+        return subprocess.check_call(args, cwd=str(root))
 
-    def run(args: list[str]) -> subprocess.CompletedProcess:
-        logger.info("git: %s", " ".join(args))
-        return subprocess.run(args, cwd=str(root), check=True, capture_output=True, text=True)
+    # --- repo presence ---
+    if not (root / ".git").exists():
+        run(["git", "init"])
 
-    def inside_git_repo() -> bool:
-        try:
-            out = subprocess.run(
-                ["git", "rev-parse", "--is-inside-work-tree"],
-                cwd=str(root), check=True, capture_output=True, text=True
-            )
-            return out.stdout.strip() == "true"
-        except Exception:
-            return False
+    # --- envs ---
+    branch = (os.getenv("GIT_BRANCH") or "main").strip() or "main"
+    token  = os.getenv("GITHUB_TOKEN") or os.getenv("GH_TOKEN")
+    slug   = os.getenv("GITHUB_REPO_SLUG") or os.getenv("GITHUB_REPOSITORY")  # e.g. andrewdionne/LearnPolish
+    if not token:
+        raise RuntimeError("GITHUB_TOKEN (or GH_TOKEN) is not set")
+    if not slug:
+        raise RuntimeError("GITHUB_REPO_SLUG (or GITHUB_REPOSITORY) is not set")
 
-    # Collect files to add/commit (expand directories)
-    def iter_files(p: Path):
-        if p.is_file():
-            yield p
-        elif p.is_dir():
-            for fp in p.rglob("*"):
-                if fp.is_file():
-                    yield fp
+    # Build an authenticated HTTPS remote the GitHub way
+    remote_url = f"https://x-access-token:{token}@github.com/{slug}.git"
 
-    # Filter only existing paths and flatten directories
-    to_commit_files = []
+    # Point origin at that URL
+    try:
+        run(["git", "remote", "set-url", "origin", remote_url])
+    except subprocess.CalledProcessError:
+        run(["git", "remote", "add", "origin", remote_url])
+
+    # Optional: make sure this working tree is considered safe by git (containers sometimes need this)
+    try:
+        run(["git", "config", "--global", "--add", "safe.directory", str(root)])
+    except Exception:
+        pass  # non-fatal
+
+    # --- identity ---
+    author_name  = os.getenv("GIT_AUTHOR_NAME")  or "Path to POLISH Bot"
+    author_email = os.getenv("GIT_AUTHOR_EMAIL") or "bot@pathtopolish.app"
+
+    # Set if missing
+    try:
+        run(["git", "config", "user.name"])
+    except subprocess.CalledProcessError:
+        run(["git", "config", "user.name", author_name])
+
+    try:
+        run(["git", "config", "user.email"])
+    except subprocess.CalledProcessError:
+        run(["git", "config", "user.email", author_email])
+
+    # --- stage files (repo-relative) ---
+    to_add_rel = []
     for p in paths:
         if not p:
             continue
         p = Path(p)
         if not p.exists():
             continue
-        to_commit_files.extend(iter_files(p))
-
-    if not to_commit_files:
-        logger.info("git: nothing to add (no paths exist)")
-        return
-
-    # ---- Common env/config ----
-    branch = (current_app.config.get("GIT_BRANCH") or "main").strip() or "main"
-    base_remote = (current_app.config.get("GIT_REMOTE") or
-                   "https://github.com/andrewdionne/LearnPolish.git").strip()
-    token = (os.environ.get("GH_TOKEN") or "").strip()
-
-    if not token:
-        logger.error("GH_TOKEN is not set; cannot publish")
-        raise RuntimeError("GH_TOKEN missing")
-
-    # Helper: sanitize/authed push URL without leaking token in logs
-    def authed_remote_url(url: str) -> tuple[str, str]:
-        # https://github.com/<owner>/<repo>.git -> https://x-access-token:<token>@github.com/<owner>/<repo>.git
-        if not url.startswith("https://"):
-            return url, url  # non-https (unexpected); no masking/prefix
-        authed = url.replace("https://", f"https://x-access-token:{token}@")
-        redacted = url.replace("https://", "https://***@")
-        return authed, redacted
-
-    # ---- Path helpers for both modes ----
-    def repo_relpath(abs_path: Path) -> Path:
-        # ensure file is under repo root
         try:
-            return abs_path.relative_to(root)
-        except Exception:
-            # if PAGES_DIR/SETS_DIR points outside root, we can't push those files
-            raise RuntimeError(f"Path {abs_path} is not under repo root {root}")
+            rel = p.relative_to(root)
+        except ValueError:
+            # if absolute but outside, best-effort relative
+            rel = Path(os.path.relpath(str(p), str(root)))
+        to_add_rel.append(str(rel))
 
-    # ---- Fallback via GitHub Contents API ----
-    def push_via_contents_api(files: list[Path]):
-        """
-        PUT /repos/:owner/:repo/contents/:path for each file.
-        Safer in environments without .git. Many commits (one per file).
-        """
-        # Parse owner/repo from remote
-        # accept ...github.com/<owner>/<repo>.git or ...github.com/<owner>/<repo>
-        m = re.search(r"github\.com[:/]+([^/]+)/([^/]+?)(?:\.git)?$", base_remote)
-        if not m:
-            raise RuntimeError(f"Cannot parse owner/repo from GIT_REMOTE={base_remote}")
-        owner, repo = m.group(1), m.group(2)
-
-        api_base = f"https://api.github.com/repos/{owner}/{repo}/contents"
-        headers = {"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"}
-
-        session = requests.Session()
-        session.headers.update(headers)
-
-        def get_sha(rel_unix_path: str) -> str | None:
-            try:
-                r = session.get(f"{api_base}/{rel_unix_path}", params={"ref": branch}, timeout=30)
-                if r.status_code == 200:
-                    return r.json().get("sha")
-            except Exception:
-                pass
-            return None
-
-        pushed = 0
-        for f in files:
-            rel = repo_relpath(f).as_posix()
-            content_b64 = base64.b64encode(f.read_bytes()).decode("utf-8")
-            sha = get_sha(rel)
-            payload = {
-                "message": message,
-                "content": content_b64,
-                "branch": branch,
-            }
-            if sha:
-                payload["sha"] = sha
-            r = session.put(f"{api_base}/{rel}", data=json.dumps(payload), timeout=60)
-            if r.status_code not in (200, 201):
-                logger.error("Contents API push failed for %s: %s %s", rel, r.status_code, r.text[:300])
-                raise RuntimeError(f"Contents API push failed for {rel}: {r.status_code}")
-            pushed += 1
-
-        logger.info("Contents API: pushed %d file(s) to %s on branch %s", pushed, base_remote, branch)
-
-    # ======================
-    # Mode 1: native git
-    # ======================
-    if inside_git_repo() and (root / ".git").exists():
-        try:
-            # ensure identity
-            try:
-                run(["git", "config", "--get", "user.email"])
-            except subprocess.CalledProcessError:
-                run(["git", "config", "user.email", "bot@polishpath.com"])
-            try:
-                run(["git", "config", "--get", "user.name"])
-            except subprocess.CalledProcessError:
-                run(["git", "config", "user.name", "PolishPath Bot"])
-
-            # git add (use repo-relative paths to be safe)
-            rels = [str(repo_relpath(p)) for p in to_commit_files]
-            # de-dup while preserving order
-            seen, rels_unique = set(), []
-            for r in rels:
-                if r not in seen:
-                    seen.add(r)
-                    rels_unique.append(r)
-
-            run(["git", "add"] + rels_unique)
-
-            # commit (ok if nothing to commit)
-            try:
-                run(["git", "commit", "-m", message])
-            except subprocess.CalledProcessError as e:
-                # "nothing to commit" is fine; still push in case branch/remote needs updating
-                logger.info("git: commit produced no changes; continuing to push")
-
-            # push via tokenized URL (do NOT mutate 'origin')
-            authed, redacted = authed_remote_url(base_remote)
-            logger.info("git: pushing to %s (branch=%s, files=%d)", redacted, branch, len(rels_unique))
-            try:
-                run(["git", "push", authed, f"HEAD:{branch}"])
-                logger.info("git: push successful to %s", redacted)
-                return
-            except subprocess.CalledProcessError as e:
-                logger.warning("git: authed URL push failed (%s); trying 'origin'", str(e))
-                # final fallback: origin (requires origin to be configured with deploy key/token)
-                run(["git", "push", "origin", f"HEAD:{branch}"])
-                logger.info("git: push to 'origin' successful")
-                return
-
-        except Exception as e:
-            logger.exception("git mode failed; falling back to Contents API: %s", e)
-            # fall through to contents API
-
-    # ======================
-    # Mode 2: Contents API
-    # ======================
-    # Only commit files that are *inside* the repo and not ignored
-    files_inside = []
-    for f in to_commit_files:
-        try:
-            files_inside.append(Path(repo_relpath(f)))
-        except Exception as e:
-            logger.warning("Skipping non-repo path: %s (%s)", f, e)
-
-    if not files_inside:
-        logger.error("No repo-relative files to push via Contents API")
+    if not to_add_rel:
         raise RuntimeError("Nothing to push (no repo-relative files)")
 
-    push_via_contents_api([root / f for f in files_inside])
+    run(["git", "add"] + to_add_rel)
+    try:
+        run(["git", "commit", "-m", message, "--no-gpg-sign"])
+    except subprocess.CalledProcessError:
+        current_app.logger.info("git: nothing to commit; pushing anyway")
+
+    run(["git", "push", "origin", f"HEAD:{branch}"])
 
 
 # --- PAGE REGEN HELPER (module-level) ---
