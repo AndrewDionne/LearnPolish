@@ -286,7 +286,18 @@ def save_set_wrapper(set_name: str, modes: list[str], data: list[dict]) -> Path:
     body: dict = {"name": safe, "modes": [], "meta": {"modes": []}}
 
     # enforce pairing + canonical order
-    m = set([str(x).lower() for x in (modes or [])])
+    # accept both canonical ("learn/speak/read/listen") and page modes ("flashcards/practice/reading/listening")
+    raw = {str(x).lower() for x in (modes or [])}
+    page_to_canon = {
+        "flashcards": "learn",
+        "practice":   "speak",
+        "reading":    "read",
+        "listening":  "listen",
+        # pass-through for canonical too
+        "learn": "learn", "speak": "speak", "read": "read", "listen": "listen",
+    }
+    m = {page_to_canon.get(x, x) for x in raw if page_to_canon.get(x, x) in {"learn","speak","read","listen"}}
+
     if "learn" in m or "speak" in m:
         m.update({"learn", "speak"})
     ordered = [x for x in ["learn", "speak", "read", "listen"] if x in m]
@@ -514,11 +525,19 @@ def create_set(set_type: str, set_name: str, data: List[Dict[str, Any]]) -> Dict
     if not safe_name:
         raise ValueError("Invalid set name")
 
-    # Normalize modes from declared set_type (kept forgiving)
-    modes = modes_for_type(set_type) or ["flashcards"]
+    # Normalize to canonical modes expected by the wrapper: learn/speak/read/listen
+    t = (set_type or "").strip().lower()
+    if t in {"flashcards", "vocab", "cards", "practice"}:
+        canonical_modes = ["learn", "speak"]
+    elif t in {"reading", "read"}:
+        canonical_modes = ["read"]
+    elif t in {"listening", "listen"}:
+        canonical_modes = ["listen"]
+    else:
+        canonical_modes = ["learn", "speak"]  # safe default
 
     # 1) Save canonical wrapper (cards or passages with explicit modes)
-    save_set_wrapper(safe_name, modes, data or [])
+    save_set_wrapper(safe_name, canonical_modes, data or [])
 
     # 2) Generate static pages + audio and publish to R2 (if enabled)
     regenerate_set_pages(safe_name)

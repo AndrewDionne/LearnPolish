@@ -325,6 +325,8 @@ def remove_set(current_user):
     return _with_deprecation_headers(resp, f"/api/my/sets/{set_name}")
 
 # 4) Create a set (owner-only on create)
+current_app.logger.info("create_set_v2 called: set_type=%s set_name=%s", set_type, set_name)
+
 @sets_api.route("/create_set_v2", methods=["POST"])
 @token_required
 def create_set(current_user):

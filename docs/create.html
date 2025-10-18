@@ -164,6 +164,16 @@
       console.error('[boot] api.js did not load');
     }
 
+    // Slug helper to mirror backend sanitize_filename
+    function sanitizeSlug(s){
+      return (s || '')
+        .normalize('NFKD')
+        .replace(/[\u0300-\u036f]/g,'')         // strip accents
+        .replace(/[^a-zA-Z0-9_-]+/g,'_')        // non-word → _
+        .replace(/^_+|_+$/g,'');                // trim _
+    }
+
+
     // --- Auth header like other pages ---
     (async () => {
       const logoutBtn = document.getElementById('logoutBtn');
@@ -273,11 +283,21 @@
     const status = document.getElementById('status');
     const success = document.getElementById('success');
 
+    let isSubmitting = false;  // <-- add this once above the listener (file-scope)
     document.getElementById('createForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      if (isSubmitting) return;
+      isSubmitting = true;
+
+      const submitBtn = document.getElementById('submitBtn');
+      const origLabel = submitBtn.textContent;
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Creating…';
+
       status.textContent = '';
       status.style.color = '';
       success.style.display = 'none';
+
 
     const setName = document.getElementById('set_name').value.trim();
     const group = currentGroup();
@@ -331,28 +351,63 @@
         const j = await api.post('/api/create_set_v2', {
           set_name: setName,
           set_type,
-          modes,
+          modes,          // harmless if backend ignores; j.modes will be authoritative
           data: payloadData
         });
 
         status.textContent = '';
-        const enc = encodeURIComponent(setName);
-        const links = modes.map(m=>{
-          if (m==='read')   return `<a class="btn" href="./reading/${enc}/">Open Reading</a>`;
-          if (m==='listen') return `<a class="btn" href="./listening/${enc}/">Open Listening</a>`;
-          if (m==='speak')  return `<a class="btn" href="./practice/${enc}/">Open Speak</a>`;
+
+        // Prefer the sanitized slug returned by the API; fall back to our local sanitizer
+        const safeSlug = sanitizeSlug(j?.name || setName);
+        const enc = encodeURIComponent(safeSlug);
+
+        // Prefer modes returned by API (handles idempotent rebuild notes etc.)
+        const mm = Array.isArray(j?.modes) && j.modes.length ? j.modes : modes;
+
+        const links = mm.map(m=>{
+          if (m==='read' || m==='reading')     return `<a class="btn" href="./reading/${enc}/">Open Reading</a>`;
+          if (m==='listen' || m==='listening') return `<a class="btn" href="./listening/${enc}/">Open Listening</a>`;
+          if (m==='speak' || m==='practice')   return `<a class="btn" href="./practice/${enc}/">Open Speak</a>`;
           return `<a class="btn" href="./flashcards/${enc}/">Open Learn</a>`;
         }).join(' ');
-        success.innerHTML = `✅ Created <b>${setName}</b>. ${links} <a class="btn" href="./manage_sets/">Go to Library</a>`;
+
+        const existed = (j && j.note === 'already_existed_regenerated');
+        const banner = existed ? `♻️ Rebuilt <b>${safeSlug}</b>.` : `✅ Created <b>${safeSlug}</b>.`;
+        success.innerHTML = `${banner} ${links} <a class="btn" href="./manage_sets/">Go to Library</a>`;
         success.style.display = 'block';
+
+
       }catch(err){
-        // api.post throws with { status, message }
-        const msg = (err && (err.message || err.error || err.statusText || err.status)) || 'unknown error';
-        status.textContent = '❌ ' + msg;
-        status.style.color = 'crimson';
-        console.error(err);
+        // api.post throws with { status, message }. Treat legacy 409 as "exists" and link to it.
+        const statusCode = err?.status || err?.code;
+        const msgText = (err && (err.message || err.error || err.statusText || err.status)) || 'unknown error';
+
+        // Soft-handle known legacy 409 shape
+        if (String(msgText).includes('set_already_exists') || statusCode === 409) {
+          const safeSlug = sanitizeSlug(setName);
+          const enc = encodeURIComponent(safeSlug);
+          const links = modes.map(m=>{
+            if (m==='read')   return `<a class="btn" href="./reading/${enc}/">Open Reading</a>`;
+            if (m==='listen') return `<a class="btn" href="./listening/${enc}/">Open Listening</a>`;
+            if (m==='speak')  return `<a class="btn" href="./practice/${enc}/">Open Speak</a>`;
+            return `<a class="btn" href="./flashcards/${enc}/">Open Learn</a>`;
+          }).join(' ');
+          success.innerHTML = `♻️ Already exists — re-open <b>${safeSlug}</b>. ${links} <a class="btn" href="./manage_sets/">Go to Library</a>`;
+          success.style.display = 'block';
+          status.textContent = '';
+        } else {
+          status.textContent = '❌ ' + msgText;
+          status.style.color = 'crimson';
+          console.error(err);
+        }
+      } finally {
+        isSubmitting = false;
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Create collection';
       }
     });
+
   </script>
 </body>
 </html>
