@@ -127,6 +127,10 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
+    from .admin_debug import admin_debug
+    app.register_blueprint(admin_debug)
+
+
     # --- Secrets / misc ---
     secret = (
         os.getenv("SECRET_KEY")
