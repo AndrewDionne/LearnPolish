@@ -298,6 +298,31 @@ def _regen_pages_for_slug(slug: str, modes: list[str]) -> None:
         except Exception as e:
             current_app.logger.exception("create_set_v2: direct fallback failed: %s", e)
 
+def _collect_commit_targets(slug: str, modes: list[str]) -> list[Path]:
+    targets = []
+    json_path = SETS_DIR / f"{slug}.json"
+    if json_path.exists():
+        targets.append(json_path)
+
+    for m in modes:
+        d = PAGES_DIR / m / slug
+        if d.exists():
+            targets.append(d)
+
+    # common index artifacts
+    for p in [
+        PAGES_DIR / "flashcards" / "index.html",
+        PAGES_DIR / "practice"   / "index.html",
+        PAGES_DIR / "reading"    / "index.html",
+        PAGES_DIR / "listening"  / "index.html",
+        PAGES_DIR / "set_modes.json",
+        PAGES_DIR / "static"     / slug / "r2_manifest.json",
+    ]:
+        if p.exists():
+            targets.append(p)
+    return targets
+
+
 
 # ----------------------------
 # API
@@ -404,18 +429,14 @@ def create_set(current_user):
     body = request.get_json(silent=True) or {}
     set_type = (body.get("set_type") or "").strip().lower()
     set_name = (body.get("set_name") or "").strip()
-    data = body.get("data")
+    items = body.get("data")
 
-    current_app.logger.info(
-        "create_set_v2: parsed set_type=%s set_name=%s items=%s",
-        set_type, set_name, (len(data) if isinstance(data, list) else "n/a")
-    )
-
+    # ---- validation ----
     if set_type not in SET_TYPES:
         return jsonify({"message": f"Invalid set_type. Allowed: {sorted(SET_TYPES)}"}), 400
     if not set_name:
         return jsonify({"message": "set_name is required"}), 400
-    if not isinstance(data, list) or not data:
+    if not isinstance(items, list) or not items:
         return jsonify({"message": "data must be a non-empty JSON array"}), 400
 
     safe_name = sanitize_filename(set_name)
@@ -423,68 +444,84 @@ def create_set(current_user):
         return jsonify({"message": "Invalid set_name"}), 400
 
     json_path = SETS_DIR / f"{safe_name}.json"
+
+    # generation modes (internal generator names)
     implied = {
         "flashcards": ["flashcards", "practice"],
         "reading":    ["reading"],
         "listening":  ["listening"],
         "practice":   ["practice"],
     }
-    modes = implied.get(set_type, ["flashcards", "practice"])
+    gen_modes = implied.get(set_type, ["flashcards", "practice"])
 
-    # --- Idempotent path: if JSON exists, regenerate pages + push and return 200
-    if json_path.exists():
-        try:
-            _regen_pages_for_slug(safe_name, modes)
-            # include common index artifacts if present
-            to_commit = [json_path]
-            for m in modes:
-                d = PAGES_DIR / m / safe_name
-                if d.exists(): to_commit.append(d)
-            # Common index artifacts
-            for p in [
-                PAGES_DIR / "flashcards" / "index.html",
-                PAGES_DIR / "practice"   / "index.html",
-                PAGES_DIR / "reading"    / "index.html",
-                PAGES_DIR / "listening"  / "index.html",
-                PAGES_DIR / "set_modes.json",
-                PAGES_DIR / "static"     / safe_name / "r2_manifest.json",
-            ]:
-                if p.exists():
-                    to_commit.append(p)
+    # map generator names -> client names
+    CLIENT_MODE = {
+        "flashcards": "learn",
+        "practice":   "speak",
+        "reading":    "read",
+        "listening":  "listen",
+    }
 
-            _git_add_commit_push(to_commit, f"rebuild: {safe_name} [{','.join(modes)}]")
-            meta = get_set_metadata(safe_name)
-            meta["modes"] = modes
+    def _augment_meta(meta: dict | None, *, existed: bool) -> dict:
+        """
+        Normalize the response so the client always sees:
+          - set_name, slug
+          - modes: ["learn","speak",...]
+          - pages: {"learn": "/flashcards/<slug>/", ...}
+        (We don't overwrite fields util_create_set may already provide,
+         we just ensure the keys above exist.)
+        """
+        meta = dict(meta or {})
+        meta.setdefault("set_name", set_name)
+        meta.setdefault("slug", safe_name)
+        meta["modes"] = [CLIENT_MODE[m] for m in gen_modes if m in CLIENT_MODE]
+        meta["pages"] = {CLIENT_MODE[m]: f"/{m}/{safe_name}/" for m in gen_modes if m in CLIENT_MODE}
+        if existed:
             meta["note"] = "already_existed_regenerated"
-            current_app.logger.info("create_set_v2: idempotent path (exists) -> regen + push for %s", safe_name)
+        return meta
 
-            resp = jsonify(meta)
-            resp.headers["X-Create-Handler"] = "v2"
-            resp = jsonify(meta)
-            resp.headers["X-Create-Handler"] = "v2"
-            return resp, 200  # or 200 in the idempotent path
-
-
-        except Exception as e:
-            current_app.logger.warning("Idempotent rebuild failed for %s: %s", safe_name, e)
-            # fall through to normal path (will 500 if something is fatally wrong)
+    existed = json_path.exists()
 
     try:
-        # 1) Write JSON + assets via util helper
-        meta = util_create_set(set_type, safe_name, data)
+        # ---------- IDEMPOTENT REBUILD ----------
+        if existed:
+            _regen_pages_for_slug(safe_name, gen_modes)
+            # best-effort index rebuilds
+            try:
+                build_all_mode_indexes()
+            except Exception as e:
+                current_app.logger.warning("Failed to rebuild mode indexes: %s", e)
+            try:
+                rebuild_set_modes_map()
+            except Exception as e:
+                current_app.logger.warning("Failed to rebuild set_modes.json after create: %s", e)
 
-        # 2) Link to user as owner
-        existing = UserSet.query.filter_by(user_id=current_user.id, set_name=safe_name).first()
-        if not existing:
+            targets = _collect_commit_targets(safe_name, gen_modes)
+            current_app.logger.info("create_set_v2: git targets (idempotent) for %s -> %s",
+                                    safe_name, [str(t) for t in targets])
+            _git_add_commit_push(targets, f"rebuild: {safe_name} [{','.join(gen_modes)}]")
+
+            meta = get_set_metadata(safe_name)
+            out = _augment_meta(meta, existed=True)
+            resp = jsonify(out)
+            resp.headers["X-Create-Handler"] = "v2"
+            return resp, 200
+
+        # ---------- NEW CREATE ----------
+        meta = util_create_set(set_type, safe_name, items)
+
+        # link user as owner (idempotent)
+        link = UserSet.query.filter_by(user_id=current_user.id, set_name=safe_name).first()
+        if not link:
             db.session.add(UserSet(user_id=current_user.id, set_name=safe_name, is_owner=True))
         else:
-            existing.is_owner = True
+            link.is_owner = True
         db.session.commit()
 
-        # 3) Regenerate static pages for implied mode(s) (safe even if util did it)
-        _regen_pages_for_slug(safe_name, modes)
+        # generate static pages
+        _regen_pages_for_slug(safe_name, gen_modes)
 
-        # 4) Rebuild landing/index artifacts (best-effort)
+        # best-effort index rebuilds
         try:
             build_all_mode_indexes()
         except Exception as e:
@@ -494,38 +531,20 @@ def create_set(current_user):
         except Exception as e:
             current_app.logger.warning("Failed to rebuild set_modes.json after create: %s", e)
 
-        # 5) Commit & push
-        to_commit = [json_path]
-        for m in modes:
-            d = PAGES_DIR / m / safe_name
-            if d.exists(): to_commit.append(d)
-        # Common index artifacts
-        for p in [
-            PAGES_DIR / "flashcards" / "index.html",
-            PAGES_DIR / "practice"   / "index.html",
-            PAGES_DIR / "reading"    / "index.html",
-            PAGES_DIR / "listening"  / "index.html",
-            PAGES_DIR / "set_modes.json",
-            PAGES_DIR / "static"     / safe_name / "r2_manifest.json",
-        ]:
-            if p.exists():
-                to_commit.append(p)
+        # push to GitHub
+        targets = _collect_commit_targets(safe_name, gen_modes)
+        current_app.logger.info("create_set_v2: git targets (new) for %s -> %s",
+                                safe_name, [str(t) for t in targets])
+        _git_add_commit_push(targets, f"build: {safe_name} [{','.join(gen_modes)}]")
 
-        _git_add_commit_push(to_commit, f"build: {safe_name} [{','.join(modes)}]")
-
-        meta["created_by"] = "me"
-        meta["modes"] = modes
-        current_app.logger.info("create_set_v2: created -> regen + push for %s modes=%s", safe_name, modes)
-
-        resp = jsonify(meta)
+        out = _augment_meta(meta, existed=False)
+        out["created_by"] = "me"
+        resp = jsonify(out)
         resp.headers["X-Create-Handler"] = "v2"
-        resp = jsonify(meta)
-        resp.headers["X-Create-Handler"] = "v2"
-        return resp, 201  # or 200 in the idempotent path
-
+        return resp, 201
 
     except Exception as e:
-        current_app.logger.exception("Failed to create set %s", safe_name)
+        current_app.logger.exception("create_set_v2 failed for %s: %s", safe_name, e)
         return jsonify({"message": "Failed to create set", "error": str(e)}), 500
 
 # 5) Delete a set (owner-only)
