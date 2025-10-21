@@ -144,62 +144,65 @@ def _delete_set_files_everywhere(set_name: str):
 # --- GIT PUBLISH HELPER (module-level) ---
 def _git_add_commit_push(paths: list[Path], message: str) -> None:
     """
-    Add/commit/push given paths.
-    Uses: GITHUB_REPO_SLUG, GITHUB_TOKEN (or GH_TOKEN), GIT_BRANCH,
-          GIT_AUTHOR_NAME, GIT_AUTHOR_EMAIL.
+    Add/commit/push repo-relative paths to GitHub.
+    Uses env:
+      - GITHUB_REPO_SLUG  (e.g. "AndrewDionne/LearnPolish")
+      - GITHUB_TOKEN  (or GH_TOKEN)
+      - GIT_BRANCH    (default: main)
+      - GIT_AUTHOR_NAME, GIT_AUTHOR_EMAIL (defaults provided)
+    Robust to non-fast-forward rejections: will pull --rebase then retry once.
     """
-    import os
-    root = Path(current_app.root_path).parent  # project repo root
+    import os, subprocess
+    root = Path(current_app.root_path).parent  # repo root on Render
 
-    def run(args: list[str]):
+    def run(args: list[str], ok_if_fails: bool=False):
         current_app.logger.info("git: %s", " ".join(args))
-        return subprocess.check_call(args, cwd=str(root))
+        try:
+            return subprocess.check_output(args, cwd=str(root), stderr=subprocess.STDOUT, text=True)
+        except subprocess.CalledProcessError as e:
+            if ok_if_fails:
+                current_app.logger.warning("git (ignored error): %s\n%s", " ".join(args), e.output)
+                return e.output
+            raise
 
-    # --- repo presence ---
+    # Ensure repo exists
     if not (root / ".git").exists():
         run(["git", "init"])
 
-    # --- envs ---
-    branch = (os.getenv("GIT_BRANCH") or "main").strip() or "main"
+    # Make the working tree “safe” for git inside containers
+    run(["git", "config", "--global", "--add", "safe.directory", str(root)], ok_if_fails=True)
+
+    # Identity
+    author_name  = os.getenv("GIT_AUTHOR_NAME")  or "Path to POLISH Bot"
+    author_email = os.getenv("GIT_AUTHOR_EMAIL") or "bot@pathtopolish.app"
+    if run(["git", "config", "user.name"], ok_if_fails=True).strip() == "":
+        run(["git", "config", "user.name", author_name])
+    if run(["git", "config", "user.email"], ok_if_fails=True).strip() == "":
+        run(["git", "config", "user.email", author_email])
+
+    # Remote + branch
     token  = os.getenv("GITHUB_TOKEN") or os.getenv("GH_TOKEN")
-    slug   = os.getenv("GITHUB_REPO_SLUG") or os.getenv("GITHUB_REPOSITORY")  # e.g. andrewdionne/LearnPolish
+    slug   = os.getenv("GITHUB_REPO_SLUG") or os.getenv("GITHUB_REPOSITORY")
+    branch = (os.getenv("GIT_BRANCH") or "main").strip() or "main"
     if not token:
         raise RuntimeError("GITHUB_TOKEN (or GH_TOKEN) is not set")
     if not slug:
         raise RuntimeError("GITHUB_REPO_SLUG (or GITHUB_REPOSITORY) is not set")
 
-    # Build an authenticated HTTPS remote the GitHub way
     remote_url = f"https://x-access-token:{token}@github.com/{slug}.git"
-
-    # Point origin at that URL
-    try:
+    # Set or add origin
+    if "origin" in run(["git", "remote"], ok_if_fails=True):
         run(["git", "remote", "set-url", "origin", remote_url])
-    except subprocess.CalledProcessError:
+    else:
         run(["git", "remote", "add", "origin", remote_url])
 
-    # Optional: make sure this working tree is considered safe by git (containers sometimes need this)
-    try:
-        run(["git", "config", "--global", "--add", "safe.directory", str(root)])
-    except Exception:
-        pass  # non-fatal
+    # Ensure branch exists and sync from remote (best-effort)
+    run(["git", "checkout", "-B", branch])
+    run(["git", "fetch", "origin", branch, "--depth=1"], ok_if_fails=True)
+    run(["git", "pull", "--rebase", "origin", branch], ok_if_fails=True)
 
-    # --- identity ---
-    author_name  = os.getenv("GIT_AUTHOR_NAME")  or "Path to POLISH Bot"
-    author_email = os.getenv("GIT_AUTHOR_EMAIL") or "bot@pathtopolish.app"
-
-    # Set if missing
-    try:
-        run(["git", "config", "user.name"])
-    except subprocess.CalledProcessError:
-        run(["git", "config", "user.name", author_name])
-
-    try:
-        run(["git", "config", "user.email"])
-    except subprocess.CalledProcessError:
-        run(["git", "config", "user.email", author_email])
-
-    # --- stage files (repo-relative) ---
-    to_add_rel = []
+    # Stage repo-relative paths
+    to_add_rel: list[str] = []
     for p in paths:
         if not p:
             continue
@@ -209,7 +212,6 @@ def _git_add_commit_push(paths: list[Path], message: str) -> None:
         try:
             rel = p.relative_to(root)
         except ValueError:
-            # if absolute but outside, best-effort relative
             rel = Path(os.path.relpath(str(p), str(root)))
         to_add_rel.append(str(rel))
 
@@ -217,12 +219,18 @@ def _git_add_commit_push(paths: list[Path], message: str) -> None:
         raise RuntimeError("Nothing to push (no repo-relative files)")
 
     run(["git", "add"] + to_add_rel)
-    try:
-        run(["git", "commit", "-m", message, "--no-gpg-sign"])
-    except subprocess.CalledProcessError:
-        current_app.logger.info("git: nothing to commit; pushing anyway")
+    run(["git", "status", "--porcelain"], ok_if_fails=True)
 
-    run(["git", "push", "origin", f"HEAD:{branch}"])
+    # Commit (allow empty so index rewrites/renames can still push)
+    run(["git", "commit", "-m", message, "--no-gpg-sign"], ok_if_fails=True)
+
+    # Push with one retry if rejected
+    try:
+        run(["git", "push", "origin", f"HEAD:{branch}"])
+    except subprocess.CalledProcessError:
+        current_app.logger.warning("git push rejected; attempting pull --rebase then retry")
+        run(["git", "pull", "--rebase", "origin", branch], ok_if_fails=True)
+        run(["git", "push", "origin", f"HEAD:{branch}"])  # retry once
 
 
 # --- PAGE REGEN HELPER (module-level) ---
@@ -267,36 +275,17 @@ def _regen_pages_for_slug(slug: str, modes: list[str]) -> None:
         elif m == "listening":
             _try_module("listening",  ["create_listening_set", "generate_set_pages", "generate_pages", "build_pages"])
 
-    # --- Post-condition check & fallback: ensure the HTML directory exists ---
+    # Post-check: log missing expectations (non-fatal)
     expected = []
     if "flashcards" in modes: expected.append(PAGES_DIR / "flashcards" / slug / "index.html")
     if "practice"   in modes: expected.append(PAGES_DIR / "practice"   / slug / "index.html")
     if "reading"    in modes: expected.append(PAGES_DIR / "reading"    / slug / "index.html")
     if "listening"  in modes: expected.append(PAGES_DIR / "listening"  / slug / "index.html")
-
     missing = [p for p in expected if not p.exists()]
     if missing:
-        current_app.logger.warning("create_set_v2: expected pages missing -> attempting direct generator fallback for %s", slug)
-        try:
-            from .sets_utils import load_set_data
-            items, saved_modes = load_set_data(slug)
-            from .modes import MODE_GENERATORS
-            if "flashcards" in modes or "practice" in modes:
-                gen = MODE_GENERATORS.get("flashcards")
-                if gen: gen(slug, items)
-                gen = MODE_GENERATORS.get("practice")
-                if gen: gen(slug, items)
-            if "reading" in modes:
-                gen = MODE_GENERATORS.get("reading")
-                if gen: gen(slug, items)
-            # re-check
-            missing = [p for p in expected if not p.exists()]
-            if missing:
-                current_app.logger.error("create_set_v2: fallback still missing: %s", [str(p) for p in missing])
-            else:
-                current_app.logger.info("create_set_v2: fallback produced all expected pages for %s", slug)
-        except Exception as e:
-            current_app.logger.exception("create_set_v2: direct fallback failed: %s", e)
+        current_app.logger.warning("create_set_v2: expected pages missing for %s -> %s",
+                                   slug, [str(p) for p in missing])
+
 
 def _collect_commit_targets(slug: str, modes: list[str]) -> list[Path]:
     targets = []
@@ -322,103 +311,6 @@ def _collect_commit_targets(slug: str, modes: list[str]) -> list[Path]:
             targets.append(p)
     return targets
 
-
-
-# ----------------------------
-# API
-# ----------------------------
-
-# 0) Global sets (canonical shape)
-@sets_api.route("/global_sets", methods=["GET"])
-def global_sets():
-    """
-    Returns: [
-      { "name": "...", "count": 123, "type": "flashcards|reading|unknown", "created_by": "system|user|me" },
-      ...
-    ]
-    Optional filters: ?q=&limit=&offset=&sort=name|count&order=asc|desc
-    """
-    glist = list_global_sets()
-    glist = _apply_list_params(glist)
-    glist = [_ensure_modes(x) for x in glist]
-    resp = jsonify(glist)
-    return _with_deprecation_headers(resp, "/api/sets/available")
-
-# 1) My sets (canonical shape, mark ownership and enrich private)
-@sets_api.route("/my_sets", methods=["GET"])
-@token_required
-def my_sets(current_user):
-    """
-    Returns the SAME canonical shape as global_sets, for the current user's library.
-    Ownership (for showing the 🗑️ Delete button):
-      - If UserSet.is_owner == True -> created_by = "me"
-      - Else if present in global -> keep global's created_by (usually "system")
-      - Else (not in global) -> treat as private -> created_by = "me"
-    """
-    rows = UserSet.query.filter_by(user_id=current_user.id).all()
-    user_names = [r.set_name for r in rows]
-    ownership = {r.set_name: bool(getattr(r, "is_owner", False)) for r in rows}
-
-    glist = list_global_sets()
-    gmap = _global_map_by_name(glist)
-
-    out = []
-    for name in sorted(set(user_names)):
-        if name in gmap:
-            meta = gmap[name].copy()
-            if ownership.get(name):
-                meta["created_by"] = "me"
-            meta = _ensure_modes(meta)
-            out.append(meta)
-        else:
-            meta = get_set_metadata(name)
-            meta["created_by"] = "me"
-            meta = _ensure_modes(meta)
-            out.append(meta)
-
-    out = _apply_list_params(out)
-    resp = jsonify(out)
-    return _with_deprecation_headers(resp, "/api/my/sets")
-
-# 2) Add a set to user library
-@sets_api.route("/add_set", methods=["POST"])
-@token_required
-def add_set(current_user):
-    data = request.get_json(silent=True) or {}
-    set_name = (data.get("set_name") or "").strip()
-    if not set_name:
-        return jsonify({"message": "Set name required"}), 400
-
-    set_name = sanitize_filename(set_name)
-    existing = UserSet.query.filter_by(user_id=current_user.id, set_name=set_name).first()
-    if existing:
-        resp = jsonify({"message": "Already in your collection"})
-        return _with_deprecation_headers(resp, "/api/my/sets")
-
-    db.session.add(UserSet(user_id=current_user.id, set_name=set_name, is_owner=False))
-    db.session.commit()
-    resp = jsonify({"message": f"Set '{set_name}' added to your collection"})
-    return _with_deprecation_headers(resp, "/api/my/sets")
-
-# 3) Remove a set from user library
-@sets_api.route("/remove_set", methods=["POST"])
-@token_required
-def remove_set(current_user):
-    data = request.get_json(silent=True) or {}
-    set_name = (data.get("set_name") or "").strip()
-    if not set_name:
-        return jsonify({"message": "Set name required"}), 400
-
-    set_name = sanitize_filename(set_name)
-    user_set = UserSet.query.filter_by(user_id=current_user.id, set_name=set_name).first()
-    if not user_set:
-        resp = jsonify({"message": "Set not in your collection"})
-        return _with_deprecation_headers(resp, f"/api/my/sets/{set_name}")
-
-    db.session.delete(user_set)
-    db.session.commit()
-    resp = jsonify({"message": f"Set '{set_name}' removed from your collection"})
-    return _with_deprecation_headers(resp, f"/api/my/sets/{set_name}")
 
 # 4) Create a set (owner-only on create)
 @sets_api.route("/create_set_v2", methods=["POST"])
@@ -454,23 +346,10 @@ def create_set(current_user):
     }
     gen_modes = implied.get(set_type, ["flashcards", "practice"])
 
-    # map generator names -> client names
-    CLIENT_MODE = {
-        "flashcards": "learn",
-        "practice":   "speak",
-        "reading":    "read",
-        "listening":  "listen",
-    }
+    # client-mode labels
+    CLIENT_MODE = {"flashcards": "learn", "practice": "speak", "reading": "read", "listening": "listen"}
 
     def _augment_meta(meta: dict | None, *, existed: bool) -> dict:
-        """
-        Normalize the response so the client always sees:
-          - set_name, slug
-          - modes: ["learn","speak",...]
-          - pages: {"learn": "/flashcards/<slug>/", ...}
-        (We don't overwrite fields util_create_set may already provide,
-         we just ensure the keys above exist.)
-        """
         meta = dict(meta or {})
         meta.setdefault("set_name", set_name)
         meta.setdefault("slug", safe_name)
@@ -487,14 +366,10 @@ def create_set(current_user):
         if existed:
             _regen_pages_for_slug(safe_name, gen_modes)
             # best-effort index rebuilds
-            try:
-                build_all_mode_indexes()
-            except Exception as e:
-                current_app.logger.warning("Failed to rebuild mode indexes: %s", e)
-            try:
-                rebuild_set_modes_map()
-            except Exception as e:
-                current_app.logger.warning("Failed to rebuild set_modes.json after create: %s", e)
+            try: build_all_mode_indexes()
+            except Exception as e: current_app.logger.warning("Failed to rebuild mode indexes: %s", e)
+            try: rebuild_set_modes_map()
+            except Exception as e: current_app.logger.warning("Failed to rebuild set_modes.json after create: %s", e)
 
             targets = _collect_commit_targets(safe_name, gen_modes)
             current_app.logger.info("create_set_v2: git targets (idempotent) for %s -> %s",
@@ -522,16 +397,12 @@ def create_set(current_user):
         _regen_pages_for_slug(safe_name, gen_modes)
 
         # best-effort index rebuilds
-        try:
-            build_all_mode_indexes()
-        except Exception as e:
-            current_app.logger.warning("Failed to rebuild mode indexes: %s", e)
-        try:
-            rebuild_set_modes_map()
-        except Exception as e:
-            current_app.logger.warning("Failed to rebuild set_modes.json after create: %s", e)
+        try: build_all_mode_indexes()
+        except Exception as e: current_app.logger.warning("Failed to rebuild mode indexes: %s", e)
+        try: rebuild_set_modes_map()
+        except Exception as e: current_app.logger.warning("Failed to rebuild set_modes.json after create: %s", e)
 
-        # push to GitHub
+        # push to GitHub (single, authoritative push)
         targets = _collect_commit_targets(safe_name, gen_modes)
         current_app.logger.info("create_set_v2: git targets (new) for %s -> %s",
                                 safe_name, [str(t) for t in targets])

@@ -136,13 +136,6 @@ except Exception:
         return None
 
 def r2_enabled() -> bool:
-    """Return True if R2 publishing is enabled (supports bool or callable)."""
-    try:
-        return bool(_r2_enabled_raw() if callable(_r2_enabled_raw) else _r2_enabled_raw)
-    except Exception:
-        return False
-
-def r2_enabled() -> bool:
     try:
         if os.getenv("DISABLE_R2") == "1":
             return False
@@ -528,13 +521,10 @@ def create_set(set_type: str, set_name: str, data: List[Dict[str, Any]]) -> Dict
     Create a new set: save wrapper JSON, then generate pages/audio.
     Returns metadata for the caller.
     """
-    from .modes import modes_for_type
-
     safe_name = sanitize_filename(set_name)
     if not safe_name:
         raise ValueError("Invalid set name")
 
-    # Normalize to canonical modes expected by the wrapper: learn/speak/read/listen
     t = (set_type or "").strip().lower()
     if t in {"flashcards", "vocab", "cards", "practice"}:
         canonical_modes = ["learn", "speak"]
@@ -543,7 +533,7 @@ def create_set(set_type: str, set_name: str, data: List[Dict[str, Any]]) -> Dict
     elif t in {"listening", "listen"}:
         canonical_modes = ["listen"]
     else:
-        canonical_modes = ["learn", "speak"]  # safe default
+        canonical_modes = ["learn", "speak"]
 
     # 1) Save canonical wrapper (cards or passages with explicit modes)
     save_set_wrapper(safe_name, canonical_modes, data or [])
@@ -552,11 +542,13 @@ def create_set(set_type: str, set_name: str, data: List[Dict[str, Any]]) -> Dict
     regenerate_set_pages(safe_name)
 
     # 3) Return metadata
-    meta = get_set_metadata(safe_name)
+    meta = get_set_metadata(safe_name)  # type/count/type
+    meta["name"] = safe_name
     meta["type"] = set_type or meta.get("type") or "flashcards"
-    meta["modes"] = modes
+    # reflect canonical modes we just saved
+    meta_modes = ["learn", "speak", "read", "listen"]
+    meta["modes"] = [m for m in meta_modes if m in set(canonical_modes)]
     return meta
-
 
 def delete_set_file(set_name: str) -> bool:
     """
