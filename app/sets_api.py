@@ -150,7 +150,6 @@ def _git_add_commit_push(paths: list[Path], message: str) -> None:
       - GITHUB_TOKEN  (or GH_TOKEN)
       - GIT_BRANCH    (default: main)
       - GIT_AUTHOR_NAME, GIT_AUTHOR_EMAIL (defaults provided)
-    Robust to non-fast-forward rejections: will pull --rebase then retry once.
     """
     import os, subprocess
     root = Path(current_app.root_path).parent  # repo root on Render
@@ -169,16 +168,14 @@ def _git_add_commit_push(paths: list[Path], message: str) -> None:
     if not (root / ".git").exists():
         run(["git", "init"])
 
-    # Make the working tree “safe” for git inside containers
+    # Make working tree safe for container users
     run(["git", "config", "--global", "--add", "safe.directory", str(root)], ok_if_fails=True)
 
-    # Identity
+    # Identity (set unconditionally, ignore failures)
     author_name  = os.getenv("GIT_AUTHOR_NAME")  or "Path to POLISH Bot"
     author_email = os.getenv("GIT_AUTHOR_EMAIL") or "bot@pathtopolish.app"
-    if run(["git", "config", "user.name"], ok_if_fails=True).strip() == "":
-        run(["git", "config", "user.name", author_name])
-    if run(["git", "config", "user.email"], ok_if_fails=True).strip() == "":
-        run(["git", "config", "user.email", author_email])
+    run(["git", "config", "user.name",  author_name],  ok_if_fails=True)
+    run(["git", "config", "user.email", author_email], ok_if_fails=True)
 
     # Remote + branch
     token  = os.getenv("GITHUB_TOKEN") or os.getenv("GH_TOKEN")
@@ -190,13 +187,12 @@ def _git_add_commit_push(paths: list[Path], message: str) -> None:
         raise RuntimeError("GITHUB_REPO_SLUG (or GITHUB_REPOSITORY) is not set")
 
     remote_url = f"https://x-access-token:{token}@github.com/{slug}.git"
-    # Set or add origin
     if "origin" in run(["git", "remote"], ok_if_fails=True):
         run(["git", "remote", "set-url", "origin", remote_url])
     else:
         run(["git", "remote", "add", "origin", remote_url])
 
-    # Ensure branch exists and sync from remote (best-effort)
+    # Make sure we're on the correct branch and roughly in sync
     run(["git", "checkout", "-B", branch])
     run(["git", "fetch", "origin", branch, "--depth=1"], ok_if_fails=True)
     run(["git", "pull", "--rebase", "origin", branch], ok_if_fails=True)
@@ -204,11 +200,9 @@ def _git_add_commit_push(paths: list[Path], message: str) -> None:
     # Stage repo-relative paths
     to_add_rel: list[str] = []
     for p in paths:
-        if not p:
-            continue
+        if not p: continue
         p = Path(p)
-        if not p.exists():
-            continue
+        if not p.exists(): continue
         try:
             rel = p.relative_to(root)
         except ValueError:
@@ -221,17 +215,21 @@ def _git_add_commit_push(paths: list[Path], message: str) -> None:
     run(["git", "add"] + to_add_rel)
     run(["git", "status", "--porcelain"], ok_if_fails=True)
 
-    # Commit (allow empty so index rewrites/renames can still push)
-    run(["git", "commit", "-m", message, "--no-gpg-sign"], ok_if_fails=True)
+    # Commit with inline identity to bypass any repo/global config issues
+    run([
+        "git",
+        "-c", f"user.name={author_name}",
+        "-c", f"user.email={author_email}",
+        "commit", "-m", message, "--no-gpg-sign"
+    ], ok_if_fails=True)
 
-    # Push with one retry if rejected
+    # Push (retry once after a rebase pull if needed)
     try:
         run(["git", "push", "origin", f"HEAD:{branch}"])
     except subprocess.CalledProcessError:
         current_app.logger.warning("git push rejected; attempting pull --rebase then retry")
         run(["git", "pull", "--rebase", "origin", branch], ok_if_fails=True)
-        run(["git", "push", "origin", f"HEAD:{branch}"])  # retry once
-
+        run(["git", "push", "origin", f"HEAD:{branch}"])
 
 # --- PAGE REGEN HELPER (module-level) ---
 def _regen_pages_for_slug(slug: str, modes: list[str]) -> None:
