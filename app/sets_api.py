@@ -1,5 +1,4 @@
 # app/sets_api.py
-
 from flask import Blueprint, request, jsonify, current_app
 from pathlib import Path
 from shutil import rmtree
@@ -9,12 +8,6 @@ from .modes import SET_TYPES
 from .models import db, UserSet
 from .auth import token_required
 from .utils import build_all_mode_indexes
-
-# Try to use your git_utils if available; fall back to subprocess
-try:
-    from .git_utils import Repo  # GitPython-like wrapper in your repo
-except Exception:
-    Repo = None
 
 # Centralized paths + constants
 from .constants import SETS_DIR, PAGES_DIR, SET_MODES_JSON
@@ -34,9 +27,9 @@ from .create_set_modes import main as rebuild_set_modes_map
 # Single blueprint for this module
 sets_api = Blueprint("sets_api", __name__)
 
-# ----------------------------
+# =============================================================================
 # Helpers
-# ----------------------------
+# =============================================================================
 
 def _global_map_by_name(global_list: list[dict]) -> dict[str, dict]:
     return {s["name"]: s for s in global_list if "name" in s}
@@ -141,40 +134,83 @@ def _delete_set_files_everywhere(set_name: str):
     _safe_rmtree(DOCS_ROOT / "listening"  / set_name)
     _safe_rmtree(DOCS_ROOT / "static"     / set_name)
 
-# --- GIT PUBLISH HELPER (module-level) ---
+# =============================================================================
+# Git publishing (single authoritative helper + verification)
+# =============================================================================
+
+def _collect_commit_targets(slug: str, modes: list[str]) -> list[Path]:
+    """
+    Return a robust list of repo-relative *files and dirs* to stage.
+    We include each slug directory AND its index.html explicitly so 'git add'
+    definitely sees a file path (some setups are picky about bare dirs).
+    """
+    targets: list[Path] = []
+
+    # JSON
+    json_path = SETS_DIR / f"{slug}.json"
+    if json_path.exists():
+        targets.append(json_path)
+
+    # Per-mode pages
+    for m in modes:
+        d = PAGES_DIR / m / slug
+        if d.exists():
+            targets.append(d)
+            ix = d / "index.html"
+            if ix.exists():
+                targets.append(ix)
+
+    # Common artifacts / indexes
+    commons = [
+        PAGES_DIR / "flashcards" / "index.html",
+        PAGES_DIR / "practice"   / "index.html",
+        PAGES_DIR / "reading"    / "index.html",
+        PAGES_DIR / "listening"  / "index.html",
+        PAGES_DIR / "set_modes.json",
+        PAGES_DIR / "static"     / slug / "r2_manifest.json",
+    ]
+    for p in commons:
+        if p.exists():
+            targets.append(p)
+
+    return targets
+
+
 def _git_add_commit_push(paths: list[Path], message: str) -> None:
     """
-    Add/commit/push repo-relative paths to GitHub.
-    Uses env:
+    Add/commit/push repo-relative paths to GitHub using:
       - GITHUB_REPO_SLUG  (e.g. "AndrewDionne/LearnPolish")
       - GITHUB_TOKEN  (or GH_TOKEN)
       - GIT_BRANCH    (default: main)
-      - GIT_AUTHOR_NAME, GIT_AUTHOR_EMAIL (defaults provided)
+      - GIT_AUTHOR_NAME, GIT_AUTHOR_EMAIL (optional)
+    Retries once on non-FF; logs status before/after.
     """
-    import os, subprocess
+    import os
     root = Path(current_app.root_path).parent  # repo root on Render
 
-    def run(args: list[str], ok_if_fails: bool=False):
+    def run(args: list[str], ok_if_fails: bool = False) -> str:
         current_app.logger.info("git: %s", " ".join(args))
         try:
-            return subprocess.check_output(args, cwd=str(root), stderr=subprocess.STDOUT, text=True)
+            out = subprocess.check_output(
+                args, cwd=str(root), stderr=subprocess.STDOUT, text=True
+            )
+            return out
         except subprocess.CalledProcessError as e:
             if ok_if_fails:
                 current_app.logger.warning("git (ignored error): %s\n%s", " ".join(args), e.output)
                 return e.output
             raise
 
-    # Ensure repo exists
+    # Ensure repo/init
     if not (root / ".git").exists():
         run(["git", "init"])
 
-    # Make working tree safe for container users
+    # Safe dir + identity
     run(["git", "config", "--global", "--add", "safe.directory", str(root)], ok_if_fails=True)
-
-    # Identity (set unconditionally, ignore failures)
     author_name  = os.getenv("GIT_AUTHOR_NAME")  or "Path to POLISH Bot"
     author_email = os.getenv("GIT_AUTHOR_EMAIL") or "bot@pathtopolish.app"
-    run(["git", "config", "user.name",  author_name],  ok_if_fails=True)
+    # Set or override to avoid container quirks
+    run(["git", "config", "user.name", author_name], ok_if_fails=True)
     run(["git", "config", "user.email", author_email], ok_if_fails=True)
 
     # Remote + branch
@@ -187,22 +223,25 @@ def _git_add_commit_push(paths: list[Path], message: str) -> None:
         raise RuntimeError("GITHUB_REPO_SLUG (or GITHUB_REPOSITORY) is not set")
 
     remote_url = f"https://x-access-token:{token}@github.com/{slug}.git"
-    if "origin" in run(["git", "remote"], ok_if_fails=True):
+    remotes = run(["git", "remote"], ok_if_fails=True)
+    if "origin" in remotes:
         run(["git", "remote", "set-url", "origin", remote_url])
     else:
         run(["git", "remote", "add", "origin", remote_url])
 
-    # Make sure we're on the correct branch and roughly in sync
+    # Be on the desired branch & rebase latest
     run(["git", "checkout", "-B", branch])
     run(["git", "fetch", "origin", branch, "--depth=1"], ok_if_fails=True)
     run(["git", "pull", "--rebase", "origin", branch], ok_if_fails=True)
 
-    # Stage repo-relative paths
+    # Normalize paths to repo-relative & include explicit files for dirs
     to_add_rel: list[str] = []
     for p in paths:
-        if not p: continue
+        if not p:
+            continue
         p = Path(p)
-        if not p.exists(): continue
+        if not p.exists():
+            continue
         try:
             rel = p.relative_to(root)
         except ValueError:
@@ -212,26 +251,89 @@ def _git_add_commit_push(paths: list[Path], message: str) -> None:
     if not to_add_rel:
         raise RuntimeError("Nothing to push (no repo-relative files)")
 
-    run(["git", "add"] + to_add_rel)
-    run(["git", "status", "--porcelain"], ok_if_fails=True)
+    pre = run(["git", "status", "--porcelain"], ok_if_fails=True)
+    current_app.logger.info("git status (pre-add):\n%s", pre)
 
-    # Commit with inline identity to bypass any repo/global config issues
-    run([
-        "git",
-        "-c", f"user.name={author_name}",
-        "-c", f"user.email={author_email}",
-        "commit", "-m", message, "--no-gpg-sign"
-    ], ok_if_fails=True)
+    # Stage aggressively (captures new files under given paths)
+    run(["git", "add", "-A", "--"] + to_add_rel)
+    mid = run(["git", "status", "--porcelain"], ok_if_fails=True)
+    current_app.logger.info("git status (post-add):\n%s", mid)
 
-    # Push (retry once after a rebase pull if needed)
+    # Commit (allow empty) and push
+    run(["git", "commit", "-m", message, "--no-gpg-sign"], ok_if_fails=True)
     try:
         run(["git", "push", "origin", f"HEAD:{branch}"])
     except subprocess.CalledProcessError:
-        current_app.logger.warning("git push rejected; attempting pull --rebase then retry")
+        current_app.logger.warning("git push rejected; pulling --rebase and retrying")
         run(["git", "pull", "--rebase", "origin", branch], ok_if_fails=True)
         run(["git", "push", "origin", f"HEAD:{branch}"])
 
-# --- PAGE REGEN HELPER (module-level) ---
+    post = run(["git", "status", "--porcelain"], ok_if_fails=True)
+    current_app.logger.info("git status (post-push):\n%s", post)
+
+
+def _push_and_verify(slug: str, gen_modes: list[str], primary_message: str) -> None:
+    """
+    Primary push via _git_add_commit_push(); if Git still reports changes for
+    this slug, run a conservative fallback that adds specific paths again.
+    """
+    # Primary pass
+    targets = _collect_commit_targets(slug, gen_modes)
+    current_app.logger.info("publish targets for %s -> %s", slug, [str(t) for t in targets])
+    _git_add_commit_push(targets, primary_message)
+
+    # Verify working tree is clean for this slug
+    root = Path(current_app.root_path).parent
+    try:
+        out = subprocess.check_output(
+            ["git", "status", "--porcelain"],
+            cwd=str(root), stderr=subprocess.STDOUT, text=True
+        )
+    except subprocess.CalledProcessError as e:
+        out = e.output
+
+    if slug not in out:
+        return  # clean; nothing else to do
+
+    current_app.logger.warning(
+        "post-push verify: still see changes for %s; running fallback add/commit/push",
+        slug
+    )
+
+    # Conservative, file-focused fallback
+    specific: list[Path] = []
+    json_path = SETS_DIR / f"{slug}.json"
+    if json_path.exists():
+        specific.append(json_path)
+
+    for m in gen_modes:
+        d = PAGES_DIR / m / slug
+        if d.exists():
+            specific.append(d)
+            ix = d / "index.html"
+            if ix.exists():
+                specific.append(ix)
+
+    man = PAGES_DIR / "static" / slug / "r2_manifest.json"
+    if man.exists():
+        specific.append(man)
+
+    for p in [
+        PAGES_DIR / "flashcards" / "index.html",
+        PAGES_DIR / "practice"   / "index.html",
+        PAGES_DIR / "reading"    / "index.html",
+        PAGES_DIR / "listening"  / "index.html",
+        PAGES_DIR / "set_modes.json",
+    ]:
+        if p.exists():
+            specific.append(p)
+
+    _git_add_commit_push(specific, f"{primary_message} (verify-fix)")
+
+# =============================================================================
+# Page regeneration
+# =============================================================================
+
 def _regen_pages_for_slug(slug: str, modes: list[str]) -> None:
     """
     Rebuild pages for this slug, adapting to whichever generator signature exists.
@@ -241,12 +343,18 @@ def _regen_pages_for_slug(slug: str, modes: list[str]) -> None:
 
     regen = getattr(sets_utils, "regenerate_set_pages", None)
     if regen:
-        try: regen(slug, modes=modes, force=True, verbose=True); return
-        except TypeError: pass
-        try: regen(slug, force=True, verbose=True); return
-        except TypeError: pass
-        try: regen(slug, force=True); return
-        except TypeError: pass
+        try:
+            regen(slug, modes=modes, force=True, verbose=True); return
+        except TypeError:
+            pass
+        try:
+            regen(slug, force=True, verbose=True); return
+        except TypeError:
+            pass
+        try:
+            regen(slug, force=True); return
+        except TypeError:
+            pass
         regen(slug); return
 
     def _try_module(mod_name, funcs):
@@ -256,11 +364,15 @@ def _regen_pages_for_slug(slug: str, modes: list[str]) -> None:
             return False
         for fn in funcs:
             f = getattr(mod, fn, None)
-            if not f: continue
-            try: f(slug); return True
+            if not f:
+                continue
+            try:
+                f(slug); return True
             except TypeError:
-                try: f(slug, force=True); return True
-                except Exception: continue
+                try:
+                    f(slug, force=True); return True
+                except Exception:
+                    continue
         return False
 
     for m in modes:
@@ -284,31 +396,101 @@ def _regen_pages_for_slug(slug: str, modes: list[str]) -> None:
         current_app.logger.warning("create_set_v2: expected pages missing for %s -> %s",
                                    slug, [str(p) for p in missing])
 
+# =============================================================================
+# API
+# =============================================================================
 
-def _collect_commit_targets(slug: str, modes: list[str]) -> list[Path]:
-    targets = []
-    json_path = SETS_DIR / f"{slug}.json"
-    if json_path.exists():
-        targets.append(json_path)
+# 0) Global sets (canonical shape)
+@sets_api.route("/global_sets", methods=["GET"])
+def global_sets():
+    """
+    Returns: [
+      { "name": "...", "count": 123, "type": "flashcards|reading|unknown", "created_by": "system|user|me" },
+      ...
+    ]
+    Optional filters: ?q=&limit=&offset=&sort=name|count&order=asc|desc
+    """
+    glist = list_global_sets()
+    glist = _apply_list_params(glist)
+    glist = [_ensure_modes(x) for x in glist]
+    resp = jsonify(glist)
+    return _with_deprecation_headers(resp, "/api/sets/available")
 
-    for m in modes:
-        d = PAGES_DIR / m / slug
-        if d.exists():
-            targets.append(d)
+# 1) My sets (canonical shape, mark ownership and enrich private)
+@sets_api.route("/my_sets", methods=["GET"])
+@token_required
+def my_sets(current_user):
+    """
+    Returns the SAME canonical shape as global_sets, for the current user's library.
+    Ownership (for showing the 🗑️ Delete button):
+      - If UserSet.is_owner == True -> created_by = "me"
+      - Else if present in global -> keep global's created_by (usually "system")
+      - Else (not in global) -> treat as private -> created_by = "me"
+    """
+    rows = UserSet.query.filter_by(user_id=current_user.id).all()
+    user_names = [r.set_name for r in rows]
+    ownership = {r.set_name: bool(getattr(r, "is_owner", False)) for r in rows}
 
-    # common index artifacts
-    for p in [
-        PAGES_DIR / "flashcards" / "index.html",
-        PAGES_DIR / "practice"   / "index.html",
-        PAGES_DIR / "reading"    / "index.html",
-        PAGES_DIR / "listening"  / "index.html",
-        PAGES_DIR / "set_modes.json",
-        PAGES_DIR / "static"     / slug / "r2_manifest.json",
-    ]:
-        if p.exists():
-            targets.append(p)
-    return targets
+    glist = list_global_sets()
+    gmap = _global_map_by_name(glist)
 
+    out = []
+    for name in sorted(set(user_names)):
+        if name in gmap:
+            meta = gmap[name].copy()
+            if ownership.get(name):
+                meta["created_by"] = "me"
+            meta = _ensure_modes(meta)
+            out.append(meta)
+        else:
+            meta = get_set_metadata(name)
+            meta["created_by"] = "me"
+            meta = _ensure_modes(meta)
+            out.append(meta)
+
+    out = _apply_list_params(out)
+    resp = jsonify(out)
+    return _with_deprecation_headers(resp, "/api/my/sets")
+
+# 2) Add a set to user library
+@sets_api.route("/add_set", methods=["POST"])
+@token_required
+def add_set(current_user):
+    data = request.get_json(silent=True) or {}
+    set_name = (data.get("set_name") or "").strip()
+    if not set_name:
+        return jsonify({"message": "Set name required"}), 400
+
+    set_name = sanitize_filename(set_name)
+    existing = UserSet.query.filter_by(user_id=current_user.id, set_name=set_name).first()
+    if existing:
+        resp = jsonify({"message": "Already in your collection"})
+        return _with_deprecation_headers(resp, "/api/my/sets")
+
+    db.session.add(UserSet(user_id=current_user.id, set_name=set_name, is_owner=False))
+    db.session.commit()
+    resp = jsonify({"message": f"Set '{set_name}' added to your collection"})
+    return _with_deprecation_headers(resp, "/api/my/sets")
+
+# 3) Remove a set from user library
+@sets_api.route("/remove_set", methods=["POST"])
+@token_required
+def remove_set(current_user):
+    data = request.get_json(silent=True) or {}
+    set_name = (data.get("set_name") or "").strip()
+    if not set_name:
+        return jsonify({"message": "Set name required"}), 400
+
+    set_name = sanitize_filename(set_name)
+    user_set = UserSet.query.filter_by(user_id=current_user.id, set_name=set_name).first()
+    if not user_set:
+        resp = jsonify({"message": "Set not in your collection"})
+        return _with_deprecation_headers(resp, f"/api/my/sets/{set_name}")
+
+    db.session.delete(user_set)
+    db.session.commit()
+    resp = jsonify({"message": f"Set '{set_name}' removed from your collection"})
+    return _with_deprecation_headers(resp, f"/api/my/sets/{set_name}")
 
 # 4) Create a set (owner-only on create)
 @sets_api.route("/create_set_v2", methods=["POST"])
@@ -344,10 +526,21 @@ def create_set(current_user):
     }
     gen_modes = implied.get(set_type, ["flashcards", "practice"])
 
-    # client-mode labels
-    CLIENT_MODE = {"flashcards": "learn", "practice": "speak", "reading": "read", "listening": "listen"}
+    # map generator names -> client names
+    CLIENT_MODE = {
+        "flashcards": "learn",
+        "practice":   "speak",
+        "reading":    "read",
+        "listening":  "listen",
+    }
 
     def _augment_meta(meta: dict | None, *, existed: bool) -> dict:
+        """
+        Normalize the response so the client always sees:
+          - set_name, slug
+          - modes: ["learn","speak",...]
+          - pages: {"learn": "/flashcards/<slug>/", ...}
+        """
         meta = dict(meta or {})
         meta.setdefault("set_name", set_name)
         meta.setdefault("slug", safe_name)
@@ -364,15 +557,16 @@ def create_set(current_user):
         if existed:
             _regen_pages_for_slug(safe_name, gen_modes)
             # best-effort index rebuilds
-            try: build_all_mode_indexes()
-            except Exception as e: current_app.logger.warning("Failed to rebuild mode indexes: %s", e)
-            try: rebuild_set_modes_map()
-            except Exception as e: current_app.logger.warning("Failed to rebuild set_modes.json after create: %s", e)
+            try:
+                build_all_mode_indexes()
+            except Exception as e:
+                current_app.logger.warning("Failed to rebuild mode indexes: %s", e)
+            try:
+                rebuild_set_modes_map()
+            except Exception as e:
+                current_app.logger.warning("Failed to rebuild set_modes.json after create: %s", e)
 
-            targets = _collect_commit_targets(safe_name, gen_modes)
-            current_app.logger.info("create_set_v2: git targets (idempotent) for %s -> %s",
-                                    safe_name, [str(t) for t in targets])
-            _git_add_commit_push(targets, f"rebuild: {safe_name} [{','.join(gen_modes)}]")
+            _push_and_verify(safe_name, gen_modes, f"rebuild: {safe_name} [{','.join(gen_modes)}]")
 
             meta = get_set_metadata(safe_name)
             out = _augment_meta(meta, existed=True)
@@ -395,16 +589,17 @@ def create_set(current_user):
         _regen_pages_for_slug(safe_name, gen_modes)
 
         # best-effort index rebuilds
-        try: build_all_mode_indexes()
-        except Exception as e: current_app.logger.warning("Failed to rebuild mode indexes: %s", e)
-        try: rebuild_set_modes_map()
-        except Exception as e: current_app.logger.warning("Failed to rebuild set_modes.json after create: %s", e)
+        try:
+            build_all_mode_indexes()
+        except Exception as e:
+            current_app.logger.warning("Failed to rebuild mode indexes: %s", e)
+        try:
+            rebuild_set_modes_map()
+        except Exception as e:
+            current_app.logger.warning("Failed to rebuild set_modes.json after create: %s", e)
 
-        # push to GitHub (single, authoritative push)
-        targets = _collect_commit_targets(safe_name, gen_modes)
-        current_app.logger.info("create_set_v2: git targets (new) for %s -> %s",
-                                safe_name, [str(t) for t in targets])
-        _git_add_commit_push(targets, f"build: {safe_name} [{','.join(gen_modes)}]")
+        # push to GitHub (with verification)
+        _push_and_verify(safe_name, gen_modes, f"build: {safe_name} [{','.join(gen_modes)}]")
 
         out = _augment_meta(meta, existed=False)
         out["created_by"] = "me"
@@ -461,7 +656,6 @@ def delete_set(current_user, set_name):
             current_app.logger.warning("Failed to rebuild set_modes.json after delete: %s", e)
         return jsonify({"ok": True, "deleted": True}), 200
 
-
     new_owner_link = sorted(others, key=lambda l: l.id)[0]
     me_link.is_owner = False
     new_owner_link.is_owner = True
@@ -478,6 +672,7 @@ def delete_set(current_user, set_name):
         current_app.logger.warning("Failed to rebuild set_modes.json after handover: %s", e)
 
     return jsonify({"ok": True, "handover": True, "new_owner_id": new_owner_link.user_id}), 200
+
 # 6) Admin build & publish (server-side)
 @sets_api.route("/admin/build_publish", methods=["POST", "OPTIONS"])
 @token_required
@@ -512,20 +707,26 @@ def admin_build_publish(current_user):
         except Exception as e:
             current_app.logger.warning("Failed to rebuild set_modes.json: %s", e)
 
-        changed = [json_path]
+        # Log what we think changed (non-authoritative; push verifies)
+        changed: list[Path] = []
+        if json_path.exists():
+            changed.append(json_path)
         for m in modes:
-            changed.append(PAGES_DIR / m / slug)
+            p = PAGES_DIR / m / slug
+            if p.exists():
+                changed.append(p)
         for p in [
             PAGES_DIR / "flashcards" / "index.html",
-            PAGES_DIR / "practice" / "index.html",
-            PAGES_DIR / "reading" / "index.html",
-            PAGES_DIR / "listening" / "index.html",
+            PAGES_DIR / "practice"   / "index.html",
+            PAGES_DIR / "reading"    / "index.html",
+            PAGES_DIR / "listening"  / "index.html",
             PAGES_DIR / "set_modes.json",
         ]:
             if p.exists():
                 changed.append(p)
+        current_app.logger.info("admin_build_publish: will push %s", [str(x) for x in changed])
 
-        _git_add_commit_push(changed, f"build: {slug} [{','.join(modes)}]")
+        _push_and_verify(slug, modes, f"build: {slug} [{','.join(modes)}]")
 
         return jsonify({"ok": True}), 200
 
@@ -539,7 +740,7 @@ def admin_git_diag(current_user):
     if not getattr(current_user, "is_admin", False):
         return jsonify({"ok": False, "error": "forbidden"}), 403
 
-    import subprocess, shlex
+    import shlex
     root = Path(current_app.root_path).parent
 
     def run(cmd: str):
