@@ -135,11 +135,15 @@ def _delete_set_files_everywhere(set_name: str):
     _safe_rmtree(DOCS_ROOT / "static"     / set_name)
 
 # =============================================================================
-# Git publishing (authoritative helper + verification)
+# Git publishing (Option B only: GITHUB_TOKEN + GITHUB_REPO_SLUG)
 # =============================================================================
-import os
 
 def _collect_commit_targets(slug: str, modes: list[str]) -> list[Path]:
+    """
+    Return a robust list of repo-relative *files and dirs* to stage.
+    We include each slug directory AND its index.html explicitly so 'git add'
+    definitely sees a file path.
+    """
     targets: list[Path] = []
 
     # JSON
@@ -156,7 +160,7 @@ def _collect_commit_targets(slug: str, modes: list[str]) -> list[Path]:
             if ix.exists():
                 targets.append(ix)
 
-    # Common artifacts
+    # Common artifacts / indexes
     commons = [
         PAGES_DIR / "flashcards" / "index.html",
         PAGES_DIR / "practice"   / "index.html",
@@ -174,74 +178,71 @@ def _collect_commit_targets(slug: str, modes: list[str]) -> list[Path]:
 
 def _git_add_commit_push(paths: list[Path], message: str) -> None:
     """
-    Add/commit/push repo-relative paths.
-
-    Remote sources (in priority order):
-      1) GIT_REMOTE (full https url; token may be embedded)
-      2) Build from (GITHUB_TOKEN|GH_TOKEN) + (GITHUB_REPO_SLUG|GITHUB_REPOSITORY)
-
-    Also uses:
-      - GIT_BRANCH (default: main)
-      - GIT_AUTHOR_NAME / GIT_AUTHOR_EMAIL (optional)
+    Add/commit/push repo-relative paths to GitHub using ONLY:
+      - GITHUB_TOKEN
+      - GITHUB_REPO_SLUG (e.g. "AndrewDionne/LearnPolish")
+      - GIT_BRANCH (default: "main")
     """
-    root = Path(current_app.root_path).parent  # repo root
+    import os
+    root = Path(current_app.root_path).parent  # repo root on Render
 
-    def logln(level, text):
-        try:
-            getattr(current_app.logger, level)(text)
-        except Exception:
-            print(text, flush=True)
+    def log_i(msg: str):
+        # dual log so you see lines in Render logs even if logger level changes
+        print(msg, flush=True)
+        current_app.logger.info(msg)
 
     def run(args: list[str], ok_if_fails: bool = False) -> str:
-        logln("info", "git: " + " ".join(args))
+        cmd = " ".join(args)
+        log_i(f"git$ {cmd}")
         try:
-            out = subprocess.check_output(args, cwd=str(root), stderr=subprocess.STDOUT, text=True)
+            out = subprocess.check_output(
+                args, cwd=str(root), stderr=subprocess.STDOUT, text=True
+            )
+            if out.strip():
+                log_i(out.strip())
             return out
         except subprocess.CalledProcessError as e:
             if ok_if_fails:
-                logln("warning", f"git (ignored): {' '.join(args)}\n{e.output}")
+                current_app.logger.warning("git (ignored error): %s\n%s", cmd, e.output)
                 return e.output
             raise
 
-    # Ensure repo/init + mark safe directory
+    # ------------------------
+    # Env (Option B only)
+    # ------------------------
+    token  = os.getenv("GITHUB_TOKEN")
+    slug   = os.getenv("GITHUB_REPO_SLUG") or os.getenv("GITHUB_REPOSITORY")
+    branch = (os.getenv("GIT_BRANCH") or "main").strip() or "main"
+    if not token:
+        raise RuntimeError("GITHUB_TOKEN is not set (Option B)")
+    if not slug:
+        raise RuntimeError("GITHUB_REPO_SLUG (or GITHUB_REPOSITORY) is not set (Option B)")
+
+    # Never use GIT_REMOTE / GH_TOKEN here — Option B only.
+    remote_url = f"https://x-access-token:{token}@github.com/{slug}.git"
+
+    # Ensure repo/init
     if not (root / ".git").exists():
         run(["git", "init"])
-    run(["git", "config", "--global", "--add", "safe.directory", str(root)], ok_if_fails=True)
 
-    # Identity
-    author_name  = os.getenv("GIT_AUTHOR_NAME")  or "Path to Polish Bot"
-    author_email = os.getenv("GIT_AUTHOR_EMAIL") or "bot@pathtopolish.app"
-    run(["git", "config", "user.name", author_name], ok_if_fails=True)
-    run(["git", "config", "user.email", author_email], ok_if_fails=True)
+    # Safe dir + identity (always set to avoid 'missing identity' errors)
+    run(["git", "config", "--global", "--add", "safe.directory", str(root)], ok_if_fails=True)
+    run(["git", "config", "user.name",  "Path to Polish Bot"], ok_if_fails=True)
+    run(["git", "config", "user.email", "bot@pathtopolish.app"], ok_if_fails=True)
 
     # Remote + branch
-    branch = (os.getenv("GIT_BRANCH") or "main").strip() or "main"
-    remote_url = (os.getenv("GIT_REMOTE") or "").strip()
-    if not remote_url:
-        token = os.getenv("GITHUB_TOKEN") or os.getenv("GH_TOKEN") or ""
-        slug  = os.getenv("GITHUB_REPO_SLUG") or os.getenv("GITHUB_REPOSITORY") or ""
-        if not token or not slug:
-            # Log a clear reason and return without breaking the create request
-            logln("error", "publish: missing remote config (set GIT_REMOTE or (GH/GITHUB)_TOKEN + GITHUB_REPO_SLUG)")
-            return
-        remote_url = f"https://x-access-token:{token}@github.com/{slug}.git"
-
-    existing_remotes = run(["git", "remote"], ok_if_fails=True)
-    if "origin" in existing_remotes.splitlines():
+    remotes = run(["git", "remote"], ok_if_fails=True)
+    if "origin" in remotes:
         run(["git", "remote", "set-url", "origin", remote_url])
     else:
         run(["git", "remote", "add", "origin", remote_url])
 
-    remotes_verbose = run(["git", "remote", "-v"], ok_if_fails=True)
-    logln("info", "git remotes:\n" + remotes_verbose)
-
-    # Ensure branch exists locally
+    # Be on the desired branch & rebase latest (tolerate first publish)
     run(["git", "checkout", "-B", branch])
-    # Try to sync with remote (okay if the branch is new)
     run(["git", "fetch", "origin", branch, "--depth=1"], ok_if_fails=True)
     run(["git", "pull", "--rebase", "origin", branch], ok_if_fails=True)
 
-    # Normalize to repo-rel paths
+    # Normalize to repo-relative paths & include explicit files for dirs
     to_add_rel: list[str] = []
     for p in paths:
         if not p:
@@ -256,56 +257,57 @@ def _git_add_commit_push(paths: list[Path], message: str) -> None:
         to_add_rel.append(str(rel))
 
     if not to_add_rel:
-        logln("warning", "publish: nothing to push (no repo-relative files)")
-        return
+        raise RuntimeError("Nothing to push (no repo-relative files)")
 
-    pre = run(["git", "status", "--porcelain"], ok_if_fails=True)
-    logln("info", "git status (pre-add):\n" + pre)
-
+    # Stage aggressively (captures new files under given paths)
     run(["git", "add", "-A", "--"] + to_add_rel)
 
-    mid = run(["git", "status", "--porcelain"], ok_if_fails=True)
-    logln("info", "git status (post-add):\n" + mid)
-
-    # Commit (allow empty)
+    # Commit (allow empty so we always have a branch tip)
     run(["git", "commit", "-m", message, "--no-gpg-sign"], ok_if_fails=True)
 
-    # Push (retry on non-FF)
+    # Push (retry once after rebase)
     try:
         run(["git", "push", "origin", f"HEAD:{branch}"])
     except subprocess.CalledProcessError:
-        logln("warning", "git push rejected; pull --rebase and retry")
+        current_app.logger.warning("git push rejected; pulling --rebase and retrying")
         run(["git", "pull", "--rebase", "origin", branch], ok_if_fails=True)
         run(["git", "push", "origin", f"HEAD:{branch}"])
 
-    post = run(["git", "status", "--porcelain"], ok_if_fails=True)
-    logln("info", "git status (post-push):\n" + post)
-
 
 def _push_and_verify(slug: str, gen_modes: list[str], primary_message: str) -> None:
+    """
+    Primary push via _git_add_commit_push(); if Git still reports changes for
+    this slug, run a conservative fallback that adds specific paths again.
+    """
     # Primary pass
     targets = _collect_commit_targets(slug, gen_modes)
-    try:
-        current_app.logger.info("publish targets for %s -> %s", slug, [str(t) for t in targets])
-    except Exception:
-        print(f"publish targets for {slug} -> {[str(t) for t in targets]}", flush=True)
+    current_app.logger.info("publish targets for %s -> %s", slug, [str(t) for t in targets])
     _git_add_commit_push(targets, primary_message)
 
-    # Verify if anything mentioning the slug remains dirty
+    # Verify working tree is clean for this slug
     root = Path(current_app.root_path).parent
     try:
-        out = subprocess.check_output(["git", "status", "--porcelain"], cwd=str(root), stderr=subprocess.STDOUT, text=True)
+        out = subprocess.check_output(
+            ["git", "status", "--porcelain"],
+            cwd=str(root), stderr=subprocess.STDOUT, text=True
+        )
     except subprocess.CalledProcessError as e:
         out = e.output
 
     if slug not in out:
-        return
+        return  # clean; nothing else to do
 
-    # Fallback: add concrete files again
+    current_app.logger.warning(
+        "post-push verify: still see changes for %s; running fallback add/commit/push",
+        slug
+    )
+
+    # Conservative, file-focused fallback
     specific: list[Path] = []
     json_path = SETS_DIR / f"{slug}.json"
     if json_path.exists():
         specific.append(json_path)
+
     for m in gen_modes:
         d = PAGES_DIR / m / slug
         if d.exists():
@@ -313,9 +315,12 @@ def _push_and_verify(slug: str, gen_modes: list[str], primary_message: str) -> N
             ix = d / "index.html"
             if ix.exists():
                 specific.append(ix)
+
     man = PAGES_DIR / "static" / slug / "r2_manifest.json"
     if man.exists():
         specific.append(man)
+
+    # Re-add common indexes (harmless if unchanged)
     for p in [
         PAGES_DIR / "flashcards" / "index.html",
         PAGES_DIR / "practice"   / "index.html",
@@ -327,7 +332,6 @@ def _push_and_verify(slug: str, gen_modes: list[str], primary_message: str) -> N
             specific.append(p)
 
     _git_add_commit_push(specific, f"{primary_message} (verify-fix)")
-
 # =============================================================================
 # Page regeneration
 # =============================================================================
@@ -821,3 +825,24 @@ def admin_publish_now(current_user):
         "git_status": status,
         "git_remotes": rem
     }), 200
+
+@sets_api.route("/api/admin/push", methods=["POST"])
+@token_required
+def admin_push(current_user):
+    if not getattr(current_user, "is_admin", False):
+        return jsonify({"ok": False, "error": "forbidden"}), 403
+
+    body = request.get_json(silent=True) or {}
+    slug = sanitize_filename((body.get("slug") or "").strip())
+    modes = body.get("modes") or ["flashcards", "practice"]
+
+    if not slug:
+        return jsonify({"ok": False, "error": "slug required"}), 400
+
+    targets = _collect_commit_targets(slug, modes)
+    _git_add_commit_push(targets, f"manual: {slug} [{','.join(modes)}]")
+
+    # quick verify summary
+    root = Path(current_app.root_path).parent
+    out = subprocess.check_output(["git", "status", "--porcelain"], cwd=str(root), text=True)
+    return jsonify({"ok": True, "pushed": [str(p) for p in targets], "status": out}), 200
