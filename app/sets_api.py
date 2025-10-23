@@ -175,6 +175,44 @@ def _collect_commit_targets(slug: str, modes: list[str]) -> list[Path]:
 
     return targets
 
+# --- Option B git prep (PAT, main) ---
+def _run(cmd, cwd, check=True):
+    import subprocess
+    return subprocess.run(
+        cmd, cwd=str(cwd), text=True,
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        check=check
+    ).stdout
+
+def _prepare_repo(root, token, repo_slug, branch="main"):
+    """Ensure identity, remote, and branch are correct for Option B."""
+    # 1) identity (ok if already set)
+    _run(["git", "config", "user.name",  "Path to Polish Bot"], root, check=False)
+    _run(["git", "config", "user.email", "bot@pathtopolish.app"], root, check=False)
+
+    # 2) remote url (PAT form)
+    remote_url = f"https://{token}@github.com/{repo_slug}.git"
+    remotes = _run(["git", "remote", "-v"], root, check=False)
+    if "origin" not in remotes:
+        _run(["git", "remote", "add", "origin", remote_url], root)
+    else:
+        # force the correct url in case it differs
+        _run(["git", "remote", "set-url", "origin", remote_url], root, check=False)
+
+    # 3) branch (Render often checks out in detached HEAD)
+    _run(["git", "fetch", "origin", "--prune"], root, check=False)
+    current = _run(["git", "rev-parse", "--abbrev-ref", "HEAD"], root, check=False).strip()
+    if current == "HEAD":
+        _run(["git", "checkout", "-B", branch], root)  # create/update local main
+    else:
+        _run(["git", "checkout", branch], root, check=False)
+
+    # set upstream & fast-forward if it exists
+    _run(["git", "branch", "--set-upstream-to", f"origin/{branch}", branch], root, check=False)
+    _run(["git", "pull", "--ff-only", "origin", branch], root, check=False)
+
+    return remote_url
+# --- end Option B git prep ---
 
 def _git_add_commit_push(paths: list[Path], message: str) -> None:
     """
@@ -221,7 +259,6 @@ def _git_add_commit_push(paths: list[Path], message: str) -> None:
     # Never use GIT_REMOTE / GH_TOKEN here — Option B only.
     remote_url = f"https://{token}@github.com/{slug}.git"
 
-
     # Ensure repo/init
     if not (root / ".git").exists():
         run(["git", "init"])
@@ -255,7 +292,6 @@ def _git_add_commit_push(paths: list[Path], message: str) -> None:
         rel = p_abs.relative_to(root)
         to_add_rel.append(str(rel))
 
-
     if not to_add_rel:
         raise RuntimeError("Nothing to push (no repo-relative files)")
 
@@ -286,6 +322,10 @@ def _push_and_verify(slug: str, gen_modes: list[str], primary_message: str) -> N
 
     # Verify working tree is clean for this slug
     root = Path(current_app.root_path).parent
+    repo_slug = os.environ.get("GITHUB_REPO_SLUG", slug)
+    branch    = os.environ.get("GIT_BRANCH", "main")
+    _ = _prepare_repo(root, token, repo_slug, branch)
+
     try:
         # Only check the paths we actually track for this slug
         check_paths = [
@@ -862,12 +902,15 @@ def admin_push(current_user):
 def admin_git_smoke(current_user):
     if not getattr(current_user, "is_admin", False):
         return jsonify({"ok": False, "error": "forbidden"}), 403
+    try:
+        from datetime import datetime, timezone
+        slug = ".publish_smoke"
+        marker = PAGES_DIR / slug  # e.g., docs/.publish_smoke
+        marker.parent.mkdir(parents=True, exist_ok=True)
+        marker.write_text(f"ok {datetime.now(timezone.utc).isoformat()}\n", encoding="utf-8")
 
-    from datetime import datetime, timezone
-    slug = ".publish_smoke"
-    marker = PAGES_DIR / slug  # single file under docs/.publish_smoke
-    marker.parent.mkdir(parents=True, exist_ok=True)
-    marker.write_text(f"ok {datetime.now(timezone.utc).isoformat()}\n", encoding="utf-8")
-
-    _git_add_commit_push([marker], "chore: publish smoke marker")
-    return jsonify({"ok": True, "path": str(marker)}), 200
+        _git_add_commit_push([marker], "chore: publish smoke marker")
+        return jsonify({"ok": True, "path": str(marker)}), 200
+    except Exception as e:
+        # always JSON on error
+        return jsonify({"ok": False, "error": str(e)}), 500
