@@ -78,3 +78,6 @@ Thumbs.db
 *.swp
 *.swo
 
+# keep static assets out of Git except the publish manifest
+docs/static/*
+!docs/static/**/r2_manifest.json

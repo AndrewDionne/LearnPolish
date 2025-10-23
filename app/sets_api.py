@@ -219,7 +219,8 @@ def _git_add_commit_push(paths: list[Path], message: str) -> None:
         raise RuntimeError("GITHUB_REPO_SLUG (or GITHUB_REPOSITORY) is not set (Option B)")
 
     # Never use GIT_REMOTE / GH_TOKEN here — Option B only.
-    remote_url = f"https://x-access-token:{token}@github.com/{slug}.git"
+    remote_url = f"https://{token}@github.com/{slug}.git"
+
 
     # Ensure repo/init
     if not (root / ".git").exists():
@@ -242,19 +243,18 @@ def _git_add_commit_push(paths: list[Path], message: str) -> None:
     run(["git", "fetch", "origin", branch, "--depth=1"], ok_if_fails=True)
     run(["git", "pull", "--rebase", "origin", branch], ok_if_fails=True)
 
-    # Normalize to repo-relative paths & include explicit files for dirs
+    # Normalize to repo-relative paths (robust even if inputs are relative)
     to_add_rel: list[str] = []
     for p in paths:
         if not p:
             continue
         p = Path(p)
-        if not p.exists():
+        p_abs = p if p.is_absolute() else (root / p)
+        if not p_abs.exists():
             continue
-        try:
-            rel = p.relative_to(root)
-        except ValueError:
-            rel = Path(os.path.relpath(str(p), str(root)))
+        rel = p_abs.relative_to(root)
         to_add_rel.append(str(rel))
+
 
     if not to_add_rel:
         raise RuntimeError("Nothing to push (no repo-relative files)")
@@ -287,15 +287,25 @@ def _push_and_verify(slug: str, gen_modes: list[str], primary_message: str) -> N
     # Verify working tree is clean for this slug
     root = Path(current_app.root_path).parent
     try:
+        # Only check the paths we actually track for this slug
+        check_paths = [
+            str(SETS_DIR / f"{slug}.json"),
+            str(PAGES_DIR / "flashcards" / slug),
+            str(PAGES_DIR / "practice"   / slug),
+            str(PAGES_DIR / "reading"    / slug),
+            str(PAGES_DIR / "listening"  / slug),
+            str(PAGES_DIR / "static"     / slug / "r2_manifest.json"),
+        ]
         out = subprocess.check_output(
-            ["git", "status", "--porcelain"],
+            ["git", "status", "--porcelain", "--"] + check_paths,
             cwd=str(root), stderr=subprocess.STDOUT, text=True
         )
     except subprocess.CalledProcessError as e:
         out = e.output
 
-    if slug not in out:
-        return  # clean; nothing else to do
+    if not (out or "").strip():
+        return  # clean for this slug; nothing else to do
+
 
     current_app.logger.warning(
         "post-push verify: still see changes for %s; running fallback add/commit/push",
@@ -846,3 +856,18 @@ def admin_push(current_user):
     root = Path(current_app.root_path).parent
     out = subprocess.check_output(["git", "status", "--porcelain"], cwd=str(root), text=True)
     return jsonify({"ok": True, "pushed": [str(p) for p in targets], "status": out}), 200
+
+@sets_api.route("/api/admin/git_smoke", methods=["POST"])
+@token_required
+def admin_git_smoke(current_user):
+    if not getattr(current_user, "is_admin", False):
+        return jsonify({"ok": False, "error": "forbidden"}), 403
+
+    from datetime import datetime, timezone
+    slug = ".publish_smoke"
+    marker = PAGES_DIR / slug  # single file under docs/.publish_smoke
+    marker.parent.mkdir(parents=True, exist_ok=True)
+    marker.write_text(f"ok {datetime.now(timezone.utc).isoformat()}\n", encoding="utf-8")
+
+    _git_add_commit_push([marker], "chore: publish smoke marker")
+    return jsonify({"ok": True, "path": str(marker)}), 200
