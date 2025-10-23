@@ -4,6 +4,7 @@ from pathlib import Path
 from shutil import rmtree
 import subprocess
 import os
+import shlex
 
 from .modes import SET_TYPES
 from .models import db, UserSet
@@ -28,8 +29,11 @@ from .create_set_modes import main as rebuild_set_modes_map
 # Single blueprint for this module
 sets_api = Blueprint("sets_api", __name__)
 
+# Also export alias used by app factory if it imports as sets_bp
+sets_bp = sets_api
+
 # =============================================================================
-# Helpers
+# Helpers (listing / hygiene)
 # =============================================================================
 
 def _global_map_by_name(global_list: list[dict]) -> dict[str, dict]:
@@ -176,35 +180,34 @@ def _collect_commit_targets(slug: str, modes: list[str]) -> list[Path]:
 
     return targets
 
-# --- Option B git prep (PAT, main) ---
 def _run(cmd, cwd, check=True):
-    import subprocess
     return subprocess.run(
         cmd, cwd=str(cwd), text=True,
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
         check=check
     ).stdout
 
-def _prepare_repo(root, token, repo_slug, branch="main"):
+def _prepare_repo(root: Path, token: str, repo_slug: str, branch: str = "main") -> str:
     """Ensure identity, remote, and branch are correct for Option B."""
     # 1) identity (ok if already set)
+    _run(["git", "config", "--global", "--add", "safe.directory", str(root)], root, check=False)
     _run(["git", "config", "user.name",  "Path to Polish Bot"], root, check=False)
     _run(["git", "config", "user.email", "bot@pathtopolish.app"], root, check=False)
 
-    # 2) remote url (PAT form)
-    remote_url = f"https://{token}@github.com/{repo_slug}.git"
+    # 2) remote url (classic PAT over HTTPS uses owner as username)
+    owner = repo_slug.split("/", 1)[0]
+    remote_url = f"https://{owner}:{token}@github.com/{repo_slug}.git"
     remotes = _run(["git", "remote", "-v"], root, check=False)
     if "origin" not in remotes:
-        _run(["git", "remote", "add", "origin", remote_url], root)
+        _run(["git", "remote", "add", "origin", remote_url], root, check=True)
     else:
-        # force the correct url in case it differs
         _run(["git", "remote", "set-url", "origin", remote_url], root, check=False)
 
     # 3) branch (Render often checks out in detached HEAD)
     _run(["git", "fetch", "origin", "--prune"], root, check=False)
     current = _run(["git", "rev-parse", "--abbrev-ref", "HEAD"], root, check=False).strip()
     if current == "HEAD":
-        _run(["git", "checkout", "-B", branch], root)  # create/update local main
+        _run(["git", "checkout", "-B", branch], root, check=True)  # create/update local branch
     else:
         _run(["git", "checkout", branch], root, check=False)
 
@@ -213,7 +216,6 @@ def _prepare_repo(root, token, repo_slug, branch="main"):
     _run(["git", "pull", "--ff-only", "origin", branch], root, check=False)
 
     return remote_url
-# --- end Option B git prep ---
 
 def _git_add_commit_push(paths: list[Path], message: str) -> None:
     """
@@ -222,13 +224,14 @@ def _git_add_commit_push(paths: list[Path], message: str) -> None:
       - GITHUB_REPO_SLUG (e.g. "AndrewDionne/LearnPolish")
       - GIT_BRANCH (default: "main")
     """
-    import os
     root = Path(current_app.root_path).parent  # repo root on Render
 
     def log_i(msg: str):
-        # dual log so you see lines in Render logs even if logger level changes
         print(msg, flush=True)
-        current_app.logger.info(msg)
+        try:
+            current_app.logger.info(msg)
+        except Exception:
+            pass
 
     def run(args: list[str], ok_if_fails: bool = False) -> str:
         cmd = " ".join(args)
@@ -242,44 +245,27 @@ def _git_add_commit_push(paths: list[Path], message: str) -> None:
             return out
         except subprocess.CalledProcessError as e:
             if ok_if_fails:
-                current_app.logger.warning("git (ignored error): %s\n%s", cmd, e.output)
+                log_i(f"[ignored] {e.output.strip()}")
                 return e.output
             raise
 
     # ------------------------
     # Env (Option B only)
     # ------------------------
-    token  = os.getenv("GITHUB_TOKEN")
-    slug   = os.getenv("GITHUB_REPO_SLUG") or os.getenv("GITHUB_REPOSITORY")
-    branch = (os.getenv("GIT_BRANCH") or "main").strip() or "main"
+    token     = os.getenv("GITHUB_TOKEN")
+    repo_slug = os.getenv("GITHUB_REPO_SLUG") or os.getenv("GITHUB_REPOSITORY")
+    branch    = (os.getenv("GIT_BRANCH") or "main").strip() or "main"
     if not token:
         raise RuntimeError("GITHUB_TOKEN is not set (Option B)")
-    if not slug:
+    if not repo_slug:
         raise RuntimeError("GITHUB_REPO_SLUG (or GITHUB_REPOSITORY) is not set (Option B)")
-
-    # Never use GIT_REMOTE / GH_TOKEN here — Option B only.
-    remote_url = f"https://{token}@github.com/{slug}.git"
 
     # Ensure repo/init
     if not (root / ".git").exists():
         run(["git", "init"])
 
-    # Safe dir + identity (always set to avoid 'missing identity' errors)
-    run(["git", "config", "--global", "--add", "safe.directory", str(root)], ok_if_fails=True)
-    run(["git", "config", "user.name",  "Path to Polish Bot"], ok_if_fails=True)
-    run(["git", "config", "user.email", "bot@pathtopolish.app"], ok_if_fails=True)
-
-    # Remote + branch
-    remotes = run(["git", "remote"], ok_if_fails=True)
-    if "origin" in remotes:
-        run(["git", "remote", "set-url", "origin", remote_url])
-    else:
-        run(["git", "remote", "add", "origin", remote_url])
-
-    # Be on the desired branch & rebase latest (tolerate first publish)
-    run(["git", "checkout", "-B", branch])
-    run(["git", "fetch", "origin", branch, "--depth=1"], ok_if_fails=True)
-    run(["git", "pull", "--rebase", "origin", branch], ok_if_fails=True)
+    # Prepare remote + branch (handles identity, detached HEAD, upstream)
+    _prepare_repo(root, token, repo_slug, branch)
 
     # Normalize to repo-relative paths (robust even if inputs are relative)
     to_add_rel: list[str] = []
@@ -292,7 +278,6 @@ def _git_add_commit_push(paths: list[Path], message: str) -> None:
             continue
         rel = p_abs.relative_to(root)
         to_add_rel.append(str(rel))
-
 
     if not to_add_rel:
         raise RuntimeError("Nothing to push (no repo-relative files)")
@@ -307,10 +292,9 @@ def _git_add_commit_push(paths: list[Path], message: str) -> None:
     try:
         run(["git", "push", "origin", f"HEAD:{branch}"])
     except subprocess.CalledProcessError:
-        current_app.logger.warning("git push rejected; pulling --rebase and retrying")
+        log_i("git push rejected; pulling --rebase and retrying")
         run(["git", "pull", "--rebase", "origin", branch], ok_if_fails=True)
         run(["git", "push", "origin", f"HEAD:{branch}"])
-
 
 def _push_and_verify(slug: str, gen_modes: list[str], primary_message: str) -> None:
     """
@@ -322,7 +306,7 @@ def _push_and_verify(slug: str, gen_modes: list[str], primary_message: str) -> N
     current_app.logger.info("publish targets for %s -> %s", slug, [str(t) for t in targets])
     _git_add_commit_push(targets, primary_message)
 
-   # Verify working tree is clean for this slug
+    # Verify working tree is clean for this slug
     root = Path(current_app.root_path).parent
     try:
         # Only check the paths we actually track for this slug
@@ -343,7 +327,6 @@ def _push_and_verify(slug: str, gen_modes: list[str], primary_message: str) -> N
 
     if not (out or "").strip():
         return  # clean for this slug; nothing else to do
-
 
     current_app.logger.warning(
         "post-push verify: still see changes for %s; running fallback add/commit/push",
@@ -380,6 +363,7 @@ def _push_and_verify(slug: str, gen_modes: list[str], primary_message: str) -> N
             specific.append(p)
 
     _git_add_commit_push(specific, f"{primary_message} (verify-fix)")
+
 # =============================================================================
 # Page regeneration
 # =============================================================================
@@ -447,7 +431,7 @@ def _regen_pages_for_slug(slug: str, modes: list[str]) -> None:
                                    slug, [str(p) for p in missing])
 
 # =============================================================================
-# API
+# API (NOTE: Blueprint is mounted at url_prefix="/api" in app factory)
 # =============================================================================
 
 # 0) Global sets (canonical shape)
@@ -790,7 +774,6 @@ def admin_git_diag(current_user):
     if not getattr(current_user, "is_admin", False):
         return jsonify({"ok": False, "error": "forbidden"}), 403
 
-    import shlex
     root = Path(current_app.root_path).parent
 
     def run(cmd: str):
@@ -800,11 +783,15 @@ def admin_git_diag(current_user):
         except Exception as e:
             return f"ERROR: {e!r}"
 
-    # Redact tokens in the displayed remote url, if present
     def redact(url: str) -> str:
         if not isinstance(url, str):
             return url
-        return url.replace(os.getenv("GITHUB_TOKEN",""), "****").replace(os.getenv("GH_TOKEN",""), "****")
+        val = url
+        for k in ("GITHUB_TOKEN", "GH_TOKEN"):
+            tok = os.getenv(k, "")
+            if tok:
+                val = val.replace(tok, "****")
+        return val
 
     data = {
         "cwd": str(root),
@@ -817,19 +804,24 @@ def admin_git_diag(current_user):
             "inside_work_tree": run("git rev-parse --is-inside-work-tree"),
             "branch":           run("git rev-parse --abbrev-ref HEAD"),
             "status":           run("git status --porcelain"),
-            "remotes":          run("git remote -v"),
+            "remotes":          redact(run("git remote -v")),
             "last_commit":      run("git log -1 --oneline"),
             "config_user_name": run("git config user.name"),
             "config_user_email":run("git config user.email"),
         },
         "env": {
             "GIT_BRANCH": os.getenv("GIT_BRANCH"),
-            "GIT_REMOTE": redact(os.getenv("GIT_REMOTE")),
+            "GIT_REMOTE": redact(os.getenv("GIT_REMOTE") or ""),
             "GITHUB_REPO_SLUG": os.getenv("GITHUB_REPO_SLUG"),
             "GITHUB_REPOSITORY": os.getenv("GITHUB_REPOSITORY"),
             "HAS_GITHUB_TOKEN": bool(os.getenv("GITHUB_TOKEN")),
             "HAS_GH_TOKEN": bool(os.getenv("GH_TOKEN")),
         },
+        "paths": {
+            "repo_root": str(root),
+            "SETS_DIR": str(SETS_DIR),
+            "PAGES_DIR": str(PAGES_DIR),
+        }
     }
     return jsonify({"ok": True, **data}), 200
 
@@ -874,7 +866,7 @@ def admin_publish_now(current_user):
         "git_remotes": rem
     }), 200
 
-@sets_api.route("/api/admin/push", methods=["POST"])
+@sets_api.route("/admin/push", methods=["POST"])
 @token_required
 def admin_push(current_user):
     if not getattr(current_user, "is_admin", False):
@@ -895,24 +887,7 @@ def admin_push(current_user):
     out = subprocess.check_output(["git", "status", "--porcelain"], cwd=str(root), text=True)
     return jsonify({"ok": True, "pushed": [str(p) for p in targets], "status": out}), 200
 
-@sets_api.route("/api/admin/git_smoke", methods=["POST"])
-@token_required
-def admin_git_smoke(current_user):
-    if not getattr(current_user, "is_admin", False):
-        return jsonify({"ok": False, "error": "forbidden"}), 403
-    try:
-        from datetime import datetime, timezone
-        slug = ".publish_smoke"
-        marker = PAGES_DIR / slug  # e.g., docs/.publish_smoke
-        marker.parent.mkdir(parents=True, exist_ok=True)
-        marker.write_text(f"ok {datetime.now(timezone.utc).isoformat()}\n", encoding="utf-8")
-
-        _git_add_commit_push([marker], "chore: publish smoke marker")
-        return jsonify({"ok": True, "path": str(marker)}), 200
-    except Exception as e:
-        return jsonify({"ok": False, "error": str(e)}), 500
-
-@sets_api.route("/api/admin/git_smoke", methods=["POST"])
+@sets_api.route("/admin/git_smoke", methods=["POST"], endpoint="sets_admin_git_smoke")
 @token_required
 def admin_git_smoke(current_user):
     if not getattr(current_user, "is_admin", False):
