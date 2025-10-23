@@ -3,6 +3,7 @@ from flask import Blueprint, request, jsonify, current_app
 from pathlib import Path
 from shutil import rmtree
 import subprocess
+import os
 
 from .modes import SET_TYPES
 from .models import db, UserSet
@@ -292,6 +293,7 @@ def _git_add_commit_push(paths: list[Path], message: str) -> None:
         rel = p_abs.relative_to(root)
         to_add_rel.append(str(rel))
 
+
     if not to_add_rel:
         raise RuntimeError("Nothing to push (no repo-relative files)")
 
@@ -320,12 +322,8 @@ def _push_and_verify(slug: str, gen_modes: list[str], primary_message: str) -> N
     current_app.logger.info("publish targets for %s -> %s", slug, [str(t) for t in targets])
     _git_add_commit_push(targets, primary_message)
 
-    # Verify working tree is clean for this slug
+   # Verify working tree is clean for this slug
     root = Path(current_app.root_path).parent
-    repo_slug = os.environ.get("GITHUB_REPO_SLUG", slug)
-    branch    = os.environ.get("GIT_BRANCH", "main")
-    _ = _prepare_repo(root, token, repo_slug, branch)
-
     try:
         # Only check the paths we actually track for this slug
         check_paths = [
@@ -896,6 +894,23 @@ def admin_push(current_user):
     root = Path(current_app.root_path).parent
     out = subprocess.check_output(["git", "status", "--porcelain"], cwd=str(root), text=True)
     return jsonify({"ok": True, "pushed": [str(p) for p in targets], "status": out}), 200
+
+@sets_api.route("/api/admin/git_smoke", methods=["POST"])
+@token_required
+def admin_git_smoke(current_user):
+    if not getattr(current_user, "is_admin", False):
+        return jsonify({"ok": False, "error": "forbidden"}), 403
+    try:
+        from datetime import datetime, timezone
+        slug = ".publish_smoke"
+        marker = PAGES_DIR / slug  # e.g., docs/.publish_smoke
+        marker.parent.mkdir(parents=True, exist_ok=True)
+        marker.write_text(f"ok {datetime.now(timezone.utc).isoformat()}\n", encoding="utf-8")
+
+        _git_add_commit_push([marker], "chore: publish smoke marker")
+        return jsonify({"ok": True, "path": str(marker)}), 200
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 @sets_api.route("/api/admin/git_smoke", methods=["POST"])
 @token_required
