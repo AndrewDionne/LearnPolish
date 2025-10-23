@@ -1,0 +1,19 @@
+{
+  "name": "Publish Smoke",
+  "modes": [
+    "learn",
+    "speak"
+  ],
+  "meta": {
+    "modes": [
+      "learn",
+      "speak"
+    ]
+  },
+  "cards": [
+    {
+      "meaning": "hello",
+      "phrase": "cześć"
+    }
+  ]
+}
