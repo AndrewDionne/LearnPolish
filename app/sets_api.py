@@ -137,21 +137,22 @@ def _delete_set_files_everywhere(set_name: str):
 # =============================================================================
 # Git publishing (single authoritative helper + verification)
 # =============================================================================
+import os, shlex
 
 def _collect_commit_targets(slug: str, modes: list[str]) -> list[Path]:
     """
-    Build a robust list of repo-relative files/dirs to stage for this slug.
-    We include the set JSON, each per-mode directory + index.html, and common artifacts.
+    Build a conservative list of repo-relative files/dirs to stage.
+    Include the slug dirs AND their index.html so 'git add' definitely sees files.
     """
     targets: list[Path] = []
 
     # JSON
-    json_path = SETS_DIR / f"{slug}.json"
-    if json_path.exists():
-        targets.append(json_path)
+    jp = SETS_DIR / f"{slug}.json"
+    if jp.exists():
+        targets.append(jp)
 
     # Per-mode pages
-    for m in modes or []:
+    for m in modes:
         d = PAGES_DIR / m / slug
         if d.exists():
             targets.append(d)
@@ -159,7 +160,7 @@ def _collect_commit_targets(slug: str, modes: list[str]) -> list[Path]:
             if ix.exists():
                 targets.append(ix)
 
-    # Common artifacts / indexes
+    # Common artifacts
     commons = [
         PAGES_DIR / "flashcards" / "index.html",
         PAGES_DIR / "practice"   / "index.html",
@@ -177,35 +178,25 @@ def _collect_commit_targets(slug: str, modes: list[str]) -> list[Path]:
 
 def _git_add_commit_push(paths: list[Path], message: str) -> None:
     """
-    Add/commit/push repo-relative paths to GitHub using:
-      - GITHUB_REPO_SLUG (e.g. "AndrewDionne/LearnPolish")
-      - GITHUB_TOKEN (or GH_TOKEN)
+    Add/commit/push given paths.
+
+    Remote resolution (first match wins):
+      1) GIT_REMOTE (supports ${GH_TOKEN}/${GITHUB_TOKEN} substitution)
+      2) Build HTTPS from (GITHUB_TOKEN|GH_TOKEN) + (GITHUB_REPO_SLUG|GITHUB_REPOSITORY)
+
+    Other env:
       - GIT_BRANCH (default: main)
-      - GIT_AUTHOR_NAME, GIT_AUTHOR_EMAIL (optional; defaults provided)
-
-    Behavior:
-      - init repo if missing
-      - mark working tree as safe (container-friendly)
-      - set/override identity (local config)
-      - ensure branch exists (`checkout -B`)
-      - fetch + rebase pull
-      - `git add -A -- <paths>` then commit (allow-empty) and push
-      - retry push once after a rebase pull on rejection
+      - GIT_AUTHOR_NAME / GIT_AUTHOR_EMAIL (defaults provided)
     """
-    import os
+    root = Path(current_app.root_path).parent
 
-    root = Path(current_app.root_path).parent  # repo root inside container
-
-    def run(args: list[str], ok_if_fails: bool = False) -> str:
+    def run(args: list[str], *, ok_if_fails: bool=False) -> str:
         current_app.logger.info("git: %s", " ".join(args))
         try:
-            out = subprocess.check_output(
-                args, cwd=str(root), stderr=subprocess.STDOUT, text=True
-            )
-            return out
+            return subprocess.check_output(args, cwd=str(root), stderr=subprocess.STDOUT, text=True)
         except subprocess.CalledProcessError as e:
             if ok_if_fails:
-                current_app.logger.warning("git (ignored error): %s\n%s", " ".join(args), e.output)
+                current_app.logger.warning("git (ignored): %s\n%s", " ".join(args), e.output)
                 return e.output
             raise
 
@@ -213,38 +204,46 @@ def _git_add_commit_push(paths: list[Path], message: str) -> None:
     if not (root / ".git").exists():
         run(["git", "init"])
 
-    # Safe dir + identity
+    # Safe directory + identity (always set; avoids container quirks)
     run(["git", "config", "--global", "--add", "safe.directory", str(root)], ok_if_fails=True)
     author_name  = os.getenv("GIT_AUTHOR_NAME")  or "Path to POLISH Bot"
     author_email = os.getenv("GIT_AUTHOR_EMAIL") or "bot@pathtopolish.app"
-    # set/override local identity to avoid container quirks
-    run(["git", "config", "user.name", author_name], ok_if_fails=True)
+    run(["git", "config", "user.name",  author_name],  ok_if_fails=True)
     run(["git", "config", "user.email", author_email], ok_if_fails=True)
 
-    # Remote + branch
-    token  = os.getenv("GITHUB_TOKEN") or os.getenv("GH_TOKEN")
-    slug   = os.getenv("GITHUB_REPO_SLUG") or os.getenv("GITHUB_REPOSITORY")
+    # Branch
     branch = (os.getenv("GIT_BRANCH") or "main").strip() or "main"
-    if not token:
-        raise RuntimeError("GITHUB_TOKEN (or GH_TOKEN) is not set")
-    if not slug:
-        raise RuntimeError("GITHUB_REPO_SLUG (or GITHUB_REPOSITORY) is not set")
+    run(["git", "checkout", "-B", branch])  # creates/switches even if detached
 
-    remote_url = f"https://x-access-token:{token}@github.com/{slug}.git"
+    # Remote
+    token = os.getenv("GITHUB_TOKEN") or os.getenv("GH_TOKEN") or ""
+    slug  = os.getenv("GITHUB_REPO_SLUG") or os.getenv("GITHUB_REPOSITORY") or ""
+    remote_from_env = (os.getenv("GIT_REMOTE") or "").strip()
+
+    remote_url = ""
+    if remote_from_env:
+        # Expand ${GH_TOKEN}/${GITHUB_TOKEN} placeholders if present
+        expanded = remote_from_env.replace("${GH_TOKEN}", token).replace("${GITHUB_TOKEN}", token)
+        # If user used literal ${GH_TOKEN} but token is empty, keep as-is; push will fail loudly.
+        remote_url = expanded
+    else:
+        if not token or not slug:
+            raise RuntimeError("Missing repo configuration: set GIT_REMOTE or (GITHUB_TOKEN|GH_TOKEN) and (GITHUB_REPO_SLUG|GITHUB_REPOSITORY).")
+        remote_url = f"https://x-access-token:{token}@github.com/{slug}.git"
+
     remotes = run(["git", "remote"], ok_if_fails=True)
     if "origin" in remotes:
         run(["git", "remote", "set-url", "origin", remote_url])
     else:
         run(["git", "remote", "add", "origin", remote_url])
 
-    # Ensure desired branch and sync latest
-    run(["git", "checkout", "-B", branch])
+    # Rebase the latest (non-fatal if first push)
     run(["git", "fetch", "origin", branch, "--depth=1"], ok_if_fails=True)
     run(["git", "pull", "--rebase", "origin", branch], ok_if_fails=True)
 
-    # Normalize to repo-relative paths (dirs are fine)
+    # Normalize paths to repo-relative
     to_add_rel: list[str] = []
-    for p in paths or []:
+    for p in paths:
         if not p:
             continue
         p = Path(p)
@@ -259,107 +258,65 @@ def _git_add_commit_push(paths: list[Path], message: str) -> None:
     if not to_add_rel:
         raise RuntimeError("Nothing to push (no repo-relative files)")
 
-    # Stage → commit → push (with diagnostics)
-    pre = run(["git", "status", "--porcelain"], ok_if_fails=True)
-    current_app.logger.info("git status (pre-add):\n%s", pre)
+    # Status before
+    current_app.logger.info("git status (pre):\n%s", run(["git", "status", "--porcelain"], ok_if_fails=True))
 
+    # Stage aggressively under the provided paths
     run(["git", "add", "-A", "--"] + to_add_rel)
 
-    mid = run(["git", "status", "--porcelain"], ok_if_fails=True)
-    current_app.logger.info("git status (post-add):\n%s", mid)
-
-    # Commit (allow empty to carry index renames or metadata changes)
+    # Commit (allow empty so index changes still roll up)
     run(["git", "commit", "-m", message, "--no-gpg-sign"], ok_if_fails=True)
 
+    # Push with one retry on non-FF
     try:
         run(["git", "push", "origin", f"HEAD:{branch}"])
     except subprocess.CalledProcessError:
-        current_app.logger.warning("git push rejected; pulling --rebase and retrying")
+        current_app.logger.warning("git push rejected; rebasing latest then retrying")
         run(["git", "pull", "--rebase", "origin", branch], ok_if_fails=True)
         run(["git", "push", "origin", f"HEAD:{branch}"])
 
-    post = run(["git", "status", "--porcelain"], ok_if_fails=True)
-    current_app.logger.info("git status (post-push):\n%s", post)
-
-
-def _status_has_slug_change(status_text: str, slug: str, modes: list[str]) -> bool:
-    """
-    Parse `git status --porcelain` output and decide if there are still paths
-    under this slug that remain uncommitted/unpushed.
-    """
-    if not status_text.strip():
-        return False
-
-    # repo-relative path fragments we consider for this slug
-    candidates = [
-        f"docs/sets/{slug}.json",
-        f"docs/static/{slug}/",
-        f"docs/static/{slug}/r2_manifest.json",
-    ]
-    for m in modes or []:
-        candidates.append(f"docs/{m}/{slug}/")
-        candidates.append(f"docs/{m}/{slug}/index.html")
-
-    lines = [ln.strip() for ln in status_text.splitlines() if ln.strip()]
-    for ln in lines:
-        # porcelain lines look like: "?? docs/flashcards/slug/" or " M docs/set_modes.json"
-        # we only care if any candidate fragment appears in the path portion
-        # split on whitespace and look at the last token as the path
-        parts = ln.split()
-        path = parts[-1] if parts else ""
-        for frag in candidates:
-            if frag in path:
-                return True
-    return False
+    # Status after
+    current_app.logger.info("git status (post):\n%s", run(["git", "status", "--porcelain"], ok_if_fails=True))
 
 
 def _push_and_verify(slug: str, gen_modes: list[str], primary_message: str) -> None:
     """
-    Primary push via _git_add_commit_push(); if git still shows changes for this slug,
-    run a conservative fallback that lists specific files explicitly.
+    Push once; if git still shows changes that mention the slug,
+    re-stage the precise files and push again.
     """
-    # Primary pass
+    root = Path(current_app.root_path).parent
+
+    # First pass
     targets = _collect_commit_targets(slug, gen_modes)
     current_app.logger.info("publish targets for %s -> %s", slug, [str(t) for t in targets])
     _git_add_commit_push(targets, primary_message)
 
     # Verify working tree is clean for this slug
-    root = Path(current_app.root_path).parent
     try:
-        status_out = subprocess.check_output(
-            ["git", "status", "--porcelain"],
-            cwd=str(root), stderr=subprocess.STDOUT, text=True
-        )
+        out = subprocess.check_output(["git", "status", "--porcelain"], cwd=str(root), stderr=subprocess.STDOUT, text=True)
     except subprocess.CalledProcessError as e:
-        status_out = e.output
+        out = e.output
 
-    if not _status_has_slug_change(status_out, slug, gen_modes):
-        return  # clean; nothing else to do
+    if slug not in out:
+        return  # clean
 
-    current_app.logger.warning(
-        "post-push verify: still see changes for %s; running fallback add/commit/push",
-        slug
-    )
+    current_app.logger.warning("post-push verify: still see changes for %s; running fallback add/commit/push", slug)
 
-    # Conservative, file-focused fallback
     specific: list[Path] = []
-    json_path = SETS_DIR / f"{slug}.json"
-    if json_path.exists():
-        specific.append(json_path)
-
-    for m in gen_modes or []:
+    jp = SETS_DIR / f"{slug}.json"
+    if jp.exists():
+        specific.append(jp)
+    for m in gen_modes:
         d = PAGES_DIR / m / slug
         if d.exists():
             specific.append(d)
             ix = d / "index.html"
             if ix.exists():
                 specific.append(ix)
-
     man = PAGES_DIR / "static" / slug / "r2_manifest.json"
     if man.exists():
         specific.append(man)
-
-    # Common artifacts (harmless if unchanged)
+    # Add common indexes again (harmless if unchanged)
     for p in [
         PAGES_DIR / "flashcards" / "index.html",
         PAGES_DIR / "practice"   / "index.html",
