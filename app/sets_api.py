@@ -11,6 +11,8 @@ from .models import db, UserSet
 from .auth import token_required
 from .utils import build_all_mode_indexes
 
+from .debug_trace import trace
+
 # Centralized paths + constants
 from .constants import SETS_DIR, PAGES_DIR, SET_MODES_JSON
 

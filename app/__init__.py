@@ -260,6 +260,8 @@ def create_app():
         from .routes import routes_bp
     except Exception:
         routes_bp = None
+    from .debug_trace import debug_api
+    app.register_blueprint(debug_api, url_prefix="/api")
 
     app.register_blueprint(auth_bp, url_prefix="/api")
     app.register_blueprint(api_bp,  url_prefix="/api")
