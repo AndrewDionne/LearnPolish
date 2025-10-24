@@ -21,7 +21,8 @@ TRACE_STATE = {
     "on": False,
     "capture_bodies": True,
     # Which URL paths to log request bodies for (substring match)
-    "watch_paths": ["/api/create_set", "/api/create_set_v2", "/api/admin/"],
+        "watch_paths": ["/api/"],  # capture every API call
+
     # Optional: limit to specific function names; empty = all decorated
     "watch_funcs": set(),  # e.g., {"_git_add_commit_push"}
 }
@@ -131,6 +132,7 @@ def trace_on(current_user):
     funcs = body.get("watch_funcs")
     if isinstance(funcs, list):
         TRACE_STATE["watch_funcs"] = set(str(x) for x in funcs)
+    _append("note", {"msg": "trace_on", "state": {**TRACE_STATE, "watch_funcs": list(TRACE_STATE["watch_funcs"])}})
     return jsonify({"ok": True, "trace": {**TRACE_STATE, "watch_funcs": list(TRACE_STATE["watch_funcs"])}})
 
 # Admin: disable tracing
@@ -147,6 +149,7 @@ def trace_off(current_user):
 @debug_api.route("/admin/trace_dump", methods=["GET"])
 @token_required
 def trace_dump(current_user):
+    _append("request", {"path": request.path, "method": request.method})
     if not getattr(current_user, "is_admin", False):
         return jsonify({"ok": False, "error": "forbidden"}), 403
     with _LOCK:

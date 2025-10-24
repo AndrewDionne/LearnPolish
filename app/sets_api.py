@@ -6,6 +6,13 @@ import subprocess
 import os
 import shlex
 
+try:
+    from .debug_trace import trace, _append as _trace_append
+except Exception:
+    def trace(f):  # no-op if tracer isn't available
+        return f
+    _trace_append = None
+
 from .modes import SET_TYPES
 from .models import db, UserSet
 from .auth import token_required
@@ -144,7 +151,7 @@ def _delete_set_files_everywhere(set_name: str):
 # =============================================================================
 # Git publishing (Option B only: GITHUB_TOKEN + GITHUB_REPO_SLUG)
 # =============================================================================
-
+@trace
 def _collect_commit_targets(slug: str, modes: list[str]) -> list[Path]:
     """
     Return a robust list of repo-relative *files and dirs* to stage.
@@ -218,7 +225,7 @@ def _prepare_repo(root: Path, token: str, repo_slug: str, branch: str = "main") 
     _run(["git", "pull", "--ff-only", "origin", branch], root, check=False)
 
     return remote_url
-
+@trace
 def _git_add_commit_push(paths: list[Path], message: str) -> None:
     """
     Add/commit/push repo-relative paths to GitHub using ONLY:
@@ -244,11 +251,18 @@ def _git_add_commit_push(paths: list[Path], message: str) -> None:
             )
             if out.strip():
                 log_i(out.strip())
+            if _trace_append:
+                _trace_append("git", {"cmd": args, "ok": True, "out": out.strip()[:2000]})
             return out
+
         except subprocess.CalledProcessError as e:
             if ok_if_fails:
                 log_i(f"[ignored] {e.output.strip()}")
+                if _trace_append:
+                    _trace_append("git", {"cmd": args, "ok": False, "out": (e.output or "").strip()[:2000], "ignored": True})
                 return e.output
+            if _trace_append:
+                _trace_append("git", {"cmd": args, "ok": False, "out": (e.output or "").strip()[:2000]})
             raise
 
     # ------------------------
@@ -297,7 +311,7 @@ def _git_add_commit_push(paths: list[Path], message: str) -> None:
         log_i("git push rejected; pulling --rebase and retrying")
         run(["git", "pull", "--rebase", "origin", branch], ok_if_fails=True)
         run(["git", "push", "origin", f"HEAD:{branch}"])
-
+@trace
 def _push_and_verify(slug: str, gen_modes: list[str], primary_message: str) -> None:
     """
     Primary push via _git_add_commit_push(); if Git still reports changes for
@@ -369,7 +383,7 @@ def _push_and_verify(slug: str, gen_modes: list[str], primary_message: str) -> N
 # =============================================================================
 # Page regeneration
 # =============================================================================
-
+@trace
 def _regen_pages_for_slug(slug: str, modes: list[str]) -> None:
     """
     Rebuild pages for this slug, adapting to whichever generator signature exists.
@@ -531,6 +545,7 @@ def remove_set(current_user):
 # 4) Create a set (owner-only on create)
 @sets_api.route("/create_set_v2", methods=["POST"])
 @token_required
+@trace
 def create_set(current_user):
     current_app.logger.info("create_set_v2: start")
 
@@ -712,6 +727,7 @@ def delete_set(current_user, set_name):
 # 6) Admin build & publish (server-side)
 @sets_api.route("/admin/build_publish", methods=["POST", "OPTIONS"])
 @token_required
+@trace
 def admin_build_publish(current_user):
     """
     Admin-only: rebuild static pages for a slug and push to GitHub.
@@ -829,6 +845,7 @@ def admin_git_diag(current_user):
 
 @sets_api.route("/admin/publish_now", methods=["POST"])
 @token_required
+@trace
 def admin_publish_now(current_user):
     if not getattr(current_user, "is_admin", False):
         return jsonify({"ok": False, "error": "forbidden"}), 403
@@ -870,6 +887,7 @@ def admin_publish_now(current_user):
 
 @sets_api.route("/admin/push", methods=["POST"])
 @token_required
+@trace
 def admin_push(current_user):
     if not getattr(current_user, "is_admin", False):
         return jsonify({"ok": False, "error": "forbidden"}), 403
@@ -891,6 +909,7 @@ def admin_push(current_user):
 
 @sets_api.route("/admin/git_smoke", methods=["POST"], endpoint="sets_admin_git_smoke")
 @token_required
+@trace
 def admin_git_smoke(current_user):
     if not getattr(current_user, "is_admin", False):
         return jsonify({"ok": False, "error": "forbidden"}), 403
