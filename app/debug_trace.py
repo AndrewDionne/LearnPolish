@@ -194,3 +194,32 @@ def env_dump(current_user):
             "last_commit": _git("git log -1 --oneline", root),
         }
     })
+# --- route inspector ----------------------------------------------------------
+@debug_api.route("/admin/routes", methods=["GET"])
+@token_required
+def list_routes(current_user):
+    if not getattr(current_user, "is_admin", False):
+        return jsonify({"ok": False, "error": "forbidden"}), 403
+    rm = []
+    for r in current_app.url_map.iter_rules():
+        rm.append({
+            "rule": str(r),
+            "endpoint": r.endpoint,
+            "methods": sorted(m for m in r.methods if m not in {"HEAD", "OPTIONS"}),
+        })
+    rm.sort(key=lambda x: x["rule"])
+    return jsonify({"ok": True, "routes": rm})
+
+@debug_api.route("/admin/which_handler", methods=["GET"])
+@token_required
+def which_handler(current_user):
+    if not getattr(current_user, "is_admin", False):
+        return jsonify({"ok": False, "error": "forbidden"}), 403
+    path = (request.args.get("path") or "").strip()
+    if not path:
+        return jsonify({"ok": False, "error": "path required, e.g. /api/create_set_v2"}), 400
+    matches = []
+    for r in current_app.url_map.iter_rules():
+        if str(r) == path:
+            matches.append({"rule": str(r), "endpoint": r.endpoint, "methods": sorted(r.methods)})
+    return jsonify({"ok": True, "matches": matches})
