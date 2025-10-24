@@ -17,13 +17,8 @@ from .listening import create_listening_set
 from .constants import SETS_DIR, PAGES_DIR, STATIC_DIR
 from .sets_utils import regenerate_set_pages, sanitize_filename, build_all_mode_indexes, rebuild_set_modes_map
 
-# Optional git publish (safe import)
-try:
-    from .git_utils import commit_and_push_changes  # noqa: F401
-except Exception:
-    def commit_and_push_changes(*_args, **_kwargs):
-        print("ℹ️ commit_and_push_changes unavailable — skipping publish.")
-
+# Publishing is handled centrally in sets_api (GITHUB_REPO_SLUG).
+# This module delegates create routes to sets_api to avoid divergence.
 
 api_bp = Blueprint("api", __name__)
 
@@ -1009,7 +1004,9 @@ def my_sets_remove(current_user, set_name):
 @api_bp.route("/my_sets", methods=["GET"])
 @token_required
 def my_sets_get_alias(current_user):
-    return _call_view(my_sets_get, current_user)
+    from .sets_api import my_sets as setsapi_my_sets  # local import
+    return _call_view(setsapi_my_sets, current_user)
+
 
 @api_bp.route("/my_sets", methods=["POST"])
 @token_required
@@ -1034,43 +1031,11 @@ def list_available_sets(current_user):
 @api_bp.route("/global_sets", methods=["GET"])
 def global_sets_index():
     """
-    Public list. Prefers explicit 'modes'; falls back only for legacy sets.
-    Returns: [{ name, filename, count, modes, type }]
+    Delegate to the canonical global_sets in sets_api to ensure one shape/source of truth.
     """
-    out = []
-    if not SETS_DIR.exists():
-        return jsonify(out)
+    from .sets_api import global_sets as setsapi_global_sets  # local import
+    return _call_view(setsapi_global_sets)
 
-    for p in sorted(SETS_DIR.glob("*.json")):
-        name = p.stem
-        modes = None
-        count = 0
-
-        try:
-            j = json.loads(p.read_text(encoding="utf-8"))
-            if isinstance(j, dict):
-                name = j.get("name") or name
-                modes = _extract_modes_from_json(j) or None
-                count = _count_items(j)
-            elif isinstance(j, list):
-                modes = ["learn", "speak"]  # very old legacy
-                count = len(j)
-        except Exception:
-            pass
-
-        if not modes:
-            # If modes missing in a dict file, treat as legacy flashcards for compatibility
-            modes = ["learn", "speak"]
-
-        out.append({
-            "name": name,
-            "filename": p.name,
-            "count": count,
-            "modes": modes,
-            "type": _type_from_modes(modes),
-        })
-
-    return jsonify(out)
 
 # ---------- Create set ----------
 
@@ -1078,156 +1043,12 @@ def global_sets_index():
 @token_required
 def create_set(current_user):
     """
-    Create a learning set and generate static pages.
-    Request JSON:
-      {
-        "set_name": str,       # display name (can have spaces/Ł/ó/…)
-        "data": [ ... ],
-        "modes": ["learn","speak"] | ["read"] | ["listen"],   # optional if set_type is given
-        "set_type": "flashcards" | "learn" | "reading" | "listening",  # legacy option
-        "publish": true|false   # optional; default True on Render, False locally
-      }
+    Delegates to the canonical create handler in sets_api (build + publish).
+    We keep this URL for legacy clients.
     """
-    payload = request.get_json(silent=True) or {}
-    display_name = (payload.get("set_name") or "").strip()
-    data = payload.get("data")
-
-    if not _valid_set_name(display_name):
-        return jsonify({"error": "invalid_set_name"}), 400
-    if not isinstance(data, list) or not data:
-        return jsonify({"error": "data must be a non-empty array"}), 400
-
-    # Normalize modes
-    modes = _normalize_modes(payload.get("modes"))
-    if not modes:
-        st = (payload.get("set_type") or "").lower()
-        if st in ("flashcards", "learn"):
-            modes = ["learn", "speak"]
-        elif st in ("reading", "read"):
-            modes = ["read"]
-        elif st in ("listening", "listen"):
-            modes = ["listen"]
-        else:
-            return jsonify({"error": "modes_or_valid_set_type_required"}), 400
-
-    # Canonical slug for filesystem/URLs
-    slug = sanitize_filename(display_name)
-    if not slug:
-        return jsonify({"error": "invalid_slug"}), 400
-
-    # Compute where to save — use the slug for filenames
-    SETS_DIR.mkdir(parents=True, exist_ok=True)
-    json_path = SETS_DIR / f"{slug}.json"
-    if json_path.exists():
-        return jsonify({"error": "set_already_exists"}), 409
-
-    # Save wrapper JSON. Keep the user's display name inside the file.
-    body = _body_for_set(display_name, modes, data)
-    json_path.write_text(json.dumps(body, ensure_ascii=False, indent=2), encoding="utf-8")
-
-    # Library attach (store slug as set_name in DB so everything is consistent)
-    if not UserSet.query.filter_by(user_id=current_user.id, set_name=slug).first():
-        db.session.add(UserSet(user_id=current_user.id, set_name=slug, is_owner=True))
-        safe_commit()
-
-    warnings = []
-
-    # Generate non-listening pages + local audio + R2 manifest for those modes (by slug)
-    try:
-        regenerate_set_pages(slug)
-    except Exception as e:
-        warnings.append(f"regenerate_failed: {e}")
-
-    # Generate listening assets/pages separately if requested (by slug)
-    try:
-        if "listen" in modes:
-            create_listening_set(slug, data)
-    except Exception as e:
-        warnings.append(f"listening_generate_failed: {e}")
-   
-    # Refresh landing/index pages & set->modes map (so GH Pages shows the new set)
-    try:
-        try:
-            build_all_mode_indexes()
-        except Exception as e:
-            warnings.append(f"build_indexes_failed: {e}")
-        try:
-            rebuild_set_modes_map()
-        except Exception as e:
-            warnings.append(f"rebuild_modes_map_failed: {e}")
-    except Exception:
-        pass
-
-    # Optional publish (commit + push)
-    def _env_default_publish():
-        try:
-            return bool(os.getenv("RENDER"))  # default True on Render
-        except Exception:
-            return False
-    publish = bool(payload.get("publish")) if "publish" in payload else _env_default_publish()
-    if publish:
-        try:
-            changed_paths = [json_path]
-            for mode_dir in ("flashcards", "practice", "reading", "listening"):
-                d = PAGES_DIR / mode_dir / slug
-                if d.exists():
-                    changed_paths.append(d)
-            stat_dir = STATIC_DIR / slug
-            if stat_dir.exists():
-                changed_paths.append(stat_dir)
-
-            # 🆕 Also stage global listings that may have been rebuilt
-            for p in (
-                PAGES_DIR / "flashcards" / "index.html",
-                PAGES_DIR / "practice" / "index.html",
-                PAGES_DIR / "reading" / "index.html",
-                PAGES_DIR / "listening" / "index.html",
-                PAGES_DIR / "set_modes.json",
-            ):
-                if p.exists():
-                    changed_paths.append(p)
-
-            commit_and_push_changes(
-                f"✨ Create set: {display_name} [{slug}] ({', '.join(modes)})",
-                paths=changed_paths,
-            )
-        except Exception as e:
-            warnings.append(f"publish_failed: {e}")
-
-    # Build response with robust URL encoding of the slug
-    enc = quote(slug, safe="")
-
-    pages = {}
-    if "learn" in modes:  pages["learn"]  = f"/flashcards/{enc}/"
-    if "speak" in modes:  pages["speak"]  = f"/practice/{enc}/"
-    if "read" in modes:   pages["read"]   = f"/reading/{enc}/"
-    if "listen" in modes: pages["listen"] = f"/listening/{enc}/"
-
-    # Count local audio artifacts (any mode)
-    audio_count = 0
-    try:
-        for sub in ("audio", "reading", "listening"):
-            p = STATIC_DIR / slug / sub
-            if p.exists():
-                audio_count += len([x for x in p.glob("*.mp3") if x.is_file()])
-    except Exception:
-        pass
-
-    resp = {
-        "ok": True,
-        "set_name": display_name,  # human label
-        "slug": slug,              # canonical
-        "modes": modes,
-        "pages": pages,
-        "artifacts": {
-            "json": f"/sets/{enc}.json",
-            "audio_count": audio_count
-        },
-        "cdn_base": current_app.config.get("R2_CDN_BASE", "") or ""
-    }
-    if warnings:
-        resp["warnings"] = warnings
-    return jsonify(resp), 201
+    from .sets_api import create_set as setsapi_create_set  # local import to avoid cycles
+    # Reuse the same request payload/body and authenticated user
+    return _call_view(setsapi_create_set, current_user)
 
 # ---------- Create set (compat wrapper) ----------
 
@@ -1246,8 +1067,9 @@ def create_set_v2(current_user):
         "set_type": p.get("set_type"),
         "publish":  p.get("publish"),
     }
+    from .sets_api import create_set as setsapi_create_set  # local import
     with current_app.test_request_context(json=normalized):
-        return _call_view(create_set, current_user)
+        return _call_view(setsapi_create_set, current_user)
 
 # ---------- Update set ----------
 
