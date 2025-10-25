@@ -223,3 +223,20 @@ def which_handler(current_user):
         if str(r) == path:
             matches.append({"rule": str(r), "endpoint": r.endpoint, "methods": sorted(r.methods)})
     return jsonify({"ok": True, "matches": matches})
+
+@debug_api.route("/admin/dupe_routes", methods=["GET"])
+@token_required
+def dupe_routes(current_user):
+    if not getattr(current_user, "is_admin", False):
+        return jsonify({"ok": False, "error": "forbidden"}), 403
+    # Build a map of rule -> list of endpoints
+    by_rule = {}
+    for r in current_app.url_map.iter_rules():
+        rule = str(r)
+        by_rule.setdefault(rule, []).append({
+            "endpoint": r.endpoint,
+            "methods": sorted(m for m in r.methods if m not in {"HEAD", "OPTIONS"}),
+        })
+    dupes = [{ "rule": k, "handlers": v } for k, v in by_rule.items() if len(v) > 1]
+    dupes.sort(key=lambda x: x["rule"])
+    return jsonify({"ok": True, "duplicates": dupes})

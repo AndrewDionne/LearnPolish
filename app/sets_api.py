@@ -45,6 +45,17 @@ sets_bp = sets_api
 # Helpers (listing / hygiene)
 # =============================================================================
 
+def _git_current_commit_sha() -> str | None:
+    try:
+        root = Path(current_app.root_path).parent
+        out = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=str(root), text=True
+        ).strip()
+        return out or None
+    except Exception:
+        return None
+
+
 def _global_map_by_name(global_list: list[dict]) -> dict[str, dict]:
     return {s["name"]: s for s in global_list if "name" in s}
 
@@ -619,11 +630,18 @@ def create_set(current_user):
 
             _push_and_verify(safe_name, gen_modes, f"rebuild: {safe_name} [{','.join(gen_modes)}]")
 
+            sha = _git_current_commit_sha()
             meta = get_set_metadata(safe_name)
             out = _augment_meta(meta, existed=True)
+            if sha:
+                out["deploy"] = {
+                    "commit": sha,
+                    "status_href": f"/api/pages/status?commit={sha}"
+                }
             resp = jsonify(out)
             resp.headers["X-Create-Handler"] = "v2"
             return resp, 200
+
 
         # ---------- NEW CREATE ----------
         meta = util_create_set(set_type, safe_name, items)
@@ -652,11 +670,18 @@ def create_set(current_user):
         # push to GitHub (with verification)
         _push_and_verify(safe_name, gen_modes, f"build: {safe_name} [{','.join(gen_modes)}]")
 
+        sha = _git_current_commit_sha()
         out = _augment_meta(meta, existed=False)
         out["created_by"] = "me"
+        if sha:
+            out["deploy"] = {
+                "commit": sha,
+                "status_href": f"/api/pages/status?commit={sha}"
+            }
         resp = jsonify(out)
         resp.headers["X-Create-Handler"] = "v2"
         return resp, 201
+
 
     except Exception as e:
         current_app.logger.exception("create_set_v2 failed for %s: %s", safe_name, e)
@@ -842,6 +867,80 @@ def admin_git_diag(current_user):
         }
     }
     return jsonify({"ok": True, **data}), 200
+
+@sets_api.route("/pages/status", methods=["GET"])
+@token_required
+def pages_status(current_user):
+    """
+    Check GitHub Pages build/deploy status.
+    Query params:
+      - commit (optional): if provided, returns deployed:=true iff latest build is 'built' AND commit matches.
+    """
+    import requests
+
+    token  = os.getenv("GITHUB_TOKEN")
+    slug   = os.getenv("GITHUB_REPO_SLUG") or os.getenv("GITHUB_REPOSITORY")
+    want   = (request.args.get("commit") or "").strip()
+
+    if not token or not slug:
+        return jsonify({"ok": False, "error": "missing_github_env"}), 500
+
+    headers = {
+        "Authorization": f"token {token}",
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "User-Agent": "PathToPolish-App",
+    }
+
+    def _get_json(url: str):
+        try:
+            r = requests.get(url, headers=headers, timeout=10)
+            return r.status_code, (r.json() if r.content else {})
+        except Exception as e:
+            return 599, {"error": str(e)}
+
+    # latest build
+    sc, latest = _get_json(f"https://api.github.com/repos/{slug}/pages/builds/latest")
+    if sc // 100 != 2:
+        return jsonify({"ok": False, "where": "builds/latest", "status": sc, "detail": latest}), 502
+
+    # site info (to compute the public base URL)
+    sc2, site = _get_json(f"https://api.github.com/repos/{slug}/pages")
+
+    # Compute a best-effort public base
+    base = None
+    if sc2 // 100 == 2:
+        base = site.get("html_url") or (("https://" + site.get("domain")) if site.get("domain") else None)
+
+    # Fallback to common project-pages pattern if needed
+    if not base:
+        owner = slug.split("/")[0]
+        repo  = slug.split("/")[1]
+        base  = f"https://{owner}.github.io/{repo}"
+
+    status  = (latest.get("status") or "").lower()  # queued | building | built | errored
+    lcommit = latest.get("commit") or ""
+    deployed = (status == "built" and (not want or want == lcommit))
+
+    out = {
+        "ok": True,
+        "status": status,
+        "latest_commit": lcommit or None,
+        "deployed": deployed,
+        "pages_base": base,
+        "build": {
+            "created_at": latest.get("created_at"),
+            "updated_at": latest.get("updated_at"),
+            "error": (latest.get("error") or {}).get("message"),
+            "duration": latest.get("duration"),
+        },
+        "site": {
+            "cname": site.get("cname") if isinstance(site, dict) else None,
+            "source": (site.get("source") or {}) if isinstance(site, dict) else {},
+        }
+    }
+    return jsonify(out), 200
+
 
 @sets_api.route("/admin/publish_now", methods=["POST"])
 @token_required
