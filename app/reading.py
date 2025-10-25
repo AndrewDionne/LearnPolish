@@ -8,16 +8,10 @@ def generate_reading_html(set_name, data=None):
     """
     Generates docs/reading/<set_name>/index.html for reading mode.
 
-    Features:
-      - Start/Stop continuous recognition with word-level scoring.
-      - Per-word color highlights; WPM; status panel.
-      - "Listen (Polish)" playback:
-          1) Prefer CDN via R2 manifest (reading/<set>/<idx>.mp3) or direct item.audio_url
-          2) Fallback to local static ../../static/<set>/reading/<idx>.mp3
-          3) Fallback to Azure TTS if file not found
-      - "Replay Me" of user's recording (robust, memory-leak safe).
-      - Uses api.fetch('/api/token') so GH Pages works without hardcoded hosts.
-      - Loads app-config.js to honor APP_CONFIG.assetsBase as a global CDN base.
+    Static-only behavior (no Azure on front-end):
+      - "Listen (Polish)" plays docs/static/<set>/reading/<idx>.mp3
+      - No manifest lookups; no token calls; no mic/recognition
+      - Gentle notice if an audio file is missing
     """
     out_dir = PAGES_DIR / "reading" / set_name
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -32,14 +26,12 @@ def generate_reading_html(set_name, data=None):
 
     passages_json = json.dumps(data, ensure_ascii=False).replace("</", "<\\/")
 
-
     html = f"""<!DOCTYPE html>
 <html lang="pl">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Reading · {set_name}</title>
-<link rel="preconnect" href="https://aka.ms">
 <style>
   body {{ font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif; margin: 24px; max-width: 900px; }}
   .toolbar {{ display:flex; gap:8px; flex-wrap: wrap; align-items:center; margin-bottom: 12px; }}
@@ -61,10 +53,13 @@ def generate_reading_html(set_name, data=None):
   audio {{ display:none; }}
   a.home {{ position:absolute; right:16px; top:16px; text-decoration:none; background:#007bff; color:#fff; padding:6px 10px; border-radius:8px; }}
 </style>
-<script src="https://aka.ms/csspeech/jsbrowserpackageraw"></script>
-<!-- Config + API helper (relative to docs/reading/<set>/index.html) -->
+<!-- Azure Speech SDK removed: using static MP3 playback only -->
+
+<!-- Config + helper scripts (relative to docs/reading/<set>/index.html) -->
 <script src="../../static/js/app-config.js"></script>
 <script src="../../static/js/api.js"></script>
+<script src="../../static/js/audio-paths.js"></script>
+
 </head>
 <body>
   <a class="home" href="#" onclick="goHome(); return false;">🏠 Home</a>
@@ -96,7 +91,9 @@ def generate_reading_html(set_name, data=None):
 <script>
 const passages = {passages_json};
 const setName = "{set_name}";
-const SpeechSDK = window.SpeechSDK;
+
+// Recognition fully disabled on front-end
+const SpeechSDK = null;
 
 let currentIndex = 0;
 let recognizer = null;
@@ -107,33 +104,22 @@ let startTime = 0;
 let wordsSpans = [];
 let wordsMeta = []; // {{ text, idx, score }}
 
-// R2 manifest (if present)
-let r2Manifest = null; // {{ files: {{ "reading/<set>/<i>.mp3": "https://cdn..." }}, assetsBase: "https://cdn..." }}
-let assetsCDNBase = (window.APP_CONFIG && (APP_CONFIG.assetsBase || APP_CONFIG.CDN_BASE || APP_CONFIG.R2_BASE)) || null;
+// Manifest disabled (local static only)
+let r2Manifest = null;
+let assetsCDNBase = null;
 
 // ---------- Helpers ----------
 function byId(id) {{ return document.getElementById(id); }}
 
-// Prefer R2 → fallback global base → fallback local static (relative)
+// Local static path: docs/static/<set>/reading/<index>.mp3
 function getReadingAudioPath(index) {{
-  const key = `reading/${{setName}}/${{index}}.mp3`;
-  if (r2Manifest?.files?.[key]) return r2Manifest.files[key];
-  const base = r2Manifest?.assetsBase || r2Manifest?.cdn || r2Manifest?.base || assetsCDNBase;
-  if (base) return String(base).replace(/\\/$/, '') + '/' + key;
   return `../../static/${{encodeURIComponent(setName)}}/reading/${{encodeURIComponent(index)}}.mp3`;
 }}
 
 async function loadR2Manifest() {{
-  try {{
-    let res = await fetch(`../../static/${{encodeURIComponent(setName)}}/r2_manifest.json`, {{ cache: "no-store" }});
-    if (!res.ok) {{
-      res = await fetch(`../../static/r2_manifest.json`, {{ cache: "no-store" }});
-    }}
-    if (res.ok) {{
-      r2Manifest = await res.json();
-      assetsCDNBase = assetsCDNBase || r2Manifest.assetsBase || r2Manifest.cdn || r2Manifest.base || null;
-    }}
-  }} catch(_) {{}}
+  // No manifest/CDN: use local static files only.
+  r2Manifest = null;
+  assetsCDNBase = null;
 }}
 
 function populateSelect() {{
@@ -207,75 +193,15 @@ function updateStats(final=false) {{
   `;
 }}
 
-// ---------- Azure token & TTS ----------
-async function fetchToken() {{
-  const res = await api.fetch('/api/token');
-  if (!res.ok) throw new Error("token http " + res.status);
-  return await res.json();
-}}
-
-async function speechConfig() {{
-  const tk = await fetchToken();
-  const cfg = SpeechSDK.SpeechConfig.fromAuthorizationToken(tk.token, tk.region);
-  cfg.speechRecognitionLanguage = "pl-PL";
-  // More forgiving silence windows for reading passages
-  cfg.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, "5000");
-  cfg.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "1200");
-  return cfg;
-}}
-
-async function speakPolish(text) {{
-  try {{
-    const tk = await fetchToken();
-    const cfg = SpeechSDK.SpeechConfig.fromAuthorizationToken(tk.token, tk.region);
-    cfg.speechSynthesisLanguage = "pl-PL";
-    const synth = new SpeechSDK.SpeechSynthesizer(cfg);
-    const a = byId("ttsAudio");
-    return new Promise((resolve) => {{
-      synth.speakTextAsync(text || "", result => {{
-        try {{
-          if (result && result.audioData) {{
-            const blob = new Blob([result.audioData], {{type: "audio/wav"}});
-            const url = URL.createObjectURL(blob);
-            a.src = url; a.load();
-            a.onended = () => {{
-              URL.revokeObjectURL(url);
-              resolve();
-            }};
-            a.play().catch(() => resolve());
-          }} else {{
-            resolve();
-          }}
-        }} finally {{
-          synth.close();
-        }}
-      }}, err => {{
-        console.warn("TTS error:", err);
-        try {{ synth.close(); }} catch(_){{}}
-        resolve();
-      }});
-    }});
-  }} catch (e) {{
-    console.warn("TTS fetch/config error:", e);
-  }}
-}}
-
-// ---------- Recognition wiring ----------
-async function setupRecognizer(referenceText) {{
-  const cfg = await speechConfig();
-  const audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
-  recognizer = new SpeechSDK.SpeechRecognizer(cfg, audioConfig);
-
-  const pa = new SpeechSDK.PronunciationAssessmentConfig(
-    referenceText,
-    SpeechSDK.PronunciationAssessmentGradingSystem.HundredMark,
-    SpeechSDK.PronunciationAssessmentGranularity.Word,
-    true  // miscue
-  );
-  pa.applyTo(recognizer);
-}}
+// ---- Speech-related functions are stubs (disabled) ----
+async function fetchToken() {{ throw new Error("Speech disabled"); }}
+async function speechConfig() {{ throw new Error("Speech disabled"); }}
+async function speakPolish(_text) {{ /* disabled */ return; }}
+async function setupRecognizer(_referenceText) {{ /* disabled */ return; }}
+function attachRecognitionHandlers() {{ /* disabled */ return; }}
 
 function startRecordingMyAudio() {{
+  // Optional: allow user to record & replay their voice (no scoring)
   recordedChunks = [];
   navigator.mediaDevices.getUserMedia({{ audio: true }}).then(stream => {{
     mediaRecorder = new MediaRecorder(stream);
@@ -297,82 +223,16 @@ function stopRecordingMyAudio() {{
   }});
 }}
 
-function attachRecognitionHandlers() {{
-  recognizer.recognized = (s, e) => {{
-    if (!e || !e.result || !e.result.json) return;
-    try {{
-      const j = JSON.parse(e.result.json);
-      const nbest = (j.NBest && j.NBest[0]) ? j.NBest[0] : null;
-      if (!nbest) return;
-
-      const words = nbest.Words || [];
-      words.forEach(w => {{
-        const text = w.Word;
-        const score = (w.PronunciationAssessment && w.PronunciationAssessment.AccuracyScore) || null;
-
-        // Match next unscored token (case-insensitive; strip punctuation)
-        const norm = (t) => (t||"").toLowerCase().replace(/[.,!?;:()"]/g, "");
-        const matchIdx = wordsMeta.findIndex(m => m.score === null && norm(m.text) === norm(text));
-        if (matchIdx !== -1) {{
-          wordsMeta[matchIdx].score = score;
-          const span = wordsSpans[matchIdx];
-          span.classList.remove("w-good","w-mid","w-bad");
-          const cls = (score>=80) ? "w-good" : (score>=60) ? "w-mid" : "w-bad";
-          if (cls) span.classList.add(cls);
-          highlightWord(matchIdx);
-        }}
-      }});
-
-      updateStats(false);
-    }} catch(err) {{
-      console.warn("recognize parse error", err);
-    }}
-  }};
-
-  recognizer.sessionStarted = () => {{
-    byId("status").textContent = "Session started. Speak now…";
-    byId("btnStart").disabled = true;
-    byId("btnStop").disabled = false;
-    startTime = Date.now();
-    updateStats(false);
-  }};
-
-  recognizer.sessionStopped = async () => {{
-    byId("status").textContent = "Session stopped.";
-    byId("btnStart").disabled = false;
-    byId("btnStop").disabled = true;
-    const url = await stopRecordingMyAudio();
-    if (url) {{
-      const a = byId("replayAudio");
-      a.src = url; a.load();
-      byId("btnReplay").disabled = false;
-    }}
-    updateStats(true);
-  }};
-
-  recognizer.canceled = () => {{
-    byId("status").textContent = "Canceled.";
-    byId("btnStart").disabled = false;
-    byId("btnStop").disabled = true;
-  }};
-}}
-
 async function startReading() {{
-  const p = passages[currentIndex] || {{}};
-  if (!SpeechSDK) {{
-    byId("status").textContent = "❌ Azure SDK not loaded.";
-    return;
-  }}
-  await setupRecognizer(p.polish || "");
-  attachRecognitionHandlers();
-  await new Promise(r => setTimeout(r, 200));
-  byId("status").textContent = "🎤 Speak now…";
-  byId("btnReplay").disabled = true; // fresh recording
-  startRecordingMyAudio();
-  recognizer.startContinuousRecognitionAsync();
+  // Mic assessment disabled; no recognizer session
+  byId("status").textContent = "🔇 Reading assessment is temporarily disabled.";
+  const btn = byId("btnReplay");
+  if (btn) btn.disabled = true; // no recording is made automatically
+  return;
 }}
 
 function stopReading() {{
+  // No recognizer to stop; keep graceful try/catch
   try {{ if (recognizer) recognizer.stopContinuousRecognitionAsync(); }} catch(_){{}}
 }}
 
@@ -381,11 +241,14 @@ function listenPolish() {{
   const p = passages[currentIndex] || {{}};
   const direct = p.audio_url || p.audio;
   const src = (direct && /^https?:\\/\\//i.test(direct)) ? direct : getReadingAudioPath(currentIndex);
-  const tryTTS = () => speakPolish(p.polish || "");
-  a.onerror = tryTTS;
+  a.onerror = () => {{
+    byId("status").textContent = "🔇 Audio not found for this passage.";
+  }};
   a.onended = () => {{}};
   a.src = src; a.load();
-  a.play().catch(tryTTS);
+  a.play().catch(() => {{
+    byId("status").textContent = "🔇 Unable to play audio.";
+  }});
 }}
 
 function replayMe() {{
@@ -427,9 +290,7 @@ function wireUI() {{
 function goHome() {{ window.location.href = "../../index.html"; }}
 
 (async function init() {{
-  if (!SpeechSDK) {{
-    byId("status").textContent = "⚠️ Azure SDK not loaded (check network).";
-  }}
+  byId("status").textContent = "ℹ️ Static audio playback only (mic scoring disabled).";
   await loadR2Manifest();
   populateSelect();
   renderPassage(0);

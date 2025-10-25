@@ -373,24 +373,17 @@ def generate_listening_html(set_name: str, data=None):
     </a>
   </nav>
 
+  <script src="../../static/js/audio-paths.js"></script>
+
   <script>
   // ---- R2 manifest (if present) ----
   let r2Manifest = null; // {{ files: {{ "listening/<set>/<file>": "https://cdn..." }}, assetsBase }}
   const SET_NAME = {json.dumps(set_name)};
   async function loadR2Manifest(){{
-    try {{
-      const base = (location.hostname === "andrewdionne.github.io")
-        ? '/' + location.pathname.split('/').filter(Boolean)[0]
-        : '';
-      const url = (location.hostname === "andrewdionne.github.io")
-        ? `${{base}}/static/${{SET_NAME}}/r2_manifest.json`
-        : `/custom_static/${{SET_NAME}}/r2_manifest.json`;
-      const res = await fetch(url, {{ cache: 'no-store' }});
-      if (res.ok) r2Manifest = await res.json();
-    }} catch(_){{
-      r2Manifest = null;
-    }}
+    // Manifest disabled: use local static files only.
+    r2Manifest = null;
   }}
+
 
   function repoBase(){{
     if (location.hostname === "andrewdionne.github.io") {{

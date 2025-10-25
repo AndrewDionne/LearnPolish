@@ -10,18 +10,11 @@ def generate_practice_html(set_name, data):
     """
     Generates docs/practice/<set_name>/index.html and a set-scoped sw.js.
 
-    ✅ Preserves functionality:
-      - "Repeat after me" loop with Pause/Resume/Restart
-      - Azure Speech pronunciation assessment
-      - System audio cues (repeat_after_me / good / try_again)
-      - Per-card audio playback using "<idx>_<sanitized phrase>.mp3"
-      - Works both on GitHub Pages and Flask via relative paths
-
-    ➕ Enhancements:
-      - Uses R2 CDN if available (per-set r2_manifest.json, then global static/r2_manifest.json)
-      - Falls back to local ../../static/<set>/audio/*.mp3
-      - Honors APP_CONFIG.assetsBase as a global CDN base if manifest not present
-      - Offline cache button (service worker caches audio for the set)
+    Static-only front-end (no Azure SDK / tokens):
+      - "Repeat after me" loop stays intact
+      - Per-card audio playback uses docs/static/<set>/audio/<idx>_<sanitized>.mp3
+      - Mic scoring is disabled; we auto-pass each attempt (small notice shown)
+      - Optional offline cache UI preserved (no manifest / CDN required)
     """
     # Ensure output dir exists
     output_dir = DOCS_DIR / "practice" / set_name
@@ -89,11 +82,12 @@ def generate_practice_html(set_name, data):
 
   <div id="result" class="result">🎙 Get ready...</div>
 
-  <!-- Azure Speech SDK -->
-  <script src="https://aka.ms/csspeech/jsbrowserpackageraw"></script>
+  <!-- Azure Speech SDK removed: using static MP3 playback only -->
+
   <!-- Config + API helper (relative to docs/practice/<set>/index.html) -->
   <script src="../../static/js/app-config.js"></script>
   <script src="../../static/js/api.js"></script>
+  <script src="../../static/js/audio-paths.js"></script>
 
   <script>
     // ===== State =====
@@ -102,14 +96,18 @@ def generate_practice_html(set_name, data):
     let index = 0;
     let attempts = 0;
     let isRunning = false;
+
+    // Azure SDK explicitly disabled on front-end
+    const SpeechSDK = null;
     let cachedSpeechConfig = null;
     let globalRecognizer = null;
     let isRecognizerActive = false;
+
     let preloadedAudio = {{}};
 
-    // R2 / CDN resolver
-    let r2Manifest = null;  // {{ files: {{ "audio/<set>/<file>": "https://cdn..." }}, assetsBase: "https://cdn..." }}
-    let assetsCDNBase = (window.APP_CONFIG && (APP_CONFIG.assetsBase || APP_CONFIG.CDN_BASE || APP_CONFIG.R2_BASE)) || null;
+    // Manifest/CDN disabled
+    let r2Manifest = null;
+    let assetsCDNBase = null;
 
     const setName = "{set_name}";
     const cards = {cards_json};
@@ -128,33 +126,15 @@ def generate_practice_html(set_name, data):
       return `../../static/system_audio/${{name}}.mp3`;
     }}
 
-    // Build an audio URL for a card item (index + fields)
+    // Build an audio URL for a card item (index + fields) → local static fallback
     function audioUrlFor(setName, index, item) {{
-      // explicit absolute URL wins
       const explicit = item?.audio_url || item?.audio;
       if (explicit && /^https?:\\/\\//i.test(explicit)) return explicit;
 
-      // explicit file name or derived
       const fn = (item?.audio_file && String(item.audio_file))
               || (String(index) + "_" + sanitizeFilename(item?.phrase || item?.polish || "") + ".mp3");
 
-      const keyPrimary = "audio/" + setName + "/" + fn;
-
-      // (1) direct manifest file map
-      if (r2Manifest?.files) {{
-        const k = keyPrimary.replace(/^\\//, "");
-        if (r2Manifest.files[k]) return r2Manifest.files[k];
-        if (r2Manifest.files["/" + k]) return r2Manifest.files["/" + k];
-      }}
-
-      // (2) base from manifest or APP_CONFIG
-      const base = r2Manifest?.assetsBase || r2Manifest?.cdn || r2Manifest?.base || assetsCDNBase;
-      if (base) {{
-        const clean = String(base).replace(/\\/$/, "");
-        return clean + "/" + keyPrimary;
-      }}
-
-      // (3) local static fallback
+      // local static fallback (preferred)
       return "../../static/" + encodeURIComponent(setName) + "/audio/" + encodeURIComponent(fn);
     }}
 
@@ -185,176 +165,56 @@ def generate_practice_html(set_name, data):
       if (p) p.catch(err => {{ console.warn("🔇 Autoplay blocked:", err); callback(); }});
     }}
 
-    // Load per-set manifest then global manifest; learn CDN base if present
+    // Manifest disabled: local static only
     async function loadR2Manifest() {{
-      try {{
-        const perSet = "../../static/" + encodeURIComponent(setName) + "/r2_manifest.json";
-        let res = await fetch(perSet, {{ cache: "no-store" }});
-        if (!res.ok) {{
-          res = await fetch("../../static/r2_manifest.json", {{ cache: "no-store" }});
-        }}
-        if (res.ok) {{
-          r2Manifest = await res.json();
-          assetsCDNBase = assetsCDNBase || r2Manifest.assetsBase || r2Manifest.cdn || r2Manifest.base || null;
-          console.log("R2 manifest loaded", r2Manifest);
-        }} else {{
-          console.log("No R2 manifest (fallback to local):", res.status);
-        }}
-      }} catch (e) {{
-        console.log("R2 manifest fetch error (fallback to local):", e);
-      }}
+      r2Manifest = null;
+      assetsCDNBase = null;
     }}
 
-    // ===== Azure Speech wiring via api.fetch (GH+Flask safe) =====
+    // ===== Azure Speech stubs (disabled) =====
     async function getSpeechConfig() {{
-      if (cachedSpeechConfig) return cachedSpeechConfig;
-      const r = await api.fetch('/api/token');
-      if (!r.ok) throw new Error("Token fetch failed: " + r.status);
-      const data = await r.json();
-      const speechConfig = SpeechSDK.SpeechConfig.fromAuthorizationToken(data.token, data.region);
-      speechConfig.speechRecognitionLanguage = "pl-PL";
-      speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, "2500");
-      speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "1000");
-      cachedSpeechConfig = speechConfig;
-      return speechConfig;
+      throw new Error("Speech disabled");
     }}
 
     async function initRecognizer() {{
-      if (globalRecognizer) return globalRecognizer;
-      const speechConfig = await getSpeechConfig();
-      const audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
-      globalRecognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
-      return globalRecognizer;
+      // never called with speech disabled; keep stub for compatibility
+      return null;
     }}
 
     async function warmupMic() {{
+      // simple progress animation to keep UI behavior consistent
       const container = document.getElementById("warmupContainer");
       const bar = document.getElementById("warmupBar");
       const text = document.getElementById("warmupText");
 
       container.style.display = "block";
       bar.style.width = "0%";
-      text.textContent = "Preparing microphone…";
+      text.textContent = "Preparing… (mic scoring disabled)";
 
       let progress = 0;
       const interval = setInterval(() => {{
-        progress += 5; bar.style.width = progress + "%";
-        if (progress >= 100) clearInterval(interval);
-      }}, 100);
-
-      try {{
-        const audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
-        const speechConfig = await getSpeechConfig();
-        const recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
-
-        await new Promise(resolve => {{
-          recognizer.recognizeOnceAsync(() => {{
-            clearInterval(interval);
-            bar.style.width = "100%";
-            text.textContent = "Ready!";
-            setTimeout(() => container.style.display = "none", 500);
-            resolve();
-          }});
-        }});
-      }} catch (err) {{
-        console.warn("⚠️ Mic warm-up failed:", err);
-        text.textContent = "⚠️ Mic warm-up failed.";
-      }}
+        progress += 10; bar.style.width = progress + "%";
+        if (progress >= 100) {{
+          clearInterval(interval);
+          text.textContent = "Ready!";
+          setTimeout(() => container.style.display = "none", 400);
+        }}
+      }}, 60);
     }}
 
+    // Return an auto-pass score and show a small notice; keeps flow smooth
     async function assessPronunciation(phrase, isFirst=false) {{
       const resultDiv = document.getElementById("result");
-      resultDiv.innerHTML = "⏳ Preparing microphone…";
-
-      if (!window.SpeechSDK) {{
-        resultDiv.textContent = "❌ Azure SDK not loaded.";
-        return 0;
-      }}
-
-      try {{
-        const recognizer = await initRecognizer();
-
-        const config = new SpeechSDK.PronunciationAssessmentConfig(
-          phrase,
-          SpeechSDK.PronunciationAssessmentGradingSystem.HundredMark,
-          SpeechSDK.PronunciationAssessmentGranularity.Word,
-          true
-        );
-        config.applyTo(recognizer);
-
-        const warmDelay = isFirst ? 1200 : 400;
-        setTimeout(() => {{
-          resultDiv.innerHTML = `🎤 Say: <strong>${{phrase}}</strong>`;
-        }}, warmDelay);
-
-        return new Promise(resolve => {{
-          let settled = false;
-
-          recognizer.recognized = (s, e) => {{
-            if (settled) return;
-            if (!e.result || !e.result.json) return;
-
-            try {{
-              const resJson = JSON.parse(e.result.json);
-              const words = resJson?.NBest?.[0]?.Words || [];
-              const avg = words.length
-                ? (words.reduce((a,b) => a + (b.PronunciationAssessment?.AccuracyScore || 0), 0) / words.length).toFixed(1)
-                : "0";
-
-              const wordHtml = words.map(w => {{
-                const score = w.PronunciationAssessment?.AccuracyScore || 0;
-                const color = score >= 85 ? "green" : score >= 70 ? "orange" : "red";
-                return `<span style="color:${{color}}; margin:0 4px;">${{w.Word}}</span>`;
-              }}).join(" ");
-
-              resultDiv.innerHTML = `<div><strong>Overall:</strong> ${{avg}}%</div><div style="margin-top:5px; font-size:1.1em;">${{wordHtml}}</div>`;
-
-              const cue = parseFloat(avg) >= PASS_THRESHOLD ? "good" : "try_again";
-              playSystemAudio(cue, () => resolve(parseFloat(avg)));
-            }} catch (err) {{
-              console.warn("Parse error:", err);
-              resultDiv.textContent = "⚠️ Error parsing result.";
-              resolve(0);
-            }}
-            settled = true;
-          }};
-
-          // Start continuous recognition only once
-          if (!isRecognizerActive) {{
-            recognizer.startContinuousRecognitionAsync();
-            isRecognizerActive = true;
-          }}
-
-          // Safety timeout (2s + ~50ms/char)
-          const stopMs = 2000 + (phrase.replace(/\\s+/g, "").length * 50);
-          setTimeout(() => {{
-            if (!settled) {{
-              resultDiv.innerHTML = "⚠️ No speech detected.";
-              resolve(0);
-            }}
-          }}, stopMs);
-        }});
-      }} catch (err) {{
-        console.error("Azure error:", err);
-        resultDiv.textContent = "❌ Azure config error.";
-        return 0;
-      }}
+      resultDiv.innerHTML = `🎤 Say: <strong>${{phrase}}</strong><br><span style="font-size:.95em;opacity:.8;">(Mic scoring disabled — auto-pass)</span>`;
+      // brief pause to feel responsive
+      await new Promise(r => setTimeout(r, isFirst ? 800 : 400));
+      playSystemAudio("good", () => {{}});
+      return PASS_THRESHOLD;
     }}
 
     async function runPractice() {{
       if (paused || isRunning) return;
       if (index >= cards.length) {{
-        // Stop recognizer when finished
-        try {{
-          if (globalRecognizer) {{
-            globalRecognizer.stopContinuousRecognitionAsync(() => {{
-              globalRecognizer.close();
-            }});
-          }}
-        }} catch (_) {{}}
-        globalRecognizer = null;
-        isRecognizerActive = false;
-
         document.getElementById("result").innerHTML = "✅ Done!";
         return;
       }}
@@ -365,12 +225,12 @@ def generate_practice_html(set_name, data):
       await new Promise(resolve => playAudioByIndex(index, resolve));
       if (paused) {{ isRunning = false; return; }}
 
-      // 2) Assess pronunciation
+      // 2) (Disabled) Assess pronunciation → auto-pass keeps loop moving
       const phrase = (cards[index] || {{}}).phrase || "";
       const score = await assessPronunciation(phrase, index === 0);
       if (paused) {{ isRunning = false; return; }}
 
-      // 3) Decide next
+      // 3) Decide next (auto-pass always advances)
       if (score >= PASS_THRESHOLD || attempts >= 2) {{
         index++; attempts = 0;
       }} else {{
@@ -425,13 +285,13 @@ def generate_practice_html(set_name, data):
       const offlineRemoveBtn = document.getElementById("offlineRemoveBtn");
       const offlineStatus = document.getElementById("offlineStatus");
 
-      // Load CDN manifest (per-set, else global); enables CDN + offline URLs
+      // Manifest disabled; still call to keep same flow
       await loadR2Manifest();
 
-      // Preload audio (R2-aware)
+      // Preload audio (local static)
       preloadAudioFiles();
 
-      // Warm up mic / recognizer
+      // Warm up (visual only)
       await warmupMic();
 
       // Offline SW wiring
@@ -502,7 +362,7 @@ def generate_practice_html(set_name, data):
 """
     out_path.write_text(html, encoding="utf-8")
 
-    # Service worker (same as your version; cache-first for any cached URL)
+    # Service worker (unchanged)
     sw_js = """/* practice SW */
 self.addEventListener('install', (e) => { self.skipWaiting(); });
 self.addEventListener('activate', (e) => { self.clients.claim(); });

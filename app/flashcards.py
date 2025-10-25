@@ -101,12 +101,13 @@ def generate_flashcard_html(set_name, data):
   </div>
 
   <!-- Azure Speech SDK -->
-  <script src="https://aka.ms/csspeech/jsbrowserpackageraw"></script>
+  <!-- Azure Speech SDK removed: using static MP3 playback only -->
 
   <!-- Correct relative paths from /flashcards/{set}/index.html -->
-   <script src="../../static/js/app-config.js"></script>
+  <script src="../../static/js/app-config.js"></script>
   <script src="../../static/js/api.js"></script>
   <script src="../../static/js/session_state.js"></script>
+  <script src="../../static/js/audio-paths.js"></script>
 
   <script>
     // --- Data & state ---
@@ -117,8 +118,8 @@ def generate_flashcard_html(set_name, data):
 
     // R2 manifest (if present)
     // Shape: {{ files: {{ "audio/<set>/<file>": "https://cdn..." }}, assetsBase: "https://cdn..." }}
-    let r2Manifest = null;
-    let assetsCDNBase = (window.APP_CONFIG && (APP_CONFIG.assetsBase || APP_CONFIG.CDN_BASE || APP_CONFIG.R2_BASE)) || null;
+    let r2Manifest = null; // manifest/CDN disabled: use local static files only
+    let assetsCDNBase = null;
 
     // Scoring + points
     const PASS = 75;
@@ -145,35 +146,14 @@ def generate_flashcard_html(set_name, data):
       const setEnc = encodeURIComponent(setName);
       const fnEnc  = encodeURIComponent(fn);
 
-      const candidates = [
-        `audio/${{setName}}/${{fn}}`,   // primary
-        `${{setName}}/audio/${{fn}}`,   // alt
-        `audio/${{fn}}`,              // flat
-        fn                          // bare
-      ];
+      // Absolute URL in data wins
+      const explicit = e.audio_url || e.audio;
+      if (explicit && /^https?:\/\//i.test(explicit)) return explicit;
 
-      // 1) Exact file map
-      if (r2Manifest && r2Manifest.files) {{
-        for (const k of candidates) {{
-          const k1 = k.replace(/^\//, "");
-          if (r2Manifest.files[k1])       return r2Manifest.files[k1];
-          if (r2Manifest.files["/" + k1]) return r2Manifest.files["/" + k1];
-        }}
-      }}
-
-      // 2) CDN base from manifest or app-config
-      const base =
-        (r2Manifest && (r2Manifest.assetsBase || r2Manifest.cdn || r2Manifest.base)) ||
-        assetsCDNBase ||
-        null;
-      if (base) {{
-        const clean = String(base).replace(/\/$/, "");
-        return `${{clean}}/audio/${{setEnc}}/${{fnEnc}}`;
-      }}
-
-      // 3) Local
+      // Local static (preferred, no manifest/CDN)
       return `../../static/${{setEnc}}/audio/${{fnEnc}}`;
     }}
+
 
 
 
@@ -197,98 +177,15 @@ def generate_flashcard_html(set_name, data):
     }}
 
     async function assess(referenceText, targetEl) {{
-      if (!referenceText) {{ targetEl.textContent = "—"; return; }}
-      targetEl.textContent = "⏳ Listening…";
-
-      if (!window.SpeechSDK) {{ targetEl.textContent = "❌ Azure SDK not loaded."; return; }}
-      try {{
-        let data = null;
-        let r = await api.fetch("/api/speech_token");  // new preferred
-        if (!r.ok) r = await api.fetch("/api/token");  // legacy fallback
-        if (!r.ok) throw new Error("token");
-        data = await r.json();
-
-        const speechConfig = SpeechSDK.SpeechConfig.fromAuthorizationToken(data.token, data.region);
-        speechConfig.speechRecognitionLanguage = "pl-PL";
-        speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, "6000");
-        speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "1200");
-        const audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
-        const recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
-
-        const pa = new SpeechSDK.PronunciationAssessmentConfig(
-          referenceText,
-          SpeechSDK.PronunciationAssessmentGradingSystem.HundredMark,
-          SpeechSDK.PronunciationAssessmentGranularity.Word,
-          true
-        );
-        pa.applyTo(recognizer);
-
-        recognizer.recognizeOnceAsync(result => {{
-          try {{
-            const resJson = result && result.json ? JSON.parse(result.json) : null;
-            const words = resJson?.NBest?.[0]?.Words || [];
-            const avg = words.length ? (words.reduce((a,b)=>a+(b.PronunciationAssessment?.AccuracyScore||0),0)/words.length).toFixed(1) : "0";
-
-            const rec = (tracker.per[currentIndex] = tracker.per[currentIndex] || {{ tries: 0, best: 0, got100BeforeFlip: false }});
-            rec.tries += 1;
-            tracker.attempts += 1;
-
-            const numericAvg = Number(avg) || 0;
-            rec.best = Math.max(rec.best, numericAvg);
-
-            if (!hasFlippedCurrent && numericAvg === 100 && !rec.got100BeforeFlip) {{
-              rec.got100BeforeFlip = true;
-              tracker.perfectNoFlipCount += 1;
-            }}
-
-            if (window.SessionSync) SessionSync.save({{ setName, mode, progress: {{ index: currentIndex, per: tracker.per }} }});
-
-            const ok = numericAvg >= PASS;
-            const wordHtml = words.map(w => {{
-              const score = w.PronunciationAssessment?.AccuracyScore || 0;
-              const color = score >= 85 ? "green" : score >= 70 ? "orange" : "red";
-              return `<span style="color:${{color}}; margin:0 4px;">${{w.Word}}</span>`;
-            }}).join(" ");
-
-            targetEl.innerHTML = `<div><strong>${{ok ? "Nice!" : "Not quite"}}:</strong> ${{avg}}%</div>` +
-                                 (wordHtml ? `<div style="margin-top:5px;">${{wordHtml}}</div>` : "");
-            if (!ok) targetEl.innerHTML += `<div style="margin-top:6px;">Flip the card to check the answer.</div>`;
-          }} catch (err) {{
-            console.warn("Parse error:", err);
-            targetEl.textContent = "⚠️ Error parsing result.";
-          }}
-          recognizer.close();
-        }}, err => {{
-          console.error("Azure error:", err);
-          targetEl.textContent = "❌ Recognition failed.";
-          recognizer.close();
-        }});
-      }} catch (err) {{
-        console.error("Azure token error:", err);
-        targetEl.textContent = "❌ Azure token error.";
-      }}
+      
+      if (targetEl) targetEl.textContent = "🔇 Pronunciation scoring is temporarily disabled.";
+      return {{ score: 0 }};
     }}
 
+
     // Wiring
-    document.addEventListener("DOMContentLoaded", async () => {{
-            // Try to load per-set r2_manifest.json, then a global one; derive CDN base
-      try {{
-        const perSet = "../../static/" + encodeURIComponent(setName) + "/r2_manifest.json";
-        let res = await fetch(perSet, {{ cache: "no-store" }});
-        if (!res.ok) {{
-          const globalMan = "../../static/r2_manifest.json";
-          res = await fetch(globalMan, {{ cache: "no-store" }});
-        }}
-        if (res.ok) {{
-          r2Manifest = await res.json();
-          assetsCDNBase = assetsCDNBase || r2Manifest.assetsBase || r2Manifest.cdn || r2Manifest.base || null;
-          console.log("R2 manifest loaded:", r2Manifest);
-        }} else {{
-          console.log("No R2 manifest (fallback to local):", res.status);
-        }}
-      }} catch (e) {{
-        console.log("R2 manifest fetch error (fallback to local):", e);
-      }}
+    // Manifest/CDN disabled: using local static files only.
+    r2Manifest = null; assetsCDNBase = null;
 
 
       renderCard();

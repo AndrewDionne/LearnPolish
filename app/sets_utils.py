@@ -336,21 +336,17 @@ def _ensure_system_audio() -> None:
 # ---------------- Local audio generation ------------------------------------
 
 def _ensure_flashcard_audio(set_name: str, data: List[Dict[str, Any]]) -> None:
-    try:
-        from gtts import gTTS
-    except Exception as e:
-        print(f"⚠️ gTTS not available; skipping audio generation: {e}")
-        return
+    # Use _tts_to_mp3 (Azure REST if configured, else gTTS fallback). No pre-checks here.
+
 
     audio_dir = STATIC_DIR / set_name / "audio"
     audio_dir.mkdir(parents=True, exist_ok=True)
 
-    seen = set()
     for i, entry in enumerate(data):
         phrase = (entry or {}).get("phrase", "").strip()
-        if not phrase or phrase in seen:
+        if not phrase:
             continue
-        seen.add(phrase)
+
 
         filename = f"{i}_{sanitize_filename(phrase)}.mp3"
         out = audio_dir / filename
@@ -362,21 +358,15 @@ def _ensure_flashcard_audio(set_name: str, data: List[Dict[str, Any]]) -> None:
             print(f"⚠️ Failed to create TTS for '{phrase}': {e}")
 
 def _ensure_reading_audio(set_name: str, data: List[Dict[str, Any]]) -> None:
-    try:
-        from gtts import gTTS
-    except Exception as e:
-        print(f"⚠️ gTTS not available; skipping reading audio: {e}")
-        return
+    # Use _tts_to_mp3 (Azure REST if configured, else gTTS fallback). No pre-checks here.
 
     audio_dir = STATIC_DIR / set_name / "reading"
     audio_dir.mkdir(parents=True, exist_ok=True)
 
-    seen = set()
-    for i, item in enumerate(data):
-        polish = (item or {}).get("polish", "").strip()
-        if not polish or polish in seen:
+    for i, entry in enumerate(data):
+        phrase = (entry or {}).get("phrase", "").strip()
+        if not phrase:
             continue
-        seen.add(polish)
 
         out = audio_dir / f"{i}.mp3"
         if out.exists():

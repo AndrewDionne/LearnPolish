@@ -16,9 +16,8 @@ except Exception:
 from .modes import SET_TYPES
 from .models import db, UserSet
 from .auth import token_required
-from .utils import build_all_mode_indexes
+from .sets_utils import build_all_mode_indexes
 
-from .debug_trace import trace
 
 # Centralized paths + constants
 from .constants import SETS_DIR, PAGES_DIR, SET_MODES_JSON
@@ -185,6 +184,11 @@ def _collect_commit_targets(slug: str, modes: list[str]) -> list[Path]:
             if ix.exists():
                 targets.append(ix)
 
+    # Static assets (audio etc.)
+    static_dir = PAGES_DIR / "static" / slug
+    if static_dir.exists():
+        targets.append(static_dir)
+
     # Common artifacts / indexes
     commons = [
         PAGES_DIR / "flashcards" / "index.html",
@@ -192,7 +196,6 @@ def _collect_commit_targets(slug: str, modes: list[str]) -> list[Path]:
         PAGES_DIR / "reading"    / "index.html",
         PAGES_DIR / "listening"  / "index.html",
         PAGES_DIR / "set_modes.json",
-        PAGES_DIR / "static"     / slug / "r2_manifest.json",
     ]
     for p in commons:
         if p.exists():
@@ -343,8 +346,9 @@ def _push_and_verify(slug: str, gen_modes: list[str], primary_message: str) -> N
             str(PAGES_DIR / "practice"   / slug),
             str(PAGES_DIR / "reading"    / slug),
             str(PAGES_DIR / "listening"  / slug),
-            str(PAGES_DIR / "static"     / slug / "r2_manifest.json"),
+            str(PAGES_DIR / "static"     / slug),
         ]
+
         out = subprocess.check_output(
             ["git", "status", "--porcelain", "--"] + check_paths,
             cwd=str(root), stderr=subprocess.STDOUT, text=True
@@ -374,9 +378,9 @@ def _push_and_verify(slug: str, gen_modes: list[str], primary_message: str) -> N
             if ix.exists():
                 specific.append(ix)
 
-    man = PAGES_DIR / "static" / slug / "r2_manifest.json"
-    if man.exists():
-        specific.append(man)
+    static_dir = PAGES_DIR / "static" / slug
+    if static_dir.exists():
+        specific.append(static_dir)
 
     # Re-add common indexes (harmless if unchanged)
     for p in [
