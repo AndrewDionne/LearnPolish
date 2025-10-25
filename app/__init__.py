@@ -290,6 +290,70 @@ def create_app():
         return jsonify(status="ok", time=datetime.now(timezone.utc).isoformat()), 200
 
     app.add_url_rule("/ping", view_func=healthz, methods=["GET"])
+        
+    # --- Azure Speech: token + diagnostics ---
+    import time, requests
+    from flask import current_app, request as flask_request
+
+    def _azure_env():
+        key = (
+            os.getenv("AZURE_SPEECH_KEY")
+            or os.getenv("AZURE_TTS_KEY")
+            or os.getenv("SPEECH_KEY")
+            or os.getenv("AZURE_COG_KEY")
+            or os.getenv("COGNITIVE_SERVICES_KEY")
+        )
+        region = (
+            os.getenv("AZURE_SPEECH_REGION")
+            or os.getenv("SPEECH_REGION")
+            or os.getenv("AZURE_REGION")
+            or os.getenv("REGION")
+        )
+        endpoint = os.getenv("AZURE_SPEECH_ENDPOINT")  # optional
+        return key, region, endpoint
+
+    def _azure_issue_token():
+        key, region, endpoint = _azure_env()
+        if not key or not region:
+            raise RuntimeError("missing_key_or_region")
+        token_url = (
+            (endpoint.rstrip("/") + "/sts/v1.0/issuetoken")
+            if endpoint else f"https://{region}.api.cognitive.microsoft.com/sts/v1.0/issuetoken"
+        )
+        r = requests.post(token_url, headers={"Ocp-Apim-Subscription-Key": key}, timeout=10)
+        r.raise_for_status()
+        return r.text.strip(), region, int(time.time()) + 540  # ~9 minutes
+
+    @app.get("/api/azure/diag")
+    def azure_diag():
+        key, region, endpoint = _azure_env()
+        ok = bool(key and region)
+        resp = {"ok": ok, "has_key": bool(key), "region": region or None, "endpoint": endpoint or None}
+        # Attempt a real token call when query ?probe=1
+        if flask_request.args.get("probe") == "1" and ok:
+            try:
+                _tok, _reg, _exp = _azure_issue_token()
+                resp["probe"] = {"ok": True}
+            except Exception as e:
+                current_app.logger.error("Azure diag probe failed: %s", e)
+                resp["probe"] = {"ok": False, "error": "token_request_failed"}
+        return jsonify(resp), (200 if ok else 500)
+
+    @app.get("/api/azure/token")
+    @app.get("/api/token/azure")
+    def azure_token():
+        try:
+            token, region, expires_at = _azure_issue_token()
+            current_app.logger.info("Issued Azure token (region=%s)", region)
+            # Return the minimal fields the frontend typically needs.
+            return jsonify({"token": token, "region": region, "expires_at": expires_at})
+        except requests.HTTPError as e:
+            status = getattr(e.response, "status_code", 500)
+            current_app.logger.error("Azure token HTTP error: %s", e)
+            return jsonify({"ok": False, "error": "azure_token_http_error", "status": status}), 502
+        except Exception as e:
+            current_app.logger.error("Azure token error: %s", e)
+            return jsonify({"ok": False, "error": "azure_token_error"}), 500
 
     # --- Blueprints ---
     from .auth import auth_bp
