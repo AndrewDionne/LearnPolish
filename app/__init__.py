@@ -6,31 +6,32 @@ from datetime import datetime, timezone
 
 from flask import Flask, jsonify
 from flask_cors import CORS
-from flask_migrate import Migrate
+
+# Optional Flask-Migrate
+try:
+    from flask_migrate import Migrate  # type: ignore
+except Exception:  # pragma: no cover
+    Migrate = None  # type: ignore[assignment]
 
 from .config import Config
 from .models import db
-
-migrate = Migrate()  # init later inside create_app()
 
 
 def _normalize_db_url(u: str | None) -> str | None:
     if not u:
         return None
 
-    # normalize scheme
+    # normalize scheme and driver
     if u.startswith("postgres://"):
         u = u.replace("postgres://", "postgresql://", 1)
     if u.startswith("postgresql://") and "+" not in u.split(":", 1)[0]:
         u = u.replace("postgresql://", "postgresql+psycopg://", 1)
 
     parsed = urlparse(u)
-
-    # only touch postgres-like URLs
     if not parsed.scheme.startswith("postgresql"):
-        return u
+        return u  # don't touch sqlite or others
 
-    # decode percent-encoded database names like ".../Path%20to%20Polish%20DB"
+    # decode percent-encoded DB names (e.g. "Path%20to%20Polish%20DB")
     path = parsed.path
     if "%" in path:
         try:
@@ -43,13 +44,10 @@ def _normalize_db_url(u: str | None) -> str | None:
     if "sslmode=" not in query:
         query = (query + "&" if query else "") + "sslmode=require"
 
-    # rebuild
-    u = urlunparse(parsed._replace(path=path, query=query))
-    return u
+    return urlunparse(parsed._replace(path=path, query=query))
 
 
 def _resolve_db_url() -> str | None:
-    """Return the first configured database URL with Render-friendly tweaks."""
     candidates = [
         "DATABASE_URL",
         "DATABASE_CONNECTION_STRING",
@@ -77,7 +75,6 @@ def _resolve_db_url() -> str | None:
             return normalized or default
     except Exception:
         pass
-
     return None
 
 
@@ -133,7 +130,7 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
-    # --- Secrets / misc ---
+    # --- Secrets ---
     secret = (
         os.getenv("SECRET_KEY")
         or os.getenv("JWT_SECRET")
@@ -143,42 +140,51 @@ def create_app():
     app.config["SECRET_KEY"] = secret
     app.config["JWT_SECRET"] = os.getenv("JWT_SECRET") or secret
 
-    # Bridge Cloudflare R2 endpoint naming
+    # Bridge Cloudflare R2 env var rename if needed
     if not os.getenv("R2_ENDPOINT") and os.getenv("R2_S3_ENDPOINT"):
         os.environ["R2_ENDPOINT"] = os.getenv("R2_S3_ENDPOINT")
 
-    # --- Database ---
+    # --- Database config ---
     db_url = _resolve_db_url()
     if not db_url:
         raise RuntimeError(
             "DATABASE_URL not configured. Set one of: "
             "DATABASE_URL, DATABASE_CONNECTION_STRING, DATABASE_INTERNAL_URL."
         )
-
     app.config.update(
         SQLALCHEMY_DATABASE_URI=db_url,
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
         SQLALCHEMY_ENGINE_OPTIONS={"pool_pre_ping": True, "pool_recycle": 300},
     )
-
     db.init_app(app)
-    migrate.init_app(app, db)  # <- safe now that app exists
 
-    # --- Bootstrap DB (optional, controlled by env) ---
+    # Optional Flask-Migrate init
+    if Migrate is not None:
+        migrate = Migrate()
+        migrate.init_app(app, db)
+
+    # --- Bootstrap DB (one-time) ---
     from werkzeug.security import generate_password_hash
 
     def _bootstrap_db():
         if os.environ.get("AUTO_BOOTSTRAP_DB") != "1":
             return
         with app.app_context():
+            used_migrations = False
+            # Try migrations if flask_migrate is installed
             try:
-                # prefer migrations if present
-                from flask_migrate import upgrade
+                from flask_migrate import upgrade  # type: ignore
                 upgrade()
+                used_migrations = True
             except Exception:
-                db.create_all()  # fallback if no Alembic/migrations
+                used_migrations = False
 
-            from .models import User  # ensure models imported
+            if not used_migrations:
+                # Ensure all model classes are imported, then create tables
+                import app.models as _all_models  # noqa: F401
+                db.create_all()
+
+            from .models import User
             email = os.environ.get("ADMIN_EMAIL", "andrewdionne@gmail.com")
             pw = os.environ.get("ADMIN_PASSWORD")
             if pw and not User.query.filter_by(email=email).first():
@@ -198,7 +204,6 @@ def create_app():
     allowed = _derive_allowed_origins()
     strict_cors = os.getenv("CORS_STRICT", "0").lower() in ("1", "true", "yes", "on")
     cors_allow_list: list[object] = []
-
     for item in allowed:
         if isinstance(item, str) and item.startswith("regex:"):
             try:
@@ -207,7 +212,6 @@ def create_app():
                 continue
         else:
             cors_allow_list.append(item)
-
     cors_origins = cors_allow_list if (strict_cors and cors_allow_list) else "*"
     supports_credentials = bool(cors_origins != "*")
 
@@ -228,29 +232,12 @@ def create_app():
         vary_header=True,
     )
 
-    literal_origins = {
-        o for o in allowed if isinstance(o, str) and "*" not in o and not o.startswith("regex:")
-    }
-    wildcard_patterns = []
-    for item in allowed:
-        if isinstance(item, str) and item.startswith("regex:"):
-            try:
-                wildcard_patterns.append(re.compile(item.split(":", 1)[1]))
-            except re.error:
-                continue
-        elif isinstance(item, str) and "*" in item:
-            pattern = "^" + re.escape(item).replace("\\*", ".*") + "$"
-            wildcard_patterns.append(re.compile(pattern))
-        elif hasattr(item, "match"):
-            wildcard_patterns.append(item)
-
     from flask import request as flask_request
 
     @app.after_request
     def ensure_cors_headers(resp):
         origin = flask_request.headers.get("Origin")
         if cors_origins == "*":
-            # wildcard mode (no credentials)
             resp.headers.setdefault("Access-Control-Allow-Origin", "*")
             resp.headers.setdefault(
                 "Access-Control-Allow-Methods",
@@ -263,7 +250,23 @@ def create_app():
             return resp
 
         # strict allow-list mode
-        if origin and (origin in literal_origins or any(p.match(origin) for p in wildcard_patterns)):
+        literal = {
+            o for o in allowed if isinstance(o, str) and "*" not in o and not o.startswith("regex:")
+        }
+        patterns = []
+        for item in allowed:
+            if isinstance(item, str) and item.startswith("regex:"):
+                try:
+                    patterns.append(re.compile(item.split(":", 1)[1]))
+                except re.error:
+                    continue
+            elif isinstance(item, str) and "*" in item:
+                pattern = "^" + re.escape(item).replace("\\*", ".*") + "$"
+                patterns.append(re.compile(pattern))
+            elif hasattr(item, "match"):
+                patterns.append(item)
+
+        if origin and (origin in literal or any(p.match(origin) for p in patterns)):
             resp.headers.setdefault("Access-Control-Allow-Origin", origin)
             resp.headers.setdefault(
                 "Access-Control-Allow-Methods",
@@ -277,12 +280,11 @@ def create_app():
             resp.headers.setdefault("Vary", "Origin")
         return resp
 
-    # Fast CORS preflight for any /api/* route
     @app.route("/api/<path:_subpath>", methods=["OPTIONS"])
     def _cors_preflight(_subpath):
         return ("", 204)
 
-    # --- Health routes (fast, no DB, no auth) ---
+    # --- Health ---
     @app.get("/api/healthz")
     def healthz():
         return jsonify(status="ok", time=datetime.now(timezone.utc).isoformat()), 200
@@ -312,12 +314,12 @@ def create_app():
     except Exception:
         pass
 
-    # --- Optional DB init (dev/local only) ---
+    # Optional local-only init
     if os.getenv("AUTO_INIT_DB", "0").lower() in ("1", "true", "yes"):
         with app.app_context():
+            import app.models as _all_models  # ensure models loaded
             db.create_all()
 
-    # --- JSON for unexpected errors (keeps logs clean for Render) ---
     @app.errorhandler(Exception)
     def on_error(e):
         from werkzeug.exceptions import HTTPException
