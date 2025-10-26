@@ -5,6 +5,15 @@ from shutil import rmtree
 import subprocess
 import os
 import shlex
+import json
+
+# Optional R2 (non-blocking)
+try:
+    import boto3
+    from botocore.client import Config as BotoConfig
+except Exception:  # boto3 not installed or blocked
+    boto3 = None
+    BotoConfig = None
 
 try:
     from .debug_trace import trace, _append as _trace_append
@@ -20,7 +29,7 @@ from .sets_utils import build_all_mode_indexes
 
 
 # Centralized paths + constants
-from .constants import SETS_DIR, PAGES_DIR, SET_MODES_JSON
+from .constants import SETS_DIR, PAGES_DIR
 
 # Canonical helpers from sets_utils
 from .sets_utils import (
@@ -158,15 +167,190 @@ def _delete_set_files_everywhere(set_name: str):
     _safe_rmtree(DOCS_ROOT / "listening"  / set_name)
     _safe_rmtree(DOCS_ROOT / "static"     / set_name)
 
+# -----------------------------------------------------------------------------
+# Runtime static helpers & LFS override
+# -----------------------------------------------------------------------------
+def _ensure_static_runtime_files() -> list[Path]:
+    """
+    Ensures the frontend runtime helpers exist and creates a local LFS override
+    for audio so MP3s can be committed from a container without git-lfs.
+    Returns a list of files that were (re)written.
+    """
+    created: list[Path] = []
+    js_dir = PAGES_DIR / "static" / "js"
+    js_dir.mkdir(parents=True, exist_ok=True)
+
+    def _write(path: Path, content: str, *, only_if_missing: bool = False):
+        if only_if_missing and path.exists():
+            return
+        path.write_text(content, encoding="utf-8")
+        created.append(path)
+
+    # audio-paths.js (shared resolver: R2 manifest/CDN → local)
+    _write(js_dir / "audio-paths.js", r"""(function(w){
+  const APP = w.APP_CONFIG || {};
+  function sanitize(t){return (t||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9_-]+/g,"_").replace(/^_+|_+$/g,"");}
+  async function fetchManifest(setName){
+    const probes = [
+      `../../static/${encodeURIComponent(setName)}/r2_manifest.json`,
+      `../../static/r2_manifest.json`
+    ];
+    for (const u of probes){
+      try{ const r = await fetch(u,{cache:"no-store"}); if(r.ok) return await r.json(); }catch(e){}
+    }
+    return null;
+  }
+  function buildAudioPath(setName, index, item, manifest){
+    const fn = (item && item.audio_file) ? String(item.audio_file)
+              : `${index}_${sanitize(item?.phrase||item?.polish||"")}.mp3`;
+    const key = `audio/${setName}/${fn}`;
+    if (manifest?.files?.[key]) return manifest.files[key];
+    const base = manifest?.assetsBase || manifest?.cdn || manifest?.base || APP.assetsBase;
+    if (base) return String(base).replace(/\/$/,"") + "/" + key;
+    return `../../static/${encodeURIComponent(setName)}/audio/${encodeURIComponent(fn)}`;
+  }
+  w.AudioPaths = { fetchManifest, buildAudioPath };
+})(window);
+""")
+
+    # Legacy shim to stop 404s on older pages
+    _write(js_dir / "flashcards-audio-adapter.js", "/* legacy shim: no-op */\n", only_if_missing=True)
+
+    # Minimal config, API wrapper, and session stubs (only if missing)
+    _write(js_dir / "app-config.js",
+           'window.APP_CONFIG = window.APP_CONFIG || { API_BASE: "https://path-to-polish.onrender.com", assetsBase: null };\n',
+           only_if_missing=True)
+
+    _write(js_dir / "api.js", r"""window.api = {
+  fetch: (path, opts={}) => {
+    const base = (window.APP_CONFIG && APP_CONFIG.API_BASE) || "";
+    return fetch(base.replace(/\/$/,"") + path, Object.assign({credentials:"include"}, opts));
+  }
+};""", only_if_missing=True)
+
+    _write(js_dir / "session_state.js", """window.SessionSync = {
+  save: async () => {}, restore: async (_k, cb)=> cb && cb(null), complete: async ()=>{}
+};""", only_if_missing=True)
+
+    # Disable Git LFS under docs/static so MP3s commit cleanly on Render
+    attrs = PAGES_DIR / "static" / ".gitattributes"
+    attrs.parent.mkdir(parents=True, exist_ok=True)
+    if not attrs.exists():
+        attrs.write_text(
+            "*.mp3 -filter -diff -merge text\n*.wav -filter -diff -merge text\n",
+            encoding="utf-8"
+        )
+        created.append(attrs)
+
+    return created
+
+# -----------------------------------------------------------------------------
+# Optional Cloudflare R2 upload (non-blocking). Falls back to GH Pages local.
+# -----------------------------------------------------------------------------
+def _r2_env_ok() -> bool:
+    return (
+        boto3 is not None and
+        os.getenv("R2_ENDPOINT") and
+        os.getenv("R2_BUCKET") and
+        os.getenv("R2_ACCESS_KEY") and
+        os.getenv("R2_SECRET_KEY")
+    )
+
+def _r2_public_base() -> str | None:
+    """
+    Prefer a CDN base if you have one; else fall back to the 'public' endpoint.
+    You can set R2_PUBLIC_BASE or R2_CDN_BASE to something like:
+      https://assets.pathtopolish.com   (which fronts the R2 bucket)
+    """
+    return (os.getenv("R2_PUBLIC_BASE") or
+            os.getenv("R2_CDN_BASE") or
+            None)
+
+def _try_upload_to_r2(local_path: Path, bucket_key: str) -> bool:
+    try:
+        if not _r2_env_ok() or not local_path.exists():
+            return False
+        s3 = boto3.client(
+            "s3",
+            endpoint_url=os.environ["R2_ENDPOINT"],
+            aws_access_key_id=os.environ["R2_ACCESS_KEY"],
+            aws_secret_access_key=os.environ["R2_SECRET_KEY"],
+            region_name=os.getenv("R2_REGION", "auto"),
+            config=BotoConfig(signature_version="s3v4", s3={"addressing_style": "virtual"})
+        )
+        
+        # naive content-type from extension
+        ext = local_path.suffix.lower()
+        ctype = "audio/mpeg" if ext == ".mp3" else ("audio/wav" if ext == ".wav" else "application/octet-stream")
+        with open(local_path, "rb") as f:
+            s3.put_object(
+                Bucket=os.environ["R2_BUCKET"],
+                Key=bucket_key,
+                Body=f,
+                ContentType="audio/mpeg",
+                ACL="public-read",
+            )
+        return True
+    except Exception as e:
+        try:
+            current_app.logger.warning("R2 upload failed for %s → %s: %s", local_path, bucket_key, e)
+        except Exception:
+            print(f"R2 upload failed for {local_path} → {bucket_key}: {e}")
+        return False
+
+def _maybe_upload_set_audio_to_r2(slug: str) -> Path | None:
+    """
+    Uploads docs/static/<slug>/audio/*.mp3 to R2 and writes a per-set manifest:
+      docs/static/<slug>/r2_manifest.json
+    Manifest shape: { "assetsBase": "<base or null>", "files": { "audio/<slug>/<fn>": "<absolute URL>" } }
+    Returns the manifest path if written.
+    """
+    static_audio = PAGES_DIR / "static" / slug / "audio"
+    if not static_audio.exists() or not any(static_audio.glob("*.mp3")):
+        return None
+
+    # Best-effort upload; never raise
+    files_map: dict[str, str] = {}
+    base = _r2_public_base()
+    for mp3 in sorted(static_audio.glob("*.mp3")):
+        key = f"audio/{slug}/{mp3.name}"
+        ok = _try_upload_to_r2(mp3, key)
+        if ok:
+            if base:
+                url = f"{base.rstrip('/')}/{key}"
+            else:
+                # If no CDN base, the S3 endpoint URL varies per account; we can still map to the 'key'
+                # Frontend will use assetsBase when set; otherwise exact 'files' mapping covers it.
+                # Some setups allow: https://<account-id>.r2.cloudflarestorage.com/<bucket>/<key>
+                endpoint = os.getenv("R2_PUBLIC_BASE") or os.getenv("R2_ENDPOINT")
+                if endpoint and endpoint.startswith("http"):
+                    bucket = os.environ.get("R2_BUCKET")
+                    url = f"{endpoint.rstrip('/')}/{bucket}/{key}"
+                else:
+                    url = key  # fallback; not great, but harmless (frontend will ignore)
+            files_map[key] = url
+
+    if not files_map:
+        return None
+
+    manifest = {
+        "assetsBase": base,
+        "files": files_map,
+    }
+    man_path = PAGES_DIR / "static" / slug / "r2_manifest.json"
+    man_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+    return man_path
+
 # =============================================================================
 # Git publishing (Option B only: GITHUB_TOKEN + GITHUB_REPO_SLUG)
 # =============================================================================
+
 @trace
 def _collect_commit_targets(slug: str, modes: list[str]) -> list[Path]:
     """
     Return a robust list of repo-relative *files and dirs* to stage.
-    We include each slug directory AND its index.html explicitly so 'git add'
-    definitely sees a file path.
+    Includes runtime JS helpers and .gitattributes so audio commits work
+    even without git-lfs inside the Render container.
     """
     targets: list[Path] = []
 
@@ -184,10 +368,25 @@ def _collect_commit_targets(slug: str, modes: list[str]) -> list[Path]:
             if ix.exists():
                 targets.append(ix)
 
-    # Static assets (audio etc.)
+    # Static assets (audio etc.) + per-set manifest
     static_dir = PAGES_DIR / "static" / slug
     if static_dir.exists():
         targets.append(static_dir)
+        man = static_dir / "r2_manifest.json"
+        if man.exists():
+            targets.append(man)
+
+    # Runtime JS helpers (stop 404s) + LFS override
+    for p in [
+        PAGES_DIR / "static" / "js" / "audio-paths.js",
+        PAGES_DIR / "static" / "js" / "flashcards-audio-adapter.js",
+        PAGES_DIR / "static" / "js" / "app-config.js",
+        PAGES_DIR / "static" / "js" / "api.js",
+        PAGES_DIR / "static" / "js" / "session_state.js",
+        PAGES_DIR / "static" / ".gitattributes",
+    ]:
+        if p.exists():
+            targets.append(p)
 
     # Common artifacts / indexes
     commons = [
@@ -583,6 +782,10 @@ def create_set(current_user):
 
     json_path = SETS_DIR / f"{safe_name}.json"
 
+    # Ensure runtime helpers exist (and git-lfs override) before any publish
+    _ensure_static_runtime_files()
+
+
     # generation modes (internal generator names)
     implied = {
         "flashcards": ["flashcards", "practice"],
@@ -622,6 +825,13 @@ def create_set(current_user):
         # ---------- IDEMPOTENT REBUILD ----------
         if existed:
             _regen_pages_for_slug(safe_name, gen_modes)
+            # Optional: attempt R2 upload for audio (never blocks)
+            try:
+                _maybe_upload_set_audio_to_r2(safe_name)
+            except Exception as _e:
+                current_app.logger.warning("R2 upload skipped/failed for %s: %s", safe_name, _e)
+
+            
             # best-effort index rebuilds
             try:
                 build_all_mode_indexes()
@@ -646,7 +856,6 @@ def create_set(current_user):
             resp.headers["X-Create-Handler"] = "v2"
             return resp, 200
 
-
         # ---------- NEW CREATE ----------
         meta = util_create_set(set_type, safe_name, items)
 
@@ -660,6 +869,12 @@ def create_set(current_user):
 
         # generate static pages
         _regen_pages_for_slug(safe_name, gen_modes)
+
+        # Optional: attempt R2 upload for audio (never blocks)
+        try:
+            _maybe_upload_set_audio_to_r2(safe_name)
+        except Exception as _e:
+            current_app.logger.warning("R2 upload skipped/failed for %s: %s", safe_name, _e)
 
         # best-effort index rebuilds
         try:
@@ -767,10 +982,13 @@ def admin_build_publish(current_user):
 
     body = request.get_json(silent=True) or {}
     slug = sanitize_filename((body.get("slug") or "").strip())
-    modes = body.get("modes") or ["flashcards"]
+    modes = body.get("modes") or ["flashcards", "practice"]
 
     if not slug:
         return jsonify({"ok": False, "error": "slug required"}), 400
+
+    # Ensure runtime helpers & LFS override exist for admin builds
+    _ensure_static_runtime_files()
 
     json_path = SETS_DIR / f"{slug}.json"
     if not json_path.exists():
@@ -778,6 +996,11 @@ def admin_build_publish(current_user):
 
     try:
         _regen_pages_for_slug(slug, modes)
+        # Try R2 upload (never blocks)
+        try:
+            _maybe_upload_set_audio_to_r2(slug)
+        except Exception as _e:
+            current_app.logger.warning("R2 upload skipped/failed for %s: %s", slug, _e)
 
         try:
             build_all_mode_indexes()
@@ -958,10 +1181,18 @@ def admin_publish_now(current_user):
     modes = body.get("modes") or ["flashcards","practice"]
     if not slug:
         return jsonify({"ok": False, "error": "slug required"}), 400
+    # Ensure runtime helpers & LFS override exist for admin “publish now”
+    _ensure_static_runtime_files()
 
     # Always regenerate before pushing
     try:
         _regen_pages_for_slug(slug, modes)
+        # Try R2 upload (never blocks)
+        try:
+            _maybe_upload_set_audio_to_r2(slug)
+        except Exception as _e:
+            current_app.logger.warning("R2 upload skipped/failed for %s: %s", slug, _e)
+
     except Exception as e:
         current_app.logger.warning("publish_now: regen failed: %s", e)
 
@@ -996,6 +1227,8 @@ def admin_push(current_user):
         return jsonify({"ok": False, "error": "forbidden"}), 403
 
     body = request.get_json(silent=True) or {}
+    # Ensure runtime helpers exist in case this push is used standalone
+    _ensure_static_runtime_files()
     slug = sanitize_filename((body.get("slug") or "").strip())
     modes = body.get("modes") or ["flashcards", "practice"]
 
