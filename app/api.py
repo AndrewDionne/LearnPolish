@@ -938,38 +938,10 @@ def my_groups_invite_compat(current_user):
 @api_bp.route("/my/sets", methods=["GET"])
 @token_required
 def my_sets_get(current_user):
-    """Return [{set_name, is_owner, modes, type, count}] for the user."""
-    rows = UserSet.query.filter_by(user_id=current_user.id).all()
-    out = []
-    for r in rows:
-        modes = None
-        count = 0
-        typ = None
+    """Legacy path → delegate to canonical handler in sets_api for a single source of truth."""
+    from .sets_api import my_sets as setsapi_my_sets  # local import to avoid cycles
+    return _call_view(setsapi_my_sets, current_user)
 
-        p = SETS_DIR / f"{r.set_name}.json"
-        if p.exists():
-            try:
-                j = json.loads(p.read_text(encoding="utf-8"))
-                if isinstance(j, dict):
-                    modes = _extract_modes_from_json(j) or None  # explicit only
-                    count = _count_items(j)
-                elif isinstance(j, list):
-                    modes = ["learn", "speak"]  # legacy
-                    count = len(j)
-            except Exception:
-                pass
-
-        if modes:
-            typ = _type_from_modes(modes)
-
-        out.append({
-            "set_name": r.set_name,
-            "is_owner": bool(r.is_owner),
-            "modes": modes,
-            "type": typ,
-            "count": count,
-        })
-    return jsonify(out)
 
 @api_bp.route("/my/sets", methods=["POST"])
 @token_required
@@ -1001,12 +973,6 @@ def my_sets_remove(current_user, set_name):
     return jsonify({"ok": True})
 
 # ---- Underscore aliases the UI may hit ----
-@api_bp.route("/my_sets", methods=["GET"])
-@token_required
-def my_sets_get_alias(current_user):
-    from .sets_api import my_sets as setsapi_my_sets  # local import
-    return _call_view(setsapi_my_sets, current_user)
-
 
 @api_bp.route("/my_sets", methods=["POST"])
 @token_required
@@ -1026,17 +992,6 @@ def list_available_sets(current_user):
     sets = [{"name": p.stem, "filename": p.name} for p in sorted(SETS_DIR.glob("*.json"))]
     return jsonify(sets)
 
-# ---------- Global sets: public, enriched ----------
-
-@api_bp.route("/global_sets", methods=["GET"])
-def global_sets_index():
-    """
-    Delegate to the canonical global_sets in sets_api to ensure one shape/source of truth.
-    """
-    from .sets_api import global_sets as setsapi_global_sets  # local import
-    return _call_view(setsapi_global_sets)
-
-
 # ---------- Create set ----------
 
 @api_bp.route("/create_set", methods=["POST"])
@@ -1049,27 +1004,6 @@ def create_set(current_user):
     from .sets_api import create_set as setsapi_create_set  # local import to avoid cycles
     # Reuse the same request payload/body and authenticated user
     return _call_view(setsapi_create_set, current_user)
-
-# ---------- Create set (compat wrapper) ----------
-
-@api_bp.route("/create_set_v2", methods=["POST"])
-@token_required
-def create_set_v2(current_user):
-    """
-    Compatibility wrapper for newer UI payloads.
-    Accepts any of: name|title|set_name ; data|cards|items ; modes|set_type ; publish
-    """
-    p = request.get_json(silent=True) or {}
-    normalized = {
-        "set_name": (p.get("set_name") or p.get("name") or p.get("title") or "").strip(),
-        "data":     p.get("data") or p.get("cards") or p.get("items"),
-        "modes":    p.get("modes"),
-        "set_type": p.get("set_type"),
-        "publish":  p.get("publish"),
-    }
-    from .sets_api import create_set as setsapi_create_set  # local import
-    with current_app.test_request_context(json=normalized):
-        return _call_view(setsapi_create_set, current_user)
 
 # ---------- Update set ----------
 

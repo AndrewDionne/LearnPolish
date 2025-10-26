@@ -500,6 +500,7 @@ def _git_add_commit_push(paths: list[Path], message: str) -> None:
       - GITHUB_TOKEN
       - GITHUB_REPO_SLUG (e.g. "AndrewDionne/LearnPolish")
       - GIT_BRANCH (default: "main")
+    Staging is hardened to avoid pathspec failures when some paths are created just-in-time.
     """
     root = Path(current_app.root_path).parent  # repo root on Render
 
@@ -522,15 +523,13 @@ def _git_add_commit_push(paths: list[Path], message: str) -> None:
             if _trace_append:
                 _trace_append("git", {"cmd": args, "ok": True, "out": out.strip()[:2000]})
             return out
-
         except subprocess.CalledProcessError as e:
-            if ok_if_fails:
-                log_i(f"[ignored] {e.output.strip()}")
-                if _trace_append:
-                    _trace_append("git", {"cmd": args, "ok": False, "out": (e.output or "").strip()[:2000], "ignored": True})
-                return e.output
+            msg = (e.output or "").strip()
+            log_i(f"❌ git error:\n{msg}")
             if _trace_append:
-                _trace_append("git", {"cmd": args, "ok": False, "out": (e.output or "").strip()[:2000]})
+                _trace_append("git", {"cmd": args, "ok": False, "out": msg[:2000]})
+            if ok_if_fails:
+                return msg
             raise
 
     # ------------------------
@@ -566,8 +565,17 @@ def _git_add_commit_push(paths: list[Path], message: str) -> None:
     if not to_add_rel:
         raise RuntimeError("Nothing to push (no repo-relative files)")
 
-    # Stage aggressively (captures new files under given paths)
-    run(["git", "add", "-A", "--"] + to_add_rel)
+    # ------------------------------------------------------------------
+    # Stage aggressively; on failure, fall back to per-path + docs scope
+    # ------------------------------------------------------------------
+    try:
+        run(["git", "add", "-A", "--"] + to_add_rel)
+    except subprocess.CalledProcessError:
+        log_i("git add failed on combined pathspec; falling back to per-path adds")
+        for rel in to_add_rel:
+            run(["git", "add", "-A", "--", rel], ok_if_fails=True)
+        # Stage the entire 'docs' subtree as a scoped safety net
+        run(["git", "add", "-A", "--", "docs"], ok_if_fails=True)
 
     # Commit (allow empty so we always have a branch tip)
     run(["git", "commit", "-m", message, "--no-gpg-sign"], ok_if_fails=True)
@@ -579,6 +587,7 @@ def _git_add_commit_push(paths: list[Path], message: str) -> None:
         log_i("git push rejected; pulling --rebase and retrying")
         run(["git", "pull", "--rebase", "origin", branch], ok_if_fails=True)
         run(["git", "push", "origin", f"HEAD:{branch}"])
+
 @trace
 def _push_and_verify(slug: str, gen_modes: list[str], primary_message: str) -> None:
     """
