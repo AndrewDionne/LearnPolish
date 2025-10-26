@@ -16,12 +16,13 @@ def _env(name: str, default: str | None = None) -> Optional[str]:
     return v if (v and v.strip()) else default
 
 
-# ---- Config via env (works on local + Render/GitHub Actions) ----
-R2_ENDPOINT = _env("R2_ENDPOINT") or _env("CLOUDFLARE_R2_ENDPOINT")
-R2_BUCKET = _env("R2_BUCKET") or _env("CLOUDFLARE_R2_BUCKET")
+# ---- Canonical env (aliases already bridged in __init__.py) ----
+R2_ENDPOINT = _env("R2_ENDPOINT")
+R2_BUCKET = _env("R2_BUCKET")
 R2_ACCESS_KEY_ID = _env("R2_ACCESS_KEY_ID")
 R2_SECRET_ACCESS_KEY = _env("R2_SECRET_ACCESS_KEY")
-R2_REGION = _env("R2_REGION") or "auto"  # R2 ignores region, but boto3 wants something
+R2_REGION = _env("R2_REGION", "auto")  # R2 ignores region, but boto3 wants something
+R2_CDN_BASE = _env("R2_CDN_BASE")  # can be your *.r2.dev or CDN domain
 
 _enabled = bool(
     boto3
@@ -52,26 +53,12 @@ def put_file(
 ) -> Optional[str]:
     """
     Upload one object to R2. Returns a public CDN URL (if known) or None.
-
-    Parameters
-    ----------
-    key : str | Path
-        The S3 key (object path) in the bucket. Will be coerced to str.
-    body : bytes | Path
-        Content to upload. If Path, the file is read to bytes.
-    content_type : str | None
-        Optional Content-Type header.
-    cache_control : str | None
-        Optional Cache-Control header.
     """
     if not enabled or not _client:
         return None
 
-    key_str = str(key)  # <-- ensure Key is a STRING
-    if isinstance(body, Path):
-        data = body.read_bytes()
-    else:
-        data = body
+    key_str = str(key)
+    data = body.read_bytes() if isinstance(body, Path) else body
 
     put_kwargs = {
         "Bucket": R2_BUCKET,
@@ -83,15 +70,11 @@ def put_file(
     if cache_control:
         put_kwargs["CacheControl"] = cache_control
 
-    # propagate exceptions so caller can log context
     _client.put_object(**put_kwargs)
 
     # Build a public URL.
     try:
-        # Preferred path: your helper that reads Config.R2_CDN_BASE
-        from .utils import asset_url
+        from .utils import asset_url  # optional helper if present
         return asset_url(key_str)
     except Exception:
-        # Fallback to env if utils/Config isn't importable at this stage
-        cdn_base = _env("R2_CDN_BASE") or _env("CLOUDFLARE_R2_PUBLIC_BASE") or ""
-        return f"{cdn_base.rstrip('/')}/{key_str.lstrip('/')}" if cdn_base else None
+        return f"{R2_CDN_BASE.rstrip('/')}/{key_str.lstrip('/')}" if R2_CDN_BASE else None

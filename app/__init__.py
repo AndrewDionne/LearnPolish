@@ -17,6 +17,7 @@ from .config import Config
 from .models import db
 
 
+# ----------------------- DB URL helpers -----------------------
 def _normalize_db_url(u: str | None) -> str | None:
     """
     Normalizes Postgres URLs and appends safe defaults that reduce
@@ -50,7 +51,6 @@ def _normalize_db_url(u: str | None) -> str | None:
     q = parsed.query or ""
 
     def _ensure(qs: str, key: str, value: str) -> str:
-        # adds "key=value" if "key=" not already in the querystring
         return (qs + ("&" if qs else "") + f"{key}={value}") if (f"{key}=" not in qs) else qs
 
     q = _ensure(q, "sslmode", "require")
@@ -60,6 +60,7 @@ def _normalize_db_url(u: str | None) -> str | None:
     q = _ensure(q, "keepalives_count", "3")       # failed probes before drop
 
     return urlunparse(parsed._replace(path=path, query=q))
+
 
 def _resolve_db_url() -> str | None:
     candidates = [
@@ -92,6 +93,7 @@ def _resolve_db_url() -> str | None:
     return None
 
 
+# ----------------------- CORS helpers -----------------------
 def _derive_allowed_origins() -> list[str]:
     env_origins = os.getenv("CORS_ALLOWED_ORIGINS", "")
     if env_origins.strip():
@@ -140,6 +142,54 @@ def _derive_allowed_origins() -> list[str]:
     return deduped
 
 
+# ----------------------- R2 env name bridge -----------------------
+def _bridge_r2_env_names():
+    """
+    Canonicalize R2 env names so the app can always rely on:
+      - R2_ENDPOINT             (or R2_S3_ENDPOINT / CLOUDFLARE_R2_ENDPOINT)
+      - R2_BUCKET               (or CLOUDFLARE_R2_BUCKET)
+      - R2_ACCESS_KEY_ID        (or R2_ACCESS_KEY / R2_KEY_ID)
+      - R2_SECRET_ACCESS_KEY    (or R2_SECRET_KEY)
+      - R2_CDN_BASE             (or R2_PUBLIC_BASE / CLOUDFLARE_R2_PUBLIC_BASE)
+    """
+    # endpoint
+    for src in ("R2_ENDPOINT", "R2_S3_ENDPOINT", "CLOUDFLARE_R2_ENDPOINT"):
+        val = os.getenv(src)
+        if val:
+            os.environ.setdefault("R2_ENDPOINT", val)
+            break
+
+    # bucket
+    for src in ("R2_BUCKET", "CLOUDFLARE_R2_BUCKET"):
+        val = os.getenv(src)
+        if val:
+            os.environ.setdefault("R2_BUCKET", val)
+            break
+
+    # access key id
+    if not os.getenv("R2_ACCESS_KEY_ID"):
+        for src in ("R2_ACCESS_KEY", "R2_KEY_ID"):
+            val = os.getenv(src)
+            if val:
+                os.environ["R2_ACCESS_KEY_ID"] = val
+                break
+
+    # secret access key
+    if not os.getenv("R2_SECRET_ACCESS_KEY"):
+        val = os.getenv("R2_SECRET_KEY")
+        if val:
+            os.environ["R2_SECRET_ACCESS_KEY"] = val
+
+    # public CDN/base
+    if not os.getenv("R2_CDN_BASE"):
+        for src in ("R2_CDN_BASE", "R2_PUBLIC_BASE", "CLOUDFLARE_R2_PUBLIC_BASE"):
+            val = os.getenv(src)
+            if val:
+                os.environ["R2_CDN_BASE"] = val
+                break
+
+
+# ===============================================================
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
@@ -154,11 +204,10 @@ def create_app():
     app.config["SECRET_KEY"] = secret
     app.config["JWT_SECRET"] = os.getenv("JWT_SECRET") or secret
 
-    # Bridge Cloudflare R2 env var rename if needed
-    if not os.getenv("R2_ENDPOINT") and os.getenv("R2_S3_ENDPOINT"):
-        os.environ["R2_ENDPOINT"] = os.getenv("R2_S3_ENDPOINT")
+    # Bridge Cloudflare R2 env names (supports your current Render vars)
+    _bridge_r2_env_names()
 
-     # --- Database config ---
+    # --- Database config ---
     db_url = _resolve_db_url()
     if not db_url:
         raise RuntimeError(
@@ -173,7 +222,6 @@ def create_app():
         "pool_size": int(os.getenv("DB_POOL_SIZE", "5")),
         "max_overflow": int(os.getenv("DB_MAX_OVERFLOW", "5")),
         "pool_timeout": int(os.getenv("DB_POOL_TIMEOUT", "30")),
-        # small connect timeout so hung networks don't stall requests
         "connect_args": {"connect_timeout": int(os.getenv("DB_CONNECT_TIMEOUT", "10"))},
     }
 
@@ -183,6 +231,12 @@ def create_app():
         SQLALCHEMY_ENGINE_OPTIONS=engine_options,
     )
     db.init_app(app)
+
+    # Optional Flask-Migrate init
+    if Migrate is not None:
+        migrate = Migrate()
+        migrate.init_app(app, db)
+
     # --- Bootstrap DB (one-time) ---
     from werkzeug.security import generate_password_hash
 
@@ -191,7 +245,6 @@ def create_app():
             return
         with app.app_context():
             used_migrations = False
-            # Try migrations if flask_migrate is installed
             try:
                 from flask_migrate import upgrade  # type: ignore
                 upgrade()
@@ -200,7 +253,6 @@ def create_app():
                 used_migrations = False
 
             if not used_migrations:
-                # Ensure all model classes are imported, then create tables
                 import app.models as _all_models  # noqa: F401
                 db.create_all()
 
@@ -310,10 +362,123 @@ def create_app():
         return jsonify(status="ok", time=datetime.now(timezone.utc).isoformat()), 200
 
     app.add_url_rule("/ping", view_func=healthz, methods=["GET"])
-        
+
+    # --- Diagnostics -------------------------------------------------------------
+    import time, secrets, subprocess
+    from sqlalchemy import text as _sa_text
+
+    try:
+        import boto3
+        from botocore.client import Config as _BotoCfg
+    except Exception:
+        boto3 = None
+        _BotoCfg = None
+
+    def _mask(v: str | None, keep: int = 4) -> str | None:
+        if not v:
+            return None
+        if len(v) <= keep:
+            return "*" * len(v)
+        return "*" * (len(v) - keep) + v[-keep:]
+
+    @app.get("/api/r2/diag")
+    def r2_diag():
+        endpoint = os.getenv("R2_ENDPOINT") or os.getenv("R2_S3_ENDPOINT") or os.getenv("CLOUDFLARE_R2_ENDPOINT")
+        bucket = os.getenv("R2_BUCKET") or os.getenv("CLOUDFLARE_R2_BUCKET")
+        public_base = os.getenv("R2_CDN_BASE") or os.getenv("R2_PUBLIC_BASE") or os.getenv("CLOUDFLARE_R2_PUBLIC_BASE")
+        ak = os.getenv("R2_ACCESS_KEY_ID") or os.getenv("R2_ACCESS_KEY") or os.getenv("R2_KEY_ID")
+        sk = os.getenv("R2_SECRET_ACCESS_KEY") or os.getenv("R2_SECRET_KEY")
+
+        info = {
+            "has_boto3": bool(boto3),
+            "endpoint": endpoint or None,
+            "bucket": bucket or None,
+            "public_base": public_base or None,
+            "access_key_present": bool(ak),
+            "secret_key_present": bool(sk),
+            "disabled_flag": (os.getenv("DISABLE_R2") or "0"),
+            # masked previews
+            "ak_last4": _mask(ak, 4),
+            "sk_last4": _mask(sk, 4),
+        }
+
+        if not boto3:
+            return jsonify(ok=False, step="import_boto3", info=info, error="boto3_not_installed"), 500
+
+        if not (endpoint and bucket and ak and sk):
+            return jsonify(ok=False, step="env_check", info=info, error="missing_env_vars"), 500
+
+        try:
+            s3 = boto3.client(
+                "s3",
+                endpoint_url=endpoint,
+                aws_access_key_id=ak,
+                aws_secret_access_key=sk,
+                region_name="auto",
+                config=_BotoCfg(signature_version="s3v4") if _BotoCfg else None,
+            )
+
+            # Light touch: does the bucket exist / are creds valid?
+            s3.head_bucket(Bucket=bucket)
+            result = {"ok": True, "info": info, "bucket_head": "ok"}
+
+            # Optional write test
+            if (flask_request.args.get("write") == "1") and os.getenv("DISABLE_R2", "0") not in ("1", "true", "yes"):
+                key = f"diag/{int(time.time())}-{secrets.token_hex(4)}.txt"
+                s3.put_object(Bucket=bucket, Key=key, Body=b"ok", ContentType="text/plain")
+                # Try a public read if a public base URL exists
+                public_read_ok = None
+                if public_base:
+                    import requests
+                    url = f"{public_base.rstrip('/')}/{key}"
+                    try:
+                        r = requests.get(url, timeout=5)
+                        public_read_ok = (r.status_code == 200 and r.text.strip() == "ok")
+                    except Exception:
+                        public_read_ok = False
+                s3.delete_object(Bucket=bucket, Key=key)
+                result["write_test"] = {"key": key, "public_read_ok": public_read_ok}
+
+            return jsonify(result), 200
+        except Exception as e:
+            return jsonify(ok=False, info=info, error=str(e)), 500
+
+    @app.get("/api/db/diag")
+    def db_diag():
+        try:
+            with db.engine.connect() as conn:
+                one = conn.execute(_sa_text("SELECT 1")).scalar()
+                try:
+                    row = conn.execute(_sa_text("SELECT current_database(), current_user")).first()
+                    current_db, current_user = (row[0], row[1]) if row else (None, None)
+                except Exception:
+                    current_db, current_user = None, None
+            return jsonify(ok=(one == 1), current_database=current_db, current_user=current_user), 200
+        except Exception as e:
+            app.logger.error("DB diag failed: %s", e)
+            return jsonify(ok=False, error="db_connect_failed"), 500
+
+    @app.get("/api/git/diag")
+    def git_diag():
+        def _run(cmd):
+            try:
+                out = subprocess.check_output(cmd, cwd=os.getcwd(), stderr=subprocess.STDOUT, text=True)
+                return out.strip()
+            except subprocess.CalledProcessError as ce:
+                return f"ERROR({ce.returncode}): {ce.output.strip()}"
+        data = {
+            "pwd": os.getcwd(),
+            "is_repo": _run(["git", "rev-parse", "--is-inside-work-tree"]),
+            "origin_url": _run(["git", "config", "--get", "remote.origin.url"]),
+            "branch": _run(["git", "rev-parse", "--abbrev-ref", "HEAD"]),
+            "status": _run(["git", "status", "-sb"]),
+            "last_commit": _run(["git", "log", "-1", "--pretty=oneline"]),
+        }
+        return jsonify(data), 200
+    # ---------------------------------------------------------------------------
+
     # --- Azure Speech: token + diagnostics ---
-    import time, requests
-    from flask import current_app, request as flask_request
+    import requests
 
     def _azure_env():
         key = (
@@ -342,20 +507,20 @@ def create_app():
         )
         r = requests.post(token_url, headers={"Ocp-Apim-Subscription-Key": key}, timeout=10)
         r.raise_for_status()
-        return r.text.strip(), region, int(time.time()) + 540  # ~9 minutes
+        import time as _time
+        return r.text.strip(), region, int(_time.time()) + 540  # ~9 minutes
 
     @app.get("/api/azure/diag")
     def azure_diag():
         key, region, endpoint = _azure_env()
         ok = bool(key and region)
         resp = {"ok": ok, "has_key": bool(key), "region": region or None, "endpoint": endpoint or None}
-        # Attempt a real token call when query ?probe=1
         if flask_request.args.get("probe") == "1" and ok:
             try:
                 _tok, _reg, _exp = _azure_issue_token()
                 resp["probe"] = {"ok": True}
             except Exception as e:
-                current_app.logger.error("Azure diag probe failed: %s", e)
+                app.logger.error("Azure diag probe failed: %s", e)
                 resp["probe"] = {"ok": False, "error": "token_request_failed"}
         return jsonify(resp), (200 if ok else 500)
 
@@ -364,15 +529,14 @@ def create_app():
     def azure_token():
         try:
             token, region, expires_at = _azure_issue_token()
-            current_app.logger.info("Issued Azure token (region=%s)", region)
-            # Return the minimal fields the frontend typically needs.
+            app.logger.info("Issued Azure token (region=%s)", region)
             return jsonify({"token": token, "region": region, "expires_at": expires_at})
         except requests.HTTPError as e:
             status = getattr(e.response, "status_code", 500)
-            current_app.logger.error("Azure token HTTP error: %s", e)
+            app.logger.error("Azure token HTTP error: %s", e)
             return jsonify({"ok": False, "error": "azure_token_http_error", "status": status}), 502
         except Exception as e:
-            current_app.logger.error("Azure token error: %s", e)
+            app.logger.error("Azure token error: %s", e)
             return jsonify({"ok": False, "error": "azure_token_error"}), 500
 
     # --- Blueprints ---
