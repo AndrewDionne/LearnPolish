@@ -109,17 +109,15 @@ def generate_flashcard_html(set_name, data):
   <script src="../../static/js/session_state.js"></script>
   <script src="../../static/js/audio-paths.js"></script>
 
-  <script>
+    <script>
     // --- Data & state ---
     const cards = {cards_json};
     const setName = "{set_name}";
     const mode = "flashcards";
     let currentIndex = 0;
 
-    // R2 manifest (if present)
-    // Shape: {{ files: {{ "audio/<set>/<file>": "https://cdn..." }}, assetsBase: "https://cdn..." }}
-    let r2Manifest = null; // manifest/CDN disabled: use local static files only
-    let assetsCDNBase = null;
+    // Optional CDN manifest (loaded later; safe to be null)
+    let r2Manifest = null;
 
     // Scoring + points
     const PASS = 75;
@@ -139,8 +137,8 @@ def generate_flashcard_html(set_name, data):
         .replace(/^_+|_+$/g, "");
     }}
 
-    // Prefer CDN URL from r2_manifest.json / APP_CONFIG → else local ../../static
-    function audioPath(index) {{
+    // Local static fallback (used if no manifest/CDN mapping)
+    function localAudioPath(index) {{
       const e = cards[index] || {{}};
       const fn = String(index) + "_" + sanitizeFilename(e.phrase || "") + ".mp3";
       const setEnc = encodeURIComponent(setName);
@@ -148,14 +146,10 @@ def generate_flashcard_html(set_name, data):
 
       // Absolute URL in data wins
       const explicit = e.audio_url || e.audio;
-      if (explicit && /^https?:\/\//i.test(explicit)) return explicit;
+      if (explicit && /^https?:\\/\\//i.test(explicit)) return explicit;
 
-      // Local static (preferred, no manifest/CDN)
       return `../../static/${{setEnc}}/audio/${{fnEnc}}`;
     }}
-
-
-
 
     function setNavUI() {{
       document.getElementById("prevBtn").disabled = (currentIndex === 0);
@@ -177,16 +171,20 @@ def generate_flashcard_html(set_name, data):
     }}
 
     async function assess(referenceText, targetEl) {{
-      
       if (targetEl) targetEl.textContent = "🔇 Pronunciation scoring is temporarily disabled.";
       return {{ score: 0 }};
     }}
 
-
-    // Wiring
-    // Manifest/CDN disabled: using local static files only.
-    r2Manifest = null; assetsCDNBase = null;
-
+    // Wire up after DOM is ready (prevents null refs)
+    window.addEventListener("DOMContentLoaded", async function() {{
+      // Try to load R2 manifest (non-blocking; safe if missing)
+      try {{
+        if (window.AudioPaths) {{
+          r2Manifest = await AudioPaths.fetchManifest(setName);
+        }}
+      }} catch (_e) {{
+        r2Manifest = null;
+      }}
 
       renderCard();
 
@@ -205,9 +203,16 @@ def generate_flashcard_html(set_name, data):
       }});
 
       // Back: Play
-      document.getElementById("btnPlay").addEventListener("click", (e) => {{
+      document.getElementById("btnPlay").addEventListener("click", async (e) => {{
         e.stopPropagation();
-        const audio = new Audio(audioPath(currentIndex));
+        // Prefer manifest/CDN mapping if available; else local static path
+        let src = localAudioPath(currentIndex);
+        try {{
+          if (window.AudioPaths) {{
+            src = AudioPaths.buildAudioPath(setName, currentIndex, cards[currentIndex], r2Manifest);
+          }}
+        }} catch (_ignore) {{}}
+        const audio = new Audio(src);
         audio.play().catch(()=>{{}});
       }});
 
@@ -247,7 +252,7 @@ def generate_flashcard_html(set_name, data):
               points_total: pointsTotal,
               perfect_before_flip: tracker.perfectNoFlipCount
             }}));
-          }} catch (_) {{}}
+          }} catch (_ignore) {{}}
 
           // Submit to server
           let awarded = null;
@@ -273,37 +278,36 @@ def generate_flashcard_html(set_name, data):
               awarded = (js && js.details && js.details.points_awarded != null)
                 ? Number(js.details.points_awarded) : null;
             }}
-          }} catch (_) {{}}
+          }} catch (_ignore) {{}}
 
           // Clear session state & go to summary
-          try {{ if (window.SessionSync) await SessionSync.complete({{ setName, mode }}); }} catch(_){{
-          }}
-          try {{ localStorage.removeItem('lp_last'); }} catch(_){{}}
+          try {{ if (window.SessionSync) await SessionSync.complete({{ setName, mode }}); }} catch(_ignore) {{}}
+          try {{ localStorage.removeItem("lp_last"); }} catch(_ignore) {{}}
           const q = awarded != null ? ("?awarded=" + encodeURIComponent(awarded)) : "";
           window.location.href = "summary.html" + q;
         }}
       }});
-    }});
 
-    // Resume mid-set if ?resume=1
-    (async () => {{
-      const wantResume = new URL(location.href).searchParams.get("resume") === "1";
-      if (wantResume && window.SessionSync) {{
-        await SessionSync.restore({{ setName, mode }}, (progress) => {{
-          if (progress && Number.isFinite(progress.index)) {{
-            currentIndex = Math.max(0, Math.min(cards.length - 1, progress.index));
-          }}
-          if (progress && progress.per) Object.assign(tracker.per, progress.per);
-          renderCard();
-        }});
-      }}
-      // Always record "last activity" (Home "Continue" fallback)
-      try {{ localStorage.setItem("lp_last", JSON.stringify({{ set_name:setName, mode, ts: Date.now() }})); }} catch(_){{
-      }}
-    }})();
+      // Resume mid-set if ?resume=1
+      (async () => {{
+        const wantResume = new URL(location.href).searchParams.get("resume") === "1";
+        if (wantResume && window.SessionSync) {{
+          await SessionSync.restore({{ setName, mode }}, (progress) => {{
+            if (progress && Number.isFinite(progress.index)) {{
+              currentIndex = Math.max(0, Math.min(cards.length - 1, progress.index));
+            }}
+            if (progress && progress.per) Object.assign(tracker.per, progress.per);
+            renderCard();
+          }});
+        }}
+        // Always record "last activity" (Home "Continue" fallback)
+        try {{ localStorage.setItem("lp_last", JSON.stringify({{ set_name:setName, mode, ts: Date.now() }})); }} catch(_ignore) {{}}
+      }})();
+    }});
 
     function goHome() {{ window.location.href = "../../index.html"; }}
   </script>
+
 </body>
 </html>
 """
