@@ -18,20 +18,27 @@ from .models import db
 
 
 def _normalize_db_url(u: str | None) -> str | None:
+    """
+    Normalizes Postgres URLs and appends safe defaults that reduce
+    'SSL SYSCALL error: EOF detected' by enforcing SSL and TCP keepalives.
+    """
     if not u:
         return None
 
-    # normalize scheme and driver
+    # Normalize scheme/driver
     if u.startswith("postgres://"):
         u = u.replace("postgres://", "postgresql://", 1)
     if u.startswith("postgresql://") and "+" not in u.split(":", 1)[0]:
+        # Use SQLAlchemy 2.x + psycopg3 driver name
         u = u.replace("postgresql://", "postgresql+psycopg://", 1)
 
     parsed = urlparse(u)
-    if not parsed.scheme.startswith("postgresql"):
-        return u  # don't touch sqlite or others
 
-    # decode percent-encoded DB names (e.g. "Path%20to%20Polish%20DB")
+    # Only touch Postgres URLs
+    if not parsed.scheme.startswith("postgresql"):
+        return u
+
+    # Decode any percent-encoded DB names
     path = parsed.path
     if "%" in path:
         try:
@@ -39,13 +46,20 @@ def _normalize_db_url(u: str | None) -> str | None:
         except Exception:
             pass
 
-    # ensure sslmode=require unless provided
-    query = parsed.query
-    if "sslmode=" not in query:
-        query = (query + "&" if query else "") + "sslmode=require"
+    # Append ssl + keepalive params unless already present
+    q = parsed.query or ""
 
-    return urlunparse(parsed._replace(path=path, query=query))
+    def _ensure(qs: str, key: str, value: str) -> str:
+        # adds "key=value" if "key=" not already in the querystring
+        return (qs + ("&" if qs else "") + f"{key}={value}") if (f"{key}=" not in qs) else qs
 
+    q = _ensure(q, "sslmode", "require")
+    q = _ensure(q, "keepalives", "1")
+    q = _ensure(q, "keepalives_idle", "30")       # seconds before first probe
+    q = _ensure(q, "keepalives_interval", "10")   # seconds between probes
+    q = _ensure(q, "keepalives_count", "3")       # failed probes before drop
+
+    return urlunparse(parsed._replace(path=path, query=q))
 
 def _resolve_db_url() -> str | None:
     candidates = [
@@ -144,25 +158,31 @@ def create_app():
     if not os.getenv("R2_ENDPOINT") and os.getenv("R2_S3_ENDPOINT"):
         os.environ["R2_ENDPOINT"] = os.getenv("R2_S3_ENDPOINT")
 
-    # --- Database config ---
+     # --- Database config ---
     db_url = _resolve_db_url()
     if not db_url:
         raise RuntimeError(
             "DATABASE_URL not configured. Set one of: "
             "DATABASE_URL, DATABASE_CONNECTION_STRING, DATABASE_INTERNAL_URL."
         )
+
+    # Pool + reconnect settings that heal stale/idle connections
+    engine_options = {
+        "pool_pre_ping": True,                       # validate before use; auto-reconnect
+        "pool_recycle": 280,                         # recycle before common infra timeouts
+        "pool_size": int(os.getenv("DB_POOL_SIZE", "5")),
+        "max_overflow": int(os.getenv("DB_MAX_OVERFLOW", "5")),
+        "pool_timeout": int(os.getenv("DB_POOL_TIMEOUT", "30")),
+        # small connect timeout so hung networks don't stall requests
+        "connect_args": {"connect_timeout": int(os.getenv("DB_CONNECT_TIMEOUT", "10"))},
+    }
+
     app.config.update(
         SQLALCHEMY_DATABASE_URI=db_url,
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
-        SQLALCHEMY_ENGINE_OPTIONS={"pool_pre_ping": True, "pool_recycle": 300},
+        SQLALCHEMY_ENGINE_OPTIONS=engine_options,
     )
     db.init_app(app)
-
-    # Optional Flask-Migrate init
-    if Migrate is not None:
-        migrate = Migrate()
-        migrate.init_app(app, db)
-
     # --- Bootstrap DB (one-time) ---
     from werkzeug.security import generate_password_hash
 

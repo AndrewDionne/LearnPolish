@@ -53,6 +53,13 @@ sets_bp = sets_api
 # Helpers (listing / hygiene)
 # =============================================================================
 
+def _repo_has_commits(root: Path) -> bool:
+    try:
+        _run(["git", "rev-parse", "--verify", "HEAD"], root, check=True)
+        return True
+    except Exception:
+        return False
+    
 def _git_current_commit_sha() -> str | None:
     try:
         root = Path(current_app.root_path).parent
@@ -425,19 +432,67 @@ def _prepare_repo(root: Path, token: str, repo_slug: str, branch: str = "main") 
     else:
         _run(["git", "remote", "set-url", "origin", remote_url], root, check=False)
 
-    # 3) branch (Render often checks out in detached HEAD)
+        # 3) branch (Render often checks out in detached HEAD or brand-new repo)
     _run(["git", "fetch", "origin", "--prune"], root, check=False)
-    current = _run(["git", "rev-parse", "--abbrev-ref", "HEAD"], root, check=False).strip()
-    if current == "HEAD":
-        _run(["git", "checkout", "-B", branch], root, check=True)  # create/update local branch
-    else:
-        _run(["git", "checkout", branch], root, check=False)
 
-    # set upstream & fast-forward if it exists
+    # Detect if repository has no commits (unborn HEAD)
+    unborn = False
+    try:
+        _run(["git", "rev-parse", "--verify", "HEAD"], root, check=True)
+    except Exception:
+        unborn = True
+
+    # Check if the target branch exists on the remote
+    has_remote_branch = False
+    try:
+        _run(["git", "rev-parse", "--verify", f"origin/{branch}"], root, check=True)
+        has_remote_branch = True
+    except Exception:
+        pass
+
+    if unborn:
+        if has_remote_branch:
+            # Start local branch from remote tip
+            _run(["git", "checkout", "-B", branch, f"origin/{branch}"], root, check=True)
+            unborn = False
+        else:
+            # Create an orphan branch so we can make the first commit
+            try:
+                _run(["git", "switch", "--orphan", branch], root, check=True)
+            except Exception:
+                _run(["git", "checkout", "--orphan", branch], root, check=True)
+    else:
+        current = _run(["git", "rev-parse", "--abbrev-ref", "HEAD"], root, check=False).strip()
+        if current == "HEAD":
+            # Detached HEAD → reattach to target branch (create if needed)
+            try:
+                _run(["git", "checkout", branch], root, check=True)
+            except Exception:
+                _run(["git", "checkout", "-B", branch], root, check=True)
+        else:
+            # Already on a branch; switch/create target branch as needed
+            try:
+                _run(["git", "checkout", branch], root, check=True)
+            except Exception:
+                _run(["git", "checkout", "-B", branch], root, check=True)
+
+    # Best-effort: set upstream (ignore if remote branch doesn't exist yet)
     _run(["git", "branch", "--set-upstream-to", f"origin/{branch}", branch], root, check=False)
+
+    # If we still have no commits (fresh orphan), seed an empty commit so pushes work
+    still_unborn = False
+    try:
+        _run(["git", "rev-parse", "--verify", "HEAD"], root, check=True)
+    except Exception:
+        still_unborn = True
+    if still_unborn:
+        _run(["git", "commit", "--allow-empty", "-m", "chore: initial branch"], root, check=False)
+
+    # Optional fast-forward; harmless if branch is new or remote has no tip
     _run(["git", "pull", "--ff-only", "origin", branch], root, check=False)
 
     return remote_url
+
 @trace
 def _git_add_commit_push(paths: list[Path], message: str) -> None:
     """
