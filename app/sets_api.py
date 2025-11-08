@@ -218,7 +218,7 @@ def _ensure_static_runtime_files() -> list[Path]:
   }
   w.AudioPaths = { fetchManifest, buildAudioPath };
 })(window);
-""")
+""", only_if_missing=True)
 
     # Legacy shim to stop 404s on older pages
     _write(js_dir / "flashcards-audio-adapter.js", "/* legacy shim: no-op */\n", only_if_missing=True)
@@ -294,7 +294,7 @@ def _try_upload_to_r2(local_path: Path, bucket_key: str) -> bool:
                 Bucket=os.environ["R2_BUCKET"],
                 Key=bucket_key,
                 Body=f,
-                ContentType="audio/mpeg",
+                ContentType=ctype,
                 ACL="public-read",
             )
         return True
@@ -347,6 +347,70 @@ def _maybe_upload_set_audio_to_r2(slug: str) -> Path | None:
     man_path = PAGES_DIR / "static" / slug / "r2_manifest.json"
     man_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
     return man_path
+
+# -----------------------------------------------------------------------------
+# Audio generation (gTTS, best-effort)
+# -----------------------------------------------------------------------------
+def _load_cards_for_slug(slug: str) -> list[dict] | None:
+    """Load cards from docs/sets JSON; returns None if read-only set."""
+    path = SETS_DIR / f"{slug}.json"
+    try:
+        if not path.exists():
+            return None
+        j = json.loads(path.read_text(encoding="utf-8"))
+        if isinstance(j, dict):
+            # read-only sets would have 'passages'; we only synthesize for cards
+            cards = j.get("cards") or j.get("items") or j.get("data")
+            return cards if isinstance(cards, list) and cards else None
+        elif isinstance(j, list):
+            # legacy plain list is cards
+            return j
+    except Exception as e:
+        try: current_app.logger.warning("load_cards_for_slug(%s) failed: %s", slug, e)
+        except Exception: pass
+    return None
+
+def _generate_tts_audio_for_set(slug: str, items: list[dict] | None) -> list[Path]:
+    """
+    Generate MP3s under docs/static/<slug>/audio/ using gTTS (Polish).
+    Skips existing files. Returns list of files written.
+    """
+    written: list[Path] = []
+    try:
+        from gtts import gTTS  # type: ignore
+    except Exception as e:
+        try: current_app.logger.info("gTTS not available; skipping audio gen for %s (%s)", slug, e)
+        except Exception: pass
+        return written
+
+    out_dir = PAGES_DIR / "static" / slug / "audio"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    for idx, entry in enumerate(items or []):
+        try:
+            phrase = str(entry.get("phrase") or "").strip()
+            if not phrase:
+                continue
+            # mirror same filename convention used by flashcards page
+            fn = f"{idx}_{sanitize_filename(phrase)}.mp3"
+            dst = out_dir / fn
+            if dst.exists() and dst.stat().st_size > 0:
+                continue  # already there
+
+            # synthesize
+            tts = gTTS(text=phrase, lang="pl")
+            tts.save(str(dst))
+            written.append(dst)
+        except Exception as e:
+            try: current_app.logger.warning("audio gen failed [%s #%d]: %s", slug, idx, e)
+            except Exception: pass
+
+    # Best-effort: if we generated anything, return list
+    if written:
+        try: current_app.logger.info("audio gen wrote %d files in %s", len(written), out_dir)
+        except Exception: pass
+    return written
+
 
 # =============================================================================
 # Git publishing (Option B only: GITHUB_TOKEN + GITHUB_REPO_SLUG)
@@ -573,9 +637,14 @@ def _git_add_commit_push(paths: list[Path], message: str) -> None:
     except subprocess.CalledProcessError:
         log_i("git add failed on combined pathspec; falling back to per-path adds")
         for rel in to_add_rel:
+            # normal add (ok if ignored)
             run(["git", "add", "-A", "--", rel], ok_if_fails=True)
+            # force-add in case .gitignore matches
+            run(["git", "add", "-f", "--", rel], ok_if_fails=True)
         # Stage the entire 'docs' subtree as a scoped safety net
         run(["git", "add", "-A", "--", "docs"], ok_if_fails=True)
+        # and force-add docs as a last resort
+        run(["git", "add", "-f", "--", "docs"], ok_if_fails=True)
 
     # Commit (allow empty so we always have a branch tip)
     run(["git", "commit", "-m", message, "--no-gpg-sign"], ok_if_fails=True)
@@ -889,9 +958,19 @@ def create_set(current_user):
         # ---------- IDEMPOTENT REBUILD ----------
         if existed:
             _regen_pages_for_slug(safe_name, gen_modes)
+
+            # Generate / refresh audio (best-effort) from current JSON on disk
+            try:
+                _items = _load_cards_for_slug(safe_name)
+                if _items:
+                    _generate_tts_audio_for_set(safe_name, _items)
+            except Exception as _e:
+                current_app.logger.warning("audio gen skipped/failed for %s: %s", safe_name, _e)
+
             # Optional: attempt R2 upload for audio (never blocks)
             try:
                 _maybe_upload_set_audio_to_r2(safe_name)
+
             except Exception as _e:
                 current_app.logger.warning("R2 upload skipped/failed for %s: %s", safe_name, _e)
 
@@ -934,9 +1013,16 @@ def create_set(current_user):
         # generate static pages
         _regen_pages_for_slug(safe_name, gen_modes)
 
+        # Generate audio for cards (best-effort)
+        try:
+            _generate_tts_audio_for_set(safe_name, items)
+        except Exception as _e:
+            current_app.logger.warning("audio gen skipped/failed for %s: %s", safe_name, _e)
+
         # Optional: attempt R2 upload for audio (never blocks)
         try:
             _maybe_upload_set_audio_to_r2(safe_name)
+
         except Exception as _e:
             current_app.logger.warning("R2 upload skipped/failed for %s: %s", safe_name, _e)
 
@@ -1158,6 +1244,37 @@ def admin_git_diag(current_user):
         }
     }
     return jsonify({"ok": True, **data}), 200
+
+@sets_api.route("/admin/audio_diag", methods=["GET"])
+@token_required
+def admin_audio_diag(current_user):
+    if not getattr(current_user, "is_admin", False):
+        return jsonify({"ok": False, "error": "forbidden"}), 403
+
+    slug = sanitize_filename((request.args.get("slug") or "").strip())
+    if not slug:
+        return jsonify({"ok": False, "error": "slug required"}), 400
+
+    static_dir = PAGES_DIR / "static" / slug / "audio"
+    files = []
+    if static_dir.exists():
+        files = [p.name for p in sorted(static_dir.glob("*.mp3"))]
+    exists = len(files) > 0
+
+    manifest = (PAGES_DIR / "static" / slug / "r2_manifest.json")
+    man_exists = manifest.exists()
+    man_size = manifest.stat().st_size if man_exists else 0
+
+    return jsonify({
+        "ok": True,
+        "slug": slug,
+        "audio_dir": str(static_dir),
+        "count": len(files),
+        "files": files[:20],  # sample
+        "has_manifest": man_exists,
+        "manifest_size": man_size,
+    })
+
 
 @sets_api.route("/pages/status", methods=["GET"])
 @token_required

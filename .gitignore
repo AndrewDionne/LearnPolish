@@ -78,15 +78,11 @@ Thumbs.db
 *.swp
 *.swo
 
-# keep static assets out of Git except the small runtime helpers and the per-set manifest
+# keep most of static out of Git, but keep runtime JS, per-set audio, and the R2 manifest
 docs/static/*
-
-# allow the per-set manifest used by the frontend to resolve audio from R2/CDN
-!docs/static/**/r2_manifest.json
-
-# allow the tiny runtime helpers (needed by pages)
+!docs/static/.gitattributes
 !docs/static/js/
 !docs/static/js/**
-
-# allow LFS override so mp3 commits don't get blocked silently
-!docs/static/.gitattributes
+!docs/static/**/audio/
+!docs/static/**/audio/**
+!docs/static/**/r2_manifest.json
