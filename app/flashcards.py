@@ -1,10 +1,8 @@
 # app/flashcards.py
 import json
-from pathlib import Path
 
 from .sets_utils import sanitize_filename
-
-DOCS_DIR = Path("docs")
+from .constants import PAGES_DIR as DOCS_DIR
 
 def generate_flashcard_html(set_name, data):
     """
@@ -103,11 +101,13 @@ def generate_flashcard_html(set_name, data):
   <!-- Azure Speech SDK -->
   <!-- Azure Speech SDK removed: using static MP3 playback only -->
 
-  <!-- Correct relative paths from /flashcards/{set}/index.html -->
   <script src="../../static/js/app-config.js"></script>
   <script src="../../static/js/api.js"></script>
   <script src="../../static/js/session_state.js"></script>
   <script src="../../static/js/audio-paths.js"></script>
+  <!-- Azure Speech SDK -->
+  <script src="https://aka.ms/csspeech/jsbrowserpackageraw"></script>
+
 
     <script>
     // --- Data & state ---
@@ -171,9 +171,81 @@ def generate_flashcard_html(set_name, data):
     }}
 
     async function assess(referenceText, targetEl) {{
-      if (targetEl) targetEl.textContent = "🔇 Pronunciation scoring is temporarily disabled.";
-      return {{ score: 0 }};
+      try {{
+        if (!window.SpeechSDK) {{
+          if (targetEl) targetEl.textContent = "⚠️ Speech SDK not loaded.";
+          return {{ score: 0, error: "sdk_not_loaded" }};
+        }}
+        if (!referenceText || !referenceText.trim()) {{
+          if (targetEl) targetEl.textContent = "⚠️ No reference text.";
+          return {{ score: 0, error: "no_reference" }};
+        }}
+
+        if (targetEl) targetEl.textContent = "🎤 Listening…";
+
+        // Get short-lived token
+        const tok = await api.get('/api/speech_token'); // alias added in __init__.py
+        const token = tok && (tok.token || tok.access_token);
+        const region = tok && tok.region;
+        if (!token || !region) {{
+          if (targetEl) targetEl.textContent = "⚠️ Could not get speech token.";
+          return {{ score: 0, error: "no_token" }};
+        }}
+
+        // Build Speech config
+        const speechConfig = SpeechSDK.SpeechConfig.fromAuthorizationToken(token, region);
+        speechConfig.speechRecognitionLanguage = "pl-PL";
+
+        // Pronunciation config
+        const paConfig = new SpeechSDK.PronunciationAssessmentConfig(
+          referenceText,
+          SpeechSDK.PronunciationAssessmentGradingSystem.HundredMark,
+          SpeechSDK.PronunciationAssessmentGranularity.Phoneme,
+          true // enable miscue
+        );
+        // Optional tuning:
+        // paConfig.enableProsodyAssessment = true;
+
+        const audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
+        const recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
+        paConfig.applyTo(recognizer);
+
+        const result = await new Promise((resolve, reject) => {{
+          recognizer.recognizeOnceAsync(resolve, reject);
+        }});
+
+        recognizer.close();
+
+        // Parse score from service JSON
+        let score = 0;
+        try {{
+          // two possible locations depending on SDK/version
+          let raw = result && (
+            result.properties?.getProperty(SpeechSDK.PropertyId.SpeechServiceResponse_JsonResult) ||
+            result.privPronunciationAssessmentJson
+          );
+          const j = raw ? JSON.parse(raw) : null;
+
+          // Prefer NBest path; fallback to top-level
+          score =
+            Math.round(
+              (j?.NBest?.[0]?.PronunciationAssessment?.AccuracyScore) ??
+              (j?.PronunciationAssessment?.AccuracyScore) ??
+              0
+            );
+        }} catch (_e) {{
+          score = 0;
+        }}
+
+        if (targetEl) targetEl.textContent = (score ? `✅ ${{score}}%` : "⚠️ No score");
+        return {{ score }};
+      }} catch (e) {{
+        console.error("assess() error:", e);
+        if (targetEl) targetEl.textContent = "⚠️ Speech error";
+        return {{ score: 0, error: String(e) }};
+      }}
     }}
+
 
     // Wire up after DOM is ready (prevents null refs)
     window.addEventListener("DOMContentLoaded", async function() {{

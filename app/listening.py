@@ -373,17 +373,15 @@ def generate_listening_html(set_name: str, data=None):
     </a>
   </nav>
 
+  <script src="../../static/js/app-config.js"></script>
+  <script src="../../static/js/api.js"></script>
   <script src="../../static/js/audio-paths.js"></script>
 
-  <script>
-  // ---- R2 manifest (if present) ----
-  let r2Manifest = null; // {{ files: {{ "listening/<set>/<file>": "https://cdn..." }}, assetsBase }}
-  const SET_NAME = {json.dumps(set_name)};
-  async function loadR2Manifest(){{
-    // Manifest disabled: use local static files only.
-    r2Manifest = null;
-  }}
 
+  <script>
+// ---- Manifest (shared helper) ----
+let r2Manifest = null;
+const SET_NAME = {json.dumps(set_name)};
 
   function repoBase(){{
     if (location.hostname === "andrewdionne.github.io") {{
@@ -431,7 +429,8 @@ def generate_listening_html(set_name: str, data=None):
     if (location.hostname === "andrewdionne.github.io") {{
       return repoBase() + `/static/${{SET_NAME}}/${{rel}}`;
     }}
-    return `/custom_static/${{SET_NAME}}/${{rel}}`;
+    // Local dev (Flask): use relative docs/static path to match other modes
+    return "../../static/" + encodeURIComponent(SET_NAME) + "/" + rel;
   }}
 
 
@@ -491,7 +490,13 @@ def generate_listening_html(set_name: str, data=None):
   }}
 
   function loadAudio(it){{
-    const src = resolveAudioUrl(it);
+    let src = "";
+    try {{
+      src = AudioPaths.resolveListening(SET_NAME, it, r2Manifest);
+    }} catch (_e) {{
+      src = "";
+    }}
+
     if (!src) {{ console.warn("No audio for item", it); audioEl.removeAttribute("src"); return; }}
     audioEl.src = src;
     audioEl.playbackRate = state.slowOn ? 0.75 : 1.0;
@@ -673,7 +678,7 @@ def generate_listening_html(set_name: str, data=None):
 
   // mount
   (async function init(){{
-    await loadR2Manifest();
+    try {{ r2Manifest = await AudioPaths.fetchManifest(SET_NAME); }} catch(_e) {{ r2Manifest = null; }}
     if(!Array.isArray(DIALOGUES) || !DIALOGUES.length){{
       document.body.innerHTML = '<div style="padding:20px;font-family:sans-serif;">⚠️ No dialogues found for this set.</div>';
       return;

@@ -25,10 +25,6 @@ def asset_url(path: str) -> str | None:
         return None
     return f"{base}/{path.lstrip('/')}"
 
-
-# Configure logging level if not set elsewhere
-logging.basicConfig(level=logging.INFO)
-
 def _norm_region(val: str | None) -> str | None:
     """Normalize Azure region strings like 'Germany West Central' -> 'germanywestcentral'."""
     if not val:

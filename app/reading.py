@@ -1,5 +1,5 @@
 # app/reading.py
-from pathlib import Path
+
 import json
 from .constants import PAGES_DIR, SETS_DIR
 
@@ -8,10 +8,11 @@ def generate_reading_html(set_name, data=None):
     """
     Generates docs/reading/<set_name>/index.html for reading mode.
 
-    Static-only behavior (no Azure on front-end):
-      - "Listen (Polish)" plays docs/static/<set>/reading/<idx>.mp3
-      - No manifest lookups; no token calls; no mic/recognition
-      - Gentle notice if an audio file is missing
+    Azure-enabled reading (continuous recognition + per-word scoring):
+      - “Start Reading” uses Azure Pronunciation Assessment (word-level).
+      - “Listen (Polish)” plays docs/static/<set>/reading/<idx>.mp3 or CDN via manifest.
+      - Graceful fallback if token/SDK is unavailable.
+
     """
     out_dir = PAGES_DIR / "reading" / set_name
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -53,12 +54,14 @@ def generate_reading_html(set_name, data=None):
   audio {{ display:none; }}
   a.home {{ position:absolute; right:16px; top:16px; text-decoration:none; background:#007bff; color:#fff; padding:6px 10px; border-radius:8px; }}
 </style>
-<!-- Azure Speech SDK removed: using static MP3 playback only -->
+<!-- Azure Speech SDK enabled via https://aka.ms/csspeech/jsbrowserpackageraw -->
 
 <!-- Config + helper scripts (relative to docs/reading/<set>/index.html) -->
 <script src="../../static/js/app-config.js"></script>
 <script src="../../static/js/api.js"></script>
 <script src="../../static/js/audio-paths.js"></script>
+<!-- Azure Speech SDK -->
+<script src="https://aka.ms/csspeech/jsbrowserpackageraw"></script>
 
 </head>
 <body>
@@ -92,8 +95,8 @@ def generate_reading_html(set_name, data=None):
 const passages = {passages_json};
 const setName = "{set_name}";
 
-// Recognition fully disabled on front-end
-const SpeechSDK = null;
+// Recognition enabled on front-end (SDK loaded in <head>)
+const SpeechSDK = window.SpeechSDK;
 
 let currentIndex = 0;
 let recognizer = null;
@@ -106,15 +109,9 @@ let wordsMeta = []; // {{ text, idx, score }}
 
 // Manifest disabled (local static only)
 let r2Manifest = null;
-let assetsCDNBase = null;
 
 // ---------- Helpers ----------
 function byId(id) {{ return document.getElementById(id); }}
-
-// Local static path: docs/static/<set>/reading/<index>.mp3
-function getReadingAudioPath(index) {{
-  return `../../static/${{encodeURIComponent(setName)}}/reading/${{encodeURIComponent(index)}}.mp3`;
-}}
 
 async function loadR2Manifest() {{
   // No manifest/CDN: use local static files only.
@@ -193,12 +190,147 @@ function updateStats(final=false) {{
   `;
 }}
 
-// ---- Speech-related functions are stubs (disabled) ----
-async function fetchToken() {{ throw new Error("Speech disabled"); }}
-async function speechConfig() {{ throw new Error("Speech disabled"); }}
-async function speakPolish(_text) {{ /* disabled */ return; }}
-async function setupRecognizer(_referenceText) {{ /* disabled */ return; }}
-function attachRecognitionHandlers() {{ /* disabled */ return; }}
+// ---- Speech helpers (enabled) ----
+function _norm(s) {{
+  return (s || "").normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase();
+}}
+
+async function fetchToken() {{
+  const tok = await api.get('/api/speech_token');
+  return {{ token: tok && (tok.token || tok.access_token), region: tok && tok.region }};
+}}
+
+async function speechConfig() {{
+  if (!window.SpeechSDK) throw new Error("sdk_not_loaded");
+  const t = await fetchToken();
+  if (!t.token || !t.region) throw new Error("no_token");
+  const cfg = SpeechSDK.SpeechConfig.fromAuthorizationToken(t.token, t.region);
+  cfg.speechRecognitionLanguage = "pl-PL";
+  return cfg;
+}}
+
+// Optional; we keep it for future TTS integration (unused right now)
+async function speakPolish(_text) {{ return; }}
+
+async function setupRecognizer(referenceText) {{
+  const cfg = await speechConfig();
+  const audioCfg = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
+  const rec = new SpeechSDK.SpeechRecognizer(cfg, audioCfg);
+
+  if (referenceText) {{
+    const pa = new SpeechSDK.PronunciationAssessmentConfig(
+      referenceText,
+      SpeechSDK.PronunciationAssessmentGradingSystem.HundredMark,
+      SpeechSDK.PronunciationAssessmentGranularity.Word,
+      true // enable miscue
+    );
+    pa.applyTo(rec);
+  }}
+  return rec;
+}}
+
+/**
+ * Map Azure word-by-word scores onto our passage tokens.
+ * Strategy:
+ *   - Walk forward through the passage tokens.
+ *   - For each recognized word, try to match (normalized) to next tokens.
+ *   - On match, assign score and advance pointer.
+ */
+function attachRecognitionHandlers(recognizer, passageText) {{
+  startTime = Date.now();
+
+  let nextPtr = 0; // next token index to try to match
+  const maxLookahead = 4;
+
+  function applyScoresFromJson(j) {{
+    const nbest0 = j?.NBest?.[0];
+    const words = nbest0?.Words || [];
+    if (!words.length) {{
+      // Fallback: smear overall accuracy if available
+      const acc = Math.round(
+        (nbest0?.PronunciationAssessment?.AccuracyScore) ??
+        (j?.PronunciationAssessment?.AccuracyScore) ?? 0
+      );
+      if (acc > 0) {{
+        for (let i = nextPtr; i < wordsMeta.length; i++) {{
+          if (wordsMeta[i].score == null) {{
+            wordsMeta[i].score = acc;
+            wordsSpans[i].classList.remove("w-good","w-mid","w-bad");
+            wordsSpans[i].classList.add(colorByScore(acc));
+          }}
+        }}
+        updateStats();
+      }}
+      return;
+    }}
+
+    // Assign scores by greedy forward matching
+    for (const w of words) {{
+      const wText = _norm(w.Word || w.word || "");
+      const wScore = Math.round(w?.PronunciationAssessment?.AccuracyScore ?? 0);
+      if (!wText) continue;
+
+      // find a match among the next few tokens
+      let matched = -1;
+      for (let k = 0; k < maxLookahead && (nextPtr + k) < wordsMeta.length; k++) {{
+        const candidateIdx = nextPtr + k;
+        const cand = _norm(wordsMeta[candidateIdx].text);
+        if (cand === wText) {{ matched = candidateIdx; break; }}
+      }}
+
+      if (matched >= 0) {{
+        // fill any gaps (unmatched tokens) with 0 to keep UI honest
+        while (nextPtr < matched) {{
+          if (wordsMeta[nextPtr].score == null) wordsMeta[nextPtr].score = 0;
+          wordsSpans[nextPtr].classList.remove("w-good","w-mid","w-bad");
+          wordsSpans[nextPtr].classList.add(colorByScore(0));
+          nextPtr++;
+        }}
+        // assign score to the matched token
+        wordsMeta[matched].score = wScore;
+        wordsSpans[matched].classList.remove("w-good","w-mid","w-bad");
+        wordsSpans[matched].classList.add(colorByScore(wScore));
+        nextPtr = matched + 1;
+      }}
+    }}
+
+    // advance highlight to next token
+    highlightWord(nextPtr);
+    updateStats();
+  }}
+
+  recognizer.recognizing = (s, e) => {{
+    byId("status").textContent = "🎙 Listening…";
+    try {{
+      const raw = e?.result?.properties?.getProperty(SpeechSDK.PropertyId.SpeechServiceResponse_JsonResult);
+      if (!raw) return;
+      const j = JSON.parse(raw);
+      applyScoresFromJson(j);
+    }} catch (_e) {{}}
+  }};
+
+  recognizer.recognized = (s, e) => {{
+    try {{
+      const raw = e?.result?.properties?.getProperty(SpeechSDK.PropertyId.SpeechServiceResponse_JsonResult) || e?.result?.privPronunciationAssessmentJson;
+      if (!raw) return;
+      const j = JSON.parse(raw);
+      applyScoresFromJson(j);
+    }} catch (_e) {{}}
+  }};
+
+  recognizer.canceled = (s, e) => {{
+    byId("status").textContent = "⚠️ Canceled";
+  }};
+
+  recognizer.sessionStarted = () => {{
+    byId("status").textContent = "🎙 Session started";
+  }};
+
+  recognizer.sessionStopped = () => {{
+    byId("status").textContent = "🛑 Session stopped";
+    updateStats(true);
+  }};
+}}
 
 function startRecordingMyAudio() {{
   // Optional: allow user to record & replay their voice (no scoring)
@@ -224,23 +356,86 @@ function stopRecordingMyAudio() {{
 }}
 
 async function startReading() {{
-  // Mic assessment disabled; no recognizer session
-  byId("status").textContent = "🔇 Reading assessment is temporarily disabled.";
-  const btn = byId("btnReplay");
-  if (btn) btn.disabled = true; // no recording is made automatically
-  return;
+  try {{
+    const p = passages[currentIndex] || {{}};
+    const referenceText = String(p.polish || "");
+    if (!referenceText.trim()) {{
+      byId("status").textContent = "⚠️ No passage text.";
+      return;
+    }}
+
+    // Reset scores/visuals
+    wordsMeta.forEach((w, i) => {{
+      w.score = null;
+      wordsSpans[i].classList.remove("w-good","w-mid","w-bad","active");
+    }});
+    highlightWord(0);
+    byId("stats").textContent = "Starting…";
+    byId("status").textContent = "🎙 Requesting microphone…";
+
+    // UI state
+    byId("btnStart").disabled = true;
+    byId("btnStop").disabled = false;
+    byId("btnReplay").disabled = true;
+
+    recognizer = await setupRecognizer(referenceText);
+    attachRecognitionHandlers(recognizer, referenceText);
+
+    // Start recognition + start local recording for replay
+    await new Promise((resolve, reject) => {{
+      try {{ recognizer.startContinuousRecognitionAsync(resolve, reject); }}
+      catch (e) {{ reject(e); }}
+    }});
+    startRecordingMyAudio();
+  }} catch (e) {{
+    console.error("startReading error", e);
+    byId("status").textContent = "❌ " + (e && e.message ? e.message : String(e));
+    byId("btnStart").disabled = false;
+    byId("btnStop").disabled = true;
+  }}
 }}
 
-function stopReading() {{
-  // No recognizer to stop; keep graceful try/catch
-  try {{ if (recognizer) recognizer.stopContinuousRecognitionAsync(); }} catch(_){{}}
+async function stopReading() {{
+  try {{
+    byId("btnStop").disabled = true;
+    if (recognizer) {{
+      await new Promise((resolve) => {{
+        try {{
+          recognizer.stopContinuousRecognitionAsync(() => {{
+            resolve();
+          }}, () => resolve());
+        }} catch (_) {{ resolve(); }}
+      }});
+    }}
+  }} finally {{
+    // Save user recording (if any) and enable replay
+    try {{
+      const url = await stopRecordingMyAudio();
+      if (url) {{
+        const a = byId("replayAudio");
+        a.src = url; a.load();
+        byId("btnReplay").disabled = false;
+      }}
+    }} catch (_e) {{}}
+
+    byId("status").textContent = "🛑 Stopped";
+    updateStats(true);
+    byId("btnStart").disabled = false;
+  }}
 }}
 
-function listenPolish() {{
+ffunction listenPolish() {{
   const a = byId("ttsAudio");
   const p = passages[currentIndex] || {{}};
   const direct = p.audio_url || p.audio;
-  const src = (direct && /^https?:\\/\\//i.test(direct)) ? direct : getReadingAudioPath(currentIndex);
+  let src = "";
+  if (direct && /^https?:\/\//i.test(direct)) {{
+    src = direct;
+  }} else if (window.AudioPaths) {{
+    src = AudioPaths.readingPath(setName, currentIndex, r2Manifest);
+  }} else {{
+    src = `../../static/${{encodeURIComponent(setName)}}/reading/${{encodeURIComponent(currentIndex)}}.mp3`;
+  }}
   a.onerror = () => {{
     byId("status").textContent = "🔇 Audio not found for this passage.";
   }};
@@ -250,6 +445,7 @@ function listenPolish() {{
     byId("status").textContent = "🔇 Unable to play audio.";
   }});
 }}
+
 
 function replayMe() {{
   const a = byId("replayAudio");
@@ -290,12 +486,13 @@ function wireUI() {{
 function goHome() {{ window.location.href = "../../index.html"; }}
 
 (async function init() {{
-  byId("status").textContent = "ℹ️ Static audio playback only (mic scoring disabled).";
-  await loadR2Manifest();
+  try {{ if (window.AudioPaths) r2Manifest = await AudioPaths.fetchManifest(setName); }} catch(_e) {{ r2Manifest = null; }}
+  byId("status").textContent = "🎙 Ready. Click “Start Reading” and speak clearly.";
   populateSelect();
   renderPassage(0);
   wireUI();
 }})();
+
 </script>
 </body>
 </html>

@@ -538,6 +538,12 @@ def create_app():
         except Exception as e:
             app.logger.error("Azure token error: %s", e)
             return jsonify({"ok": False, "error": "azure_token_error"}), 500
+    
+    # Alias for legacy clients/pages
+    @app.get("/api/speech_token")
+    def speech_token_alias():
+        # Reuse the same handler
+        return azure_token()
 
     # --- Blueprints ---
     from .auth import auth_bp

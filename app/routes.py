@@ -9,19 +9,6 @@ routes_bp = Blueprint("routes", __name__)
 # Path to the docs directory that we serve as the static site
 DOCS_DIR = Path(__file__).resolve().parent.parent / "docs"
 
-
-# ----------------------------
-# Azure Speech Token endpoint
-# ----------------------------
-@routes_bp.route("/api/token", methods=["GET"])
-def azure_token():
-    try:
-        return get_azure_token()
-    except Exception as e:
-        routes_bp.logger.error(f"Azure token endpoint error: {e}", exc_info=True)
-        return jsonify({"error": "endpoint_failed", "detail": str(e)}), 500
-
-
 # ----------------------------
 # Local static (dev) for audio, etc.
 #   e.g. /custom_static/<set>/audio/<file>.mp3

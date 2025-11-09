@@ -1,20 +1,18 @@
 # app/practice.py
-from pathlib import Path
 import json
 from .sets_utils import sanitize_filename
-
-DOCS_DIR = Path("docs")
-
+from .constants import PAGES_DIR as DOCS_DIR
 
 def generate_practice_html(set_name, data):
     """
     Generates docs/practice/<set_name>/index.html and a set-scoped sw.js.
 
-    Static-only front-end (no Azure SDK / tokens):
-      - "Repeat after me" loop stays intact
-      - Per-card audio playback uses docs/static/<set>/audio/<idx>_<sanitized>.mp3
-      - Mic scoring is disabled; we auto-pass each attempt (small notice shown)
-      - Optional offline cache UI preserved (no manifest / CDN required)
+       Azure Speech SDK pronunciation scoring enabled:
+      - "Repeat after me" loop preserved
+      - Per-card audio playback uses docs/static/<set>/audio/<idx>_<sanitized>.mp3 (manifest/CDN optional)
+      - Mic scoring uses Azure tokens from /api/speech_token; UI shows numeric %; PASS_THRESHOLD=70
+      - Offline cache UI preserved (no manifest/CDN required)
+
     """
     # Ensure output dir exists
     output_dir = DOCS_DIR / "practice" / set_name
@@ -82,12 +80,16 @@ def generate_practice_html(set_name, data):
 
   <div id="result" class="result">🎙 Get ready...</div>
 
-  <!-- Azure Speech SDK removed: using static MP3 playback only -->
+  <!-- Azure Speech SDK enabled for pronunciation assessment -->
 
   <!-- Config + API helper (relative to docs/practice/<set>/index.html) -->
   <script src="../../static/js/app-config.js"></script>
   <script src="../../static/js/api.js"></script>
+  <script src="../../static/js/session_state.js">
+</script>
   <script src="../../static/js/audio-paths.js"></script>
+  <!-- Azure Speech SDK -->
+  <script src="https://aka.ms/csspeech/jsbrowserpackageraw"></script>
 
   <script>
     // ===== State =====
@@ -97,8 +99,8 @@ def generate_practice_html(set_name, data):
     let attempts = 0;
     let isRunning = false;
 
-    // Azure SDK explicitly disabled on front-end
-    const SpeechSDK = null;
+    // Azure SDK enabled (loaded from https://aka.ms/csspeech/jsbrowserpackageraw)
+    const SpeechSDK = window.SpeechSDK;
     let cachedSpeechConfig = null;
     let globalRecognizer = null;
     let isRecognizerActive = false;
@@ -107,42 +109,23 @@ def generate_practice_html(set_name, data):
 
     // Manifest/CDN disabled
     let r2Manifest = null;
-    let assetsCDNBase = null;
 
     const setName = "{set_name}";
     const cards = {cards_json};
     const PASS_THRESHOLD = 70;
-
-    // Mirror of Python sanitize_filename
-    function sanitizeFilename(text) {{
-      return (text || "")
-        .normalize("NFD").replace(/[\\u0300-\\u036f]/g, "")
-        .replace(/[^a-zA-Z0-9_-]+/g, "_")
-        .replace(/^_+|_+$/g, "");
-    }}
 
     // System audio path (relative works for GH Pages and Flask)
     function getSystemAudioPath(name) {{
       return `../../static/system_audio/${{name}}.mp3`;
     }}
 
-    // Build an audio URL for a card item (index + fields) → local static fallback
-    function audioUrlFor(setName, index, item) {{
-      const explicit = item?.audio_url || item?.audio;
-      if (explicit && /^https?:\\/\\//i.test(explicit)) return explicit;
-
-      const fn = (item?.audio_file && String(item.audio_file))
-              || (String(index) + "_" + sanitizeFilename(item?.phrase || item?.polish || "") + ".mp3");
-
-      // local static fallback (preferred)
-      return "../../static/" + encodeURIComponent(setName) + "/audio/" + encodeURIComponent(fn);
-    }}
-
     function preloadAudioFiles() {{
       preloadedAudio = {{}};
       for (let i = 0; i < cards.length; i++) {{
         const item = cards[i] || {{}};
-        const url = audioUrlFor(setName, i, item);
+        const url = (window.AudioPaths)
+          ? AudioPaths.buildAudioPath(setName, i, item, r2Manifest)
+          : ("../../static/" + encodeURIComponent(setName) + "/audio/" + encodeURIComponent(item?.audio_file || (i + "_.mp3")));
         preloadedAudio[i] = new Audio(url);
       }}
     }}
@@ -165,31 +148,48 @@ def generate_practice_html(set_name, data):
       if (p) p.catch(err => {{ console.warn("🔇 Autoplay blocked:", err); callback(); }});
     }}
 
-    // Manifest disabled: local static only
-    async function loadR2Manifest() {{
-      r2Manifest = null;
-      assetsCDNBase = null;
-    }}
-
-    // ===== Azure Speech stubs (disabled) =====
+    // ===== Azure Speech (enabled) =====
     async function getSpeechConfig() {{
-      throw new Error("Speech disabled");
+      if (!window.SpeechSDK) throw new Error("sdk_not_loaded");
+      if (cachedSpeechConfig) return cachedSpeechConfig;
+
+      const tok = await api.get('/api/speech_token'); // issued by server
+      const token = tok && (tok.token || tok.access_token);
+      const region = tok && tok.region;
+      if (!token || !region) throw new Error("no_token");
+
+      const cfg = SpeechSDK.SpeechConfig.fromAuthorizationToken(token, region);
+      cfg.speechRecognitionLanguage = "pl-PL";
+      cachedSpeechConfig = cfg;
+      return cfg;
     }}
 
-    async function initRecognizer() {{
-      // never called with speech disabled; keep stub for compatibility
-      return null;
+    async function initRecognizer(referenceText) {{
+      const speechConfig = await getSpeechConfig();
+      const audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
+      const recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
+
+      if (referenceText) {{
+        const paConfig = new SpeechSDK.PronunciationAssessmentConfig(
+          referenceText,
+          SpeechSDK.PronunciationAssessmentGradingSystem.HundredMark,
+          SpeechSDK.PronunciationAssessmentGranularity.Phoneme,
+          true // enable miscue
+        );
+        paConfig.applyTo(recognizer);
+      }}
+      return recognizer;
     }}
 
     async function warmupMic() {{
-      // simple progress animation to keep UI behavior consistent
+      // simple progress animation; keeps UI behavior consistent
       const container = document.getElementById("warmupContainer");
       const bar = document.getElementById("warmupBar");
       const text = document.getElementById("warmupText");
 
       container.style.display = "block";
       bar.style.width = "0%";
-      text.textContent = "Preparing… (mic scoring disabled)";
+      text.textContent = "Preparing microphone…";
 
       let progress = 0;
       const interval = setInterval(() => {{
@@ -202,14 +202,53 @@ def generate_practice_html(set_name, data):
       }}, 60);
     }}
 
-    // Return an auto-pass score and show a small notice; keeps flow smooth
+    // Azure-based pronunciation assessment; returns numeric score (0–100)
     async function assessPronunciation(phrase, isFirst=false) {{
       const resultDiv = document.getElementById("result");
-      resultDiv.innerHTML = `🎤 Say: <strong>${{phrase}}</strong><br><span style="font-size:.95em;opacity:.8;">(Mic scoring disabled — auto-pass)</span>`;
-      // brief pause to feel responsive
-      await new Promise(r => setTimeout(r, isFirst ? 800 : 400));
-      playSystemAudio("good", () => {{}});
-      return PASS_THRESHOLD;
+      resultDiv.innerHTML = `🎤 Say: <strong>${{phrase}}</strong>`;
+      try {{
+        const recognizer = await initRecognizer(phrase);
+        globalRecognizer = recognizer; isRecognizerActive = true;
+
+        const result = await new Promise((resolve, reject) => {{
+          recognizer.recognizeOnceAsync(resolve, reject);
+        }});
+
+        recognizer.close();
+        isRecognizerActive = false;
+        globalRecognizer = null;
+
+        let score = 0;
+        try {{
+          let raw = result && (
+            result.properties?.getProperty(SpeechSDK.PropertyId.SpeechServiceResponse_JsonResult) ||
+            result.privPronunciationAssessmentJson
+          );
+          const j = raw ? JSON.parse(raw) : null;
+          score = Math.round(
+            (j?.NBest?.[0]?.PronunciationAssessment?.AccuracyScore) ??
+            (j?.PronunciationAssessment?.AccuracyScore) ??
+            0
+          );
+        }} catch (_e) {{
+          score = 0;
+        }}
+
+        // Feedback sound
+        if (score >= PASS_THRESHOLD) {{
+          playSystemAudio("good", () => {{ }});
+        }} else {{
+          playSystemAudio("try_again", () => {{ }});
+        }}
+
+        // Show score under the prompt
+        resultDiv.innerHTML = `🎤 Say: <strong>${{phrase}}</strong><br>Score: <strong>${{score}}%</strong>`;
+        return score;
+      }} catch (e) {{
+        console.error("assessPronunciation error", e);
+        resultDiv.innerHTML = "⚠️ Speech error";
+        return 0;
+      }}
     }}
 
     async function runPractice() {{
@@ -248,11 +287,16 @@ def generate_practice_html(set_name, data):
     function allAudioUrls() {{
       const urls = [];
       for (let i = 0; i < cards.length; i++) {{
-        urls.push(audioUrlFor(setName, i, cards[i] || {{}}));
+        const item = cards[i] || {{}};
+        const u = (window.AudioPaths)
+          ? AudioPaths.buildAudioPath(setName, i, item, r2Manifest)
+          : ("../../static/" + encodeURIComponent(setName) + "/audio/" + encodeURIComponent(item?.audio_file || (i + "_.mp3")));
+        urls.push(u);
       }}
       ["repeat_after_me","good","try_again"].forEach(n => urls.push(getSystemAudioPath(n)));
       return Array.from(new Set(urls));
     }}
+
     async function ensureSW() {{
       if (!("serviceWorker" in navigator)) return null;
       try {{
@@ -285,10 +329,7 @@ def generate_practice_html(set_name, data):
       const offlineRemoveBtn = document.getElementById("offlineRemoveBtn");
       const offlineStatus = document.getElementById("offlineStatus");
 
-      // Manifest disabled; still call to keep same flow
-      await loadR2Manifest();
-
-      // Preload audio (local static)
+      try {{ r2Manifest = await AudioPaths.fetchManifest(setName); }} catch(_e) {{ r2Manifest = null; }}
       preloadAudioFiles();
 
       // Warm up (visual only)
@@ -367,14 +408,17 @@ def generate_practice_html(set_name, data):
 self.addEventListener('install', (e) => { self.skipWaiting(); });
 self.addEventListener('activate', (e) => { self.clients.claim(); });
 
-function isValid(u){ try { new URL(u); return true; } catch(_) { return false; } }
+function toAbs(u){
+  try { return new URL(u, self.registration.scope || self.location.href).href; }
+  catch(_) { return null; }
+}
 
 self.addEventListener('message', async (e) => {
   const data = e.data || {};
   const client = await self.clients.get(e.source && e.source.id);
   if (data.type === 'CACHE_SET') {
     const cacheName = data.cache || 'practice-cache';
-    const urls = Array.isArray(data.urls) ? data.urls.filter(isValid) : [];
+    const urls = Array.isArray(data.urls) ? data.urls.map(toAbs).filter(Boolean) : [];
     try {
       const cache = await caches.open(cacheName);
       let done = 0, total = urls.length;
