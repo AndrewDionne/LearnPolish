@@ -78,11 +78,10 @@ Thumbs.db
 *.swp
 *.swo
 
-# keep most of static out of Git, but keep runtime JS, per-set audio, and the R2 manifest
+# keep most of static out of Git; allow runtime JS + the R2 manifest only
 docs/static/*
 !docs/static/.gitattributes
 !docs/static/js/
 !docs/static/js/**
-!docs/static/**/audio/
-!docs/static/**/audio/**
 !docs/static/**/r2_manifest.json
+

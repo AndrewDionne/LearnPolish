@@ -1,9 +1,9 @@
 * text=auto eol=lf
 
-# Binary media (no EOL normalization)
-*.mp3 -text
-*.wav -text
-*.m4a -text
+# (optional) make sure generic binaries stay binary
+*.mp3 binary
+*.wav binary
+*.m4a binary
 *.ogg -text
 
 # Text files normalized to LF

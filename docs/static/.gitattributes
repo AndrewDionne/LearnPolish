@@ -1,2 +1,6 @@
-*.mp3 -filter -diff -merge text
-*.wav -filter -diff -merge text
+# Manifests are text (LF), never LFS
+r2_manifest.json text eol=lf
+
+# If audio ever gets committed accidentally, treat as binary
+*.mp3 -text -diff -merge
+*.wav -text -diff -merge
