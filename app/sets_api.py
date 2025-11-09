@@ -439,13 +439,11 @@ def _collect_commit_targets(slug: str, modes: list[str]) -> list[Path]:
             if ix.exists():
                 targets.append(ix)
 
-    # Static assets (audio etc.) + per-set manifest
+    # Per-set manifest only (audio blobs are in R2, not in git)
     static_dir = PAGES_DIR / "static" / slug
-    if static_dir.exists():
-        targets.append(static_dir)
-        man = static_dir / "r2_manifest.json"
-        if man.exists():
-            targets.append(man)
+    man = static_dir / "r2_manifest.json"
+    if man.exists():
+        targets.append(man)
 
     # Runtime JS helpers (stop 404s) + LFS override
     for p in [
