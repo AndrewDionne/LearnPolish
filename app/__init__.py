@@ -4,7 +4,7 @@ import re
 from urllib.parse import urlparse, urlunparse, unquote
 from datetime import datetime, timezone
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, redirect
 from flask_cors import CORS
 
 # Optional Flask-Migrate
@@ -561,6 +561,11 @@ def create_app():
         app.register_blueprint(routes_bp)  # usually no prefix
     except Exception:
         pass
+
+    @app.get("/")
+    def root_redirect():
+        return redirect("https://andrewdionne.github.io/LearnPolish/", code=302)
+
 
     # Optional local-only init
     if os.getenv("AUTO_INIT_DB", "0").lower() in ("1", "true", "yes"):

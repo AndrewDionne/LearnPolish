@@ -1,1 +1,14 @@
 * text=auto eol=lf
+
+# Binary media (no EOL normalization)
+*.mp3 -text
+*.wav -text
+*.m4a -text
+*.ogg -text
+
+# Text files normalized to LF
+*.html text eol=lf
+*.css  text eol=lf
+*.js   text eol=lf
+*.json text eol=lf
+*.md   text eol=lf

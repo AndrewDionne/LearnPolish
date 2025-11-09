@@ -449,13 +449,15 @@ def _collect_commit_targets(slug: str, modes: list[str]) -> list[Path]:
 
     # Runtime JS helpers (stop 404s) + LFS override
     for p in [
+        Path(".gitattributes"),  # <— root attributes FIRST CLASS citizen
+        PAGES_DIR / "static" / ".gitattributes",
         PAGES_DIR / "static" / "js" / "audio-paths.js",
         PAGES_DIR / "static" / "js" / "flashcards-audio-adapter.js",
         PAGES_DIR / "static" / "js" / "app-config.js",
         PAGES_DIR / "static" / "js" / "api.js",
         PAGES_DIR / "static" / "js" / "session_state.js",
-        PAGES_DIR / "static" / ".gitattributes",
     ]:
+
         if p.exists():
             targets.append(p)
 
@@ -481,6 +483,11 @@ def _run(cmd, cwd, check=True):
     ).stdout
 
 def _prepare_repo(root: Path, token: str, repo_slug: str, branch: str = "main") -> str:
+    # Canonicalize casing for this repo to avoid "repository moved" hints
+    if repo_slug.lower() == "andrewdionne/learnpolish":
+        repo_slug = "AndrewDionne/LearnPolish"
+
+   
     """Ensure identity, remote, and branch are correct for Option B."""
     # 1) identity (ok if already set)
     _run(["git", "config", "--global", "--add", "safe.directory", str(root)], root, check=False)
@@ -632,6 +639,12 @@ def _git_add_commit_push(paths: list[Path], message: str) -> None:
     # ------------------------------------------------------------------
     # Stage aggressively; on failure, fall back to per-path + docs scope
     # ------------------------------------------------------------------
+  
+    # Ensure attributes are staged before any binaries to avoid CRLF warnings
+    attrs_first = [p for p in (".gitattributes", "docs/static/.gitattributes") if p in to_add_rel]
+    if attrs_first:
+        to_add_rel = attrs_first + [p for p in to_add_rel if p not in attrs_first]
+
     try:
         run(["git", "add", "-A", "--"] + to_add_rel)
     except subprocess.CalledProcessError:

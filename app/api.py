@@ -1182,7 +1182,13 @@ def my_ratings(current_user):
     q = Rating.query.filter_by(user_id=current_user.id)
     if set_name:
         q = q.filter_by(set_name=set_name)
-    rows = q.order_by(Rating.updated_at.desc()).limit(200).all()
+    try:
+        rows = q.order_by(Rating.updated_at.desc()).limit(200).all()
+    except OperationalError as e:
+        current_app.logger.warning("DB dropped on my_ratings; retrying once: %s", e)
+        db.session.rollback()
+        rows = q.order_by(Rating.updated_at.desc()).limit(200).all()
+
     return jsonify([{
         "set_name": r.set_name,
         "stars": r.stars,

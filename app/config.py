@@ -181,11 +181,19 @@ class Config:
     # DB URI + robust pool for Render Postgres over SSL
     SQLALCHEMY_DATABASE_URI = DATABASE_URL or "sqlite:///app.db"
     SQLALCHEMY_ENGINE_OPTIONS = {
-        "pool_pre_ping": True,
-        "pool_recycle": 280,
-        "pool_use_lifo": True,
-        "pool_size": int(os.getenv("DB_POOL_SIZE", "5")),
-        "max_overflow": int(os.getenv("DB_MAX_OVERFLOW", "10")),
+        "pool_pre_ping": True,         # validates before use; reconnects if dead
+        "pool_recycle": 280,           # seconds; below common 300s idle kills
+        "pool_size": 5,
+        "max_overflow": 5,
+        "connect_args": {
+            # libpq keepalives (psycopg3 honors these)
+            "keepalives": 1,
+            "keepalives_idle": 30,
+            "keepalives_interval": 10,
+            "keepalives_count": 5,
+            # Render PG usually requires SSL:
+            "sslmode": "require",
+        },
     }
 
     # Email (SMTP)
