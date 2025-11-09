@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>9-11-01 • Learn</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body { font-family: -apple-system,BlinkMacSystemFont, sans-serif; margin:0; padding:20px; background:#f8f9fa; display:flex; flex-direction:column; align-items:center; min-height:100vh; }
+    h1 { font-size:1.5em; margin:0 0 16px; position:relative; width:100%; text-align:center; }
+    .home-btn { position:absolute; right:0; top:0; font-size:1.4em; background:none; border:none; cursor:pointer; }
+
+    .card { width:90%; max-width:360px; height:260px; perspective:1000px; margin:18px auto; }
+    .card-inner {
+      width:100%; height:100%; position:relative; transition:transform .6s; transform-style:preserve-3d;
+      cursor:pointer; box-shadow:0 4px 10px rgba(0,0,0,.1); display:flex; justify-content:center; align-items:center; border-radius:12px;
+    }
+    .card.flipped .card-inner { transform: rotateY(180deg); }
+    .side { position:absolute; width:100%; height:100%; border-radius:12px; padding:20px; backface-visibility:hidden; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; }
+    .front { background:#fff; }
+    .back  { background:#e9ecef; transform:rotateY(180deg); }
+
+    .cue { font-size:1.1em; margin-bottom:12px; }
+    .answer-phrase { font-weight:700; font-size:1.2em; }
+    .answer-pron { font-style:italic; margin-top:4px; }
+
+    .actions { display:flex; gap:8px; margin-top:16px; }
+    .btn-small { padding:8px 12px; font-size:1em; background:#2d6cdf; color:#fff; border:none; border-radius:8px; cursor:pointer; }
+    .btn-green { background:#28a745; }
+
+    .result { margin-top:8px; font-size:.95em; min-height:1.2em; }
+
+    .nav-buttons { display:flex; gap:12px; margin-top:16px; }
+    .nav-button { padding:8px 12px; font-size:1em; background:#007bff; color:#fff; border:none; border-radius:8px; min-width:110px; cursor:pointer; }
+    .nav-button:disabled { background:#aaa; cursor:default; }
+  </style>
+</head>
+<body>
+  <h1>9-11-01 • Learn <button class="home-btn" onclick="goHome()">🏠</button></h1>
+
+  <div class="card" id="cardContainer" aria-live="polite">
+    <div class="card-inner" id="cardInner">
+      <div class="side front" id="frontSide">
+        <div class="cue" id="frontCue"></div>
+        <div class="actions">
+          <button class="btn-small" id="btnSayFront">Say it in Polish</button>
+        </div>
+        <div class="result" id="frontResult"></div>
+      </div>
+      <div class="side back" id="backSide">
+        <div class="answer-phrase" id="answerPhrase"></div>
+        <div class="answer-pron" id="answerPron"></div>
+        <div class="actions">
+          <button class="btn-small btn-green" id="btnPlay">Play</button>
+        </div>
+        <div class="result" id="backResult"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav-buttons">
+    <button id="prevBtn" class="nav-button">Previous</button>
+    <button id="nextBtn" class="nav-button">Next</button>
+  </div>
+
+  <!-- Azure Speech SDK -->
+  <!-- Azure Speech SDK removed: using static MP3 playback only -->
+
+  <!-- Correct relative paths from /flashcards/<class 'set'>/index.html -->
+  <script src="../../static/js/app-config.js"></script>
+  <script src="../../static/js/api.js"></script>
+  <script src="../../static/js/session_state.js"></script>
+  <script src="../../static/js/audio-paths.js"></script>
+
+    <script>
+    // --- Data & state ---
+    const cards = [{"phrase": "Cześć", "meaning": "Hello", "pronunciation": "cheshch", "audio_file": "0_Czesc.mp3"}, {"phrase": "Dziękuję", "meaning": "Thank you", "pronunciation": "jen-koo-yeh", "audio_file": "1_Dziekuje.mp3"}];
+    const setName = "9-11-01";
+    const mode = "flashcards";
+    let currentIndex = 0;
+
+    // Optional CDN manifest (loaded later; safe to be null)
+    let r2Manifest = null;
+
+    // Scoring + points
+    const PASS = 75;
+    const tracker = {
+      attempts: 0,
+      per: {},               // per[idx] = { tries, best, got100BeforeFlip: boolean }
+      perfectNoFlipCount: 0,   // increments when avg==100 before first flip on that card
+    };
+    let hasFlippedCurrent = false;
+
+    // Mirror of Python sanitize_filename (for audio file names)
+    function sanitizeFilename(text) {
+      return (text || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9_-]+/g, "_")
+        .replace(/^_+|_+$/g, "");
+    }
+
+    // Local static fallback (used if no manifest/CDN mapping)
+    function localAudioPath(index) {
+      const e = cards[index] || {};
+      const fn = String(index) + "_" + sanitizeFilename(e.phrase || "") + ".mp3";
+      const setEnc = encodeURIComponent(setName);
+      const fnEnc  = encodeURIComponent(fn);
+
+      // Absolute URL in data wins
+      const explicit = e.audio_url || e.audio;
+      if (explicit && /^https?:\/\//i.test(explicit)) return explicit;
+
+      return `../../static/${setEnc}/audio/${fnEnc}`;
+    }
+
+    function setNavUI() {
+      document.getElementById("prevBtn").disabled = (currentIndex === 0);
+      const nextBtn = document.getElementById("nextBtn");
+      nextBtn.textContent = (currentIndex < cards.length - 1) ? "Next" : "Finish";
+    }
+
+    function renderCard() {
+      const e = cards[currentIndex] || {};
+      // Front
+      document.getElementById("frontCue").textContent = e.meaning || "";
+      document.getElementById("frontResult").textContent = "";
+      // Back
+      document.getElementById("answerPhrase").textContent = e.phrase || "";
+      document.getElementById("answerPron").textContent   = e.pronunciation || "";
+      document.getElementById("backResult").textContent   = "";
+      setNavUI();
+      hasFlippedCurrent = false;  // reset flip flag each card
+    }
+
+    async function assess(referenceText, targetEl) {
+      if (targetEl) targetEl.textContent = "🔇 Pronunciation scoring is temporarily disabled.";
+      return { score: 0 };
+    }
+
+    // Wire up after DOM is ready (prevents null refs)
+    window.addEventListener("DOMContentLoaded", async function() {
+      // Try to load R2 manifest (non-blocking; safe if missing)
+      try {
+        if (window.AudioPaths) {
+          r2Manifest = await AudioPaths.fetchManifest(setName);
+        }
+      } catch (_e) {
+        r2Manifest = null;
+      }
+
+      renderCard();
+
+      // Flip on tap (ignore buttons/result)
+      document.getElementById("cardContainer").addEventListener("click", (e) => {
+        if (e.target.closest("button") || e.target.classList.contains("result")) return;
+        document.getElementById("cardContainer").classList.toggle("flipped");
+        hasFlippedCurrent = true;
+      });
+
+      // Front: Say it
+      document.getElementById("btnSayFront").addEventListener("click", (e) => {
+        e.stopPropagation();
+        const eCard = cards[currentIndex] || {};
+        assess(eCard.phrase || "", document.getElementById("frontResult"));
+      });
+
+      // Back: Play
+      document.getElementById("btnPlay").addEventListener("click", async (e) => {
+        e.stopPropagation();
+        // Prefer manifest/CDN mapping if available; else local static path
+        let src = localAudioPath(currentIndex);
+        try {
+          if (window.AudioPaths) {
+            src = AudioPaths.buildAudioPath(setName, currentIndex, cards[currentIndex], r2Manifest);
+          }
+        } catch (_ignore) {}
+        const audio = new Audio(src);
+        audio.play().catch(()=>{});
+      });
+
+      // Prev / Next / Finish
+      document.getElementById("prevBtn").addEventListener("click", () => {
+        if (currentIndex > 0) {
+          currentIndex--;
+          renderCard();
+          if (window.SessionSync) SessionSync.save({ setName, mode, progress: { index: currentIndex, per: tracker.per } });
+        }
+      });
+
+      document.getElementById("nextBtn").addEventListener("click", async () => {
+        if (currentIndex < cards.length - 1) {
+          currentIndex++;
+          renderCard();
+          if (window.SessionSync) SessionSync.save({ setName, mode, progress: { index: currentIndex, per: tracker.per } });
+        } else {
+          // FINISH
+          const totalCards = Math.max(1, cards.length);
+          const correct = Object.values(tracker.per).filter(r => (r?.best || 0) >= PASS).length;
+          const scorePct = Math.round((correct / totalCards) * 100);
+
+          // Points:
+          //  - base 10 for finishing
+          //  - +1 per 100%-before-first-flip
+          //  - if score==100, 2x the total
+          let pointsTotal = 10 + tracker.perfectNoFlipCount;
+          if (scorePct === 100) pointsTotal = pointsTotal * 2;
+
+          // Cache locally for summary
+          try {
+            localStorage.setItem("lp_last_result_" + setName, JSON.stringify({
+              score: scorePct,
+              attempts: tracker.attempts,
+              total: totalCards,
+              points_total: pointsTotal,
+              perfect_before_flip: tracker.perfectNoFlipCount
+            }));
+          } catch (_ignore) {}
+
+          // Submit to server
+          let awarded = null;
+          try {
+            const resp = await api.fetch("/api/submit_score", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                set_name: setName,
+                mode: "flashcards",
+                score: scorePct,
+                attempts: tracker.attempts,
+                details: {
+                  per: tracker.per,
+                  total: totalCards,
+                  perfect_before_flip: tracker.perfectNoFlipCount,
+                  points_total: pointsTotal
+                }
+              })
+            });
+            if (resp.ok) {
+              const js = await resp.json();
+              awarded = (js && js.details && js.details.points_awarded != null)
+                ? Number(js.details.points_awarded) : null;
+            }
+          } catch (_ignore) {}
+
+          // Clear session state & go to summary
+          try { if (window.SessionSync) await SessionSync.complete({ setName, mode }); } catch(_ignore) {}
+          try { localStorage.removeItem("lp_last"); } catch(_ignore) {}
+          const q = awarded != null ? ("?awarded=" + encodeURIComponent(awarded)) : "";
+          window.location.href = "summary.html" + q;
+        }
+      });
+
+      // Resume mid-set if ?resume=1
+      (async () => {
+        const wantResume = new URL(location.href).searchParams.get("resume") === "1";
+        if (wantResume && window.SessionSync) {
+          await SessionSync.restore({ setName, mode }, (progress) => {
+            if (progress && Number.isFinite(progress.index)) {
+              currentIndex = Math.max(0, Math.min(cards.length - 1, progress.index));
+            }
+            if (progress && progress.per) Object.assign(tracker.per, progress.per);
+            renderCard();
+          });
+        }
+        // Always record "last activity" (Home "Continue" fallback)
+        try { localStorage.setItem("lp_last", JSON.stringify({ set_name:setName, mode, ts: Date.now() })); } catch(_ignore) {}
+      })();
+    });
+
+    function goHome() { window.location.href = "../../index.html"; }
+  </script>
+
+</body>
+</html>
