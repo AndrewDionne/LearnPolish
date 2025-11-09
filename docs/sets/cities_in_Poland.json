@@ -1,0 +1,160 @@
+{
+  "name": "cities_in_Poland",
+  "modes": [
+    "learn",
+    "speak"
+  ],
+  "meta": {
+    "modes": [
+      "learn",
+      "speak"
+    ]
+  },
+  "cards": [
+    {
+      "phrase": "Warszawa",
+      "meaning": "Warsaw",
+      "pronunciation": "var-SHAH-vah"
+    },
+    {
+      "phrase": "Kraków",
+      "meaning": "Krakow",
+      "pronunciation": "KRAH-koof"
+    },
+    {
+      "phrase": "Łódź",
+      "meaning": "Lodz",
+      "pronunciation": "WOODJ"
+    },
+    {
+      "phrase": "Wrocław",
+      "meaning": "Wroclaw",
+      "pronunciation": "VROTS-wav"
+    },
+    {
+      "phrase": "Poznań",
+      "meaning": "Poznan",
+      "pronunciation": "POHZ-nan"
+    },
+    {
+      "phrase": "Gdańsk",
+      "meaning": "Gdansk",
+      "pronunciation": "GDAN-sk"
+    },
+    {
+      "phrase": "Szczecin",
+      "meaning": "Szczecin",
+      "pronunciation": "SHTCHEH-cheen"
+    },
+    {
+      "phrase": "Bydgoszcz",
+      "meaning": "Bydgoszcz",
+      "pronunciation": "BID-goshch"
+    },
+    {
+      "phrase": "Lublin",
+      "meaning": "Lublin",
+      "pronunciation": "LOO-blin"
+    },
+    {
+      "phrase": "Białystok",
+      "meaning": "Bialystok",
+      "pronunciation": "BYAH-wi-stok"
+    },
+    {
+      "phrase": "Katowice",
+      "meaning": "Katowice",
+      "pronunciation": "kah-toh-VEE-tseh"
+    },
+    {
+      "phrase": "Gdynia",
+      "meaning": "Gdynia",
+      "pronunciation": "GDI-nyah"
+    },
+    {
+      "phrase": "Częstochowa",
+      "meaning": "Czestochowa",
+      "pronunciation": "CHEN-sto-ho-vah"
+    },
+    {
+      "phrase": "Radom",
+      "meaning": "Radom",
+      "pronunciation": "RAH-dom"
+    },
+    {
+      "phrase": "Sosnowiec",
+      "meaning": "Sosnowiec",
+      "pronunciation": "SOSH-no-vyets"
+    },
+    {
+      "phrase": "Toruń",
+      "meaning": "Torun",
+      "pronunciation": "TOH-roon"
+    },
+    {
+      "phrase": "Rzeszów",
+      "meaning": "Rzeszow",
+      "pronunciation": "ZHEH-shoof"
+    },
+    {
+      "phrase": "Kielce",
+      "meaning": "Kielce",
+      "pronunciation": "KYEL-tseh"
+    },
+    {
+      "phrase": "Olsztyn",
+      "meaning": "Olsztyn",
+      "pronunciation": "OL-shtin"
+    },
+    {
+      "phrase": "Opole",
+      "meaning": "Opole",
+      "pronunciation": "OH-poh-leh"
+    },
+    {
+      "phrase": "Elbląg",
+      "meaning": "Elblag",
+      "pronunciation": "EL-blong"
+    },
+    {
+      "phrase": "Płock",
+      "meaning": "Plock",
+      "pronunciation": "PWOTS-k"
+    },
+    {
+      "phrase": "Zielona Góra",
+      "meaning": "Zielona Gora",
+      "pronunciation": "zyeh-LOH-nah GOO-rah"
+    },
+    {
+      "phrase": "Tychy",
+      "meaning": "Tychy",
+      "pronunciation": "TIH-khy"
+    },
+    {
+      "phrase": "Koszalin",
+      "meaning": "Koszalin",
+      "pronunciation": "KOH-shah-leen"
+    },
+    {
+      "phrase": "Kalisz",
+      "meaning": "Kalisz",
+      "pronunciation": "KAH-lish"
+    },
+    {
+      "phrase": "Legnica",
+      "meaning": "Legnica",
+      "pronunciation": "LEG-nee-tsah"
+    },
+    {
+      "phrase": "Grudziądz",
+      "meaning": "Grudziadz",
+      "pronunciation": "GROO-jondz"
+    },
+    {
+      "phrase": "Jaworzno",
+      "meaning": "Jaworzno",
+      "pronunciation": "YAH-vozh-no"
+    }
+  ]
+}
