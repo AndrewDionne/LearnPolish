@@ -172,88 +172,106 @@ def generate_flashcard_html(set_name, data):
     }}
 
     async function assess(referenceText, targetEl) {{
-      try {{
-        if (!window.SpeechSDK) {{
-          if (targetEl) targetEl.textContent = "⚠️ Speech SDK not loaded.";
-          return {{ score: 0, error: "sdk_not_loaded" }};
-        }}
-        if (!referenceText || !referenceText.trim()) {{
-          if (targetEl) targetEl.textContent = "⚠️ No reference text.";
-          return {{ score: 0, error: "no_reference" }};
-        }}
-
-        if (targetEl) targetEl.textContent = "🎤 Listening…";
-
-        // Get short-lived token
-        const tok = await api.get('/api/speech_token', {{ noAuth: true }});
-
-        const token = tok && (tok.token || tok.access_token);
-        const region = tok && tok.region;
-        if (!token || !region) {{
-          if (targetEl) targetEl.textContent = "⚠️ Could not get speech token.";
-          return {{ score: 0, error: "no_token" }};
-        }}
-
-        // Build Speech config
-        const speechConfig = SpeechSDK.SpeechConfig.fromAuthorizationToken(token, region);
-        speechConfig.speechRecognitionLanguage = "pl-PL";
-
-        // Pronunciation config
-        const paConfig = new SpeechSDK.PronunciationAssessmentConfig(
-          referenceText,
-          SpeechSDK.PronunciationAssessmentGradingSystem.HundredMark,
-          SpeechSDK.PronunciationAssessmentGranularity.Phoneme,
-          true // enable miscue
-        );
-        // Optional tuning:
-        // paConfig.enableProsodyAssessment = true;
-
-        const audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
-        const recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
-        paConfig.applyTo(recognizer);
-
-        const result = await new Promise((resolve, reject) => {{
-          recognizer.recognizeOnceAsync(resolve, reject);
-        }});
-        try {{
-          const dbg =
-            result?.properties?.getProperty(SpeechSDK.PropertyId.SpeechServiceResponse_JsonResult)
-            || result?.privPronunciationAssessmentJson;
-          console.debug('PA raw:', dbg);
-        }} catch {{}}
-
-        recognizer.close();
-
-        // Parse score from service JSON
-        let score = 0;
-        try {{
-          // two possible locations depending on SDK/version
-          let raw = result && (
-            result.properties?.getProperty(SpeechSDK.PropertyId.SpeechServiceResponse_JsonResult) ||
-            result.privPronunciationAssessmentJson
-          );
-          const j = raw ? JSON.parse(raw) : null;
-
-          // Prefer NBest path; fallback to top-level
-          score =
-            Math.round(
-              (j?.NBest?.[0]?.PronunciationAssessment?.AccuracyScore) ??
-              (j?.PronunciationAssessment?.AccuracyScore) ??
-              0
-            );
-        }} catch (_e) {{
-          score = 0;
-        }}
-
-        if (targetEl) targetEl.textContent = (score ? `✅ ${{score}}%` : "⚠️ No score");
-        return {{ score }};
-      }} catch (e) {{
-        console.error("assess() error:", e);
-        if (targetEl) targetEl.textContent = "⚠️ Speech error";
-        return {{ score: 0, error: String(e) }};
-      }}
+  try {{
+    if (!window.SpeechSDK) {{
+      if (targetEl) targetEl.textContent = "⚠️ Speech SDK not loaded.";
+      return {{ score: 0, error: "sdk_not_loaded" }};
+    }}
+    if (!referenceText || !referenceText.trim()) {{
+      if (targetEl) targetEl.textContent = "⚠️ No reference text.";
+      return {{ score: 0, error: "no_reference" }};
     }}
 
+    if (targetEl) targetEl.textContent = "🎤 Listening… (~2s)";
+
+    // --- Token (cache it; use api.fetch) ---
+    async function getSpeechToken() {{
+      const c = window.__speechTok;
+      if (c && c.exp > Date.now()) return c;
+      try {{
+        const r = await api.fetch("/api/speech_token");
+        const t = r.ok ? await r.json() : null;
+        const token  = t && (t.token || t.access_token);
+        const region = t && (t.region || t.location || t.regionName);
+        const ttlMs  = Math.max(30_000, ((t && t.expires_in ? t.expires_in : 540) * 1000) - 15_000);
+        window.__speechTok = {{ token, region, exp: Date.now() + ttlMs }};
+        return window.__speechTok;
+      }} catch (_e) {{
+        return null;
+      }}
+    }}
+    const tok = await getSpeechToken();
+    if (!tok || !tok.token || !tok.region) {{
+      if (targetEl) targetEl.textContent = "⚠️ Could not get speech token.";
+      return {{ score: 0, error: "no_token" }};
+    }}
+
+    // --- Speech config with short silence timeouts ---
+    const speechConfig = SpeechSDK.SpeechConfig.fromAuthorizationToken(tok.token, tok.region);
+    speechConfig.speechRecognitionLanguage = "pl-PL";
+    speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, "1200");
+    speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "500");
+
+    // Faster settings: Word granularity, miscue off
+    const paConfig = new SpeechSDK.PronunciationAssessmentConfig(
+      referenceText,
+      SpeechSDK.PronunciationAssessmentGradingSystem.HundredMark,
+      SpeechSDK.PronunciationAssessmentGranularity.Word,
+      false
+    );
+
+    const audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
+    const recognizer  = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
+    paConfig.applyTo(recognizer);
+
+    // --- Absolute guard: cap capture time ---
+    const MAX_LISTEN_MS = 1800;
+    let finished = false;
+    const result = await new Promise((resolve) => {{
+      const guard = setTimeout(() => {{
+        if (finished) return;
+        finished = true;
+        try {{ recognizer.close(); }} catch {{}}
+        resolve({{ __timeout: true }});
+      }}, MAX_LISTEN_MS + 400);
+
+      recognizer.recognizeOnceAsync(
+        (res) => {{ if (finished) return; finished = true; clearTimeout(guard); resolve(res); }},
+        (err) => {{ if (finished) return; finished = true; clearTimeout(guard); resolve({{ __error: err }}); }}
+      );
+    }});
+
+    try {{ recognizer.close(); }} catch {{}}
+
+    if (result.__timeout) {{
+      if (targetEl) targetEl.textContent = "⏱️ Too long—try again (shorter).";
+      return {{ score: 0, error: "timeout" }};
+    }}
+    if (result.__error) {{
+      if (targetEl) targetEl.textContent = "⚠️ Speech error";
+      return {{ score: 0, error: String(result.__error) }};
+    }}
+
+    // --- Parse score from service JSON ---
+    let score = 0;
+    try {{
+      let raw = result.properties?.getProperty(SpeechSDK.PropertyId.SpeechServiceResponse_JsonResult)
+             || result.privPronunciationAssessmentJson;
+      const j = raw ? JSON.parse(raw) : null;
+      score = Math.round(
+        (j?.NBest?.[0]?.PronunciationAssessment?.AccuracyScore) ??
+        (j?.PronunciationAssessment?.AccuracyScore) ?? 0
+      );
+    }} catch (_e) {{}}
+
+    if (targetEl) targetEl.textContent = (score ? `✅ ${{score}}%` : "⚠️ No score");
+    return {{ score }};
+  }} catch (e) {{
+    console.error("assess() error:", e);
+    if (targetEl) targetEl.textContent = "⚠️ Speech error";
+    return {{ score: 0, error: String(e) }};
+  }}
+}}
 
     // Wire up after DOM is ready (prevents null refs)
     window.addEventListener("DOMContentLoaded", async function() {{

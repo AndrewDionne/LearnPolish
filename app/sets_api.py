@@ -919,6 +919,12 @@ def create_set(current_user):
     set_name = (body.get("set_name") or "").strip()
     items = body.get("data")
 
+    tts_req = body.get("tts") or {}
+    tts_provider = (tts_req.get("provider") or "").strip().lower()
+    tts_voice    = (tts_req.get("voice") or "").strip()
+    if tts_provider not in ("azure", "gtts", ""):
+        return jsonify({"message": "tts.provider must be 'azure' or 'gtts'"}), 400
+
     # ---- validation ----
     if set_type not in SET_TYPES:
         return jsonify({"message": f"Invalid set_type. Allowed: {sorted(SET_TYPES)}"}), 400
@@ -977,22 +983,6 @@ def create_set(current_user):
         if existed:
             _regen_pages_for_slug(safe_name, gen_modes)
 
-            # Generate / refresh audio (best-effort) from current JSON on disk
-            try:
-                _items = _load_cards_for_slug(safe_name)
-                if _items:
-                    _generate_tts_audio_for_set(safe_name, _items)
-            except Exception as _e:
-                current_app.logger.warning("audio gen skipped/failed for %s: %s", safe_name, _e)
-
-            # Optional: attempt R2 upload for audio (never blocks)
-            try:
-                _maybe_upload_set_audio_to_r2(safe_name)
-
-            except Exception as _e:
-                current_app.logger.warning("R2 upload skipped/failed for %s: %s", safe_name, _e)
-
-            
             # best-effort index rebuilds
             try:
                 build_all_mode_indexes()
@@ -1019,6 +1009,25 @@ def create_set(current_user):
 
         # ---------- NEW CREATE ----------
         meta = util_create_set(set_type, safe_name, items)
+
+        # If client provided tts prefs, merge into the JSON's meta.tts
+        if tts_provider or tts_voice:
+            try:
+                from .sets_utils import _set_file_path as _set_fp
+                p = _set_fp(safe_name)
+                j = json.loads(p.read_text(encoding="utf-8"))
+                meta_obj = j.get("meta") or {}
+                tts_obj  = meta_obj.get("tts") or {}
+                if tts_provider:
+                    tts_obj["provider"] = tts_provider
+                if tts_voice:
+                    tts_obj["voice"] = tts_voice
+                meta_obj["tts"] = tts_obj
+                j["meta"] = meta_obj
+                p.write_text(json.dumps(j, ensure_ascii=False, indent=2), encoding="utf-8")
+            except Exception as _e:
+                current_app.logger.warning("Could not persist tts prefs into set JSON for %s: %s", safe_name, _e)
+
 
         # link user as owner (idempotent)
         link = UserSet.query.filter_by(user_id=current_user.id, set_name=safe_name).first()

@@ -368,8 +368,8 @@ def _ensure_system_audio() -> None:
 # ---------------- Local audio generation ------------------------------------
 
 def _ensure_flashcard_audio(set_name: str, data: List[Dict[str, Any]]) -> None:
-    # Use _tts_to_mp3 (Azure REST if configured, else gTTS fallback). No pre-checks here.
-
+    # Resolve provider/voice once per set
+    provider, voice = _get_tts_prefs(set_name)
 
     audio_dir = STATIC_DIR / set_name / "audio"
     audio_dir.mkdir(parents=True, exist_ok=True)
@@ -385,12 +385,13 @@ def _ensure_flashcard_audio(set_name: str, data: List[Dict[str, Any]]) -> None:
         if out.exists():
             continue
         try:
-            _tts_to_mp3(phrase, out)
+            _tts_to_mp3(phrase, out, provider=provider, voice=voice)
         except Exception as e:
             print(f"⚠️ Failed to create TTS for '{phrase}': {e}")
 
 def _ensure_reading_audio(set_name: str, data: List[Dict[str, Any]]) -> None:
-    # Use _tts_to_mp3 (Azure REST if configured, else gTTS fallback). No pre-checks here.
+    # Resolve provider/voice once per set
+    provider, voice = _get_tts_prefs(set_name)
 
     audio_dir = STATIC_DIR / set_name / "reading"
     audio_dir.mkdir(parents=True, exist_ok=True)
@@ -405,7 +406,7 @@ def _ensure_reading_audio(set_name: str, data: List[Dict[str, Any]]) -> None:
         if out.exists():
             continue
         try:
-            _tts_to_mp3(polish, out)
+            _tts_to_mp3(polish, out, provider=provider, voice=voice)
 
         except Exception as e:
             print(f"⚠️ Failed to create reading TTS for idx {i}: {e}")
