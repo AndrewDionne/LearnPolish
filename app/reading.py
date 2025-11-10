@@ -25,13 +25,14 @@ def generate_reading_html(set_name, data=None):
             raise FileNotFoundError(f"No set JSON for reading: {sets_file}")
         data = json.loads(sets_file.read_text(encoding="utf-8"))
 
-    passages_json = json.dumps(data, ensure_ascii=False).replace("</", "<\\/")
+    passages_json = json.dumps(data, ensure_ascii=False).replace(r"</", r"<\/")
 
     html = f"""<!DOCTYPE html>
 <html lang="pl">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/svg+xml" href="../../static/brand.svg" />
 <title>Reading · {set_name}</title>
 <style>
   body {{ font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif; margin: 24px; max-width: 900px; }}

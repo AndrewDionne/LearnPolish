@@ -35,6 +35,7 @@ def generate_practice_html(set_name, data):
   <meta charset="UTF-8" />
   <title>{set_name} • Speak</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/svg+xml" href="../../static/brand.svg" />
   <style>
     body {{
       font-family: -apple-system, BlinkMacSystemFont, sans-serif;

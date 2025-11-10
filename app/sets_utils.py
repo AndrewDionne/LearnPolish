@@ -98,7 +98,7 @@ def _tts_to_mp3(text: str, out_path: Path, *, voice: str | None = None) -> bool:
             import requests  # type: ignore
             key    = os.getenv("AZURE_SPEECH_KEY")
             region = os.getenv("AZURE_SPEECH_REGION")
-            voice  = voice or os.getenv("AZURE_TTS_VOICE", "pl-PL-ZofiaNeural")
+            voice  = voice or os.getenv("AZURE_TTS_VOICE", "pl-PL-MarekNeural")
             url    = f"https://{region}.tts.speech.microsoft.com/cognitiveservices/v1"
             ssml   = f"<speak version='1.0' xml:lang='pl-PL'><voice xml:lang='pl-PL' xml:gender='Female' name='{voice}'>{t}</voice></speak>"
             headers = {

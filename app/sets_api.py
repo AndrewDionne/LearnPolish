@@ -10,7 +10,7 @@ import json
 # Optional R2 (non-blocking)
 try:
     import boto3
-    from botocore.client import Config as BotoConfig
+    from botocore.config import Config as BotoConfig
 except Exception:  # boto3 not installed or blocked
     boto3 = None
     BotoConfig = None
@@ -255,12 +255,13 @@ def _ensure_static_runtime_files() -> list[Path]:
 # Optional Cloudflare R2 upload (non-blocking). Falls back to GH Pages local.
 # -----------------------------------------------------------------------------
 def _r2_env_ok() -> bool:
-    return (
+    ak = os.getenv("R2_ACCESS_KEY_ID") or os.getenv("R2_ACCESS_KEY")
+    sk = os.getenv("R2_SECRET_ACCESS_KEY") or os.getenv("R2_SECRET_KEY")
+    return bool(
         boto3 is not None and
         os.getenv("R2_ENDPOINT") and
         os.getenv("R2_BUCKET") and
-        os.getenv("R2_ACCESS_KEY") and
-        os.getenv("R2_SECRET_KEY")
+        ak and sk
     )
 
 def _r2_public_base() -> str | None:
@@ -277,14 +278,17 @@ def _try_upload_to_r2(local_path: Path, bucket_key: str) -> bool:
     try:
         if not _r2_env_ok() or not local_path.exists():
             return False
+        ak = os.getenv("R2_ACCESS_KEY_ID") or os.getenv("R2_ACCESS_KEY")
+        sk = os.getenv("R2_SECRET_ACCESS_KEY") or os.getenv("R2_SECRET_KEY")
         s3 = boto3.client(
             "s3",
             endpoint_url=os.environ["R2_ENDPOINT"],
-            aws_access_key_id=os.environ["R2_ACCESS_KEY"],
-            aws_secret_access_key=os.environ["R2_SECRET_KEY"],
+            aws_access_key_id=ak,
+            aws_secret_access_key=sk,
             region_name=os.getenv("R2_REGION", "auto"),
             config=BotoConfig(signature_version="s3v4", s3={"addressing_style": "virtual"})
         )
+
         
         # naive content-type from extension
         ext = local_path.suffix.lower()
@@ -295,8 +299,8 @@ def _try_upload_to_r2(local_path: Path, bucket_key: str) -> bool:
                 Key=bucket_key,
                 Body=f,
                 ContentType=ctype,
-                ACL="public-read",
             )
+
         return True
     except Exception as e:
         try:

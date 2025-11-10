@@ -230,7 +230,7 @@ def generate_listening_html(set_name: str, data=None):
         data = _load_listening_data(set_name)
 
     dialogues = normalize_listening_items(set_name, data)
-    dlg_json = json.dumps(dialogues, ensure_ascii=False).replace("</", "<\\/")
+    dlg_json = json.dumps(dialogues, ensure_ascii=False).replace(r"</", r"<\/")
 
     title = f"{_esc(set_name)} • Listening"
 

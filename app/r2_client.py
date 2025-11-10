@@ -19,10 +19,10 @@ def _env(name: str, default: str | None = None) -> Optional[str]:
 # ---- Canonical env (aliases already bridged in __init__.py) ----
 R2_ENDPOINT = _env("R2_ENDPOINT")
 R2_BUCKET = _env("R2_BUCKET")
-R2_ACCESS_KEY_ID = _env("R2_ACCESS_KEY_ID")
-R2_SECRET_ACCESS_KEY = _env("R2_SECRET_ACCESS_KEY")
+R2_ACCESS_KEY_ID = _env("R2_ACCESS_KEY_ID") or _env("R2_ACCESS_KEY")
+R2_SECRET_ACCESS_KEY = _env("R2_SECRET_ACCESS_KEY") or _env("R2_SECRET_KEY")
 R2_REGION = _env("R2_REGION", "auto")  # R2 ignores region, but boto3 wants something
-R2_CDN_BASE = _env("R2_CDN_BASE")  # can be your *.r2.dev or CDN domain
+R2_CDN_BASE = _env("R2_CDN_BASE") or _env("R2_PUBLIC_BASE") # can be your *.r2.dev or CDN domain
 
 _enabled = bool(
     boto3

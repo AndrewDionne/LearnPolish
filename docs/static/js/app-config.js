@@ -38,3 +38,17 @@
   }
   window.APP_CONFIG = cfg;
 })();
+
+// --- Ensure a favicon is present on every page ---
+(function () {
+  try {
+    if (!document.querySelector("link[rel='icon']")) {
+      var root = (location.pathname.indexOf('/LearnPolish/') === 0) ? '/LearnPolish' : '';
+      var link = document.createElement('link');
+      link.setAttribute('rel', 'icon');
+      link.setAttribute('type', 'image/svg+xml');
+      link.setAttribute('href', root + '/static/brand.svg');
+      document.head.appendChild(link);
+    }
+  } catch (_) {}
+})();

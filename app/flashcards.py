@@ -31,7 +31,7 @@ def generate_flashcard_html(set_name, data):
         except Exception:
             entry["audio_file"] = f"{idx}_.mp3"
 
-    cards_json = json.dumps(data, ensure_ascii=False).replace("</", "<\\/")
+    cards_json = json.dumps(data, ensure_ascii=False).replace(r"</", r"<\/")
 
     # --------- LEARN PAGE (index.html) ----------
     html = f"""<!DOCTYPE html>
@@ -40,6 +40,7 @@ def generate_flashcard_html(set_name, data):
   <meta charset="UTF-8" />
   <title>{set_name} • Learn</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/svg+xml" href="../../static/brand.svg" />
   <style>
     body {{ font-family: -apple-system,BlinkMacSystemFont, sans-serif; margin:0; padding:20px; background:#f8f9fa; display:flex; flex-direction:column; align-items:center; min-height:100vh; }}
     h1 {{ font-size:1.5em; margin:0 0 16px; position:relative; width:100%; text-align:center; }}
@@ -214,6 +215,12 @@ def generate_flashcard_html(set_name, data):
         const result = await new Promise((resolve, reject) => {{
           recognizer.recognizeOnceAsync(resolve, reject);
         }});
+        try {{
+          const dbg =
+            result?.properties?.getProperty(SpeechSDK.PropertyId.SpeechServiceResponse_JsonResult)
+            || result?.privPronunciationAssessmentJson;
+          console.debug('PA raw:', dbg);
+        }} catch {{}}
 
         recognizer.close();
 
@@ -393,6 +400,8 @@ def generate_flashcard_html(set_name, data):
   <meta charset="UTF-8" />
   <title>{set_name} • Results</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/svg+xml" href="../../static/brand.svg" />
+
   <style>
     body {{ font-family: -apple-system,BlinkMacSystemFont, sans-serif; margin:0; padding:24px; background:#f8f9fa; display:flex; justify-content:center; }}
     .card {{ background:#fff; border:1px solid #e6e6ef; border-radius:12px; padding:20px; box-shadow:0 1px 2px rgba(8,15,52,.04); width:100%; max-width:560px; }}
