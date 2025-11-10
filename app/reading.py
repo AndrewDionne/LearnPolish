@@ -12,7 +12,6 @@ def generate_reading_html(set_name, data=None):
       - “Start Reading” uses Azure Pronunciation Assessment (word-level).
       - “Listen (Polish)” plays docs/static/<set>/reading/<idx>.mp3 or CDN via manifest.
       - Graceful fallback if token/SDK is unavailable.
-
     """
     out_dir = PAGES_DIR / "reading" / set_name
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -55,7 +54,6 @@ def generate_reading_html(set_name, data=None):
   audio {{ display:none; }}
   a.home {{ position:absolute; right:16px; top:16px; text-decoration:none; background:#007bff; color:#fff; padding:6px 10px; border-radius:8px; }}
 </style>
-<!-- Azure Speech SDK enabled via https://aka.ms/csspeech/jsbrowserpackageraw -->
 
 <!-- Config + helper scripts (relative to docs/reading/<set>/index.html) -->
 <script src="../../static/js/app-config.js"></script>
@@ -95,29 +93,39 @@ def generate_reading_html(set_name, data=None):
 <script>
 const passages = {passages_json};
 const setName = "{set_name}";
-
-// Recognition enabled on front-end (SDK loaded in <head>)
 const SpeechSDK = window.SpeechSDK;
 
 let currentIndex = 0;
 let recognizer = null;
 let mediaRecorder = null;
 let recordedChunks = [];
-let replayUrl = null; // revoke old blobs to avoid leaks
+let replayUrl = null;
 let startTime = 0;
 let wordsSpans = [];
 let wordsMeta = []; // {{ text, idx, score }}
-
-// Manifest disabled (local static only)
-let r2Manifest = null;
+let r2Manifest = null; // optional CDN manifest
 
 // ---------- Helpers ----------
 function byId(id) {{ return document.getElementById(id); }}
+function _norm(s) {{ return (s || "").normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase(); }}
 
-async function loadR2Manifest() {{
-  // No manifest/CDN: use local static files only.
-  r2Manifest = null;
-  assetsCDNBase = null;
+async function prewarmMic() {{
+  try {{
+    if (!navigator.mediaDevices?.getUserMedia) return;
+    const stream = await navigator.mediaDevices.getUserMedia({{ audio: true }});
+    stream.getTracks().forEach(tr => tr.stop());
+    try {{
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (Ctx) {{
+        const ctx = new Ctx();
+        await ctx.resume();
+        await new Promise(r => setTimeout(r, 30));
+        await ctx.close();
+      }}
+    }} catch(_){{
+    }}
+  }} catch(_){{
+  }}
 }}
 
 function populateSelect() {{
@@ -141,7 +149,10 @@ function renderPassage(i) {{
   wordsSpans = [];
   wordsMeta = [];
 
-  const tokens = (p.polish || "").split(/\\s+/).filter(Boolean);
+  const tokens = (p.polish || "")
+    .replace(/[.,!?;:()„”"'’]/g, " ")
+    .split(/\\s+/).filter(Boolean);
+
   tokens.forEach((w, idx) => {{
     const span = document.createElement("span");
     span.className = "word";
@@ -166,7 +177,7 @@ function colorByScore(s) {{
 
 function highlightWord(idx, cls="active") {{
   wordsSpans.forEach(s => s.classList.remove("active"));
-  if (idx >=0 && idx < wordsSpans.length) {{
+  if (idx >= 0 && idx < wordsSpans.length) {{
     wordsSpans[idx].classList.add(cls);
     wordsSpans[idx].scrollIntoView({{ block:"center", inline:"nearest", behavior:"smooth" }});
   }}
@@ -191,15 +202,17 @@ function updateStats(final=false) {{
   `;
 }}
 
-// ---- Speech helpers (enabled) ----
-function _norm(s) {{
-  return (s || "").normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase();
-}}
-
+// ---------- Azure token + config ----------
 async function fetchToken() {{
+  const c = window.__speechTok;
+  if (c && c.exp > Date.now()) return c;
   const tok = await api.get('/api/speech_token', {{ noAuth: true }});
-
-  return {{ token: tok && (tok.token || tok.access_token), region: tok && tok.region }};
+  const token  = tok && (tok.token || tok.access_token);
+  const region = tok && (tok.region || tok.location || tok.regionName);
+  if (!token || !region) return {{ token:null, region:null }};
+  const ttlMs = Math.max(60_000, ((tok && tok.expires_in ? tok.expires_in : 540) * 1000) - 30_000);
+  window.__speechTok = {{ token, region, exp: Date.now() + ttlMs }};
+  return window.__speechTok;
 }}
 
 async function speechConfig() {{
@@ -208,11 +221,15 @@ async function speechConfig() {{
   if (!t.token || !t.region) throw new Error("no_token");
   const cfg = SpeechSDK.SpeechConfig.fromAuthorizationToken(t.token, t.region);
   cfg.speechRecognitionLanguage = "pl-PL";
+  // Detailed JSON + word timestamps
+  cfg.outputFormat = SpeechSDK.OutputFormat.Detailed;
+  cfg.setProperty(SpeechSDK.PropertyId.SpeechServiceResponse_RequestDetailedResultTrueFalse, "true");
+  cfg.setProperty(SpeechSDK.PropertyId.SpeechServiceResponse_RequestWordLevelTimestamps, "true");
+  // Slightly forgiving silence windows for continuous mode
+  cfg.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, "2000");
+  cfg.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "800");
   return cfg;
 }}
-
-// Optional; we keep it for future TTS integration (unused right now)
-async function speakPolish(_text) {{ return; }}
 
 async function setupRecognizer(referenceText) {{
   const cfg = await speechConfig();
@@ -231,24 +248,16 @@ async function setupRecognizer(referenceText) {{
   return rec;
 }}
 
-/**
- * Map Azure word-by-word scores onto our passage tokens.
- * Strategy:
- *   - Walk forward through the passage tokens.
- *   - For each recognized word, try to match (normalized) to next tokens.
- *   - On match, assign score and advance pointer.
- */
+// ---------- Scoring plumbing ----------
 function attachRecognitionHandlers(recognizer, passageText) {{
   startTime = Date.now();
-
-  let nextPtr = 0; // next token index to try to match
+  let nextPtr = 0;
   const maxLookahead = 4;
 
   function applyScoresFromJson(j) {{
     const nbest0 = j?.NBest?.[0];
     const words = nbest0?.Words || [];
     if (!words.length) {{
-      // Fallback: smear overall accuracy if available
       const acc = Math.round(
         (nbest0?.PronunciationAssessment?.AccuracyScore) ??
         (j?.PronunciationAssessment?.AccuracyScore) ?? 0
@@ -266,13 +275,11 @@ function attachRecognitionHandlers(recognizer, passageText) {{
       return;
     }}
 
-    // Assign scores by greedy forward matching
     for (const w of words) {{
-      const wText = _norm(w.Word || w.word || "");
+      const wText = _norm(w.Word || w.word || w.Display || "");
       const wScore = Math.round(w?.PronunciationAssessment?.AccuracyScore ?? 0);
       if (!wText) continue;
 
-      // find a match among the next few tokens
       let matched = -1;
       for (let k = 0; k < maxLookahead && (nextPtr + k) < wordsMeta.length; k++) {{
         const candidateIdx = nextPtr + k;
@@ -281,14 +288,12 @@ function attachRecognitionHandlers(recognizer, passageText) {{
       }}
 
       if (matched >= 0) {{
-        // fill any gaps (unmatched tokens) with 0 to keep UI honest
         while (nextPtr < matched) {{
           if (wordsMeta[nextPtr].score == null) wordsMeta[nextPtr].score = 0;
           wordsSpans[nextPtr].classList.remove("w-good","w-mid","w-bad");
           wordsSpans[nextPtr].classList.add(colorByScore(0));
           nextPtr++;
         }}
-        // assign score to the matched token
         wordsMeta[matched].score = wScore;
         wordsSpans[matched].classList.remove("w-good","w-mid","w-bad");
         wordsSpans[matched].classList.add(colorByScore(wScore));
@@ -296,31 +301,34 @@ function attachRecognitionHandlers(recognizer, passageText) {{
       }}
     }}
 
-    // advance highlight to next token
     highlightWord(nextPtr);
     updateStats();
   }}
 
+  function parseAnyResult(res) {{
+    try {{
+      const rawPA  = res?.result?.privPronunciationAssessmentJson || res?.privPronunciationAssessmentJson;
+      const rawSTT = res?.result?.properties?.getProperty(SpeechSDK.PropertyId.SpeechServiceResponse_JsonResult);
+      const raw = rawPA || rawSTT;
+      if (!raw) return null;
+      return JSON.parse(raw);
+    }} catch (_) {{
+      return null;
+    }}
+  }}
+
   recognizer.recognizing = (s, e) => {{
     byId("status").textContent = "🎙 Listening…";
-    try {{
-      const raw = e?.result?.properties?.getProperty(SpeechSDK.PropertyId.SpeechServiceResponse_JsonResult);
-      if (!raw) return;
-      const j = JSON.parse(raw);
-      applyScoresFromJson(j);
-    }} catch (_e) {{}}
+    const j = parseAnyResult(e);
+    if (j) applyScoresFromJson(j);
   }};
 
   recognizer.recognized = (s, e) => {{
-    try {{
-      const raw = e?.result?.properties?.getProperty(SpeechSDK.PropertyId.SpeechServiceResponse_JsonResult) || e?.result?.privPronunciationAssessmentJson;
-      if (!raw) return;
-      const j = JSON.parse(raw);
-      applyScoresFromJson(j);
-    }} catch (_e) {{}}
+    const j = parseAnyResult(e);
+    if (j) applyScoresFromJson(j);
   }};
 
-  recognizer.canceled = (s, e) => {{
+  recognizer.canceled = () => {{
     byId("status").textContent = "⚠️ Canceled";
   }};
 
@@ -334,8 +342,8 @@ function attachRecognitionHandlers(recognizer, passageText) {{
   }};
 }}
 
+// ---------- Optional local recording for replay ----------
 function startRecordingMyAudio() {{
-  // Optional: allow user to record & replay their voice (no scoring)
   recordedChunks = [];
   navigator.mediaDevices.getUserMedia({{ audio: true }}).then(stream => {{
     mediaRecorder = new MediaRecorder(stream);
@@ -357,6 +365,7 @@ function stopRecordingMyAudio() {{
   }});
 }}
 
+// ---------- UI actions ----------
 async function startReading() {{
   try {{
     const p = passages[currentIndex] || {{}};
@@ -366,7 +375,6 @@ async function startReading() {{
       return;
     }}
 
-    // Reset scores/visuals
     wordsMeta.forEach((w, i) => {{
       w.score = null;
       wordsSpans[i].classList.remove("w-good","w-mid","w-bad","active");
@@ -375,15 +383,18 @@ async function startReading() {{
     byId("stats").textContent = "Starting…";
     byId("status").textContent = "🎙 Requesting microphone…";
 
-    // UI state
     byId("btnStart").disabled = true;
     byId("btnStop").disabled = false;
     byId("btnReplay").disabled = true;
 
+    // Pre-warm mic + prefetch token + tiny delay to align UI and capture
+    await prewarmMic();
+    await fetchToken().catch(()=>{{}});
+    await new Promise(r => setTimeout(r, 250));
+
     recognizer = await setupRecognizer(referenceText);
     attachRecognitionHandlers(recognizer, referenceText);
 
-    // Start recognition + start local recording for replay
     await new Promise((resolve, reject) => {{
       try {{ recognizer.startContinuousRecognitionAsync(resolve, reject); }}
       catch (e) {{ reject(e); }}
@@ -403,14 +414,11 @@ async function stopReading() {{
     if (recognizer) {{
       await new Promise((resolve) => {{
         try {{
-          recognizer.stopContinuousRecognitionAsync(() => {{
-            resolve();
-          }}, () => resolve());
+          recognizer.stopContinuousRecognitionAsync(() => {{ resolve(); }}, () => resolve());
         }} catch (_) {{ resolve(); }}
       }});
     }}
   }} finally {{
-    // Save user recording (if any) and enable replay
     try {{
       const url = await stopRecordingMyAudio();
       if (url) {{
@@ -426,28 +434,22 @@ async function stopReading() {{
   }}
 }}
 
-ffunction listenPolish() {{
+function listenPolish() {{
   const a = byId("ttsAudio");
   const p = passages[currentIndex] || {{}};
   const direct = p.audio_url || p.audio;
   let src = "";
-  if (direct && /^https?:\/\//i.test(direct)) {{
+  if (direct && /^https?:\\/\\//i.test(direct)) {{
     src = direct;
   }} else if (window.AudioPaths) {{
     src = AudioPaths.readingPath(setName, currentIndex, r2Manifest);
   }} else {{
     src = `../../static/${{encodeURIComponent(setName)}}/reading/${{encodeURIComponent(currentIndex)}}.mp3`;
   }}
-  a.onerror = () => {{
-    byId("status").textContent = "🔇 Audio not found for this passage.";
-  }};
-  a.onended = () => {{}};
+  a.onerror = () => {{ byId("status").textContent = "🔇 Audio not found for this passage."; }};
   a.src = src; a.load();
-  a.play().catch(() => {{
-    byId("status").textContent = "🔇 Unable to play audio.";
-  }});
+  a.play().catch(() => {{ byId("status").textContent = "🔇 Unable to play audio."; }});
 }}
-
 
 function replayMe() {{
   const a = byId("replayAudio");
@@ -459,10 +461,11 @@ function replayMe() {{
 function toggleEN() {{
   const el = byId("translation");
   el.classList.toggle("visible");
-  byId("btnToggleEN").textContent = el.classList.contains("visible") ? "🇬🇧 Hide Translation" : "🇬🇧 Show Translation";
+  byId("btnToggleEN").textContent = el.classList.contains("visible")
+    ? "🇬🇧 Hide Translation" : "🇬🇧 Show Translation";
 }}
 
-// ---------- UI / lifecycle ----------
+// ---------- Lifecycle ----------
 function wireUI() {{
   byId("passageSelect").addEventListener("change", (e) => {{
     currentIndex = parseInt(e.target.value, 10) || 0;
@@ -493,6 +496,8 @@ function goHome() {{ window.location.href = "../../index.html"; }}
   populateSelect();
   renderPassage(0);
   wireUI();
+  // Prefetch speech token to avoid first-click latency
+  fetchToken().catch(()=>{{}});
 }})();
 
 </script>
