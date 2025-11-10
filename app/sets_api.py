@@ -255,13 +255,12 @@ def _ensure_static_runtime_files() -> list[Path]:
 # Optional Cloudflare R2 upload (non-blocking). Falls back to GH Pages local.
 # -----------------------------------------------------------------------------
 def _r2_env_ok() -> bool:
-    ak = os.getenv("R2_ACCESS_KEY_ID") or os.getenv("R2_ACCESS_KEY")
-    sk = os.getenv("R2_SECRET_ACCESS_KEY") or os.getenv("R2_SECRET_KEY")
-    return bool(
+    return (
         boto3 is not None and
         os.getenv("R2_ENDPOINT") and
         os.getenv("R2_BUCKET") and
-        ak and sk
+        (os.getenv("R2_ACCESS_KEY") or os.getenv("R2_ACCESS_KEY_ID")) and
+        (os.getenv("R2_SECRET_KEY") or os.getenv("R2_SECRET_ACCESS_KEY"))
     )
 
 def _r2_public_base() -> str | None:

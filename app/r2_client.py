@@ -50,33 +50,49 @@ def put_file(
     *,
     content_type: Optional[str] = None,
     cache_control: Optional[str] = None,
+    # NEW: accept legacy call styles used elsewhere
+    key: Optional[str] = None,
+    local_path: Optional[Union[str, Path]] = None,
+    body: Optional[Union[bytes, bytearray, Path]] = None,
 ) -> Optional[str]:
     """
-    Upload one object to R2. Supports both calling styles:
+    Upload one object to R2. Supports all calling styles:
 
       put_file(local_path: Path, key: str)
       put_file(key: str, body: bytes|Path)
+      put_file(local_path=<Path|str>, key=<str>)
+      put_file(key=<str>, body=<bytes|Path>)
 
     Returns a public CDN URL (if known) or None.
     """
     if not enabled or not _client:
         return None
 
-    # Normalize args (support both orders)
+    # --- Normalize arguments for legacy kw usages ---
+    # Priority: explicit kwargs win over the positional pair.
+    if key is not None and local_path is not None:
+        a = Path(local_path)
+        b = str(key)
+    elif key is not None and body is not None:
+        a = str(key)
+        b = body
+    # else: keep original (a, b)
+
+    # Resolve to (key_str, data)
     key_str: str
     data: bytes
 
     if isinstance(a, Path) and isinstance(b, (str, Path)):
         # (local_path, key)
-        local_path = a
+        local_path_path = a
         key_str = str(b)
-        data = local_path.read_bytes()
+        data = local_path_path.read_bytes()
     elif isinstance(a, str) and isinstance(b, (bytes, bytearray, Path)):
-        # (key, body)  where body may be bytes or Path
+        # (key, body)
         key_str = a
         data = b.read_bytes() if isinstance(b, Path) else (bytes(b) if isinstance(b, bytearray) else b)
     else:
-        raise TypeError("put_file expects (Path, str) or (str, bytes|Path)")
+        raise TypeError("put_file expects (Path, str) or (str, bytes|Path), or kw pairs key+local_path / key+body")
 
     # Best-effort content type
     if not content_type:
