@@ -85,9 +85,15 @@ docs/static/*
 !docs/static/js/**
 !docs/static/**/r2_manifest.json
 
-# --- allow published site assets (set audio + manifests + brand) ---
+# --- allow published site assets (set audio + manifests + brand + favicons) ---
 !docs/static/**/
 !docs/static/**/*.mp3
 !docs/static/**/*.json
+!docs/static/**/*.ico
+!docs/static/**/*.png
+!docs/static/**/*.webmanifest
+!docs/static/favicon/
+!docs/static/favicon/**
 !docs/static/brand.svg
+
 
