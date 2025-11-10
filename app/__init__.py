@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 
 from flask import Flask, jsonify, redirect
 from flask_cors import CORS
+from flask_cors import cross_origin
 
 # Optional Flask-Migrate
 try:
@@ -526,6 +527,7 @@ def create_app():
 
     @app.get("/api/azure/token")
     @app.get("/api/token/azure")
+    @cross_origin() 
     def azure_token():
         try:
             token, region, expires_at = _azure_issue_token()
@@ -541,6 +543,7 @@ def create_app():
     
     # Alias for legacy clients/pages
     @app.get("/api/speech_token")
+    @cross_origin()  # allow GitHub Pages to read the response
     def speech_token_alias():
         # Reuse the same handler
         return azure_token()

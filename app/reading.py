@@ -196,7 +196,8 @@ function _norm(s) {{
 }}
 
 async function fetchToken() {{
-  const tok = await api.get('/api/speech_token');
+  const tok = await api.get('/api/speech_token', {{ noAuth: true }});
+
   return {{ token: tok && (tok.token || tok.access_token), region: tok && tok.region }};
 }}
 

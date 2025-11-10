@@ -153,7 +153,9 @@ def generate_practice_html(set_name, data):
       if (!window.SpeechSDK) throw new Error("sdk_not_loaded");
       if (cachedSpeechConfig) return cachedSpeechConfig;
 
-      const tok = await api.get('/api/speech_token'); // issued by server
+      const tok = await api.get('/api/speech_token', {{ noAuth: true }});
+
+
       const token = tok && (tok.token || tok.access_token);
       const region = tok && tok.region;
       if (!token || !region) throw new Error("no_token");

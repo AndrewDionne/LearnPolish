@@ -29,3 +29,12 @@
   // eslint-disable-next-line no-var
   var APP_CONFIG = g.APP_CONFIG; // creates a real global binding in classic scripts
 })(window);
+
+// --- Ensure API_BASE is defined for all static pages ---
+(function () {
+  const cfg = window.APP_CONFIG || {};
+  if (!cfg.API_BASE) {
+    cfg.API_BASE = 'https://path-to-polish.onrender.com'; // ← your Render URL
+  }
+  window.APP_CONFIG = cfg;
+})();

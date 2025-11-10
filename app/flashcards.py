@@ -184,7 +184,8 @@ def generate_flashcard_html(set_name, data):
         if (targetEl) targetEl.textContent = "🎤 Listening…";
 
         // Get short-lived token
-        const tok = await api.get('/api/speech_token'); // alias added in __init__.py
+        const tok = await api.get('/api/speech_token', {{ noAuth: true }});
+
         const token = tok && (tok.token || tok.access_token);
         const region = tok && tok.region;
         if (!token || !region) {{
