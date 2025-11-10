@@ -221,37 +221,27 @@ def generate_flashcard_html(set_name, data):
           return {{ score: 0, error: "no_reference" }};
         }}
 
-        if (targetEl) targetEl.textContent = "🎤 Listening… (~2s)";
+        // UI: show get-ready, then pre-warm mic, then start listening after ~1s
+        if (targetEl) targetEl.textContent = "⏳ Get ready…";
+        await prewarmMic();
 
-        // --- Token (cache it; use api.fetch) ---
-        async function getSpeechToken() {{
-          const c = window.__speechTok;
-          if (c && c.exp > Date.now()) return c;
-          try {{
-            const r = await api.fetch("/api/speech_token");
-            const t = r.ok ? await r.json() : null;
-            const token  = t && (t.token || t.access_token);
-            const region = t && (t.region || t.location || t.regionName);
-            const ttlMs  = Math.max(30_000, ((t && t.expires_in ? t.expires_in : 540) * 1000) - 15_000);
-            window.__speechTok = {{ token, region, exp: Date.now() + ttlMs }};
-            return window.__speechTok;
-          }} catch (_e) {{
-            return null;
-          }}
-        }}
         const tok = await getSpeechToken();
         if (!tok || !tok.token || !tok.region) {{
           if (targetEl) targetEl.textContent = "⚠️ Could not get speech token.";
           return {{ score: 0, error: "no_token" }};
         }}
 
-        // --- Speech config with short silence timeouts ---
+        // Short delay so the mic warmup and UI line up with actual capture start
+        await new Promise(r => setTimeout(r, 950));
+        if (targetEl) targetEl.textContent = "🎤 Listening…";
+
+        // Build Speech config (slightly more forgiving initial silence)
         const speechConfig = SpeechSDK.SpeechConfig.fromAuthorizationToken(tok.token, tok.region);
         speechConfig.speechRecognitionLanguage = "pl-PL";
-        speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, "1200");
-        speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "500");
+        speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, "2000");
+        speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "450");
 
-        // Faster settings: Word granularity, miscue off
+        // Faster scoring: word granularity, miscue off
         const paConfig = new SpeechSDK.PronunciationAssessmentConfig(
           referenceText,
           SpeechSDK.PronunciationAssessmentGradingSystem.HundredMark,
@@ -263,8 +253,8 @@ def generate_flashcard_html(set_name, data):
         const recognizer  = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
         paConfig.applyTo(recognizer);
 
-        // --- Absolute guard: cap capture time ---
-        const MAX_LISTEN_MS = 1800;
+        // Hard cap to prevent hanging (a bit longer now to account for the warmup)
+        const MAX_LISTEN_MS = 3000;
         let finished = false;
         const result = await new Promise((resolve) => {{
           const guard = setTimeout(() => {{
@@ -272,7 +262,7 @@ def generate_flashcard_html(set_name, data):
             finished = true;
             try {{ recognizer.close(); }} catch {{}}
             resolve({{ __timeout: true }});
-          }}, MAX_LISTEN_MS + 400);
+          }}, MAX_LISTEN_MS + 500);
 
           recognizer.recognizeOnceAsync(
             (res) => {{ if (finished) return; finished = true; clearTimeout(guard); resolve(res); }},
@@ -283,7 +273,7 @@ def generate_flashcard_html(set_name, data):
         try {{ recognizer.close(); }} catch {{}}
 
         if (result.__timeout) {{
-          if (targetEl) targetEl.textContent = "⏱️ Too long—try again (shorter).";
+          if (targetEl) targetEl.textContent = "⌛ No speech heard—try again.";
           return {{ score: 0, error: "timeout" }};
         }}
         if (result.__error) {{
@@ -291,7 +281,7 @@ def generate_flashcard_html(set_name, data):
           return {{ score: 0, error: String(result.__error) }};
         }}
 
-        // --- Parse score from service JSON ---
+        // Parse score from service JSON
         let score = 0;
         try {{
           let raw = result.properties?.getProperty(SpeechSDK.PropertyId.SpeechServiceResponse_JsonResult)
@@ -311,6 +301,7 @@ def generate_flashcard_html(set_name, data):
         return {{ score: 0, error: String(e) }};
       }}
     }}
+
 
     // Wire up after DOM is ready (prevents null refs)
     window.addEventListener("DOMContentLoaded", async function() {{
