@@ -43,40 +43,44 @@ if enabled:
         aws_secret_access_key=R2_SECRET_ACCESS_KEY,
     )
 
-
 def put_file(
-    a: Union[str, Path],
-    b: Union[bytes, Path, str],
+    a: Optional[Union[str, Path]] = None,
+    b: Optional[Union[bytes, Path, str]] = None,
     *,
     content_type: Optional[str] = None,
     cache_control: Optional[str] = None,
-    # NEW: accept legacy call styles used elsewhere
+    # Accept legacy / kw-only call styles
     key: Optional[str] = None,
     local_path: Optional[Union[str, Path]] = None,
     body: Optional[Union[bytes, bytearray, Path]] = None,
 ) -> Optional[str]:
-    """
-    Upload one object to R2. Supports all calling styles:
 
-      put_file(local_path: Path, key: str)
-      put_file(key: str, body: bytes|Path)
+    """
+    Upload one object to R2. Supported calling styles:
+
+      put_file(local_path: Path|str, key: str)
+      put_file(key: str, body: bytes|bytearray|Path)
       put_file(local_path=<Path|str>, key=<str>)
-      put_file(key=<str>, body=<bytes|Path>)
+      put_file(key=<str>, body=<bytes|bytearray|Path>)
 
     Returns a public CDN URL (if known) or None.
     """
     if not enabled or not _client:
         return None
 
-    # --- Normalize arguments for legacy kw usages ---
-    # Priority: explicit kwargs win over the positional pair.
-    if key is not None and local_path is not None:
-        a = Path(local_path)
-        b = str(key)
-    elif key is not None and body is not None:
-        a = str(key)
-        b = body
-    # else: keep original (a, b)
+    # --- Normalize arguments (support kw-only usage) ---
+    if a is None or b is None:
+        if key is not None and local_path is not None:
+            a = Path(local_path)
+            b = str(key)
+        elif key is not None and body is not None:
+            a = str(key)
+            b = body
+        else:
+            raise TypeError(
+                "put_file requires either (local_path, key) or (key, body), "
+                "or kw pairs key+local_path / key+body"
+            )
 
     # Resolve to (key_str, data)
     key_str: str
@@ -90,9 +94,17 @@ def put_file(
     elif isinstance(a, str) and isinstance(b, (bytes, bytearray, Path)):
         # (key, body)
         key_str = a
-        data = b.read_bytes() if isinstance(b, Path) else (bytes(b) if isinstance(b, bytearray) else b)
+        if isinstance(b, Path):
+            data = b.read_bytes()
+        elif isinstance(b, bytearray):
+            data = bytes(b)
+        else:
+            data = b
     else:
-        raise TypeError("put_file expects (Path, str) or (str, bytes|Path), or kw pairs key+local_path / key+body")
+        raise TypeError(
+            "put_file expects (Path, str) or (str, bytes|bytearray|Path), "
+            "or kw pairs key+local_path / key+body"
+        )
 
     # Best-effort content type
     if not content_type:

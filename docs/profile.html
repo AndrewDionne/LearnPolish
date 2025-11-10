@@ -145,6 +145,30 @@
       </div>
     </section>
 
+    <!-- Speech (TTS) settings — separate card -->
+    <section class="card">
+      <h3>Speech (TTS) settings</h3>
+      <div class="row" style="align-items:flex-end">
+        <div style="flex:1; min-width:220px">
+          <label for="ttsProvider">Provider</label>
+          <select id="ttsProvider" style="width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:10px; background:var(--card); color:var(--text);">
+            <option value="azure">Azure (neural voices)</option>
+            <option value="gtts">gTTS (simple, free)</option>
+          </select>
+          <div class="tiny" style="margin-top:6px">Global fallback is set by server env if not specified here.</div>
+        </div>
+        <div style="flex:1; min-width:220px">
+          <label for="ttsVoice">Azure voice (e.g., pl-PL-ZofiaNeural)</label>
+          <input id="ttsVoice" type="text" placeholder="pl-PL-MarekNeural" />
+          <div class="tiny" style="margin-top:6px">Ignored when provider = gTTS.</div>
+        </div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button id="saveTtsBtn" class="btn">Save speech prefs</button>
+        <span id="saveTtsMsg" class="tiny"></span>
+      </div>
+    </section>
+
     <section class="card">
       <h3>Account</h3>
       <div class="row">
@@ -264,6 +288,14 @@
 
       const uiLang = (loc.ui_lang || 'en');
       document.getElementById('uiLang').value = uiLang;
+
+      // TTS prefs from local profile (no DB dependency)
+      const tprov = (loc.tts_provider || '');   // 'azure' | 'gtts' | ''
+      const tvox  = (loc.tts_voice || '');
+      if (document.getElementById('ttsProvider')) {
+        if (tprov) document.getElementById('ttsProvider').value = tprov;
+        if (tvox)  document.getElementById('ttsVoice').value = tvox;
+      }
     }
 
     document.getElementById('saveBtn').addEventListener('click', async ()=>{
@@ -285,6 +317,30 @@
       saveLocalProfile(merged);
 
       msg(saveMsg, ok ? 'Saved!' : 'Saved locally (offline)');
+    });
+
+    document.getElementById('saveTtsBtn').addEventListener('click', async ()=>{
+      const msgEl = document.getElementById('saveTtsMsg');
+      const prov  = document.getElementById('ttsProvider').value;
+      const voice = document.getElementById('ttsVoice').value.trim();
+
+      // Save locally (authoritative for client-driven create flow)
+      const loc = loadLocalProfile();
+      const merged = Object.assign({}, loc, { tts_provider: prov, tts_voice: voice });
+      saveLocalProfile(merged);
+
+      // Best-effort: send to server profile if it accepts extra fields (safe to ignore failures)
+      let ok = false;
+      try{
+        const r = await api.fetch('/api/me', {
+          method:'PATCH',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ tts_provider: prov, tts_voice: voice })
+        });
+        ok = r.ok;
+      }catch(_){}
+
+      msg(msgEl, ok ? 'Speech prefs saved!' : 'Saved locally (server optional)');
     });
 
     document.getElementById('uploadBtn').addEventListener('click', async ()=>{

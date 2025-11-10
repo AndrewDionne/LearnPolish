@@ -82,18 +82,24 @@ import os
 def _azure_tts_enabled() -> bool:
     return bool(os.getenv("AZURE_SPEECH_KEY") and os.getenv("AZURE_SPEECH_REGION"))
 
-def _tts_to_mp3(text: str, out_path: Path, *, voice: str | None = None) -> bool:
+def _tts_to_mp3(text: str, out_path: Path, *, provider: str | None = None, voice: str | None = None) -> bool:
     """
-    Try Azure Speech REST → fallback to gTTS. Returns True on success.
-    Configure via env:
-      AZURE_SPEECH_KEY, AZURE_SPEECH_REGION, AZURE_TTS_VOICE (e.g., 'pl-PL-ZofiaNeural')
+    Provider selection:
+      - provider == "gtts" → force gTTS
+      - provider == "azure" and Azure env present → Azure TTS
+      - else fallback: Azure if enabled, otherwise gTTS
+    Per-set overrides come from _get_tts_prefs(); global default from TTS_PROVIDER env.
     """
     t = _norm_str(text)
     if not t:
         return False
 
-    # Azure REST
-    if _azure_tts_enabled():
+    # Normalize provider choice
+    prov = (provider or os.getenv("TTS_PROVIDER") or "").strip().lower()
+    if prov not in {"azure", "gtts"}:
+        prov = "azure" if _azure_tts_enabled() else "gtts"
+
+    if prov == "azure" and _azure_tts_enabled():
         try:
             import requests  # type: ignore
             key    = os.getenv("AZURE_SPEECH_KEY")
@@ -116,8 +122,9 @@ def _tts_to_mp3(text: str, out_path: Path, *, voice: str | None = None) -> bool:
                 print(f"⚠️ Azure TTS failed {r.status_code}: {r.text[:200]}")
         except Exception as e:
             print(f"⚠️ Azure TTS error: {e}")
+        # fallthrough → gTTS
 
-    # gTTS fallback
+    # gTTS (no true "voice" selection; one voice per language)
     try:
         from gtts import gTTS  # type: ignore
         out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -178,6 +185,31 @@ def _read_json_file(p: Path) -> Optional[Any]:
             return json.load(f)
     except Exception:
         return None
+
+def _get_tts_prefs(set_name: str) -> tuple[str, Optional[str]]:
+    """
+    Resolve (provider, voice) with precedence:
+      1) Per-set JSON: meta.tts.provider, meta.tts.voice
+      2) Env: TTS_PROVIDER, AZURE_TTS_VOICE
+      3) Fallback: "azure" if enabled else "gtts"
+    """
+    default_provider = (os.getenv("TTS_PROVIDER") or "").strip().lower()
+    if default_provider not in {"azure", "gtts"}:
+        default_provider = "azure" if _azure_tts_enabled() else "gtts"
+    default_voice = os.getenv("AZURE_TTS_VOICE")
+
+    p = _set_file_path(set_name)
+    j = _read_json_file(p)
+    if isinstance(j, dict):
+        meta = j.get("meta") or {}
+        tts = meta.get("tts") or {}
+        prov = (tts.get("provider") or default_provider or "").strip().lower()
+        voice = (tts.get("voice") or default_voice) or None
+        if prov not in {"azure", "gtts"}:
+            prov = default_provider
+        return prov, voice
+
+    return default_provider, default_voice
 
 def _set_file_path(set_name: str) -> Path:
     return SETS_DIR / f"{set_name}.json"
@@ -364,8 +396,9 @@ def _ensure_reading_audio(set_name: str, data: List[Dict[str, Any]]) -> None:
     audio_dir.mkdir(parents=True, exist_ok=True)
 
     for i, entry in enumerate(data):
-        phrase = (entry or {}).get("phrase", "").strip()
-        if not phrase:
+        polish = (entry or {}).get("polish", "") or (entry or {}).get("phrase", "")
+        polish = str(polish).strip()
+        if not polish:
             continue
 
         out = audio_dir / f"{i}.mp3"
@@ -373,6 +406,7 @@ def _ensure_reading_audio(set_name: str, data: List[Dict[str, Any]]) -> None:
             continue
         try:
             _tts_to_mp3(polish, out)
+
         except Exception as e:
             print(f"⚠️ Failed to create reading TTS for idx {i}: {e}")
 

@@ -442,11 +442,15 @@ def _collect_commit_targets(slug: str, modes: list[str]) -> list[Path]:
             if ix.exists():
                 targets.append(ix)
 
-    # Per-set manifest only (audio blobs are in R2, not in git)
+    # Per-set static dir (so MP3s land in the first commit)
     static_dir = PAGES_DIR / "static" / slug
-    man = static_dir / "r2_manifest.json"
-    if man.exists():
-        targets.append(man)
+    if static_dir.exists():
+        targets.append(static_dir)
+    else:
+        # Safety fallback if only the manifest exists (unlikely without the dir)
+        man = static_dir / "r2_manifest.json"
+        if man.exists():
+            targets.append(man)
 
     # Runtime JS helpers (stop 404s) + LFS override
     for p in [
