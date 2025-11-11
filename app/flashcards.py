@@ -13,13 +13,14 @@ def generate_flashcard_html(set_name, data):
 
     Capture-first recognizer:
       - Click once → records ~2.5s → streams PCM to Azure → returns score
-      - Small level meter shown while recording (under the speak button)
+      - Tiny level meter while recording
       - Uses /api/speech_token for Azure auth
       - Audio preloads (current + next)
 
-    URL overrides (optional):
-      - ?live=1        → force live mic (recognizeOnce on default mic)
-      - ?capture=0/1   → force capture mode off/on
+    URL switches:
+      - ?debug=1     → show debug overlay (reason/raw JSON)
+      - ?live=1      → force live mic (recognizeOnce on default mic)
+      - ?capture=0/1 → force capture off/on (default is capture)
     """
     output_dir = DOCS_DIR / "flashcards" / set_name
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -74,9 +75,16 @@ def generate_flashcard_html(set_name, data):
     .nav-button {{ padding:10px 14px; font-size:1em; background:#007bff; color:#fff; border:none; border-radius:10px; min-width:110px; cursor:pointer; }}
     .nav-button:disabled {{ background:#aaa; cursor:default; }}
 
+    /* Debug overlay (only shows when ?debug=1) */
+    #dbg {{ display:none; position:fixed; bottom:8px; left:8px; right:8px; max-height:46vh; overflow:auto;
+           background:#000; color:#0f0; padding:8px 10px; border-radius:10px; font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px; white-space:pre-wrap; z-index:9999; }}
+    #dbg .row {{ opacity:.95; }}
+    #dbg .raw {{ color:#9ef; }}
+
     /* Tiny level meter (capture mode) */
     #meterWrap {{ display:none; margin-top:10px; width:260px; height:8px; background:#e6e6ef; border-radius:6px; overflow:hidden; }}
     #meterBar {{ width:0%; height:100%; background:#2d6cdf; }}
+    #dlWav {{ display:none; margin-top:8px; }}
   </style>
 </head>
 <body>
@@ -91,6 +99,7 @@ def generate_flashcard_html(set_name, data):
           <button class="btn-small" id="btnSayFront" title="Record then score">🎤 Say it in Polish</button>
         </div>
         <div id="meterWrap"><div id="meterBar"></div></div>
+        <a id="dlWav" class="btn-small" download="capture.wav">⬇️ Download last capture</a>
         <div class="result" id="frontResult"></div>
       </div>
       <div class="side back" id="backSide">
@@ -109,9 +118,12 @@ def generate_flashcard_html(set_name, data):
     <button id="nextBtn" class="nav-button">Next</button>
   </div>
 
+  <div id="dbg"></div>
+
   <!-- Scripts -->
   <script src="../../static/js/app-config.js"></script>
   <script src="../../static/js/api.js"></script>
+  <!-- session_state.js intentionally omitted to avoid races -->
   <script src="../../static/js/audio-paths.js"></script>
   <!-- Azure Speech SDK -->
   <script src="https://aka.ms/csspeech/jsbrowserpackageraw"></script>
@@ -126,6 +138,34 @@ def generate_flashcard_html(set_name, data):
     // Optional CDN manifest
     let r2Manifest = null;
 
+    // Debug overlay
+    const DEBUG = new URL(location.href).searchParams.get('debug') === '1';
+    const dbgEl = document.getElementById('dbg');
+    if (DEBUG) dbgEl.style.display = 'block';
+    function logDbg(...a) {{
+      if (!DEBUG) return;
+      const line = document.createElement('div');
+      line.className = 'row';
+      line.textContent = a.map(x => (typeof x === 'string' ? x : JSON.stringify(x))).join(' ');
+      dbgEl.appendChild(line);
+      dbgEl.scrollTop = dbgEl.scrollHeight;
+      try {{ console.debug('[FC]', ...a); }} catch(_) {{}}
+    }}
+    function logRaw(j) {{
+      if (!DEBUG) return;
+      const line = document.createElement('div');
+      line.className = 'row raw';
+      line.textContent = (typeof j === 'string') ? j : JSON.stringify(j);
+      dbgEl.appendChild(line);
+      dbgEl.scrollTop = dbgEl.scrollHeight;
+    }}
+
+    // URL overrides (default capture)
+    const URLP = new URL(location.href).searchParams;
+    const FORCE_LIVE = URLP.get('live') === '1';
+    const capQ = URLP.get('capture');
+    const CAPTURE_MODE = FORCE_LIVE ? false : (capQ === '0' ? false : true);
+
     // Scoring + points
     const PASS = 75;
     const tracker = {{ attempts: 0, per: {{}}, perfectNoFlipCount: 0 }};
@@ -134,11 +174,7 @@ def generate_flashcard_html(set_name, data):
     // Audio preload cache
     const audioCache = new Map();
 
-    // URL overrides: default to capture; allow ?live=1 or ?capture=0 to force live
-    const URLP = new URL(location.href).searchParams;
-    const CAPTURE_MODE = FORCE_LIVE ? false : (capParam === '1' || capParam === null);
-
-    // Platform hint text
+    // Platform text
     const ua = navigator.userAgent || '';
     const IS_IOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     const IS_SAFARI = /^((?!chrome|android).)*safari/i.test(ua);
@@ -156,7 +192,9 @@ def generate_flashcard_html(set_name, data):
           const Ctx = window.AudioContext || window.webkitAudioContext;
           if (Ctx) {{ const ctx = new Ctx(); await ctx.resume(); await new Promise(r => setTimeout(r, 40)); await ctx.close(); }}
         }} catch (_e) {{}}
-      }} catch (_e) {{}}
+      }} catch (e) {{
+        logDbg('prewarm error', e && e.message);
+      }}
     }}
 
     // Filename helper (mirror Python sanitize)
@@ -224,8 +262,10 @@ def generate_flashcard_html(set_name, data):
         const token  = tok && (tok.token || tok.access_token);
         const region = tok && (tok.region || tok.location || tok.regionName);
         if (!token || !region) throw new Error('no_token_or_region');
+        logDbg('SDK?', !!window.SpeechSDK, 'region', region, 'tok', !!token);
         return {{ token, region }};
       }} catch (e) {{
+        logDbg('token fetch error', e?.message || e);
         return {{ token: null, region: null }};
       }}
     }}
@@ -233,9 +273,10 @@ def generate_flashcard_html(set_name, data):
     // --------------- Capture-first path ----------------
     const meterWrap = document.getElementById('meterWrap');
     const meterBar  = document.getElementById('meterBar');
+    const dlWav     = document.getElementById('dlWav');
 
     async function recordBlob(ms=2500) {{
-      meterWrap.style.display = 'block';
+      meterWrap.style.display = CAPTURE_MODE ? 'block' : 'none';
       let mediaStream = null;
       let mediaRec = null;
       let chunks = [];
@@ -314,6 +355,25 @@ def generate_flashcard_html(set_name, data):
       return pcm;
     }}
 
+    function pcmToWavBlob(pcm, sampleRate=16000) {{
+      const numFrames = pcm.length;
+      const bytesPerSample = 2;
+      const blockAlign = 1 * bytesPerSample;
+      const byteRate = sampleRate * blockAlign;
+      const dataSize = numFrames * bytesPerSample;
+      const buf = new ArrayBuffer(44 + dataSize);
+      const v = new DataView(buf);
+      let o = 0;
+      function wstr(s) {{ for (let i=0;i<s.length;i++) v.setUint8(o++, s.charCodeAt(i)); }}
+      function wu16(x) {{ v.setUint16(o, x, true); o+=2; }}
+      function wu32(x) {{ v.setUint32(o, x, true); o+=4; }}
+      wstr('RIFF'); wu32(36 + dataSize); wstr('WAVE');
+      wstr('fmt '); wu32(16); wu16(1); wu16(1); wu32(sampleRate); wu32(byteRate); wu16(blockAlign); wu16(16);
+      wstr('data'); wu32(dataSize);
+      for (let i=0;i<pcm.length;i++) v.setInt16(o + i*2, pcm[i], true);
+      return new Blob([v], {{ type: 'audio/wav' }});
+    }}
+
     function extractScore(result, SDK) {{
       try {{
         const pa = SDK.PronunciationAssessmentResult.fromResult(result);
@@ -354,6 +414,7 @@ def generate_flashcard_html(set_name, data):
       speechConfig.outputFormat = SDK.OutputFormat.Detailed;
       speechConfig.setProperty(SDK.PropertyId.SpeechServiceResponse_RequestDetailedResultTrueFalse, "true");
       speechConfig.setProperty(SDK.PropertyId.SpeechServiceResponse_RequestWordLevelTimestamps, "true");
+      // IMPORTANT: Do NOT set EndSilenceTimeout on push-stream capture; it can suppress PA payloads.
 
       // Push 16k/16-bit/mono PCM
       const pcm = await blobToPCM16Mono(blob, 16000);
@@ -383,18 +444,35 @@ def generate_flashcard_html(set_name, data):
       const result = await new Promise((resolve, reject) => {{
         try {{ recognizer.recognizeOnceAsync(resolve, reject); }}
         catch (e) {{ reject(e); }}
-      }}).catch(_e => null);
+      }}).catch(e => {{ logDbg('recognizeOnce(push) error', e?.message || e); return null; }});
 
       try {{ recognizer.close(); }} catch(_ignore) {{}}
 
       if (!result) {{ targetEl.textContent = "⚠️ Speech error"; return 0; }}
+
+      // Optional debug details
+      try {{
+        logDbg('reason', result?.reason);
+        const SDKR = window.SpeechSDK;
+        if (result?.reason === SDKR.ResultReason.Canceled) {{
+          const c = SDKR.CancellationDetails.fromResult(result);
+          logDbg('canceled', c?.reason, c?.errorCode, c?.errorDetails);
+        }}
+        if (result?.reason === SDKR.ResultReason.NoMatch) {{
+          const d = SDKR.NoMatchDetails.fromResult(result);
+          logDbg('noMatch', d?.reason);
+        }}
+        const raw = result?.properties?.getProperty(SDK.PropertyId.SpeechServiceResponse_JsonResult)
+                 || result?.privPronunciationAssessmentJson || result?.privJson;
+        if (raw) try {{ logRaw(JSON.parse(raw)); }} catch(_ignore) {{ logRaw(raw); }}
+      }} catch(_ignore) {{}}
 
       const score = extractScore(result, SDK);
       targetEl.textContent = score ? `✅ ${{score}}%` : "⚠️ No score";
       return score || 0;
     }}
 
-    // Optional live path (only if forced via ?live=1)
+    // Optional live path (only if forced via ?live=1 or ?capture=0)
     async function assessLive(referenceText, targetEl) {{
       const ref = (referenceText || "").trim();
       if (!window.SpeechSDK) {{ targetEl.textContent = "⚠️ SDK not loaded."; return 0; }}
@@ -435,11 +513,29 @@ def generate_flashcard_html(set_name, data):
       const result = await new Promise((resolve, reject) => {{
         try {{ recognizer.recognizeOnceAsync(resolve, reject); }}
         catch (e) {{ reject(e); }}
-      }}).catch(_e => null);
+      }}).catch(e => {{ logDbg('recognizeOnce(live) error', e?.message || e); return null; }});
 
       try {{ recognizer.close(); }} catch(_ignore) {{}}
 
       if (!result) {{ targetEl.textContent = "⚠️ Speech error"; return 0; }}
+
+      // Optional debug details
+      try {{
+        logDbg('reason', result?.reason);
+        const SDKR = window.SpeechSDK;
+        if (result?.reason === SDKR.ResultReason.Canceled) {{
+          const c = SDKR.CancellationDetails.fromResult(result);
+          logDbg('canceled', c?.reason, c?.errorCode, c?.errorDetails);
+        }}
+        if (result?.reason === SDKR.ResultReason.NoMatch) {{
+          const d = SDKR.NoMatchDetails.fromResult(result);
+          logDbg('noMatch', d?.reason);
+        }}
+        const raw = result?.properties?.getProperty(SDK.PropertyId.SpeechServiceResponse_JsonResult)
+                 || result?.privPronunciationAssessmentJson || result?.privJson;
+        if (raw) try {{ logRaw(JSON.parse(raw)); }} catch(_ignore) {{ logRaw(raw); }}
+      }} catch(_ignore) {{}}
+
       const score = extractScore(result, SDK);
       targetEl.textContent = score ? `✅ ${{score}}%` : "⚠️ No score";
       return score || 0;
@@ -447,8 +543,8 @@ def generate_flashcard_html(set_name, data):
 
     // ---------- UI wiring ----------
     window.addEventListener("DOMContentLoaded", async function() {{
-      // Try to load R2 manifest (non-blocking)
-      try {{ if (window.AudioPaths) r2Manifest = await AudioPaths.fetchManifest(setName); }} catch (_e) {{ r2Manifest = null; }}
+      try {{ if (window.AudioPaths) r2Manifest = await AudioPaths.fetchManifest(setName); }} catch (_ignore) {{ r2Manifest = null; }}
+      try {{ logDbg('SDK version?', window.SpeechSDK?.Version || 'unknown'); }} catch(_ignore) {{}}
 
       renderCard();
 
@@ -490,7 +586,7 @@ def generate_flashcard_html(set_name, data):
         if (!a) {{ primeAudio(currentIndex); a = audioCache.get(currentIndex); }}
         if (a) {{
           try {{ a.currentTime = 0; }} catch(_ignore) {{}}
-          a.play().catch(_err => {{}});
+          a.play().catch(err => logDbg('audio play err', err?.message || err));
         }}
       }});
 
@@ -509,7 +605,6 @@ def generate_flashcard_html(set_name, data):
           renderCard();
           if (window.SessionSync) SessionSync.save({{ setName, mode, progress: {{ index: currentIndex, per: tracker.per }} }});
         }} else {{
-          // FINISH
           const totalCards = Math.max(1, cards.length);
           const correct = Object.values(tracker.per).filter(r => (r?.best || 0) >= PASS).length;
           const scorePct = Math.round((correct / totalCards) * 100);
@@ -547,7 +642,7 @@ def generate_flashcard_html(set_name, data):
         }}
       }});
 
-      // Resume mid-set if ?resume=1
+      // Optional resume
       (async () => {{
         const wantResume = new URL(location.href).searchParams.get("resume") === "1";
         if (wantResume && window.SessionSync) {{

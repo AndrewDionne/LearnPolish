@@ -1,4 +1,4 @@
-# app/flashcarddebug.py
+# app/flashcard.py
 import json
 
 from .sets_utils import sanitize_filename
