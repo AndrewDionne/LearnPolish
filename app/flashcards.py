@@ -16,9 +16,10 @@ def generate_flashcard_html(set_name, data):
     - Resume mid-set via SessionSync.
     - Correct relative paths for nested pages.
 
-    ➕ Enhancements:
-      - Uses R2 CDN audio if docs/static/<set>/r2_manifest.json exists
-      - Falls back to local ../../static/<set>/audio/*.mp3 if CDN not available
+    ➕ Enhancements in this version:
+      - Continuous recognition for a short, fixed window (≈2.6s) to stabilize iOS mic timing.
+      - Preloaded audio (current + next card) for instant playback.
+      - Manifest-aware audio path with local fallback.
     """
     output_dir = DOCS_DIR / "flashcards" / set_name
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -100,11 +101,12 @@ def generate_flashcard_html(set_name, data):
     <button id="nextBtn" class="nav-button">Next</button>
   </div>
 
-  <!-- Azure Speech SDK -->
+  <!-- Scripts -->
   <script src="../../static/js/app-config.js"></script>
   <script src="../../static/js/api.js"></script>
   <script src="../../static/js/session_state.js"></script>
   <script src="../../static/js/audio-paths.js"></script>
+  <!-- Azure Speech SDK -->
   <script src="https://aka.ms/csspeech/jsbrowserpackageraw"></script>
 
   <script>
@@ -122,9 +124,12 @@ def generate_flashcard_html(set_name, data):
     const tracker = {{
       attempts: 0,
       per: {{}},               // per[idx] = {{ tries, best, got100BeforeFlip: boolean }}
-      perfectNoFlipCount: 0,   // increments when avg==100 before first flip on that card
+      perfectNoFlipCount: 0,   // increments when score==100 before first flip on that card
     }};
     let hasFlippedCurrent = false;
+
+    // --- Audio preload cache ---
+    const audioCache = new Map(); // index -> HTMLAudioElement
 
     function debugFC(...args) {{ try {{ console.debug('[FLASHCARDS]', ...args); }} catch(_){{}} }}
 
@@ -140,7 +145,7 @@ def generate_flashcard_html(set_name, data):
           if (Ctx) {{
             const ctx = new Ctx();
             await ctx.resume();
-            await new Promise(r => setTimeout(r, 30));
+            await new Promise(r => setTimeout(r, 50));
             await ctx.close();
           }}
         }} catch (_) {{}}
@@ -156,7 +161,6 @@ def generate_flashcard_html(set_name, data):
         .replace(/^_+|_+$/g, "");
     }}
 
-    // Local static fallback (used if no manifest/CDN mapping)
     function localAudioPath(index) {{
       const e = cards[index] || {{}};
       const fn = String(index) + "_" + sanitizeFilename(e.phrase || "") + ".mp3";
@@ -168,6 +172,34 @@ def generate_flashcard_html(set_name, data):
       if (explicit && /^https?:\\/\\//i.test(explicit)) return explicit;
 
       return `../../static/${{setEnc}}/audio/${{fnEnc}}`;
+    }}
+
+    function buildAudioSrc(index) {{
+      let src = localAudioPath(index);
+      try {{
+        if (window.AudioPaths) {{
+          src = AudioPaths.buildAudioPath(setName, index, cards[index], r2Manifest);
+        }}
+      }} catch (_ignore) {{}}
+      return src;
+    }}
+
+    function primeAudio(index) {{
+      if (index < 0 || index >= cards.length) return;
+      if (audioCache.has(index)) return;
+      const src = buildAudioSrc(index);
+      const a = new Audio();
+      a.preload = "auto";
+      a.src = src;
+      try {{ a.load(); }} catch(_e) {{}}
+      audioCache.set(index, a);
+    }}
+
+    function resetAndPrimeAround(index) {{
+      // Clear cache when manifest appears/changes to avoid stale src
+      audioCache.clear();
+      primeAudio(index);
+      primeAudio(index + 1);
     }}
 
     function setNavUI() {{
@@ -186,9 +218,13 @@ def generate_flashcard_html(set_name, data):
       document.getElementById("answerPron").textContent   = e.pronunciation || "";
       document.getElementById("backResult").textContent   = "";
       setNavUI();
-      hasFlippedCurrent = false;  // reset flip flag each card
+      hasFlippedCurrent = false;
+
+      // Ensure audio is ready for this and next card
+      resetAndPrimeAround(currentIndex);
     }}
 
+    // --- Continuous-window Pronunciation Assessment (≈2.6s) ---
     async function assess(referenceText, targetEl) {{
       try {{
         const ref = (referenceText || "").trim();
@@ -201,12 +237,13 @@ def generate_flashcard_html(set_name, data):
           return {{ score: 0, error: "no_reference" }};
         }}
 
-        // UX: pre-warm mic + tiny delay so "Listening…" appears when the mic is actually hot
+        // UX: pre-warm mic + let UI update before opening the mic
         if (targetEl) targetEl.textContent = "🎤 Preparing mic…";
         await prewarmMic();
         await new Promise(r => setTimeout(r, 250));
+        if (targetEl) targetEl.textContent = "🎙 Listening…";
 
-        // Short-lived token
+        // Token
         const tok = await api.get('/api/speech_token', {{ noAuth: true }});
         const token  = tok && (tok.token || tok.access_token);
         const region = tok && (tok.region || tok.location || tok.regionName);
@@ -215,72 +252,73 @@ def generate_flashcard_html(set_name, data):
           return {{ score: 0, error: "no_token" }};
         }}
 
-        // Config tuned for single-word
+        // Config tuned for short utterances
+        const SpeechSDK = window.SpeechSDK;
         const speechConfig = SpeechSDK.SpeechConfig.fromAuthorizationToken(token, region);
         speechConfig.speechRecognitionLanguage = "pl-PL";
         speechConfig.outputFormat = SpeechSDK.OutputFormat.Detailed;
         speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceResponse_RequestDetailedResultTrueFalse, "true");
-        speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, "1200");
-        speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "500");
+        // More forgiving initial silence (user needs a beat to speak), snappier end
+        speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, "2500");
+        speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "300");
 
         const audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
         const recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
 
-        // PA config: Word granularity is more robust for 1–2 word attempts
         const pa = new SpeechSDK.PronunciationAssessmentConfig(
           ref,
           SpeechSDK.PronunciationAssessmentGradingSystem.HundredMark,
           SpeechSDK.PronunciationAssessmentGranularity.Word,
-          true // enable miscue
+          true // miscue
         );
         pa.applyTo(recognizer);
 
-        if (targetEl) targetEl.textContent = "🎙 Listening…";
-
-        // Don’t hang forever—race with a short timeout
-        const timeoutMs = 5000;
-        const result = await Promise.race([
-          new Promise((resolve, reject) => recognizer.recognizeOnceAsync(resolve, reject)),
-          new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), timeoutMs))
-        ]).finally(() => {{ try {{ recognizer.close(); }} catch(_){{}} }});
-
-        // Handle reasons
-        const reason = result && result.reason;
-        if (reason === SpeechSDK.ResultReason.NoMatch) {{
-          const d = SpeechSDK.NoMatchDetails.fromResult(result);
-          debugFC('NoMatch', d?.reason, d);
-          if (targetEl) targetEl.textContent = "⚠️ No match";
-          return {{ score: 0, error: "no_match" }};
-        }}
-        if (reason === SpeechSDK.ResultReason.Canceled) {{
-          const c = SpeechSDK.CancellationDetails.fromResult(result);
-          debugFC('Canceled', c?.reason, c?.errorDetails);
-          if (targetEl) targetEl.textContent = "⚠️ Canceled";
-          return {{ score: 0, error: "canceled" }};
-        }}
-
-        // Extract PA JSON → score
-        let raw = null;
-        try {{
-          raw = result.properties?.getProperty(SpeechSDK.PropertyId.SpeechServiceResponse_JsonResult)
-             || result.privPronunciationAssessmentJson;
-        }} catch(_) {{}}
-
-        let score = 0;
-        if (raw) {{
+        // Accumulate the best score seen during the window
+        let best = 0;
+        const parseJSON = (raw) => {{
           try {{
             const j = JSON.parse(raw);
-            score = Math.round(
+            // Prefer PA on NBest[0], fallback to top-level
+            const s = Math.round(
               (j?.NBest?.[0]?.PronunciationAssessment?.AccuracyScore) ??
               (j?.PronunciationAssessment?.AccuracyScore) ?? 0
             );
-          }} catch (e) {{
-            debugFC('JSON parse error', e);
-          }}
-        }}
+            if (Number.isFinite(s) && s > best) best = s;
+          }} catch (_e) {{}}
+        }};
 
-        if (targetEl) targetEl.textContent = (score ? `✅ ${{score}}%` : "⚠️ No score");
-        return {{ score }};
+        const hook = (e) => {{
+          try {{
+            const raw =
+              e?.result?.properties?.getProperty(SpeechSDK.PropertyId.SpeechServiceResponse_JsonResult) ||
+              e?.result?.privPronunciationAssessmentJson ||
+              e?.privPronunciationAssessmentJson;
+            if (raw) parseJSON(raw);
+          }} catch(_){{
+            /* ignore */
+          }}
+        }};
+
+        recognizer.recognizing = hook;
+        recognizer.recognized  = hook;
+
+        // Start continuous, hold mic for a short window, then stop
+        await new Promise((resolve) => {{
+          try {{ recognizer.startContinuousRecognitionAsync(() => resolve(), () => resolve()); }}
+          catch (_e) {{ resolve(); }}
+        }});
+
+        await new Promise(r => setTimeout(r, 2600)); // listening window
+
+        await new Promise((resolve) => {{
+          try {{ recognizer.stopContinuousRecognitionAsync(() => resolve(), () => resolve()); }}
+          catch (_e) {{ resolve(); }}
+        }});
+
+        try {{ recognizer.close(); }} catch (_) {{}}
+
+        if (targetEl) targetEl.textContent = (best ? `✅ ${{best}}%` : "⚠️ No score");
+        return {{ score: best }};
       }} catch (e) {{
         debugFC('assess error', e);
         if (targetEl) {{
@@ -291,7 +329,7 @@ def generate_flashcard_html(set_name, data):
       }}
     }}
 
-    // Wire up after DOM is ready (prevents null refs)
+    // ---------- Wire UI ----------
     window.addEventListener("DOMContentLoaded", async function() {{
       // Try to load R2 manifest (non-blocking; safe if missing)
       try {{
@@ -330,18 +368,19 @@ def generate_flashcard_html(set_name, data):
         }}
       }});
 
-      // Back: Play
+      // Back: Play (use preloaded element)
       document.getElementById("btnPlay").addEventListener("click", async (e) => {{
         e.stopPropagation();
-        // Prefer manifest/CDN mapping if available; else local static path
-        let src = localAudioPath(currentIndex);
-        try {{
-          if (window.AudioPaths) {{
-            src = AudioPaths.buildAudioPath(setName, currentIndex, cards[currentIndex], r2Manifest);
+        let a = audioCache.get(currentIndex);
+        if (!a) {{
+          primeAudio(currentIndex);
+          a = audioCache.get(currentIndex);
+        }}
+        if (a) {{
+          try {{ a.currentTime = 0; }} catch(_){{
           }}
-        }} catch (_ignore) {{}}
-        const audio = new Audio(src);
-        audio.play().catch(()=>{{}});
+          a.play().catch(()=>{{}});
+        }}
       }});
 
       // Prev / Next / Finish
