@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>11-01L • Learn</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/svg+xml" href="../../static/brand.svg" />
+  <style>
+    body { font-family: -apple-system,BlinkMacSystemFont, sans-serif; margin:0; padding:20px; background:#f8f9fa; display:flex; flex-direction:column; align-items:center; min-height:100vh; }
+    h1 { font-size:1.5em; margin:0 0 8px; position:relative; width:100%; text-align:center; }
+    .home-btn { position:absolute; right:0; top:0; font-size:1.4em; background:none; border:none; cursor:pointer; }
+
+    .hint { color:#5a6472; font-size:.9em; margin-bottom:8px; }
+
+    .card { width:90%; max-width:360px; height:260px; perspective:1000px; margin:12px auto; }
+    .card-inner {
+      width:100%; height:100%; position:relative; transition:transform .6s; transform-style:preserve-3d;
+      cursor:pointer; box-shadow:0 4px 10px rgba(0,0,0,.1); display:flex; justify-content:center; align-items:center; border-radius:12px;
+    }
+    .card.flipped .card-inner { transform: rotateY(180deg); }
+    .side { position:absolute; width:100%; height:100%; border-radius:12px; padding:20px; backface-visibility:hidden; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; }
+    .front { background:#fff; }
+    .back  { background:#e9ecef; transform:rotateY(180deg); }
+
+    .cue { font-size:1.1em; margin-bottom:12px; }
+    .answer-phrase { font-weight:700; font-size:1.2em; }
+    .answer-pron { font-style:italic; margin-top:4px; }
+
+    .actions { display:flex; gap:10px; margin-top:16px; flex-direction:column; align-items:center; }
+    .btn-small { padding:10px 14px; font-size:1em; background:#2d6cdf; color:#fff; border:none; border-radius:10px; cursor:pointer; }
+    .btn-green { background:#28a745; }
+
+    .levelwrap { width:240px; height:8px; background:#e0e3eb; border-radius:6px; overflow:hidden; margin-top:8px; }
+    .levelbar  { width:0%; height:100%; background:#2d6cdf; transition: width .08s linear; }
+
+    .result { margin-top:8px; font-size:.95em; min-height:1.2em; }
+
+    .nav-buttons { display:flex; gap:12px; margin-top:16px; }
+    .nav-button { padding:10px 14px; font-size:1em; background:#007bff; color:#fff; border:none; border-radius:10px; min-width:110px; cursor:pointer; }
+    .nav-button:disabled { background:#aaa; cursor:default; }
+  </style>
+</head>
+<body>
+  <h1>11-01L • Learn <button class="home-btn" onclick="goHome()">🏠</button></h1>
+  <div class="hint" id="speakHint">Click, then speak clearly.</div>
+
+  <div class="card" id="cardContainer" aria-live="polite">
+    <div class="card-inner" id="cardInner">
+      <div class="side front" id="frontSide">
+        <div class="cue" id="frontCue"></div>
+        <div class="actions">
+          <button class="btn-small" id="btnSayFront" title="Click, then speak">🎤 Say it in Polish</button>
+          <div class="levelwrap"><div id="levelBar" class="levelbar"></div></div>
+        </div>
+        <div class="result" id="frontResult"></div>
+      </div>
+      <div class="side back" id="backSide">
+        <div class="answer-phrase" id="answerPhrase"></div>
+        <div class="answer-pron" id="answerPron"></div>
+        <div class="actions">
+          <button class="btn-small btn-green" id="btnPlay">🔊 Play</button>
+        </div>
+        <div class="result" id="backResult"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav-buttons">
+    <button id="prevBtn" class="nav-button">Previous</button>
+    <button id="nextBtn" class="nav-button">Next</button>
+  </div>
+
+  <!-- Scripts -->
+  <script src="../../static/js/app-config.js"></script>
+  <script src="../../static/js/api.js"></script>
+  <script src="../../static/js/session_state.js"></script>
+  <script src="../../static/js/audio-paths.js"></script>
+  <!-- Azure Speech SDK -->
+  <script src="https://aka.ms/csspeech/jsbrowserpackageraw"></script>
+
+  <script>
+    // --- Data & state ---
+    const cards = [{"phrase": "Cześć", "meaning": "Hello", "pronunciation": "cheshch", "audio_file": "0_Czesc.mp3"}, {"phrase": "Dziękuję", "meaning": "Thank you", "pronunciation": "jen-koo-yeh", "audio_file": "1_Dziekuje.mp3"}];
+    const setName = "11-01L";
+    const mode = "flashcards";
+    let currentIndex = 0;
+
+    // Optional CDN manifest (loaded later; safe to be null)
+    let r2Manifest = null;
+
+    // Scoring + points
+    const PASS = 75;
+    const tracker = {
+      attempts: 0,
+      per: {},               // per[idx] = { tries, best, got100BeforeFlip: boolean }
+      perfectNoFlipCount: 0,
+    };
+    let hasFlippedCurrent = false;
+
+    // --- Audio preload cache ---
+    const audioCache = new Map(); // index -> HTMLAudioElement
+
+    // --- Debug (console only) ---
+    const DEBUG = new URL(location.href).searchParams.get('debug') === '1';
+    function logDbg(...a) { if (DEBUG) try { console.debug('[FC]', ...a); } catch(_ ){} }
+
+    // --- Platform hint ---
+    const ua = navigator.userAgent || '';
+    const IS_IOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const IS_SAFARI = /^((?!chrome|android).)*safari/i.test(ua);
+    document.getElementById('speakHint').textContent =
+      (IS_IOS || IS_SAFARI) ? "Tap the button, then speak right away." : "Click, then speak.";
+
+    // --- Mic pre-warm (helps Safari) ---
+    async function prewarmMic() {
+      try {
+        if (!navigator.mediaDevices?.getUserMedia) return;
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach(tr => tr.stop());
+      } catch (_e) {}
+    }
+
+    // Mirror of Python sanitize_filename (for audio file names)
+    function sanitizeFilename(text) {
+      return (text || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9_-]+/g, "_")
+        .replace(/^_+|_+$/g, "");
+    }
+
+    function localAudioPath(index) {
+      const e = cards[index] || {};
+      const fn = String(index) + "_" + sanitizeFilename(e.phrase || "") + ".mp3";
+      const setEnc = encodeURIComponent(setName);
+      const fnEnc  = encodeURIComponent(fn);
+
+      const explicit = e.audio_url || e.audio;
+      if (explicit && /^https?:\/\//i.test(explicit)) return explicit;
+
+      return `../../static/${setEnc}/audio/${fnEnc}`;
+    }
+
+    function buildAudioSrc(index) {
+      let src = localAudioPath(index);
+      try {
+        if (window.AudioPaths) {
+          src = AudioPaths.buildAudioPath(setName, index, cards[index], r2Manifest);
+        }
+      } catch (_ignore) {}
+      return src;
+    }
+
+    function primeAudio(index) {
+      if (index < 0 || index >= cards.length) return;
+      if (audioCache.has(index)) return;
+      const src = buildAudioSrc(index);
+      const a = new Audio();
+      a.preload = "auto";
+      a.src = src;
+      a.onerror = () => logDbg('audio error', src);
+      try { a.load(); } catch(_e) {}
+      audioCache.set(index, a);
+    }
+
+    function resetAndPrimeAround(index) {
+      audioCache.clear();
+      primeAudio(index);
+      primeAudio(index + 1);
+    }
+
+    function setNavUI() {
+      document.getElementById("prevBtn").disabled = (currentIndex === 0);
+      const nextBtn = document.getElementById("nextBtn");
+      nextBtn.textContent = (currentIndex < cards.length - 1) ? "Next" : "Finish";
+    }
+
+    function renderCard() {
+      const e = cards[currentIndex] || {};
+      document.getElementById("frontCue").textContent = e.meaning || "";
+      document.getElementById("frontResult").textContent = "";
+      document.getElementById("answerPhrase").textContent = e.phrase || "";
+      document.getElementById("answerPron").textContent   = e.pronunciation || "";
+      document.getElementById("backResult").textContent   = "";
+      setNavUI();
+      hasFlippedCurrent = false;
+      resetAndPrimeAround(currentIndex);
+    }
+
+    // ---------------- Azure speech (recognizeOnce: the "capture" path) ----------------
+    function parseScoreFromJson(raw) {
+      try {
+        const j = JSON.parse(raw);
+        // Prefer PA on NBest[0], fallback to top-level
+        const s = Math.round(
+          (j?.NBest?.[0]?.PronunciationAssessment?.AccuracyScore) ??
+          (j?.PronunciationAssessment?.AccuracyScore) ?? 0
+        );
+        return Number.isFinite(s) ? s : 0;
+      } catch (_) { return 0; }
+    }
+
+    // Level meter (separate MediaStream just for the visual)
+    async function startLevelMeter() {
+      const bar = document.getElementById('levelBar');
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        const ctx = new Ctx();
+        const src = ctx.createMediaStreamSource(stream);
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 2048;
+        src.connect(analyser);
+        const data = new Uint8Array(analyser.fftSize);
+        let running = true;
+
+        (function loop() {
+          if (!running) return;
+          analyser.getByteTimeDomainData(data);
+          let sum = 0;
+          for (let i = 0; i < data.length; i++) {
+            const v = (data[i] - 128) / 128;
+            sum += v * v;
+          }
+          const rms = Math.sqrt(sum / data.length);
+          const pct = Math.min(100, Math.max(0, Math.round(rms * 140)));
+          bar.style.width = pct + "%";
+          requestAnimationFrame(loop);
+        })();
+
+        return {
+          stop() {
+            running = false;
+            try { bar.style.width = "0%"; } catch(_){
+            }
+            try { ctx.close(); } catch(_){
+            }
+            try { stream.getTracks().forEach(t => t.stop()); } catch(_){
+            }
+          }
+        };
+      } catch (e) {
+        logDbg('meter error', e?.message || e);
+        return {
+          stop() {
+            try { bar.style.width = "0%"; } catch(_){
+            }
+          }
+        };
+      }
+    }
+
+    async function assessOnce(referenceText, targetEl) {
+      try {
+        const ref = (referenceText || "").trim();
+        if (!window.SpeechSDK) {
+          if (targetEl) targetEl.textContent = "⚠️ Speech SDK not loaded.";
+          return 0;
+        }
+        if (!ref) {
+          if (targetEl) targetEl.textContent = "⚠️ No reference text.";
+          return 0;
+        }
+
+        if (targetEl) targetEl.textContent = "🎤 Preparing…";
+        await prewarmMic();
+
+        // Token
+        const tok = await api.get('/api/speech_token', { noAuth: true });
+        const token  = tok && (tok.token || tok.access_token);
+        const region = tok && (tok.region || tok.location || tok.regionName);
+        if (!token || !region) {
+          if (targetEl) targetEl.textContent = "⚠️ Token error";
+          return 0;
+        }
+
+        const SpeechSDK = window.SpeechSDK;
+        const speechConfig = SpeechSDK.SpeechConfig.fromAuthorizationToken(token, region);
+        speechConfig.speechRecognitionLanguage = "pl-PL";
+        speechConfig.outputFormat = SpeechSDK.OutputFormat.Detailed;
+        speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceResponse_RequestDetailedResultTrueFalse, "true");
+        // Friendly timing: give a beat to start; then end quickly after speech ends
+        speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, "2500");
+        speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "300");
+
+        // Try to feed SDK with default mic (stable); if stream-input is unsupported, this falls back
+        let audioConfig = null;
+        try {
+          // Some SDK builds support fromStreamInput(MediaStream); if not, will throw
+          if (SpeechSDK.AudioConfig?.fromStreamInput && navigator.mediaDevices?.getUserMedia) {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            audioConfig = SpeechSDK.AudioConfig.fromStreamInput(stream);
+          }
+        } catch (_e) {
+          audioConfig = null;
+        }
+        if (!audioConfig) {
+          audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
+        }
+
+        const recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
+
+        // Pronunciation Assessment on WORD granularity (robust for single words)
+        const pa = new SpeechSDK.PronunciationAssessmentConfig(
+          ref,
+          SpeechSDK.PronunciationAssessmentGradingSystem.HundredMark,
+          SpeechSDK.PronunciationAssessmentGranularity.Word,
+          true // miscue
+        );
+        pa.applyTo(recognizer);
+
+        const meter = await startLevelMeter();
+        if (targetEl) targetEl.textContent = "🎙 Listening…";
+
+        const timeoutMs = 6000;
+        const result = await Promise.race([
+          new Promise((resolve, reject) => recognizer.recognizeOnceAsync(resolve, reject)),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), timeoutMs))
+        ]);
+
+        let score = 0;
+        try {
+          const raw = result?.properties?.getProperty(SpeechSDK.PropertyId.SpeechServiceResponse_JsonResult)
+                   || result?.privPronunciationAssessmentJson;
+          if (raw) score = parseScoreFromJson(raw);
+          logDbg('reason', result?.reason, 'score', score);
+          if (result?.reason === SpeechSDK.ResultReason.NoMatch) {
+            const d = SpeechSDK.NoMatchDetails.fromResult(result);
+            logDbg('noMatch', d?.reason || 0);
+          }
+        } catch (_e) {}
+
+        try { recognizer.close(); } catch(_){
+        }
+        try { meter.stop(); } catch(_){
+        }
+
+        if (targetEl) targetEl.textContent = (score ? `✅ ${score}%` : "⚠️ No score");
+        return score || 0;
+
+      } catch (e) {
+        logDbg('assessOnce error', e?.message || e);
+        if (targetEl) {
+          const msg = (e && e.message) ? e.message : String(e);
+          targetEl.textContent = (msg === "timeout") ? "⏱️ Try again (speak right away)" : "⚠️ Speech error";
+        }
+        return 0;
+      }
+    }
+
+    // ---------- UI wiring ----------
+    window.addEventListener("DOMContentLoaded", async function() {
+      // Try to load R2 manifest (non-blocking; safe if missing)
+      try { if (window.AudioPaths) r2Manifest = await AudioPaths.fetchManifest(setName); } catch (_e) { r2Manifest = null; }
+
+      renderCard();
+
+      // Flip on tap (ignore buttons/result)
+      document.getElementById("cardContainer").addEventListener("click", (e) => {
+        if (e.target.closest("button") || e.target.classList.contains("result")) return;
+        document.getElementById("cardContainer").classList.toggle("flipped");
+        hasFlippedCurrent = true;
+      });
+
+      // Front: Say it (single tap "capture" path)
+      const sayBtn = document.getElementById("btnSayFront");
+      const frontRes = document.getElementById("frontResult");
+
+      sayBtn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        const eCard = cards[currentIndex] || {};
+        const ref = (eCard.phrase || "").trim();
+        if (!ref) { frontRes.textContent = "⚠️ No reference text."; return; }
+        const s = await assessOnce(ref, frontRes);
+
+        // record stats
+        tracker.attempts++;
+        if (!tracker.per[currentIndex]) tracker.per[currentIndex] = { tries: 0, best: 0, got100BeforeFlip: false };
+        const r = tracker.per[currentIndex];
+        r.tries++;
+        if (Number.isFinite(s)) {
+          r.best = Math.max(r.best || 0, s);
+          if (!hasFlippedCurrent && s === 100 && !r.got100BeforeFlip) {
+            r.got100BeforeFlip = true;
+            tracker.perfectNoFlipCount++;
+          }
+        }
+      });
+
+      // Back: Play (preloaded + fallback)
+      document.getElementById("btnPlay").addEventListener("click", async (e) => {
+        e.stopPropagation();
+        let a = audioCache.get(currentIndex);
+        if (!a) {
+          primeAudio(currentIndex);
+          a = audioCache.get(currentIndex);
+        }
+        if (a) {
+          a.onerror = () => {
+            // retry with local path explicitly
+            const retry = new Audio(localAudioPath(currentIndex));
+            retry.play().catch(err => logDbg('audio retry err', err?.message || err));
+          };
+          try { a.currentTime = 0; } catch(_){
+          }
+          a.play().catch(err => logDbg('audio play err', err?.message || err));
+        }
+      });
+
+      // Prev / Next / Finish
+      document.getElementById("prevBtn").addEventListener("click", () => {
+        if (currentIndex > 0) {
+          currentIndex--;
+          renderCard();
+          if (window.SessionSync) SessionSync.save({ setName, mode, progress: { index: currentIndex, per: tracker.per } });
+        }
+      });
+
+      document.getElementById("nextBtn").addEventListener("click", async () => {
+        if (currentIndex < cards.length - 1) {
+          currentIndex++;
+          renderCard();
+          if (window.SessionSync) SessionSync.save({ setName, mode, progress: { index: currentIndex, per: tracker.per } });
+        } else {
+          // FINISH
+          const totalCards = Math.max(1, cards.length);
+          const correct = Object.values(tracker.per).filter(r => (r?.best || 0) >= PASS).length;
+          const scorePct = Math.round((correct / totalCards) * 100);
+
+          let pointsTotal = 10 + tracker.perfectNoFlipCount;
+          if (scorePct === 100) pointsTotal = pointsTotal * 2;
+
+          try {
+            localStorage.setItem("lp_last_result_" + setName, JSON.stringify({
+              score: scorePct, attempts: tracker.attempts, total: totalCards,
+              points_total: pointsTotal, perfect_before_flip: tracker.perfectNoFlipCount
+            }));
+          } catch (_ignore) {}
+
+          let awarded = null;
+          try {
+            const resp = await api.fetch("/api/submit_score", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                set_name: setName, mode: "flashcards", score: scorePct, attempts: tracker.attempts,
+                details: { per: tracker.per, total: totalCards, perfect_before_flip: tracker.perfectNoFlipCount, points_total: pointsTotal }
+              })
+            });
+            if (resp.ok) {
+              const js = await resp.json();
+              awarded = (js && js.details && js.details.points_awarded != null) ? Number(js.details.points_awarded) : null;
+            }
+          } catch (_ignore) {}
+
+          try { if (window.SessionSync) await SessionSync.complete({ setName, mode }); } catch(_ignore) {}
+          try { localStorage.removeItem("lp_last"); } catch(_ignore) {}
+          const q = awarded != null ? ("?awarded=" + encodeURIComponent(awarded)) : "";
+          window.location.href = "summary.html" + q;
+        }
+      });
+
+      // Resume mid-set if ?resume=1
+      (async () => {
+        const wantResume = new URL(location.href).searchParams.get("resume") === "1";
+        if (wantResume && window.SessionSync) {
+          await SessionSync.restore({ setName, mode }, (progress) => {
+            if (progress && Number.isFinite(progress.index)) {
+              currentIndex = Math.max(0, Math.min(cards.length - 1, progress.index));
+            }
+            if (progress && progress.per) Object.assign(tracker.per, progress.per);
+            renderCard();
+          });
+        }
+        try { localStorage.setItem("lp_last", JSON.stringify({ set_name:setName, mode, ts: Date.now() })); } catch(_ignore) {}
+      })();
+    });
+
+    function goHome() { window.location.href = "../../index.html"; }
+  </script>
+
+</body>
+</html>
