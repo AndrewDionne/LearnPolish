@@ -1,0 +1,25 @@
+{
+  "name": "11-11-12",
+  "modes": [
+    "learn",
+    "speak"
+  ],
+  "meta": {
+    "modes": [
+      "learn",
+      "speak"
+    ]
+  },
+  "cards": [
+    {
+      "phrase": "Cześć",
+      "meaning": "Hello",
+      "pronunciation": "cheshch"
+    },
+    {
+      "phrase": "Dziękuję",
+      "meaning": "Thank you",
+      "pronunciation": "jen-koo-yeh"
+    }
+  ]
+}
