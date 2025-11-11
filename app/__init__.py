@@ -4,7 +4,7 @@ import re
 from urllib.parse import urlparse, urlunparse, unquote
 from datetime import datetime, timezone
 
-from flask import Flask, jsonify, redirect
+from flask import Flask, jsonify, redirect, current_app
 from flask_cors import CORS
 from flask_cors import cross_origin
 
@@ -273,9 +273,11 @@ def create_app():
 
     _bootstrap_db()
 
-    # --- CORS ---
+        # --- CORS ---
     allowed = _derive_allowed_origins()
     strict_cors = os.getenv("CORS_STRICT", "0").lower() in ("1", "true", "yes", "on")
+
+    # Build a list suitable for Flask-CORS: exact strings or compiled regex
     cors_allow_list: list[object] = []
     for item in allowed:
         if isinstance(item, str) and item.startswith("regex:"):
@@ -283,27 +285,32 @@ def create_app():
                 cors_allow_list.append(re.compile(item.split(":", 1)[1]))
             except re.error:
                 continue
+        elif isinstance(item, str) and "*" in item:
+            # Turn wildcard strings like "https://*.github.io" into a regex
+            pattern = "^" + re.escape(item).replace("\\*", ".*") + "$"
+            cors_allow_list.append(re.compile(pattern))
         else:
             cors_allow_list.append(item)
+
     cors_origins = cors_allow_list if (strict_cors and cors_allow_list) else "*"
-    supports_credentials = bool(cors_origins != "*")
 
     resources = {
-        r"/api/*": {"origins": cors_origins},
-        r"/api/healthz": {"origins": cors_origins},
-        r"/ping": {"origins": cors_origins},
+        r"/api/*": {"origins": cors_origins, "methods": ["GET","POST","PUT","PATCH","DELETE","OPTIONS"]},
+        r"/api/healthz": {"origins": cors_origins, "methods": ["GET","OPTIONS"]},
+        r"/ping": {"origins": cors_origins, "methods": ["GET","OPTIONS"]},
     }
 
     CORS(
         app,
-        origins=cors_origins,
         resources=resources,
-        supports_credentials=supports_credentials,
+        supports_credentials=False,  # you aren't using cookies; keep this False so "*" is legal
         allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
-        expose_headers=["Content-Type", "Authorization"],
+        expose_headers=["Content-Type"],
+        max_age=600,
         send_wildcard=(cors_origins == "*"),
         vary_header=True,
     )
+
 
     from flask import request as flask_request
 
@@ -527,7 +534,7 @@ def create_app():
 
     @app.get("/api/azure/token")
     @app.get("/api/token/azure")
-    @cross_origin() 
+    @cross_origin(origins=cors_origins, supports_credentials=False, max_age=600)
     def azure_token():
         try:
             token, region, expires_at = _azure_issue_token()
@@ -543,7 +550,7 @@ def create_app():
     
     # Alias for legacy clients/pages
     @app.get("/api/speech_token")
-    @cross_origin()  # allow GitHub Pages to read the response
+    @cross_origin(origins=cors_origins, supports_credentials=False, max_age=600)
     def speech_token_alias():
         # Reuse the same handler
         return azure_token()

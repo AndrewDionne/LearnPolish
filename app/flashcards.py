@@ -1,6 +1,5 @@
 # app/flashcards.py
 import json
-
 from .sets_utils import sanitize_filename
 from .constants import PAGES_DIR as DOCS_DIR
 
@@ -11,17 +10,18 @@ def generate_flashcard_html(set_name, data):
       - docs/flashcards/<set_name>/index.html   (learning UI)
       - docs/flashcards/<set_name>/summary.html (results UI)
 
-    This version records mic audio, builds a WAV in-page, and feeds it to Azure PA.
-    - Hold to speak on iOS/Safari; single-tap capture window on desktop.
-    - Audio level meter during capture.
-    - Manifest-aware audio path + preload for instant playback.
+    Design:
+      - Single tap to assess (recognizeOnceAsync) — this is the same "capture" path that worked for you.
+      - Audio level bar shown directly under the 'Say it' button while listening.
+      - Preloads audio (current + next). Manifest-aware with local fallback.
+      - Add ?debug=1 to the page URL for console logs (no on-screen overlay).
     """
     output_dir = DOCS_DIR / "flashcards" / set_name
     output_dir.mkdir(parents=True, exist_ok=True)
     out_path = output_dir / "index.html"
     summary_path = output_dir / "summary.html"
 
-    # Ensure audio filenames exist in data (keep convention)
+    # Ensure audio filenames exist in data (keeps your naming convention)
     for idx, entry in enumerate(data):
         try:
             entry["audio_file"] = f"{idx}_{sanitize_filename(entry.get('phrase', ''))}.mp3"
@@ -59,37 +59,31 @@ def generate_flashcard_html(set_name, data):
     .answer-phrase {{ font-weight:700; font-size:1.2em; }}
     .answer-pron {{ font-style:italic; margin-top:4px; }}
 
-    .actions {{ display:flex; gap:8px; margin-top:16px; align-items:center; }}
+    .actions {{ display:flex; gap:10px; margin-top:16px; flex-direction:column; align-items:center; }}
     .btn-small {{ padding:10px 14px; font-size:1em; background:#2d6cdf; color:#fff; border:none; border-radius:10px; cursor:pointer; }}
     .btn-green {{ background:#28a745; }}
 
-    .result {{ margin-top:8px; font-size:.95em; min-height:1.2em; }}
+    .levelwrap {{ width:240px; height:8px; background:#e0e3eb; border-radius:6px; overflow:hidden; margin-top:8px; }}
+    .levelbar  {{ width:0%; height:100%; background:#2d6cdf; transition: width .08s linear; }}
 
-    .meter {{ width:110px; height:8px; border-radius:6px; background:#e6e6ef; overflow:hidden; }}
-    .meter > .bar {{ height:100%; width:0%; background:#2d6cdf; transition:width .05s linear; }}
+    .result {{ margin-top:8px; font-size:.95em; min-height:1.2em; }}
 
     .nav-buttons {{ display:flex; gap:12px; margin-top:16px; }}
     .nav-button {{ padding:10px 14px; font-size:1em; background:#007bff; color:#fff; border:none; border-radius:10px; min-width:110px; cursor:pointer; }}
     .nav-button:disabled {{ background:#aaa; cursor:default; }}
-
-    /* Debug overlay (enable with ?debug=1) */
-    #dbg {{ display:none; position:fixed; bottom:8px; left:8px; right:8px; max-height:42vh; overflow:auto;
-           background:#000; color:#0f0; padding:8px 10px; border-radius:10px; font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px; white-space:pre-wrap; z-index:9999; }}
-    #dbg .row {{ opacity:.95; }}
-    #dbg .raw {{ color:#9ef; }}
   </style>
 </head>
 <body>
   <h1>{set_name} • Learn <button class="home-btn" onclick="goHome()">🏠</button></h1>
-  <div class="hint" id="speakHint">Hold the button and speak clearly.</div>
+  <div class="hint" id="speakHint">Click, then speak clearly.</div>
 
   <div class="card" id="cardContainer" aria-live="polite">
     <div class="card-inner" id="cardInner">
       <div class="side front" id="frontSide">
         <div class="cue" id="frontCue"></div>
         <div class="actions">
-          <button class="btn-small" id="btnSayFront" title="Press & hold to speak">🎤 Say it in Polish</button>
-          <div class="meter" title="Mic level"><div id="lvl" class="bar"></div></div>
+          <button class="btn-small" id="btnSayFront" title="Click, then speak">🎤 Say it in Polish</button>
+          <div class="levelwrap"><div id="levelBar" class="levelbar"></div></div>
         </div>
         <div class="result" id="frontResult"></div>
       </div>
@@ -109,8 +103,6 @@ def generate_flashcard_html(set_name, data):
     <button id="nextBtn" class="nav-button">Next</button>
   </div>
 
-  <div id="dbg"></div>
-
   <!-- Scripts -->
   <script src="../../static/js/app-config.js"></script>
   <script src="../../static/js/api.js"></script>
@@ -126,8 +118,8 @@ def generate_flashcard_html(set_name, data):
     const mode = "flashcards";
     let currentIndex = 0;
 
-    let r2Manifest = null;                      // Optional CDN manifest
-    const audioCache = new Map();               // index -> HTMLAudioElement
+    // Optional CDN manifest (loaded later; safe to be null)
+    let r2Manifest = null;
 
     // Scoring + points
     const PASS = 75;
@@ -138,155 +130,34 @@ def generate_flashcard_html(set_name, data):
     }};
     let hasFlippedCurrent = false;
 
-    // Debug overlay
-    const DEBUG = new URL(location.href).searchParams.get('debug') === '1';
-    const dbgEl = document.getElementById('dbg');
-    if (DEBUG) dbgEl.style.display = 'block';
-    function logDbg(...a) {{
-      if (!DEBUG) return;
-      const line = document.createElement('div');
-      line.className = 'row';
-      line.textContent = a.map(x => (typeof x === 'string' ? x : JSON.stringify(x))).join(' ');
-      dbgEl.appendChild(line);
-      dbgEl.scrollTop = dbgEl.scrollHeight;
-      try {{ console.debug('[FC]', ...a); }} catch(_){{
-      }}
-    }}
-    function logRaw(j) {{
-      if (!DEBUG) return;
-      const line = document.createElement('div');
-      line.className = 'row raw';
-      line.textContent = (typeof j === 'string') ? j : JSON.stringify(j);
-      dbgEl.appendChild(line);
-      dbgEl.scrollTop = dbgEl.scrollHeight;
-    }}
+    // --- Audio preload cache ---
+    const audioCache = new Map(); // index -> HTMLAudioElement
 
-    // Platform detection
+    // --- Debug (console only) ---
+    const DEBUG = new URL(location.href).searchParams.get('debug') === '1';
+    function logDbg(...a) {{ if (DEBUG) try {{ console.debug('[FC]', ...a); }} catch(_ ){{}} }}
+
+    // --- Platform hint ---
     const ua = navigator.userAgent || '';
     const IS_IOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     const IS_SAFARI = /^((?!chrome|android).)*safari/i.test(ua);
+    document.getElementById('speakHint').textContent =
+      (IS_IOS || IS_SAFARI) ? "Tap the button, then speak right away." : "Click, then speak.";
 
-    // --- Audio meter ---
-    const lvlEl = document.getElementById('lvl');
-    function setLevel(v) {{  // v: 0..1
-      const pct = Math.max(0, Math.min(1, v)) * 100;
-      lvlEl.style.width = pct.toFixed(0) + '%';
-    }}
-
-    // --- WAV capture (Web Audio) ---
-    let mediaStream = null;
-    let audioCtx = null;
-    let srcNode = null;
-    let procNode = null;
-    let buffers = [];
-    let captureSampleRate = 48000;  // will be set from AudioContext
-    let capturing = false;
-
-    async function startCapture() {{
-      // Request mic each time (stay on the safe side for iOS)
-      mediaStream = await navigator.mediaDevices.getUserMedia({{ audio: true }});
-      const Ctx = window.AudioContext || window.webkitAudioContext;
-      audioCtx = new Ctx();
-      await audioCtx.resume();
-      captureSampleRate = audioCtx.sampleRate;
-
-      srcNode = audioCtx.createMediaStreamSource(mediaStream);
-      procNode = audioCtx.createScriptProcessor(2048, 1, 1);
-
-      buffers = [];
-      capturing = true;
-
-      procNode.onaudioprocess = (e) => {{
-        if (!capturing) return;
-        const chan = e.inputBuffer.getChannelData(0); // mono
-        // copy out (Float32Array is reused by the browser)
-        buffers.push(new Float32Array(chan));
-        // meter (RMS)
-        let sum = 0;
-        for (let i = 0; i < chan.length; i++) sum += chan[i] * chan[i];
-        const rms = Math.sqrt(sum / chan.length);
-        setLevel(Math.min(1, rms * 3)); // a bit of gain
-      }};
-
-      srcNode.connect(procNode);
-      procNode.connect(audioCtx.destination); // required for some browsers, effectively silent
-    }}
-
-    function stopCaptureAndEncodeWav() {{
-      return new Promise((resolve) => {{
-        try {{
-          capturing = false;
-          if (procNode) procNode.disconnect();
-          if (srcNode) srcNode.disconnect();
-          try {{ audioCtx && audioCtx.close(); }} catch(_){{
-          }}
-          try {{ mediaStream && mediaStream.getTracks().forEach(t => t.stop()); }} catch(_){{
-          }}
-          setLevel(0);
-        }} finally {{
-          resolve(encodeWav(buffers, captureSampleRate));
-        }}
-      }});
-    }}
-
-    function interleaveFloat32(buffers) {{
-      // buffers: array of Float32Array blocks, mono
-      if (!buffers.length) return new Float32Array(0);
-      let len = 0;
-      for (const b of buffers) len += b.length;
-      const out = new Float32Array(len);
-      let off = 0;
-      for (const b of buffers) {{ out.set(b, off); off += b.length; }}
-      return out;
-    }}
-
-    function floatTo16BitPCM(float32) {{
-      const out = new DataView(new ArrayBuffer(float32.length * 2));
-      let offset = 0;
-      for (let i = 0; i < float32.length; i++, offset += 2) {{
-        let s = Math.max(-1, Math.min(1, float32[i]));
-        s = s < 0 ? s * 0x8000 : s * 0x7FFF;
-        out.setInt16(offset, s, true);
-      }}
-      return out;
-    }}
-
-    function writeString(view, offset, str) {{
-      for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
-    }}
-
-    function encodeWav(bufferBlocks, sampleRate) {{
-      const samples = interleaveFloat32(bufferBlocks);
-      const pcm = floatTo16BitPCM(samples);
-      const bytesPerSample = 2;
-      const blockAlign = 1 * bytesPerSample;
-      const byteRate = sampleRate * blockAlign;
-
-      const header = new DataView(new ArrayBuffer(44));
-      writeString(header, 0, 'RIFF');
-      header.setUint32(4, 36 + pcm.byteLength, true);
-      writeString(header, 8, 'WAVE');
-      writeString(header, 12, 'fmt ');
-      header.setUint32(16, 16, true);             // PCM
-      header.setUint16(20, 1, true);              // PCM format
-      header.setUint16(22, 1, true);              // mono
-      header.setUint32(24, sampleRate, true);
-      header.setUint32(28, byteRate, true);
-      header.setUint16(32, blockAlign, true);
-      header.setUint16(34, bytesPerSample * 8, true); // bits per sample
-      writeString(header, 36, 'data');
-      header.setUint32(40, pcm.byteLength, true);
-
-      const wavBuffer = new Uint8Array(44 + pcm.byteLength);
-      wavBuffer.set(new Uint8Array(header.buffer), 0);
-      wavBuffer.set(new Uint8Array(pcm.buffer), 44);
-      return new Blob([wavBuffer], {{ type: 'audio/wav' }});
+    // --- Mic pre-warm (helps Safari) ---
+    async function prewarmMic() {{
+      try {{
+        if (!navigator.mediaDevices?.getUserMedia) return;
+        const stream = await navigator.mediaDevices.getUserMedia({{ audio: true }});
+        stream.getTracks().forEach(tr => tr.stop());
+      }} catch (_e) {{}}
     }}
 
     // Mirror of Python sanitize_filename (for audio file names)
     function sanitizeFilename(text) {{
       return (text || "")
-        .normalize("NFD").replace(/[\\u0300-\\u036f]/g, "")
+        .normalize("NFD")
+        .replace(/[\\u0300-\\u036f]/g, "")
         .replace(/[^a-zA-Z0-9_-]+/g, "_")
         .replace(/^_+|_+$/g, "");
     }}
@@ -306,9 +177,10 @@ def generate_flashcard_html(set_name, data):
     function buildAudioSrc(index) {{
       let src = localAudioPath(index);
       try {{
-        if (window.AudioPaths) src = AudioPaths.buildAudioPath(setName, index, cards[index], r2Manifest);
-      }} catch (_ignore) {{
-      }}
+        if (window.AudioPaths) {{
+          src = AudioPaths.buildAudioPath(setName, index, cards[index], r2Manifest);
+        }}
+      }} catch (_ignore) {{}}
       return src;
     }}
 
@@ -319,8 +191,8 @@ def generate_flashcard_html(set_name, data):
       const a = new Audio();
       a.preload = "auto";
       a.src = src;
-      try {{ a.load(); }} catch(_){{
-      }}
+      a.onerror = () => logDbg('audio error', src);
+      try {{ a.load(); }} catch(_e) {{}}
       audioCache.set(index, a);
     }}
 
@@ -348,75 +220,170 @@ def generate_flashcard_html(set_name, data):
       resetAndPrimeAround(currentIndex);
     }}
 
-    // --- Azure PA on a WAV blob ---
-    async function assessWavBlob(wavBlob, referenceText) {{
-      if (!window.SpeechSDK) throw new Error("sdk_not_loaded");
-
-      const tok = await api.get('/api/speech_token', {{ noAuth: true }});
-      const token  = tok && (tok.token || tok.access_token);
-      const region = tok && (tok.region || tok.location || tok.regionName);
-      if (!token || !region) throw new Error("no_token");
-
-      const SpeechSDK = window.SpeechSDK;
-      const speechConfig = SpeechSDK.SpeechConfig.fromAuthorizationToken(token, region);
-      speechConfig.speechRecognitionLanguage = "pl-PL";
-      speechConfig.outputFormat = SpeechSDK.OutputFormat.Detailed;
-      speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceResponse_RequestDetailedResultTrueFalse, "true");
-
-      const audioConfig = SpeechSDK.AudioConfig.fromWavFileInput(wavBlob);
-      const recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
-
-      const pa = new SpeechSDK.PronunciationAssessmentConfig(
-        referenceText,
-        SpeechSDK.PronunciationAssessmentGradingSystem.HundredMark,
-        SpeechSDK.PronunciationAssessmentGranularity.Word,
-        true // miscue
-      );
-      pa.applyTo(recognizer);
-
-      return await new Promise((resolve, reject) => {{
-        try {{
-          recognizer.recognizeOnceAsync((result) => {{
-            try {{ recognizer.close(); }} catch(_){{
-            }}
-            try {{
-              const raw = result?.properties?.getProperty(SpeechSDK.PropertyId.SpeechServiceResponse_JsonResult) || result?.privPronunciationAssessmentJson;
-              if (raw) logRaw(raw);
-              const reason = result?.reason || 0;
-              if (reason === SpeechSDK.ResultReason.Canceled) return resolve({{ score: 0, reason }});
-              // parse score
-              let score = 0;
-              if (raw) {{
-                const j = JSON.parse(raw);
-                score = Math.round(
-                  (j?.NBest?.[0]?.PronunciationAssessment?.AccuracyScore) ??
-                  (j?.PronunciationAssessment?.AccuracyScore) ?? 0
-                );
-              }}
-              resolve({{ score, reason }});
-            }} catch (e) {{
-              resolve({{ score: 0, error: String(e) }});
-            }}
-          }}, (err) => {{
-            try {{ recognizer.close(); }} catch(_){{
-            }}
-            reject(err);
-          }});
-        }} catch (e) {{
-          try {{ recognizer.close(); }} catch(_){{
-          }}
-          reject(e);
-        }}
-      }});
+    // ---------------- Azure speech (recognizeOnce: the "capture" path) ----------------
+    function parseScoreFromJson(raw) {{
+      try {{
+        const j = JSON.parse(raw);
+        // Prefer PA on NBest[0], fallback to top-level
+        const s = Math.round(
+          (j?.NBest?.[0]?.PronunciationAssessment?.AccuracyScore) ??
+          (j?.PronunciationAssessment?.AccuracyScore) ?? 0
+        );
+        return Number.isFinite(s) ? s : 0;
+      }} catch (_) {{ return 0; }}
     }}
 
-    // --- Interaction wiring ---
-    window.addEventListener("DOMContentLoaded", async function() {{
-      // Hint line
-      document.getElementById('speakHint').textContent =
-        (IS_IOS || IS_SAFARI) ? "Hold the button while you speak." : "Click, then speak when prompted.";
+    // Level meter (separate MediaStream just for the visual)
+    async function startLevelMeter() {{
+      const bar = document.getElementById('levelBar');
+      try {{
+        const stream = await navigator.mediaDevices.getUserMedia({{ audio: true }});
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        const ctx = new Ctx();
+        const src = ctx.createMediaStreamSource(stream);
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 2048;
+        src.connect(analyser);
+        const data = new Uint8Array(analyser.fftSize);
+        let running = true;
 
-      // Try to load R2 manifest (non-blocking)
+        (function loop() {{
+          if (!running) return;
+          analyser.getByteTimeDomainData(data);
+          let sum = 0;
+          for (let i = 0; i < data.length; i++) {{
+            const v = (data[i] - 128) / 128;
+            sum += v * v;
+          }}
+          const rms = Math.sqrt(sum / data.length);
+          const pct = Math.min(100, Math.max(0, Math.round(rms * 140)));
+          bar.style.width = pct + "%";
+          requestAnimationFrame(loop);
+        }})();
+
+        return {{
+          stop() {{
+            running = false;
+            try {{ bar.style.width = "0%"; }} catch(_){{
+            }}
+            try {{ ctx.close(); }} catch(_){{
+            }}
+            try {{ stream.getTracks().forEach(t => t.stop()); }} catch(_){{
+            }}
+          }}
+        }};
+      }} catch (e) {{
+        logDbg('meter error', e?.message || e);
+        return {{
+          stop() {{
+            try {{ bar.style.width = "0%"; }} catch(_){{
+            }}
+          }}
+        }};
+      }}
+    }}
+
+    async function assessOnce(referenceText, targetEl) {{
+      try {{
+        const ref = (referenceText || "").trim();
+        if (!window.SpeechSDK) {{
+          if (targetEl) targetEl.textContent = "⚠️ Speech SDK not loaded.";
+          return 0;
+        }}
+        if (!ref) {{
+          if (targetEl) targetEl.textContent = "⚠️ No reference text.";
+          return 0;
+        }}
+
+        if (targetEl) targetEl.textContent = "🎤 Preparing…";
+        await prewarmMic();
+
+        // Token
+        const tok = await api.get('/api/speech_token', {{ noAuth: true }});
+        const token  = tok && (tok.token || tok.access_token);
+        const region = tok && (tok.region || tok.location || tok.regionName);
+        if (!token || !region) {{
+          if (targetEl) targetEl.textContent = "⚠️ Token error";
+          return 0;
+        }}
+
+        const SpeechSDK = window.SpeechSDK;
+        const speechConfig = SpeechSDK.SpeechConfig.fromAuthorizationToken(token, region);
+        speechConfig.speechRecognitionLanguage = "pl-PL";
+        speechConfig.outputFormat = SpeechSDK.OutputFormat.Detailed;
+        speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceResponse_RequestDetailedResultTrueFalse, "true");
+        // Friendly timing: give a beat to start; then end quickly after speech ends
+        speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, "2500");
+        speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "300");
+
+        // Try to feed SDK with default mic (stable); if stream-input is unsupported, this falls back
+        let audioConfig = null;
+        try {{
+          // Some SDK builds support fromStreamInput(MediaStream); if not, will throw
+          if (SpeechSDK.AudioConfig?.fromStreamInput && navigator.mediaDevices?.getUserMedia) {{
+            const stream = await navigator.mediaDevices.getUserMedia({{ audio: true }});
+            audioConfig = SpeechSDK.AudioConfig.fromStreamInput(stream);
+          }}
+        }} catch (_e) {{
+          audioConfig = null;
+        }}
+        if (!audioConfig) {{
+          audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
+        }}
+
+        const recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
+
+        // Pronunciation Assessment on WORD granularity (robust for single words)
+        const pa = new SpeechSDK.PronunciationAssessmentConfig(
+          ref,
+          SpeechSDK.PronunciationAssessmentGradingSystem.HundredMark,
+          SpeechSDK.PronunciationAssessmentGranularity.Word,
+          true // miscue
+        );
+        pa.applyTo(recognizer);
+
+        const meter = await startLevelMeter();
+        if (targetEl) targetEl.textContent = "🎙 Listening…";
+
+        const timeoutMs = 6000;
+        const result = await Promise.race([
+          new Promise((resolve, reject) => recognizer.recognizeOnceAsync(resolve, reject)),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), timeoutMs))
+        ]);
+
+        let score = 0;
+        try {{
+          const raw = result?.properties?.getProperty(SpeechSDK.PropertyId.SpeechServiceResponse_JsonResult)
+                   || result?.privPronunciationAssessmentJson;
+          if (raw) score = parseScoreFromJson(raw);
+          logDbg('reason', result?.reason, 'score', score);
+          if (result?.reason === SpeechSDK.ResultReason.NoMatch) {{
+            const d = SpeechSDK.NoMatchDetails.fromResult(result);
+            logDbg('noMatch', d?.reason || 0);
+          }}
+        }} catch (_e) {{}}
+
+        try {{ recognizer.close(); }} catch(_){{
+        }}
+        try {{ meter.stop(); }} catch(_){{
+        }}
+
+        if (targetEl) targetEl.textContent = (score ? `✅ ${{score}}%` : "⚠️ No score");
+        return score || 0;
+
+      }} catch (e) {{
+        logDbg('assessOnce error', e?.message || e);
+        if (targetEl) {{
+          const msg = (e && e.message) ? e.message : String(e);
+          targetEl.textContent = (msg === "timeout") ? "⏱️ Try again (speak right away)" : "⚠️ Speech error";
+        }}
+        return 0;
+      }}
+    }}
+
+    // ---------- UI wiring ----------
+    window.addEventListener("DOMContentLoaded", async function() {{
+      // Try to load R2 manifest (non-blocking; safe if missing)
       try {{ if (window.AudioPaths) r2Manifest = await AudioPaths.fetchManifest(setName); }} catch (_e) {{ r2Manifest = null; }}
 
       renderCard();
@@ -428,73 +395,48 @@ def generate_flashcard_html(set_name, data):
         hasFlippedCurrent = true;
       }});
 
-      // ---- Front: Say it (capture → WAV → assess)
+      // Front: Say it (single tap "capture" path)
       const sayBtn = document.getElementById("btnSayFront");
       const frontRes = document.getElementById("frontResult");
 
-      const getRef = () => (cards[currentIndex] && cards[currentIndex].phrase) || "";
+      sayBtn.addEventListener("click", async (e) => {{
+        e.stopPropagation();
+        const eCard = cards[currentIndex] || {{}};
+        const ref = (eCard.phrase || "").trim();
+        if (!ref) {{ frontRes.textContent = "⚠️ No reference text."; return; }}
+        const s = await assessOnce(ref, frontRes);
 
-      async function startPress() {{
-        const ref = getRef();
-        if (!ref.trim()) {{ frontRes.textContent = "⚠️ No reference text."; return; }}
-        frontRes.textContent = "🎤 Recording…";
-        try {{
-          await startCapture();
-        }} catch (e) {{
-          frontRes.textContent = "⚠️ Mic error";
-        }}
-      }}
-
-      async function endPress() {{
-        try {{
-          const wav = await stopCaptureAndEncodeWav();
-          frontRes.textContent = "⏳ Scoring…";
-          const res = await assessWavBlob(wav, getRef());
-          const s = Number(res?.score) || 0;
-          frontRes.textContent = s ? `✅ ${{s}}%` : "⚠️ No score";
-
-          // record stats
-          tracker.attempts++;
-          if (!tracker.per[currentIndex]) tracker.per[currentIndex] = {{ tries: 0, best: 0, got100BeforeFlip: false }};
-          const r = tracker.per[currentIndex];
-          r.tries++;
+        // record stats
+        tracker.attempts++;
+        if (!tracker.per[currentIndex]) tracker.per[currentIndex] = {{ tries: 0, best: 0, got100BeforeFlip: false }};
+        const r = tracker.per[currentIndex];
+        r.tries++;
+        if (Number.isFinite(s)) {{
           r.best = Math.max(r.best || 0, s);
           if (!hasFlippedCurrent && s === 100 && !r.got100BeforeFlip) {{
             r.got100BeforeFlip = true;
             tracker.perfectNoFlipCount++;
           }}
-        }} catch (e) {{
-          frontRes.textContent = "⚠️ Speech error";
         }}
-      }}
+      }});
 
-      if (IS_IOS || IS_SAFARI) {{
-        // Hold to speak
-        sayBtn.addEventListener('pointerdown', (ev) => {{ ev.preventDefault(); startPress(); }});
-        sayBtn.addEventListener('pointerup',   (ev) => {{ ev.preventDefault(); endPress(); }});
-        sayBtn.addEventListener('pointerleave',(ev) => {{ ev.preventDefault(); endPress(); }});
-        // Touch fallback
-        sayBtn.addEventListener('touchstart', (ev) => {{ ev.preventDefault(); startPress(); }}, {{passive:false}});
-        sayBtn.addEventListener('touchend',   (ev) => {{ ev.preventDefault(); endPress(); }},   {{passive:false}});
-      }} else {{
-        // Single tap: short timed window (≈2.2s)
-        sayBtn.addEventListener("click", async (e) => {{
-          e.stopPropagation();
-          await startPress();
-          await new Promise(r => setTimeout(r, 2200));
-          await endPress();
-        }});
-      }}
-
-      // ---- Back: Play (preloaded)
+      // Back: Play (preloaded + fallback)
       document.getElementById("btnPlay").addEventListener("click", async (e) => {{
         e.stopPropagation();
         let a = audioCache.get(currentIndex);
-        if (!a) {{ primeAudio(currentIndex); a = audioCache.get(currentIndex); }}
+        if (!a) {{
+          primeAudio(currentIndex);
+          a = audioCache.get(currentIndex);
+        }}
         if (a) {{
+          a.onerror = () => {{
+            // retry with local path explicitly
+            const retry = new Audio(localAudioPath(currentIndex));
+            retry.play().catch(err => logDbg('audio retry err', err?.message || err));
+          }};
           try {{ a.currentTime = 0; }} catch(_){{
           }}
-          a.play().catch(()=>{{}});
+          a.play().catch(err => logDbg('audio play err', err?.message || err));
         }}
       }});
 
@@ -523,14 +465,10 @@ def generate_flashcard_html(set_name, data):
 
           try {{
             localStorage.setItem("lp_last_result_" + setName, JSON.stringify({{
-              score: scorePct,
-              attempts: tracker.attempts,
-              total: totalCards,
-              points_total: pointsTotal,
-              perfect_before_flip: tracker.perfectNoFlipCount
+              score: scorePct, attempts: tracker.attempts, total: totalCards,
+              points_total: pointsTotal, perfect_before_flip: tracker.perfectNoFlipCount
             }}));
-          }} catch (_ignore) {{
-          }}
+          }} catch (_ignore) {{}}
 
           let awarded = null;
           try {{
@@ -538,30 +476,18 @@ def generate_flashcard_html(set_name, data):
               method: "POST",
               headers: {{ "Content-Type": "application/json" }},
               body: JSON.stringify({{
-                set_name: setName,
-                mode: "flashcards",
-                score: scorePct,
-                attempts: tracker.attempts,
-                details: {{
-                  per: tracker.per,
-                  total: totalCards,
-                  perfect_before_flip: tracker.perfectNoFlipCount,
-                  points_total: pointsTotal
-                }}
+                set_name: setName, mode: "flashcards", score: scorePct, attempts: tracker.attempts,
+                details: {{ per: tracker.per, total: totalCards, perfect_before_flip: tracker.perfectNoFlipCount, points_total: pointsTotal }}
               }})
             }});
             if (resp.ok) {{
               const js = await resp.json();
-              awarded = (js && js.details && js.details.points_awarded != null)
-                ? Number(js.details.points_awarded) : null;
+              awarded = (js && js.details && js.details.points_awarded != null) ? Number(js.details.points_awarded) : null;
             }}
-          }} catch (_ignore) {{
-          }}
+          }} catch (_ignore) {{}}
 
-          try {{ if (window.SessionSync) await SessionSync.complete({{ setName, mode }}); }} catch(_ignore) {{
-          }}
-          try {{ localStorage.removeItem("lp_last"); }} catch(_ignore) {{
-          }}
+          try {{ if (window.SessionSync) await SessionSync.complete({{ setName, mode }}); }} catch(_ignore) {{}}
+          try {{ localStorage.removeItem("lp_last"); }} catch(_ignore) {{}}
           const q = awarded != null ? ("?awarded=" + encodeURIComponent(awarded)) : "";
           window.location.href = "summary.html" + q;
         }}
@@ -579,8 +505,7 @@ def generate_flashcard_html(set_name, data):
             renderCard();
           }});
         }}
-        try {{ localStorage.setItem("lp_last", JSON.stringify({{ set_name:setName, mode, ts: Date.now() }})); }} catch(_ignore) {{
-        }}
+        try {{ localStorage.setItem("lp_last", JSON.stringify({{ set_name:setName, mode, ts: Date.now() }})); }} catch(_ignore) {{}}
       }})();
     }});
 
@@ -658,8 +583,7 @@ def generate_flashcard_html(set_name, data):
             done = true;
           }}
         }}
-      }} catch (_){{
-      }}
+      }} catch (_) {{}}
 
       if (!done) {{
         try {{
@@ -669,8 +593,7 @@ def generate_flashcard_html(set_name, data):
             apply(Math.round(Number(j.score)||0), Number(j.attempts)||0, Number(j.total)||undefined, Number(j.points_total)||undefined, awarded);
             done = true;
           }}
-        }} catch(_){{
-        }}
+        }} catch(_) {{}}
       }}
 
       if (!done) {{
