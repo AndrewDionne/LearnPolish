@@ -1,6 +1,5 @@
 # app/flashcards.py
 import json
-
 from .sets_utils import sanitize_filename
 from .constants import PAGES_DIR as DOCS_DIR
 
@@ -11,18 +10,19 @@ def generate_flashcard_html(set_name, data):
       - docs/flashcards/<set_name>/index.html   (learning UI, capture-first)
       - docs/flashcards/<set_name>/summary.html (results UI)
 
-    Kept features
-      - ?debug=1 overlay with reasons/raw JSON
-      - ?live=1 forces live mic path
-      - ?capture=0/1 overrides capture mode (default capture)
-      - Audio preloading (current + next)
-      - R2 manifest support via AudioPaths if present
+    Speed & quality:
+      - Early-stop VAD (RMS threshold + short silence hold)
+      - Max capture ~1.4s
+      - Token cached ~9 min & prefetched
+      - Word timestamps disabled
+      - "Strict" final score = 0.55*Accuracy + 0.25*Fluency + 0.20*Completeness,
+        then penalized by (voiced_ms / expected_ms) and by Azure word error rate.
 
-    Speed-ups
-      - Default capture ~1.6s with early-stop VAD (energy-based)
-      - Token caching (prefetch on load)
-      - No word-level timestamps on both paths
-      - WAV download gated to ?debug=1 only
+    Toggles (optional):
+      - ?debug=1    → show debug overlay (reasons/raw JSON + WAV download)
+      - ?live=1     → force live-mic (recognizeOnce) instead of capture push
+      - ?capture=0  → force live mode
+      - ?capture=1  → force capture mode (default)
     """
     output_dir = DOCS_DIR / "flashcards" / set_name
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -38,7 +38,7 @@ def generate_flashcard_html(set_name, data):
 
     cards_json = json.dumps(data, ensure_ascii=False).replace(r"</", r"<\/")
 
-    # --------- LEARN PAGE (index.html) ----------
+    # ================== LEARN PAGE ==================
     html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -60,14 +60,9 @@ def generate_flashcard_html(set_name, data):
   <link rel="stylesheet" href="static/app.css?v=5">
 
   <style>
-    /* Page-local tweaks that sit on top of app.css */
-
     .wrap{{ max-width:900px; margin:0 auto; padding:0 16px 80px; }}
-
     .learn-frame{{ display:grid; gap:16px; grid-template-columns:1fr; }}
-    @media (min-width:880px) {{
-      .learn-frame{{ grid-template-columns: 1.1fr .9fr; }}
-    }}
+    @media (min-width:880px){{ .learn-frame{{ grid-template-columns: 1.1fr .9fr; }} }}
 
     .card.flip {{
       width:100%; height:320px; perspective:1000px; margin:8px 0;
@@ -111,7 +106,7 @@ def generate_flashcard_html(set_name, data):
   data-note-tail="{set_name}"
   style="--logo-size: 40px; --banner-size: 24px; --banner-size-lg: 30px;">
 
-  <!-- Header (brand + actions) -->
+  <!-- Header -->
   <header class="topbar no-nav">
     <div class="row container">
       <div class="header-left">
@@ -131,9 +126,7 @@ def generate_flashcard_html(set_name, data):
     </div>
   </header>
 
-  <!-- Slim page note -->
-  <div class="wrap page-note-wrap"><div id="pageNote" class="page-note"></div></div>
-
+  <!-- (No "how it works" / "scoring" sidebar, no hint line) -->
   <main class="wrap learn-frame">
     <!-- LEFT: Card -->
     <section class="stack">
@@ -162,25 +155,11 @@ def generate_flashcard_html(set_name, data):
       <div class="row">
         <button id="prevBtn" class="btn">Previous</button>
         <button id="nextBtn" class="btn btn-primary">Next</button>
-        <span id="speakHint" class="tiny" style="margin-left:auto; color:var(--muted)">Tap to record, then we’ll score it.</span>
       </div>
     </section>
 
-    <!-- RIGHT: Tips / Help -->
-    <aside class="stack">
-      <div class="card">
-        <h3 style="margin:0 0 8px">How it works</h3>
-        <ol class="tiny" style="margin:8px 0 0 18px; color:var(--muted)">
-          <li>Press <b>🎤 Say it in Polish</b> and speak the phrase.</li>
-          <li>We auto-stop when you finish, then score your pronunciation.</li>
-          <li>Flip the card to hear the reference audio and compare.</li>
-        </ol>
-      </div>
-      <div class="card">
-        <h3 style="margin:0 0 8px">Scoring</h3>
-        <div class="tiny" style="color:var(--muted)">100% is perfect; 75%+ counts as a pass. Earn bonus gold for perfect, no-flip attempts.</div>
-      </div>
-    </aside>
+    <!-- RIGHT: (kept empty to match layout; easy to add helpers later) -->
+    <aside class="stack"></aside>
   </main>
 
   <div id="dbg"></div>
@@ -214,7 +193,6 @@ def generate_flashcard_html(set_name, data):
   <script src="static/js/api.js"></script>
   <script src="static/js/page-chrome.js" defer></script>
   <script src="static/js/audio-paths.js"></script>
-  <!-- Azure Speech SDK -->
   <script src="https://aka.ms/csspeech/jsbrowserpackageraw"></script>
 
   <script>
@@ -224,7 +202,7 @@ def generate_flashcard_html(set_name, data):
     const mode = "flashcards";
     let currentIndex = 0;
 
-    // Optional CDN manifest
+    // CDN manifest
     let r2Manifest = null;
 
     // Debug overlay
@@ -236,8 +214,7 @@ def generate_flashcard_html(set_name, data):
       const line = document.createElement('div');
       line.className = 'row';
       line.textContent = a.map(x => (typeof x === 'string' ? x : JSON.stringify(x))).join(' ');
-      dbgEl.appendChild(line);
-      dbgEl.scrollTop = dbgEl.scrollHeight;
+      dbgEl.appendChild(line); dbgEl.scrollTop = dbgEl.scrollHeight;
       try {{ console.debug('[FC]', ...a); }} catch(_) {{}}
     }}
     function logRaw(j) {{
@@ -245,8 +222,7 @@ def generate_flashcard_html(set_name, data):
       const line = document.createElement('div');
       line.className = 'row raw';
       line.textContent = (typeof j === 'string') ? j : JSON.stringify(j);
-      dbgEl.appendChild(line);
-      dbgEl.scrollTop = dbgEl.scrollHeight;
+      dbgEl.appendChild(line); dbgEl.scrollTop = dbgEl.scrollHeight;
     }}
 
     // URL overrides (default capture)
@@ -260,36 +236,14 @@ def generate_flashcard_html(set_name, data):
     const tracker = {{ attempts: 0, per: {{}}, perfectNoFlipCount: 0 }};
     let hasFlippedCurrent = false;
 
-    // Audio preload cache
+    // Audio preload
     const audioCache = new Map();
-
-    // Platform text
-    const ua = navigator.userAgent || '';
-    const IS_IOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    const IS_SAFARI = /^((?!chrome|android).)*safari/i.test(ua);
-    const hint = document.getElementById('speakHint');
-
-    // Mic prewarm (helps Safari)
-    async function prewarmMic() {{
-      try {{
-        if (!navigator.mediaDevices?.getUserMedia) return;
-        const stream = await navigator.mediaDevices.getUserMedia({{ audio: true }});
-        stream.getTracks().forEach(tr => tr.stop());
-        try {{
-          const Ctx = window.AudioContext || window.webkitAudioContext;
-          if (Ctx) {{ const ctx = new Ctx(); await ctx.resume(); await new Promise(r => setTimeout(r, 40)); await ctx.close(); }}
-        }} catch (_e) {{}}
-      }} catch (e) {{ logDbg('prewarm error', e && e.message); }}
-    }}
-
-    // Filename helper (mirror Python sanitize)
-    function sanitizeFilename(text) {{
+    function sanitizeFilename(text){{
       return (text || "")
         .normalize("NFD").replace(/[\\u0300-\\u036f]/g, "")
         .replace(/[^a-zA-Z0-9_-]+/g, "_").replace(/^_+|_+$/g, "");
     }}
-
-    function localAudioPath(index) {{
+    function localAudioPath(index){{
       const e = cards[index] || {{}};
       const fn = String(index) + "_" + sanitizeFilename(e.phrase || "") + ".mp3";
       const setEnc = encodeURIComponent(setName);
@@ -298,51 +252,45 @@ def generate_flashcard_html(set_name, data):
       if (explicit && /^https?:\\/\\//i.test(explicit)) return explicit;
       return `static/${{setEnc}}/audio/${{fnEnc}}`; // base href handles nesting
     }}
-
-    function buildAudioSrc(index) {{
+    function buildAudioSrc(index){{
       let src = localAudioPath(index);
-      try {{ if (window.AudioPaths) src = AudioPaths.buildAudioPath(setName, index, cards[index], r2Manifest); }} catch (_ignore) {{}}
+      try {{ if (window.AudioPaths) src = AudioPaths.buildAudioPath(setName, index, cards[index], r2Manifest); }} catch(_){{
+      }}
       return src;
     }}
-
-    function primeAudio(index) {{
+    function primeAudio(index){{
       if (index < 0 || index >= cards.length) return;
       if (audioCache.has(index)) return;
-      const src = buildAudioSrc(index);
-      const a = new Audio();
-      a.preload = "auto";
-      a.src = src;
-      try {{ a.load(); }} catch(_e) {{}}
-      audioCache.set(index, a);
+      const a = new Audio(); a.preload="auto"; a.src = buildAudioSrc(index);
+      try{{ a.load(); }}catch(_){{
+      }} audioCache.set(index, a);
+    }}
+    function resetAndPrimeAround(index){{
+      audioCache.clear(); primeAudio(index); primeAudio(index+1);
     }}
 
-    function resetAndPrimeAround(index) {{
-      audioCache.clear();
-      primeAudio(index);
-      primeAudio(index + 1);
-    }}
-
-    function setNavUI() {{
+    function setNavUI(){{
       document.getElementById("prevBtn").disabled = (currentIndex === 0);
-      const nextBtn = document.getElementById("nextBtn");
-      nextBtn.textContent = (currentIndex < cards.length - 1) ? "Next" : "Finish";
+      document.getElementById("nextBtn").textContent = (currentIndex < cards.length - 1) ? "Next" : "Finish";
     }}
 
-    function renderCard() {{
+    function renderCard(){{
       const e = cards[currentIndex] || {{}};
-      document.getElementById("frontCue").textContent = e.meaning || "";
-      document.getElementById("frontResult").textContent = "";
+      document.getElementById("frontCue").textContent   = e.meaning || "";
+      document.getElementById("frontResult").textContent= "";
       document.getElementById("answerPhrase").textContent = e.phrase || "";
       document.getElementById("answerPron").textContent   = e.pronunciation || "";
       document.getElementById("backResult").textContent   = "";
-      setNavUI();
+      // Always flip to FRONT on render:
+      document.getElementById("cardContainer").classList.remove("flipped");
       hasFlippedCurrent = false;
+      setNavUI();
       resetAndPrimeAround(currentIndex);
     }}
 
     // ---------- Token cache ----------
     const tokenCache = {{ token:null, region:null, exp:0 }};
-    async function fetchToken() {{
+    async function fetchToken(){{
       const now = Date.now();
       if (tokenCache.token && tokenCache.region && now < tokenCache.exp) return tokenCache;
       try {{
@@ -352,70 +300,68 @@ def generate_flashcard_html(set_name, data):
         if (!token || !region) throw new Error('no_token_or_region');
         tokenCache.token  = token;
         tokenCache.region = region;
-        tokenCache.exp    = now + 9*60*1000; // 9 min cache
+        tokenCache.exp    = now + 9*60*1000;
         logDbg('SDK?', !!window.SpeechSDK, 'region', region, 'tok', !!token);
         return tokenCache;
-      }} catch (e) {{
-        logDbg('token fetch error', e?.message || e);
-        return {{ token:null, region:null, exp:0 }};
+      }} catch(e){{
+        logDbg('token fetch error', e?.message || e); return {{ token:null, region:null, exp:0 }};
       }}
     }}
-    async function prefetchToken() {{ try {{ await fetchToken(); }} catch(_ignore) {{}} }}
+    async function prefetchToken(){{
+      try {{ await fetchToken(); }} catch(_){{
+      }}
+    }}
 
-    // ---------- Capture with early-stop VAD ----------
+    // ---------- Early-stop capture with voiced-ms tracking ----------
     const meterWrap = document.getElementById('meterWrap');
     const meterBar  = document.getElementById('meterBar');
     const dlWav     = document.getElementById('dlWav');
 
-    async function recordBlobVAD(maxMs=1600) {{
+    async function recordBlobVAD(maxMs=1400){{
       meterWrap.style.display = CAPTURE_MODE ? 'block' : 'none';
 
-      let mediaStream = null, mediaRec = null, chunks = [];
-      let analyser = null, data = null, ctx = null, src = null;
-      let meterTimer = null, started = false, silentMs = 0, startedAt = 0;
+      let mediaStream=null, mediaRec=null, chunks=[];
+      let analyser=null, data=null, ctx=null, src=null;
+      let meterTimer=null, started=false, silentMs=0, voicedMs=0, startedAt=0;
 
       try {{
         mediaStream = await navigator.mediaDevices.getUserMedia({{ audio: true }});
-        // Level/VAD
+        // VAD
         try {{
           const ACtx = window.AudioContext || window.webkitAudioContext;
-          if (ACtx) {{
-            ctx = new ACtx();
-            src = ctx.createMediaStreamSource(mediaStream);
-            analyser = ctx.createAnalyser();
-            analyser.fftSize = 2048;
-            src.connect(analyser);
+          if (ACtx){{
+            ctx = new ACtx(); src = ctx.createMediaStreamSource(mediaStream);
+            analyser = ctx.createAnalyser(); analyser.fftSize = 2048; src.connect(analyser);
             data = new Uint8Array(analyser.fftSize);
           }}
-        }} catch(_ignore) {{}}
+        }} catch(_){{
+        }}
 
         mediaRec = new MediaRecorder(mediaStream, {{ mimeType: 'audio/webm' }});
-        mediaRec.ondataavailable = (e) => {{ if (e.data && e.data.size) chunks.push(e.data); }};
-        const stopNow = () => {{ try {{ mediaRec && mediaRec.state !== 'inactive' && mediaRec.stop(); }} catch(_ignore) {{}} }};
+        mediaRec.ondataavailable = e => {{ if (e.data && e.data.size) chunks.push(e.data); }};
+        const stopNow = () => {{ try {{ if (mediaRec && mediaRec.state !== 'inactive') mediaRec.stop(); }} catch(_){{
+        }} }};
         mediaRec.start();
 
         const t0 = performance.now();
-        const THRESH = 0.035;      // speech threshold (RMS)
-        const SIL_HOLD = 350;      // ms of silence to stop after speech
+        const THRESH = 0.038;      // speech trigger (RMS)
+        const SIL_HOLD = 240;      // ms of silence to stop after speech
 
         await new Promise((resolve) => {{
           meterTimer = setInterval(() => {{
             const t = performance.now();
-            if (analyser && data) {{
+            if (analyser && data){{
               analyser.getByteTimeDomainData(data);
-              let sum=0;
-              for(let i=0;i<data.length;i++) {{ const v=(data[i]-128)/128; sum+=v*v; }}
+              let sum=0; for(let i=0;i<data.length;i++){{ const v=(data[i]-128)/128; sum+=v*v; }}
               const rms = Math.sqrt(sum/data.length);
               meterBar.style.width = Math.min(100, Math.round(rms*180)) + '%';
 
               if (!started && rms > THRESH) {{
-                started = true;
-                startedAt = t;
+                started = true; startedAt = t;
               }} else if (started) {{
+                if (rms > THRESH*0.75) voicedMs += 40;           // voiced frame
                 if (rms < THRESH*0.6) silentMs += 40; else silentMs = 0;
-                if (silentMs >= SIL_HOLD && (t - startedAt) > 280) {{
-                  stopNow();
-                }}
+                if (silentMs >= SIL_HOLD && (t - startedAt) > 260) stopNow();
               }}
             }}
             if ((t - t0) > maxMs) stopNow();
@@ -424,33 +370,35 @@ def generate_flashcard_html(set_name, data):
           mediaRec.onstop = resolve;
         }});
 
-        return new Blob(chunks, {{ type: 'audio/webm' }});
+        return {{ blob: new Blob(chunks, {{ type: 'audio/webm' }}), voicedMs }};
       }} finally {{
-        try {{ if (meterTimer) clearInterval(meterTimer); }} catch(_ignore) {{}}
-        try {{ meterBar.style.width = '0%'; }} catch(_ignore) {{}}
-        try {{ mediaStream && mediaStream.getTracks().forEach(t => t.stop()); }} catch(_ignore) {{}}
-        try {{ ctx && ctx.close(); }} catch(_ignore) {{}}
+        try {{ if (meterTimer) clearInterval(meterTimer); }} catch(_){{
+        }}
+        try {{ meterBar.style.width = '0%'; }} catch(_){{
+        }}
+        try {{ mediaStream && mediaStream.getTracks().forEach(t => t.stop()); }} catch(_){{
+        }}
+        try {{ ctx && ctx.close(); }} catch(_){{
+        }}
         meterWrap.style.display = 'none';
       }}
     }}
 
-    async function blobToPCM16Mono(blob, targetRate=16000) {{
+    async function blobToPCM16Mono(blob, targetRate=16000){{
       const arr = await blob.arrayBuffer();
       const ACtx = window.AudioContext || window.webkitAudioContext;
       if (!ACtx) throw new Error('no_audiocontext');
       const ctx = new ACtx();
       const buf = await ctx.decodeAudioData(arr.slice(0));
-      // Downmix mono
       const chL = buf.getChannelData(0);
       let mono;
-      if (buf.numberOfChannels > 1) {{
+      if (buf.numberOfChannels > 1){{
         const chR = buf.getChannelData(1);
         mono = new Float32Array(buf.length);
         for (let i=0;i<buf.length;i++) mono[i] = 0.5*(chL[i] + chR[i]);
       }} else {{
         mono = chL;
       }}
-      // Linear resample
       const ratio = buf.sampleRate / targetRate;
       const outLen = Math.round(mono.length / ratio);
       const out = new Float32Array(outLen);
@@ -461,120 +409,153 @@ def generate_flashcard_html(set_name, data):
         const frac = idx - i0;
         out[i] = mono[i0]*(1-frac) + mono[i1]*frac;
       }}
-      // Float32 -> Int16LE
       const pcm = new Int16Array(outLen);
       for (let i=0;i<outLen;i++) {{
         let v = Math.max(-1, Math.min(1, out[i]));
         pcm[i] = v < 0 ? v * 0x8000 : v * 0x7FFF;
       }}
-      try {{ ctx.close(); }} catch(_ignore) {{}}
+      try {{ ctx.close(); }} catch(_){{
+      }}
       return pcm;
     }}
-
-    function pcmToWavBlob(pcm, sampleRate=16000) {{
-      const numFrames = pcm.length;
-      const bytesPerSample = 2;
-      const blockAlign = 1 * bytesPerSample;
-      const byteRate = sampleRate * blockAlign;
+    function pcmToWavBlob(pcm, sampleRate=16000){{
+      const numFrames = pcm.length, bytesPerSample=2, blockAlign=bytesPerSample, byteRate=sampleRate*blockAlign;
       const dataSize = numFrames * bytesPerSample;
-      const buf = new ArrayBuffer(44 + dataSize);
-      const v = new DataView(buf);
-      let o = 0;
-      function wstr(s) {{ for (let i=0;i<s.length;i++) v.setUint8(o++, s.charCodeAt(i)); }}
-      function wu16(x) {{ v.setUint16(o, x, true); o+=2; }}
-      function wu32(x) {{ v.setUint32(o, x, true); o+=4; }}
-      wstr('RIFF'); wu32(36 + dataSize); wstr('WAVE');
-      wstr('fmt '); wu32(16); wu16(1); wu16(1); wu32(sampleRate); wu32(byteRate); wu16(blockAlign); wu16(16);
-      wstr('data'); wu32(dataSize);
+      const buf = new ArrayBuffer(44 + dataSize), v = new DataView(buf);
+      let o = 0; function wstr(s){{ for(let i=0;i<s.length;i++) v.setUint8(o++, s.charCodeAt(i)); }}
+      function wu16(x){{ v.setUint16(o, x, true); o+=2; }} function wu32(x){{ v.setUint32(o, x, true); o+=4; }}
+      wstr('RIFF'); wu32(36 + dataSize); wstr('WAVE'); wstr('fmt '); wu32(16); wu16(1); wu16(1);
+      wu32(sampleRate); wu32(byteRate); wu16(blockAlign); wu16(16); wstr('data'); wu32(dataSize);
       for (let i=0;i<pcm.length;i++) v.setInt16(o + i*2, pcm[i], true);
       return new Blob([v], {{ type: 'audio/wav' }});
     }}
 
-    function extractScore(result, SDK) {{
+    // ---- Stricter scoring helpers ----
+    function extractPAJson(result, SDK){{
       try {{
-        const pa = SDK.PronunciationAssessmentResult.fromResult(result);
-        if (pa && Number.isFinite(pa.accuracyScore)) return Math.round(pa.accuracyScore);
-      }} catch(_ignore) {{}}
-      // Fallback JSON parse
-      let raw = null;
-      try {{
-        raw = result?.properties?.getProperty(SDK.PropertyId.SpeechServiceResponse_JsonResult)
-           || result?.privPronunciationAssessmentJson
-           || result?.privJson;
-      }} catch(_ignore) {{}}
-      if (raw) {{
-        try {{
-          const j = JSON.parse(raw);
-          const acc = (j?.NBest?.[0]?.PronunciationAssessment?.AccuracyScore) ??
-                      (j?.PronunciationAssessment?.AccuracyScore) ?? 0;
-          return Math.round(Number(acc) || 0);
-        }} catch(_ignore) {{}}
+        const raw = result?.properties?.getProperty(SDK.PropertyId.SpeechServiceResponse_JsonResult)
+                   || result?.privPronunciationAssessmentJson || result?.privJson;
+        if (!raw) return null;
+        try {{ return JSON.parse(raw); }} catch(_){{
+          return null;
+        }}
+      }} catch(_){{
+        return null;
       }}
-      return 0;
+    }}
+    function estimateSyllablesPL(text){{
+      const t = String(text||'').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'');
+      const vowels = /[aąeęiouyó]/g; // rough
+      const m = t.match(vowels);
+      return Math.max(1, (m ? m.length : 0));
+    }}
+    function computeStrictScore(paJson, fallback, refText, voicedMs){{
+      // Extract metrics
+      let acc = fallback?.acc || 0, flu = fallback?.flu || 0, comp = fallback?.comp || 0;
+      let wordErrFrac = 0;
+      if (paJson){{
+        const top = (paJson.NBest && paJson.NBest[0]) ? paJson.NBest[0] : null;
+        const pa  = top?.PronunciationAssessment || paJson.PronunciationAssessment;
+        if (pa){{
+          acc = Math.round(Number(pa.AccuracyScore) || acc);
+          flu = Math.round(Number(pa.FluencyScore)  || flu);
+          comp= Math.round(Number(pa.CompletenessScore) || comp);
+        }}
+        // Word error fraction from Azure (insertions/deletions/miscues)
+        const words = top?.Words || paJson.Words || [];
+        const refCount = Math.max(1, String(refText||'').trim().split(/\\s+/).length);
+        let errs = 0;
+        for (const w of words){{
+          const et = w?.PronunciationAssessment?.ErrorType;
+          if (et && et !== 'None') errs++;
+        }}
+        wordErrFrac = Math.max(0, Math.min(1, errs / refCount));
+      }}
+      // Base blend
+      let base = Math.round(0.55*acc + 0.25*flu + 0.20*comp);
+
+      // Energy/coverage penalty based on voiced duration vs expected
+      const syll = estimateSyllablesPL(refText);
+      const targetMs = Math.max(320, Math.min(1600, 280 + 110*syll));      // heuristic
+      const needed   = 0.85 * targetMs;                                    // stricter than before
+      const energyF  = Math.max(0.4, Math.min(1, (voicedMs||0) / needed)); // floor so quiet users aren't zeroed
+
+      // Word error penalty (strong)
+      const errF = 1 - 0.65 * wordErrFrac;
+
+      let strict = Math.round(base * energyF * errF);
+      strict = Math.max(0, Math.min(100, strict));
+      return {{ strict, acc, flu, comp, wordErrFrac, energyF }};
     }}
 
-    async function assessCapture(referenceText, targetEl) {{
+    function extractMetrics(result, SDK){{
+      // Try official PA result object first
+      try {{
+        const pa = SDK.PronunciationAssessmentResult.fromResult(result);
+        if (pa) return {{ acc: Math.round(pa.accuracyScore||0), flu: Math.round(pa.fluencyScore||0), comp: Math.round(pa.completenessScore||0) }};
+      }} catch(_){{
+      }}
+      // Fallback rough zeros; JSON path will fill
+      return {{ acc:0, flu:0, comp:0 }};
+    }}
+
+    async function assessCapture(referenceText, targetEl){{
       const ref = (referenceText || "").trim();
       if (!window.SpeechSDK) {{ targetEl.textContent = "⚠️ SDK not loaded."; return 0; }}
       if (!ref) {{ targetEl.textContent = "⚠️ No reference text."; return 0; }}
 
       targetEl.textContent = "🎤 Recording…";
-      const blob = await recordBlobVAD(1600);
-
-      // Prepare PCM for push (and optional debug WAV)
-      const pcm = await blobToPCM16Mono(blob, 16000);
-      if (DEBUG) {{
-        try {{
-          const wav = pcmToWavBlob(pcm, 16000);
-          const url = URL.createObjectURL(wav);
-          dlWav.href = url; dlWav.style.display = 'inline-flex';
-        }} catch(_ignore) {{}}
-      }}
-
+      const rec = await recordBlobVAD(1400); // faster upper bound
       const {{ token, region }} = await fetchToken();
       if (!token || !region) {{ targetEl.textContent = "⚠️ Token/region issue"; return 0; }}
+
+      // Prepare PCM (and WAV in debug)
+      const pcm = await blobToPCM16Mono(rec.blob, 16000);
+      if (DEBUG){{
+        try {{ const wav = pcmToWavBlob(pcm, 16000); const url = URL.createObjectURL(wav); dlWav.href = url; dlWav.style.display='inline-flex'; }} catch(_){{
+        }}
+      }}
 
       const SDK = window.SpeechSDK;
       const speechConfig = SDK.SpeechConfig.fromAuthorizationToken(token, region);
       speechConfig.speechRecognitionLanguage = "pl-PL";
-      speechConfig.outputFormat = SDK.OutputFormat.Detailed; // keep for PA robustness
+      speechConfig.outputFormat = SDK.OutputFormat.Detailed;
       speechConfig.setProperty(SDK.PropertyId.SpeechServiceResponse_RequestDetailedResultTrueFalse, "true");
       speechConfig.setProperty(SDK.PropertyId.SpeechServiceResponse_RequestWordLevelTimestamps, "false");
 
-      // Push 16k/16-bit/mono PCM
+      // Push stream 16k/16-bit/mono
       const format = SDK.AudioStreamFormat.getWaveFormatPCM(16000, 16, 1);
       const push = SDK.AudioInputStream.createPushStream(format);
-      push.write(new Uint8Array(pcm.buffer));
-      push.close();
-
+      push.write(new Uint8Array(pcm.buffer)); push.close();
       const audioConfig = SDK.AudioConfig.fromStreamInput(push);
-      const recognizer = new SDK.SpeechRecognizer(speechConfig, audioConfig);
 
-      // Pronunciation Assessment + phrase bias
+      const recognizer = new SDK.SpeechRecognizer(speechConfig, audioConfig);
       const pa = new SDK.PronunciationAssessmentConfig(
         ref,
         SDK.PronunciationAssessmentGradingSystem.HundredMark,
-        SDK.PronunciationAssessmentGranularity.Word,
-        true
+        // Use PHONEME granularity for higher sensitivity:
+        SDK.PronunciationAssessmentGranularity.Phoneme,
+        true // enable miscue (insertions/deletions)
       );
       pa.applyTo(recognizer);
       try {{
         const pl = SDK.PhraseListGrammar.fromRecognizer(recognizer);
         if (pl) pl.add(ref);
-      }} catch (_ignore) {{}}
+      }} catch(_){{
+      }}
 
       targetEl.textContent = "🧠 Scoring…";
 
       const result = await new Promise((resolve, reject) => {{
-        try {{ recognizer.recognizeOnceAsync(resolve, reject); }}
-        catch (e) {{ reject(e); }}
+        try {{ recognizer.recognizeOnceAsync(resolve, reject); }} catch(e) {{ reject(e); }}
       }}).catch(e => {{ logDbg('recognizeOnce(push) error', e?.message || e); return null; }});
 
-      try {{ recognizer.close(); }} catch(_ignore) {{}}
+      try {{ recognizer.close(); }} catch(_){{
+      }}
 
       if (!result) {{ targetEl.textContent = "⚠️ Speech error"; return 0; }}
 
-      // Optional debug
+      // Debug dump
       try {{
         logDbg('reason', result?.reason);
         const SDKR = window.SpeechSDK;
@@ -588,22 +569,30 @@ def generate_flashcard_html(set_name, data):
         }}
         const raw = result?.properties?.getProperty(SDK.PropertyId.SpeechServiceResponse_JsonResult)
                  || result?.privPronunciationAssessmentJson || result?.privJson;
-        if (raw) try {{ logRaw(JSON.parse(raw)); }} catch(_ignore) {{ logRaw(raw); }}
-      }} catch(_ignore) {{}}
+        if (raw) try {{ logRaw(JSON.parse(raw)); }} catch(_){{
+          logRaw(raw);
+        }}
+      }} catch(_){{
+      }}
 
-      const score = extractScore(result, SDK);
-      targetEl.textContent = score ? `✅ ${{score}}%` : "⚠️ No score";
-      return score || 0;
+      const base = extractMetrics(result, SDK);
+      const paJson = extractPAJson(result, SDK);
+      const {{ strict }} = computeStrictScore(paJson, base, ref, rec.voicedMs);
+      targetEl.textContent = strict ? `✅ ${{strict}}%` : "⚠️ No score";
+      return strict || 0;
     }}
 
-    // Optional live path (only if forced)
-    async function assessLive(referenceText, targetEl) {{
+    async function assessLive(referenceText, targetEl){{
       const ref = (referenceText || "").trim();
       if (!window.SpeechSDK) {{ targetEl.textContent = "⚠️ SDK not loaded."; return 0; }}
       if (!ref) {{ targetEl.textContent = "⚠️ No reference text."; return 0; }}
+
       targetEl.textContent = "🎤 Preparing…";
-      await prewarmMic();
-      await new Promise(r => setTimeout(r, 120));
+      // (Keep a tiny warmup for Safari)
+      try {{
+        const s = await navigator.mediaDevices.getUserMedia({{ audio:true }}); s.getTracks().forEach(t=>t.stop());
+      }} catch(_){{
+      }}
 
       const {{ token, region }} = await fetchToken();
       if (!token || !region) {{ targetEl.textContent = "⚠️ Token/region issue"; return 0; }}
@@ -614,8 +603,8 @@ def generate_flashcard_html(set_name, data):
       speechConfig.outputFormat = SDK.OutputFormat.Detailed;
       speechConfig.setProperty(SDK.PropertyId.SpeechServiceResponse_RequestDetailedResultTrueFalse, "true");
       speechConfig.setProperty(SDK.PropertyId.SpeechServiceResponse_RequestWordLevelTimestamps, "false");
-      speechConfig.setProperty(SDK.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, (IS_IOS || IS_SAFARI) ? "2200" : "1600");
-      speechConfig.setProperty(SDK.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "250");
+      speechConfig.setProperty(SDK.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, "1400");
+      speechConfig.setProperty(SDK.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "220");
 
       const audioConfig = SDK.AudioConfig.fromDefaultMicrophoneInput();
       const recognizer = new SDK.SpeechRecognizer(speechConfig, audioConfig);
@@ -623,63 +612,48 @@ def generate_flashcard_html(set_name, data):
       const pa = new SDK.PronunciationAssessmentConfig(
         ref,
         SDK.PronunciationAssessmentGradingSystem.HundredMark,
-        SDK.PronunciationAssessmentGranularity.Word,
+        SDK.PronunciationAssessmentGranularity.Phoneme,
         true
       );
       pa.applyTo(recognizer);
       try {{
         const pl = SDK.PhraseListGrammar.fromRecognizer(recognizer);
         if (pl) pl.add(ref);
-      }} catch (_ignore) {{}}
+      }} catch(_){{
+      }}
 
       targetEl.textContent = "🎙 Listening…";
 
       const result = await new Promise((resolve, reject) => {{
-        try {{ recognizer.recognizeOnceAsync(resolve, reject); }}
-        catch (e) {{ reject(e); }}
+        try {{ recognizer.recognizeOnceAsync(resolve, reject); }} catch(e) {{ reject(e); }}
       }}).catch(e => {{ logDbg('recognizeOnce(live) error', e?.message || e); return null; }});
 
-      try {{ recognizer.close(); }} catch(_ignore) {{}}
+      try {{ recognizer.close(); }} catch(_){{
+      }}
 
       if (!result) {{ targetEl.textContent = "⚠️ Speech error"; return 0; }}
 
-      try {{
-        logDbg('reason', result?.reason);
-        const SDKR = window.SpeechSDK;
-        if (result?.reason === SDKR.ResultReason.Canceled) {{
-          const c = SDKR.CancellationDetails.fromResult(result);
-          logDbg('canceled', c?.reason, c?.errorCode, c?.errorDetails);
-        }}
-        if (result?.reason === SDKR.ResultReason.NoMatch) {{
-          const d = SDKR.NoMatchDetails.fromResult(result);
-          logDbg('noMatch', d?.reason);
-        }}
-        const raw = result?.properties?.getProperty(SDK.PropertyId.SpeechServiceResponse_JsonResult)
-                 || result?.privPronunciationAssessmentJson || result?.privJson;
-        if (raw) try {{ logRaw(JSON.parse(raw)); }} catch(_ignore) {{ logRaw(raw); }}
-      }} catch(_ignore) {{}}
-
-      const score = extractScore(result, SDK);
-      targetEl.textContent = score ? `✅ ${{score}}%` : "⚠️ No score";
-      return score || 0;
+      const base = extractMetrics(result, SDK);
+      const paJson = extractPAJson(result, SDK);
+      // Live path: we don't know voicedMs; approximate with expected for the phrase (lighter penalty)
+      const syll = estimateSyllablesPL(ref);
+      const approxVoiced = Math.max(320, Math.min(1600, 280 + 110*syll)) * 0.7;
+      const {{ strict }} = computeStrictScore(paJson, base, ref, approxVoiced);
+      targetEl.textContent = strict ? `✅ ${{strict}}%` : "⚠️ No score";
+      return strict || 0;
     }}
 
     // ---------- UI wiring ----------
-    window.addEventListener("DOMContentLoaded", async function() {{
-      // Set hint text per mode/platform
-      hint.textContent =
-        CAPTURE_MODE ? "Tap to record, then we’ll score it."
-        : (IS_IOS || IS_SAFARI) ? "Tap, then speak."
-        : "Click, then speak.";
-
-      // Prefetch token to shave latency
+    window.addEventListener("DOMContentLoaded", async function(){{
+      // Prefetch token & manifest
       prefetchToken().catch(()=>{{}});
+      try {{ if (window.AudioPaths) r2Manifest = await AudioPaths.fetchManifest(setName); }} catch(_){{
+        r2Manifest = null;
+      }}
 
-      // Try to load R2 manifest (non-blocking)
-      try {{ if (window.AudioPaths) r2Manifest = await AudioPaths.fetchManifest(setName); }} catch (_ignore) {{ r2Manifest = null; }}
-
-      // SDK version diag
-      try {{ logDbg('SDK version?', window.SpeechSDK?.Version || 'unknown'); }} catch(_ignore) {{}}
+      // Debug SDK version
+      try {{ logDbg('SDK version?', window.SpeechSDK?.Version || 'unknown'); }} catch(_){{
+      }}
 
       renderCard();
 
@@ -690,7 +664,7 @@ def generate_flashcard_html(set_name, data):
         hasFlippedCurrent = true;
       }});
 
-      // Front: Say it (capture-first, optional live if forced)
+      // Front: Say it (capture-first by default)
       const sayBtn = document.getElementById("btnSayFront");
       const frontRes = document.getElementById("frontResult");
       const getRef = () => (cards[currentIndex] && cards[currentIndex].phrase) || "";
@@ -720,7 +694,7 @@ def generate_flashcard_html(set_name, data):
         let a = audioCache.get(currentIndex);
         if (!a) {{ primeAudio(currentIndex); a = audioCache.get(currentIndex); }}
         if (a) {{
-          try {{ a.currentTime = 0; }} catch(_ignore) {{}}
+          try {{ a.currentTime = 0; }} catch(_){{}}
           a.play().catch(err => logDbg('audio play err', err?.message || err));
         }}
       }});
@@ -729,19 +703,18 @@ def generate_flashcard_html(set_name, data):
       document.getElementById("prevBtn").addEventListener("click", () => {{
         if (currentIndex > 0) {{
           currentIndex--;
-          renderCard();
+          renderCard(); // ensures flipped -> front
         }}
       }});
 
       document.getElementById("nextBtn").addEventListener("click", async () => {{
         if (currentIndex < cards.length - 1) {{
           currentIndex++;
-          renderCard();
+          renderCard(); // ensures flipped -> front
         }} else {{
           const totalCards = Math.max(1, cards.length);
           const correct = Object.values(tracker.per).filter(r => (r?.best || 0) >= PASS).length;
           const scorePct = Math.round((correct / totalCards) * 100);
-
           let pointsTotal = 10 + tracker.perfectNoFlipCount;
           if (scorePct === 100) pointsTotal = pointsTotal * 2;
 
@@ -750,7 +723,8 @@ def generate_flashcard_html(set_name, data):
               score: scorePct, attempts: tracker.attempts, total: totalCards,
               points_total: pointsTotal, perfect_before_flip: tracker.perfectNoFlipCount
             }}));
-          }} catch (_ignore) {{}}
+          }} catch(_){{
+          }}
 
           let awarded = null;
           try {{
@@ -766,16 +740,15 @@ def generate_flashcard_html(set_name, data):
               const js = await resp.json();
               awarded = (js && js.details && js.details.points_awarded != null) ? Number(js.details.points_awarded) : null;
             }}
-          }} catch (_ignore) {{}}
+          }} catch(_){{
+          }}
 
-          try {{ localStorage.removeItem("lp_last"); }} catch(_ignore) {{}}
+          try {{ localStorage.removeItem("lp_last"); }} catch(_){{
+          }}
           const q = awarded != null ? ("?awarded=" + encodeURIComponent(awarded)) : "";
           window.location.href = "summary.html" + q;
         }}
       }});
-
-      // UX: prefetch token + mic warmup opportunistically
-      prewarmMic().catch(()=>{{}});
     }});
 
     function goHome() {{ window.location.href = "index.html"; }}
@@ -785,7 +758,7 @@ def generate_flashcard_html(set_name, data):
 """
     out_path.write_text(html, encoding="utf-8")
 
-    # --------- SUMMARY PAGE (summary.html) ----------
+    # ================== SUMMARY PAGE ==================
     summary_html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -804,9 +777,7 @@ def generate_flashcard_html(set_name, data):
   <title>{set_name} • Results • Path to POLISH</title>
 
   <link rel="stylesheet" href="static/app.css?v=5">
-  <style>
-    .wrap{{ max-width:860px; margin:0 auto; padding:16px; }}
-  </style>
+  <style>.wrap{{ max-width:860px; margin:0 auto; padding:16px; }}</style>
 </head>
 <body
   data-header="Path to Polish"
