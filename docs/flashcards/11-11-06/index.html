@@ -64,17 +64,13 @@
   </div>
 
   <!-- Azure Speech SDK -->
-  <!-- Azure Speech SDK removed: using static MP3 playback only -->
-
   <script src="../../static/js/app-config.js"></script>
   <script src="../../static/js/api.js"></script>
   <script src="../../static/js/session_state.js"></script>
   <script src="../../static/js/audio-paths.js"></script>
-  <!-- Azure Speech SDK -->
   <script src="https://aka.ms/csspeech/jsbrowserpackageraw"></script>
 
-
-    <script>
+  <script>
     // --- Data & state ---
     const cards = [{"phrase": "Cześć", "meaning": "Hello", "pronunciation": "cheshch", "audio_file": "0_Czesc.mp3"}, {"phrase": "Dziękuję", "meaning": "Thank you", "pronunciation": "jen-koo-yeh", "audio_file": "1_Dziekuje.mp3"}];
     const setName = "11-11-06";
@@ -92,34 +88,16 @@
       perfectNoFlipCount: 0,   // increments when avg==100 before first flip on that card
     };
     let hasFlippedCurrent = false;
-    
-    // --- Speech token cache (global) ---
-    async function getSpeechToken(forceRefresh=false) {
-      const c = window.__speechTok;
-      if (!forceRefresh && c && c.exp > Date.now()) return c;
-      try {
-        const r = await api.fetch("/api/speech_token");
-        if (!r.ok) return null;
-        const t = await r.json();
-        const token  = t && (t.token || t.access_token);
-        const region = t && (t.region || t.location || t.regionName);
-        const ttlMs  = Math.max(60_000, ((t && t.expires_in ? t.expires_in : 540) * 1000) - 30_000);
-        window.__speechTok = { token, region, exp: Date.now() + ttlMs };
-        return window.__speechTok;
-      } catch (_) {
-        return null;
-      }
-    }
 
-    // --- Mic pre-warm for Safari/macOS ---
-    // Grants permission & spins up audio quickly, then releases the mic
-    // so the SDK can grab it without clipping the first syllable.
+    function debugFC(...args) { try { console.debug('[FLASHCARDS]', ...args); } catch(_){} }
+
+    // --- Mic pre-warm (Safari/macOS friendly) ---
     async function prewarmMic() {
       try {
         if (!navigator.mediaDevices?.getUserMedia) return;
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         stream.getTracks().forEach(tr => tr.stop());
-        // Nudge AudioContext (Safari)
+        // Nudge AudioContext (helps Safari)
         try {
           const Ctx = window.AudioContext || window.webkitAudioContext;
           if (Ctx) {
@@ -176,96 +154,105 @@
 
     async function assess(referenceText, targetEl) {
       try {
+        const ref = (referenceText || "").trim();
         if (!window.SpeechSDK) {
           if (targetEl) targetEl.textContent = "⚠️ Speech SDK not loaded.";
           return { score: 0, error: "sdk_not_loaded" };
         }
-        if (!referenceText || !referenceText.trim()) {
+        if (!ref) {
           if (targetEl) targetEl.textContent = "⚠️ No reference text.";
           return { score: 0, error: "no_reference" };
         }
 
-        // UI: show get-ready, then pre-warm mic, then start listening after ~1s
-        if (targetEl) targetEl.textContent = "⏳ Get ready…";
+        // UX: pre-warm mic + tiny delay so "Listening…" appears when the mic is actually hot
+        if (targetEl) targetEl.textContent = "🎤 Preparing mic…";
         await prewarmMic();
+        await new Promise(r => setTimeout(r, 250));
 
-        const tok = await getSpeechToken();
-        if (!tok || !tok.token || !tok.region) {
+        // Short-lived token
+        const tok = await api.get('/api/speech_token', { noAuth: true });
+        const token  = tok && (tok.token || tok.access_token);
+        const region = tok && (tok.region || tok.location || tok.regionName);
+        if (!token || !region) {
           if (targetEl) targetEl.textContent = "⚠️ Could not get speech token.";
           return { score: 0, error: "no_token" };
         }
 
-        // Short delay so the mic warmup and UI line up with actual capture start
-        await new Promise(r => setTimeout(r, 950));
-        if (targetEl) targetEl.textContent = "🎤 Listening…";
-
-        // Build Speech config (slightly more forgiving initial silence)
-        const speechConfig = SpeechSDK.SpeechConfig.fromAuthorizationToken(tok.token, tok.region);
+        // Config tuned for single-word
+        const speechConfig = SpeechSDK.SpeechConfig.fromAuthorizationToken(token, region);
         speechConfig.speechRecognitionLanguage = "pl-PL";
-        speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, "2000");
-        speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "450");
-
-        // Faster scoring: word granularity, miscue off
-        const paConfig = new SpeechSDK.PronunciationAssessmentConfig(
-          referenceText,
-          SpeechSDK.PronunciationAssessmentGradingSystem.HundredMark,
-          SpeechSDK.PronunciationAssessmentGranularity.Word,
-          false
-        );
+        speechConfig.outputFormat = SpeechSDK.OutputFormat.Detailed;
+        speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceResponse_RequestDetailedResultTrueFalse, "true");
+        speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, "1200");
+        speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "500");
 
         const audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
-        const recognizer  = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
-        paConfig.applyTo(recognizer);
+        const recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
 
-        // Hard cap to prevent hanging (a bit longer now to account for the warmup)
-        const MAX_LISTEN_MS = 3000;
-        let finished = false;
-        const result = await new Promise((resolve) => {
-          const guard = setTimeout(() => {
-            if (finished) return;
-            finished = true;
-            try { recognizer.close(); } catch {}
-            resolve({ __timeout: true });
-          }, MAX_LISTEN_MS + 500);
+        // PA config: Word granularity is more robust for 1–2 word attempts
+        const pa = new SpeechSDK.PronunciationAssessmentConfig(
+          ref,
+          SpeechSDK.PronunciationAssessmentGradingSystem.HundredMark,
+          SpeechSDK.PronunciationAssessmentGranularity.Word,
+          true // enable miscue
+        );
+        pa.applyTo(recognizer);
 
-          recognizer.recognizeOnceAsync(
-            (res) => { if (finished) return; finished = true; clearTimeout(guard); resolve(res); },
-            (err) => { if (finished) return; finished = true; clearTimeout(guard); resolve({ __error: err }); }
-          );
-        });
+        if (targetEl) targetEl.textContent = "🎙 Listening…";
 
-        try { recognizer.close(); } catch {}
+        // Don’t hang forever—race with a short timeout
+        const timeoutMs = 5000;
+        const result = await Promise.race([
+          new Promise((resolve, reject) => recognizer.recognizeOnceAsync(resolve, reject)),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), timeoutMs))
+        ]).finally(() => { try { recognizer.close(); } catch(_){} });
 
-        if (result.__timeout) {
-          if (targetEl) targetEl.textContent = "⌛ No speech heard—try again.";
-          return { score: 0, error: "timeout" };
+        // Handle reasons
+        const reason = result && result.reason;
+        if (reason === SpeechSDK.ResultReason.NoMatch) {
+          const d = SpeechSDK.NoMatchDetails.fromResult(result);
+          debugFC('NoMatch', d?.reason, d);
+          if (targetEl) targetEl.textContent = "⚠️ No match";
+          return { score: 0, error: "no_match" };
         }
-        if (result.__error) {
-          if (targetEl) targetEl.textContent = "⚠️ Speech error";
-          return { score: 0, error: String(result.__error) };
+        if (reason === SpeechSDK.ResultReason.Canceled) {
+          const c = SpeechSDK.CancellationDetails.fromResult(result);
+          debugFC('Canceled', c?.reason, c?.errorDetails);
+          if (targetEl) targetEl.textContent = "⚠️ Canceled";
+          return { score: 0, error: "canceled" };
         }
 
-        // Parse score from service JSON
-        let score = 0;
+        // Extract PA JSON → score
+        let raw = null;
         try {
-          let raw = result.properties?.getProperty(SpeechSDK.PropertyId.SpeechServiceResponse_JsonResult)
-                || result.privPronunciationAssessmentJson;
-          const j = raw ? JSON.parse(raw) : null;
-          score = Math.round(
-            (j?.NBest?.[0]?.PronunciationAssessment?.AccuracyScore) ??
-            (j?.PronunciationAssessment?.AccuracyScore) ?? 0
-          );
-        } catch (_e) {}
+          raw = result.properties?.getProperty(SpeechSDK.PropertyId.SpeechServiceResponse_JsonResult)
+             || result.privPronunciationAssessmentJson;
+        } catch(_) {}
+
+        let score = 0;
+        if (raw) {
+          try {
+            const j = JSON.parse(raw);
+            score = Math.round(
+              (j?.NBest?.[0]?.PronunciationAssessment?.AccuracyScore) ??
+              (j?.PronunciationAssessment?.AccuracyScore) ?? 0
+            );
+          } catch (e) {
+            debugFC('JSON parse error', e);
+          }
+        }
 
         if (targetEl) targetEl.textContent = (score ? `✅ ${score}%` : "⚠️ No score");
         return { score };
       } catch (e) {
-        console.error("assess() error:", e);
-        if (targetEl) targetEl.textContent = "⚠️ Speech error";
+        debugFC('assess error', e);
+        if (targetEl) {
+          const msg = (e && e.message) ? e.message : String(e);
+          targetEl.textContent = (msg === "timeout") ? "⏱️ Try again (speak right away)" : "⚠️ Speech error";
+        }
         return { score: 0, error: String(e) };
       }
     }
-
 
     // Wire up after DOM is ready (prevents null refs)
     window.addEventListener("DOMContentLoaded", async function() {
@@ -288,10 +275,22 @@
       });
 
       // Front: Say it
-      document.getElementById("btnSayFront").addEventListener("click", (e) => {
+      document.getElementById("btnSayFront").addEventListener("click", async (e) => {
         e.stopPropagation();
         const eCard = cards[currentIndex] || {};
-        assess(eCard.phrase || "", document.getElementById("frontResult"));
+        const res = await assess(eCard.phrase || "", document.getElementById("frontResult"));
+        // record stats
+        tracker.attempts++;
+        if (!tracker.per[currentIndex]) tracker.per[currentIndex] = { tries: 0, best: 0, got100BeforeFlip: false };
+        const r = tracker.per[currentIndex];
+        r.tries++;
+        if (res && Number.isFinite(res.score)) {
+          r.best = Math.max(r.best || 0, res.score);
+          if (!hasFlippedCurrent && res.score === 100 && !r.got100BeforeFlip) {
+            r.got100BeforeFlip = true;
+            tracker.perfectNoFlipCount++;
+          }
+        }
       });
 
       // Back: Play
