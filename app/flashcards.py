@@ -1,4 +1,4 @@
-# app/flashcarddebug.py
+# app/flashcards.py
 import json
 
 from .sets_utils import sanitize_filename
@@ -8,23 +8,25 @@ from .constants import PAGES_DIR as DOCS_DIR
 def generate_flashcard_html(set_name, data):
     """
     Generates:
-      - docs/flashcards/<set_name>/index.html   (learning UI)
+      - docs/flashcards/<set_name>/index.html   (learning UI, capture-first)
       - docs/flashcards/<set_name>/summary.html (results UI)
 
-    This debug build adds:
-      - ?debug=1 overlay with reasons/cancel details and raw JSON from Azure.
-      - ?capture=1 path that records first, then recognizes from a PushAudioInputStream
-        (stable on iOS/Safari and avoids live-mic start/stop races).
-      - WAV download button (in capture mode) so you can inspect what we actually recorded.
-      - Audio preloading (current+next).
-      - session_state.js omitted to avoid your 502/CORS console spam.
+    Capture-first recognizer:
+      - Click once → records ~2.5s → streams PCM to Azure → returns score
+      - Small level meter shown while recording (under the speak button)
+      - Uses /api/speech_token for Azure auth
+      - Audio preloads (current + next)
+
+    URL overrides (optional):
+      - ?live=1        → force live mic (recognizeOnce on default mic)
+      - ?capture=0/1   → force capture mode off/on
     """
     output_dir = DOCS_DIR / "flashcards" / set_name
     output_dir.mkdir(parents=True, exist_ok=True)
     out_path = output_dir / "index.html"
     summary_path = output_dir / "summary.html"
 
-    # Ensure audio filenames exist in data (keep convention)
+    # Ensure audio filenames exist in data
     for idx, entry in enumerate(data):
         try:
             entry["audio_file"] = f"{idx}_{sanitize_filename(entry.get('phrase', ''))}.mp3"
@@ -72,31 +74,23 @@ def generate_flashcard_html(set_name, data):
     .nav-button {{ padding:10px 14px; font-size:1em; background:#007bff; color:#fff; border:none; border-radius:10px; min-width:110px; cursor:pointer; }}
     .nav-button:disabled {{ background:#aaa; cursor:default; }}
 
-    /* Debug overlay */
-    #dbg {{ display:none; position:fixed; bottom:8px; left:8px; right:8px; max-height:46vh; overflow:auto;
-           background:#000; color:#0f0; padding:8px 10px; border-radius:10px; font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px; white-space:pre-wrap; z-index:9999; }}
-    #dbg .row {{ opacity:.95; }}
-    #dbg .raw {{ color:#9ef; }}
-
     /* Tiny level meter (capture mode) */
     #meterWrap {{ display:none; margin-top:10px; width:260px; height:8px; background:#e6e6ef; border-radius:6px; overflow:hidden; }}
     #meterBar {{ width:0%; height:100%; background:#2d6cdf; }}
-    #dlWav {{ display:none; margin-top:8px; }}
   </style>
 </head>
 <body>
   <h1>{set_name} • Learn <button class="home-btn" onclick="goHome()">🏠</button></h1>
-  <div class="hint" id="speakHint">Hold the button and speak clearly.</div>
+  <div class="hint" id="speakHint">Tap to record, then we’ll score it.</div>
 
   <div class="card" id="cardContainer" aria-live="polite">
     <div class="card-inner" id="cardInner">
       <div class="side front" id="frontSide">
         <div class="cue" id="frontCue"></div>
         <div class="actions">
-          <button class="btn-small" id="btnSayFront" title="Press & hold to speak">🎤 Say it in Polish</button>
+          <button class="btn-small" id="btnSayFront" title="Record then score">🎤 Say it in Polish</button>
         </div>
         <div id="meterWrap"><div id="meterBar"></div></div>
-        <a id="dlWav" class="btn-small" download="capture.wav">⬇️ Download last capture</a>
         <div class="result" id="frontResult"></div>
       </div>
       <div class="side back" id="backSide">
@@ -115,12 +109,10 @@ def generate_flashcard_html(set_name, data):
     <button id="nextBtn" class="nav-button">Next</button>
   </div>
 
-  <div id="dbg"></div>
-
   <!-- Scripts -->
   <script src="../../static/js/app-config.js"></script>
   <script src="../../static/js/api.js"></script>
-  <!-- session_state.js intentionally omitted -->
+  // <script src="../../static/js/session_state.js"></script>
   <script src="../../static/js/audio-paths.js"></script>
   <!-- Azure Speech SDK -->
   <script src="https://aka.ms/csspeech/jsbrowserpackageraw"></script>
@@ -135,10 +127,6 @@ def generate_flashcard_html(set_name, data):
     // Optional CDN manifest
     let r2Manifest = null;
 
-    // Flags
-    const DEBUG = new URL(location.href).searchParams.get('debug') === '1';
-    const CAPTURE_MODE = new URL(location.href).searchParams.get('capture') === '1';
-
     // Scoring + points
     const PASS = 75;
     const tracker = {{ attempts: 0, per: {{}}, perfectNoFlipCount: 0 }};
@@ -147,33 +135,21 @@ def generate_flashcard_html(set_name, data):
     // Audio preload cache
     const audioCache = new Map();
 
-    // Debug overlay helpers
-    const dbgEl = document.getElementById('dbg');
-    if (DEBUG) dbgEl.style.display = 'block';
-    function logDbg(...a) {{
-      if (!DEBUG) return;
-      const line = document.createElement('div');
-      line.className = 'row';
-      line.textContent = a.map(x => (typeof x === 'string' ? x : JSON.stringify(x))).join(' ');
-      dbgEl.appendChild(line);
-      dbgEl.scrollTop = dbgEl.scrollHeight;
-      try {{ console.debug('[FC]', ...a); }} catch(_) {{}}
-    }}
-    function logRaw(j) {{
-      if (!DEBUG) return;
-      const line = document.createElement('div');
-      line.className = 'row raw';
-      line.textContent = (typeof j === 'string') ? j : JSON.stringify(j);
-      dbgEl.appendChild(line);
-      dbgEl.scrollTop = dbgEl.scrollHeight;
-    }}
+    // URL overrides: default to capture; allow ?live=1 or ?capture=0 to force live
+    const URLP = new URL(location.href).searchParams;
+    //const FORCE_LIVE = URLP.get('live') === '1';
+    //const capParam = URLP.get('capture');
+    const CAPTURE_MODE = FORCE_LIVE ? false : (capParam === '1' || capParam === null);
 
-    // Platform
+    // Platform hint text
     const ua = navigator.userAgent || '';
     const IS_IOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     const IS_SAFARI = /^((?!chrome|android).)*safari/i.test(ua);
+    document.getElementById('speakHint').textContent =
+      CAPTURE_MODE ? "Tap to record, then we’ll score it." :
+      (IS_IOS || IS_SAFARI) ? "Tap, then speak." : "Click, then speak.";
 
-    // Mic prewarm
+    // Mic prewarm (helps Safari start cleanly)
     async function prewarmMic() {{
       try {{
         if (!navigator.mediaDevices?.getUserMedia) return;
@@ -181,19 +157,12 @@ def generate_flashcard_html(set_name, data):
         stream.getTracks().forEach(tr => tr.stop());
         try {{
           const Ctx = window.AudioContext || window.webkitAudioContext;
-          if (Ctx) {{
-            const ctx = new Ctx();
-            await ctx.resume();
-            await new Promise(r => setTimeout(r, 40));
-            await ctx.close();
-          }}
-        }} catch (_) {{}}
-      }} catch (e) {{
-        logDbg('prewarm error', e && e.message);
-      }}
+          if (Ctx) {{ const ctx = new Ctx(); await ctx.resume(); await new Promise(r => setTimeout(r, 40)); await ctx.close(); }}
+        }} catch (_e) {{}}
+      }} catch (_e) {{}}
     }}
 
-    // Filename helper
+    // Filename helper (mirror Python sanitize)
     function sanitizeFilename(text) {{
       return (text || "")
         .normalize("NFD").replace(/[\\u0300-\\u036f]/g, "")
@@ -212,9 +181,7 @@ def generate_flashcard_html(set_name, data):
 
     function buildAudioSrc(index) {{
       let src = localAudioPath(index);
-      try {{
-        if (window.AudioPaths) src = AudioPaths.buildAudioPath(setName, index, cards[index], r2Manifest);
-      }} catch (_ignore) {{}}
+      try {{ if (window.AudioPaths) src = AudioPaths.buildAudioPath(setName, index, cards[index], r2Manifest); }} catch (_ignore) {{}}
       return src;
     }}
 
@@ -253,121 +220,32 @@ def generate_flashcard_html(set_name, data):
       resetAndPrimeAround(currentIndex);
     }}
 
-    // ---------------- Token + SDK diag ----------------
+    // --------------- Token fetch ----------------
     async function fetchToken() {{
-      const info = {{ ok:false, token:null, region:null }};
       try {{
         const tok = await api.get('/api/speech_token', {{ noAuth: true }});
-        info.token  = tok && (tok.token || tok.access_token);
-        info.region = tok && (tok.region || tok.location || tok.regionName);
-        info.ok = !!(info.token && info.region);
-      }} catch(_ignore) {{}}
-      if (DEBUG) logDbg('SDK?', !!window.SpeechSDK, 'region', info.region, 'tok', !!info.token);
-      return info;
-    }}
-
-    // ---------------- Direct live-mic path (recognizeOnce) ----------------
-    async function assessLive(referenceText, targetEl) {{
-      const ref = (referenceText || "").trim();
-      if (!window.SpeechSDK) {{ targetEl.textContent = "⚠️ SDK not loaded."; return 0; }}
-      if (!ref) {{ targetEl.textContent = "⚠️ No reference text."; return 0; }}
-
-      targetEl.textContent = "🎤 Preparing…";
-      await prewarmMic();
-      await new Promise(r => setTimeout(r, 120));
-
-      const {{ ok, token, region }} = await fetchToken();
-      if (!ok) {{ targetEl.textContent = "⚠️ Token/region issue"; return 0; }}
-
-      const SDK = window.SpeechSDK;
-      const speechConfig = SDK.SpeechConfig.fromAuthorizationToken(token, region);
-      speechConfig.speechRecognitionLanguage = "pl-PL";
-      speechConfig.outputFormat = SDK.OutputFormat.Detailed;
-      speechConfig.setProperty(SDK.PropertyId.SpeechServiceResponse_RequestDetailedResultTrueFalse, "true");
-      speechConfig.setProperty(SDK.PropertyId.SpeechServiceResponse_RequestWordLevelTimestamps, "true");
-      speechConfig.setProperty(SDK.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, (IS_IOS || IS_SAFARI) ? "2200" : "1600");
-      speechConfig.setProperty(SDK.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "250");
-
-      const audioConfig = SDK.AudioConfig.fromDefaultMicrophoneInput();
-      const recognizer = new SDK.SpeechRecognizer(speechConfig, audioConfig);
-
-      // Pronunciation Assessment + phrase bias
-      const pa = new SDK.PronunciationAssessmentConfig(
-        ref,
-        SDK.PronunciationAssessmentGradingSystem.HundredMark,
-        SDK.PronunciationAssessmentGranularity.Word,
-        true
-      );
-      pa.applyTo(recognizer);
-      try {{
-        const pl = SDK.PhraseListGrammar.fromRecognizer(recognizer);
-        if (pl) pl.add(ref);
-      }} catch (_ignore) {{ }}
-
-      targetEl.textContent = "🎙 Listening…";
-
-      const result = await new Promise((resolve, reject) => {{
-        try {{
-          recognizer.recognizeOnceAsync(resolve, reject);
-        }} catch (e) {{
-          reject(e);
-        }}
-      }}).catch(e => {{ logDbg('recognizeOnce error', e?.message || e); return null; }});
-
-      try {{ recognizer.close(); }} catch(_ignore) {{ }}
-
-      if (!result) {{ targetEl.textContent = "⚠️ Speech error"; return 0; }}
-
-      try {{
-        logDbg('reason', result?.reason);
-        if (result?.reason === SDK.ResultReason.Canceled) {{
-          const c = SDK.CancellationDetails.fromResult(result);
-          logDbg('canceled', c?.reason, c?.errorCode, c?.errorDetails);
-        }}
-        if (result?.reason === SDK.ResultReason.NoMatch) {{
-          const d = SDK.NoMatchDetails.fromResult(result);
-          logDbg('noMatch', d?.reason);
-        }}
-      }} catch(_ignore) {{ }}
-
-      let raw = null;
-      try {{
-        raw = result?.properties?.getProperty(SDK.PropertyId.SpeechServiceResponse_JsonResult)
-           || result?.privPronunciationAssessmentJson
-           || result?.privJson;
-      }} catch(_ignore) {{ }}
-      if (raw) try {{ logRaw(JSON.parse(raw)); }} catch(_ignore) {{ logRaw(raw); }}
-
-      let score = 0;
-      if (raw) {{
-        try {{
-          const j = JSON.parse(raw);
-          score = Math.round(
-            (j?.NBest?.[0]?.PronunciationAssessment?.AccuracyScore) ??
-            (j?.PronunciationAssessment?.AccuracyScore) ?? 0
-          );
-        }} catch(_ignore) {{ }}
+        const token  = tok && (tok.token || tok.access_token);
+        const region = tok && (tok.region || tok.location || tok.regionName);
+        if (!token || !region) throw new Error('no_token_or_region');
+        return {{ token, region }};
+      }} catch (e) {{
+        return {{ token: null, region: null }};
       }}
-
-      targetEl.textContent = score ? `✅ ${{score}}%` : "⚠️ No score";
-      return score || 0;
     }}
 
-    // ---------------- Capture-first path (record -> push stream) ----------------
+    // --------------- Capture-first path ----------------
     const meterWrap = document.getElementById('meterWrap');
     const meterBar  = document.getElementById('meterBar');
-    const dlWav     = document.getElementById('dlWav');
 
     async function recordBlob(ms=2500) {{
-      // Show simple level meter
-      meterWrap.style.display = CAPTURE_MODE ? 'block' : 'none';
+      meterWrap.style.display = 'block';
       let mediaStream = null;
       let mediaRec = null;
       let chunks = [];
       let meterTimer = null;
       try {{
         mediaStream = await navigator.mediaDevices.getUserMedia({{ audio: true }});
-        // Level meter (analyser)
+        // Level meter
         try {{
           const ACtx = window.AudioContext || window.webkitAudioContext;
           if (ACtx) {{
@@ -379,12 +257,7 @@ def generate_flashcard_html(set_name, data):
             const data = new Uint8Array(analyser.fftSize);
             meterTimer = setInterval(() => {{
               analyser.getByteTimeDomainData(data);
-              // RMS-ish
-              let sum = 0;
-              for (let i=0; i<data.length; i++) {{
-                const v = (data[i]-128)/128;
-                sum += v*v;
-              }}
+              let sum = 0; for (let i=0; i<data.length; i++) {{ const v=(data[i]-128)/128; sum += v*v; }}
               const rms = Math.sqrt(sum/data.length);
               const pct = Math.min(100, Math.round(rms*180));
               meterBar.style.width = pct + '%';
@@ -403,6 +276,7 @@ def generate_flashcard_html(set_name, data):
         try {{ if (meterTimer) clearInterval(meterTimer); }} catch(_ignore) {{}}
         try {{ meterBar.style.width = '0%'; }} catch(_ignore) {{}}
         try {{ mediaStream && mediaStream.getTracks().forEach(t => t.stop()); }} catch(_ignore) {{}}
+        meterWrap.style.display = 'none';
       }}
     }}
 
@@ -412,7 +286,7 @@ def generate_flashcard_html(set_name, data):
       if (!ACtx) throw new Error('no_audiocontext');
       const ctx = new ACtx();
       const buf = await ctx.decodeAudioData(arr.slice(0));
-      // Downmix to mono
+      // Downmix mono
       const chL = buf.getChannelData(0);
       let mono;
       if (buf.numberOfChannels > 1) {{
@@ -422,7 +296,7 @@ def generate_flashcard_html(set_name, data):
       }} else {{
         mono = chL;
       }}
-      // Resample
+      // Linear resample
       const ratio = buf.sampleRate / targetRate;
       const outLen = Math.round(mono.length / ratio);
       const out = new Float32Array(outLen);
@@ -443,23 +317,27 @@ def generate_flashcard_html(set_name, data):
       return pcm;
     }}
 
-    function pcmToWavBlob(pcm, sampleRate=16000) {{
-      const numFrames = pcm.length;
-      const bytesPerSample = 2;
-      const blockAlign = 1 * bytesPerSample;
-      const byteRate = sampleRate * blockAlign;
-      const dataSize = numFrames * bytesPerSample;
-      const buf = new ArrayBuffer(44 + dataSize);
-      const v = new DataView(buf);
-      let o = 0;
-      function wstr(s) {{ for (let i=0;i<s.length;i++) v.setUint8(o++, s.charCodeAt(i)); }}
-      function wu16(x) {{ v.setUint16(o, x, true); o+=2; }}
-      function wu32(x) {{ v.setUint32(o, x, true); o+=4; }}
-      wstr('RIFF'); wu32(36 + dataSize); wstr('WAVE');
-      wstr('fmt '); wu32(16); wu16(1); wu16(1); wu32(sampleRate); wu32(byteRate); wu16(blockAlign); wu16(16);
-      wstr('data'); wu32(dataSize);
-      for (let i=0;i<pcm.length;i++) v.setInt16(o + i*2, pcm[i], true);
-      return new Blob([v], {{ type: 'audio/wav' }});
+    function extractScore(result, SDK) {{
+      try {{
+        const pa = SDK.PronunciationAssessmentResult.fromResult(result);
+        if (pa && Number.isFinite(pa.accuracyScore)) return Math.round(pa.accuracyScore);
+      }} catch(_ignore) {{}}
+      // Fallback JSON parse
+      let raw = null;
+      try {{
+        raw = result?.properties?.getProperty(SDK.PropertyId.SpeechServiceResponse_JsonResult)
+           || result?.privPronunciationAssessmentJson
+           || result?.privJson;
+      }} catch(_ignore) {{}}
+      if (raw) {{
+        try {{
+          const j = JSON.parse(raw);
+          const acc = (j?.NBest?.[0]?.PronunciationAssessment?.AccuracyScore) ??
+                      (j?.PronunciationAssessment?.AccuracyScore) ?? 0;
+          return Math.round(Number(acc) || 0);
+        }} catch(_ignore) {{}}
+      }}
+      return 0;
     }}
 
     async function assessCapture(referenceText, targetEl) {{
@@ -469,20 +347,9 @@ def generate_flashcard_html(set_name, data):
 
       targetEl.textContent = "🎤 Recording…";
       const blob = await recordBlob(2500);
-      // Let user download the WAV (debug)
-      try {{
-        const pcm = await blobToPCM16Mono(blob, 16000);
-        const wav = pcmToWavBlob(pcm, 16000);
-        const url = URL.createObjectURL(wav);
-        const dl = document.getElementById('dlWav');
-        dl.href = url; dl.style.display = DEBUG ? 'inline-block' : 'none';
-      }} catch(_ignore) {{}}
 
-      const {{ ok, token, region }} = await fetchToken();
-      if (!ok) {{ targetEl.textContent = "⚠️ Token/region issue"; return 0; }}
-
-      // Recompute PCM for streaming to SDK
-      const pcm = await blobToPCM16Mono(blob, 16000);
+      const {{ token, region }} = await fetchToken();
+      if (!token || !region) {{ targetEl.textContent = "⚠️ Token/region issue"; return 0; }}
 
       const SDK = window.SpeechSDK;
       const speechConfig = SDK.SpeechConfig.fromAuthorizationToken(token, region);
@@ -490,15 +357,69 @@ def generate_flashcard_html(set_name, data):
       speechConfig.outputFormat = SDK.OutputFormat.Detailed;
       speechConfig.setProperty(SDK.PropertyId.SpeechServiceResponse_RequestDetailedResultTrueFalse, "true");
       speechConfig.setProperty(SDK.PropertyId.SpeechServiceResponse_RequestWordLevelTimestamps, "true");
+      //speechConfig.setProperty(SDK.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "250");
 
-      // Push stream with explicit PCM format 16k/16bit/mono
+      // Push 16k/16-bit/mono PCM
+      const pcm = await blobToPCM16Mono(blob, 16000);
       const format = SDK.AudioStreamFormat.getWaveFormatPCM(16000, 16, 1);
       const push = SDK.AudioInputStream.createPushStream(format);
-      // Write PCM bytes
       push.write(new Uint8Array(pcm.buffer));
       push.close();
-      const audioConfig = SDK.AudioConfig.fromStreamInput(push);
 
+      const audioConfig = SDK.AudioConfig.fromStreamInput(push);
+      const recognizer = new SDK.SpeechRecognizer(speechConfig, audioConfig);
+
+      // Pronunciation Assessment + phrase bias
+      const pa = new SDK.PronunciationAssessmentConfig(
+        ref,
+        SDK.PronunciationAssessmentGradingSystem.HundredMark,
+        SDK.PronunciationAssessmentGranularity.Word,
+        true
+      );
+      pa.applyTo(recognizer);
+      try {{
+        const pl = SDK.PhraseListGrammar.fromRecognizer(recognizer);
+        if (pl) pl.add(ref);
+      }} catch (_ignore) {{}}
+
+      targetEl.textContent = "🧠 Scoring…";
+
+      const result = await new Promise((resolve, reject) => {{
+        try {{ recognizer.recognizeOnceAsync(resolve, reject); }}
+        catch (e) {{ reject(e); }}
+      }}).catch(_e => null);
+
+      try {{ recognizer.close(); }} catch(_ignore) {{}}
+
+      if (!result) {{ targetEl.textContent = "⚠️ Speech error"; return 0; }}
+
+      const score = extractScore(result, SDK);
+      targetEl.textContent = score ? `✅ ${{score}}%` : "⚠️ No score";
+      return score || 0;
+    }}
+
+    // Optional live path (only if forced via ?live=1)
+    async function assessLive(referenceText, targetEl) {{
+      const ref = (referenceText || "").trim();
+      if (!window.SpeechSDK) {{ targetEl.textContent = "⚠️ SDK not loaded."; return 0; }}
+      if (!ref) {{ targetEl.textContent = "⚠️ No reference text."; return 0; }}
+      targetEl.textContent = "🎤 Preparing…";
+      await prewarmMic();
+      await new Promise(r => setTimeout(r, 120));
+
+      const {{ token, region }} = await fetchToken();
+      if (!token || !region) {{ targetEl.textContent = "⚠️ Token/region issue"; return 0; }}
+
+      const SDK = window.SpeechSDK;
+      const speechConfig = SDK.SpeechConfig.fromAuthorizationToken(token, region);
+      speechConfig.speechRecognitionLanguage = "pl-PL";
+      speechConfig.outputFormat = SDK.OutputFormat.Detailed;
+      speechConfig.setProperty(SDK.PropertyId.SpeechServiceResponse_RequestDetailedResultTrueFalse, "true");
+      speechConfig.setProperty(SDK.PropertyId.SpeechServiceResponse_RequestWordLevelTimestamps, "true");
+      speechConfig.setProperty(SDK.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, (IS_IOS || IS_SAFARI) ? "2200" : "1600");
+      speechConfig.setProperty(SDK.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "250");
+
+      const audioConfig = SDK.AudioConfig.fromDefaultMicrophoneInput();
       const recognizer = new SDK.SpeechRecognizer(speechConfig, audioConfig);
 
       const pa = new SDK.PronunciationAssessmentConfig(
@@ -511,68 +432,27 @@ def generate_flashcard_html(set_name, data):
       try {{
         const pl = SDK.PhraseListGrammar.fromRecognizer(recognizer);
         if (pl) pl.add(ref);
-      }} catch(_ignore) {{ }}
+      }} catch (_ignore) {{}}
 
-      targetEl.textContent = "🧠 Scoring…";
+      targetEl.textContent = "🎙 Listening…";
 
       const result = await new Promise((resolve, reject) => {{
         try {{ recognizer.recognizeOnceAsync(resolve, reject); }}
         catch (e) {{ reject(e); }}
-      }}).catch(e => {{ logDbg('recognizeOnce(push) error', e?.message || e); return null; }});
+      }}).catch(_e => null);
 
-      try {{ recognizer.close(); }} catch(_ignore) {{ }}
+      try {{ recognizer.close(); }} catch(_ignore) {{}}
 
       if (!result) {{ targetEl.textContent = "⚠️ Speech error"; return 0; }}
-
-      try {{
-        logDbg('reason', result?.reason);
-        if (result?.reason === SDK.ResultReason.Canceled) {{
-          const c = SDK.CancellationDetails.fromResult(result);
-          logDbg('canceled', c?.reason, c?.errorCode, c?.errorDetails);
-        }}
-        if (result?.reason === SDK.ResultReason.NoMatch) {{
-          const d = SDK.NoMatchDetails.fromResult(result);
-          logDbg('noMatch', d?.reason);
-        }}
-      }} catch(_ignore) {{ }}
-
-      let raw = null;
-      try {{
-        raw = result?.properties?.getProperty(SDK.PropertyId.SpeechServiceResponse_JsonResult)
-           || result?.privPronunciationAssessmentJson
-           || result?.privJson;
-      }} catch(_ignore) {{ }}
-      if (raw) try {{ logRaw(JSON.parse(raw)); }} catch(_ignore) {{ logRaw(raw); }}
-
-      let score = 0;
-      if (raw) {{
-        try {{
-          const j = JSON.parse(raw);
-          score = Math.round(
-            (j?.NBest?.[0]?.PronunciationAssessment?.AccuracyScore) ??
-            (j?.PronunciationAssessment?.AccuracyScore) ?? 0
-          );
-        }} catch(_ignore) {{ }}
-      }}
-
+      const score = extractScore(result, SDK);
       targetEl.textContent = score ? `✅ ${{score}}%` : "⚠️ No score";
       return score || 0;
     }}
 
     // ---------- UI wiring ----------
     window.addEventListener("DOMContentLoaded", async function() {{
-      document.getElementById('speakHint').textContent =
-        CAPTURE_MODE ? "Tap to record, then we’ll score it." :
-        (IS_IOS || IS_SAFARI) ? "Tap, then speak." : "Click, then speak.";
-
-      try {{
-        if (window.AudioPaths) r2Manifest = await AudioPaths.fetchManifest(setName);
-      }} catch (_ignore) {{ r2Manifest = null; }}
-
-      // SDK version diag
-      try {{
-        logDbg('SDK version?', window.SpeechSDK?.Version || 'unknown');
-      }} catch(_ignore) {{}}
+      // Try to load R2 manifest (non-blocking)
+      try {{ if (window.AudioPaths) r2Manifest = await AudioPaths.fetchManifest(setName); }} catch (_e) {{ r2Manifest = null; }}
 
       renderCard();
 
@@ -583,7 +463,7 @@ def generate_flashcard_html(set_name, data):
         hasFlippedCurrent = true;
       }});
 
-      // Front: Say it
+      // Front: Say it (capture-first, optional live if forced)
       const sayBtn = document.getElementById("btnSayFront");
       const frontRes = document.getElementById("frontResult");
       const getRef = () => (cards[currentIndex] && cards[currentIndex].phrase) || "";
@@ -613,8 +493,8 @@ def generate_flashcard_html(set_name, data):
         let a = audioCache.get(currentIndex);
         if (!a) {{ primeAudio(currentIndex); a = audioCache.get(currentIndex); }}
         if (a) {{
-          try {{ a.currentTime = 0; }} catch(_ignore) {{ }}
-          a.play().catch(err => logDbg('audio play err', err?.message || err));
+          try {{ a.currentTime = 0; }} catch(_ignore) {{}}
+          a.play().catch(_err => {{}});
         }}
       }});
 
@@ -623,6 +503,7 @@ def generate_flashcard_html(set_name, data):
         if (currentIndex > 0) {{
           currentIndex--;
           renderCard();
+          if (window.SessionSync) SessionSync.save({{ setName, mode, progress: {{ index: currentIndex, per: tracker.per }} }});
         }}
       }});
 
@@ -630,18 +511,22 @@ def generate_flashcard_html(set_name, data):
         if (currentIndex < cards.length - 1) {{
           currentIndex++;
           renderCard();
+          if (window.SessionSync) SessionSync.save({{ setName, mode, progress: {{ index: currentIndex, per: tracker.per }} }});
         }} else {{
+          // FINISH
           const totalCards = Math.max(1, cards.length);
           const correct = Object.values(tracker.per).filter(r => (r?.best || 0) >= PASS).length;
           const scorePct = Math.round((correct / totalCards) * 100);
+
           let pointsTotal = 10 + tracker.perfectNoFlipCount;
           if (scorePct === 100) pointsTotal = pointsTotal * 2;
+
           try {{
             localStorage.setItem("lp_last_result_" + setName, JSON.stringify({{
               score: scorePct, attempts: tracker.attempts, total: totalCards,
               points_total: pointsTotal, perfect_before_flip: tracker.perfectNoFlipCount
             }}));
-          }} catch (_ignore) {{ }}
+          }} catch (_ignore) {{}}
 
           let awarded = null;
           try {{
@@ -657,12 +542,29 @@ def generate_flashcard_html(set_name, data):
               const js = await resp.json();
               awarded = (js && js.details && js.details.points_awarded != null) ? Number(js.details.points_awarded) : null;
             }}
-          }} catch (_ignore) {{ }}
+          }} catch (_ignore) {{}}
 
+          try {{ if (window.SessionSync) await SessionSync.complete({{ setName, mode }}); }} catch(_ignore) {{}}
+          try {{ localStorage.removeItem("lp_last"); }} catch(_ignore) {{}}
           const q = awarded != null ? ("?awarded=" + encodeURIComponent(awarded)) : "";
           window.location.href = "summary.html" + q;
         }}
       }});
+
+      // Resume mid-set if ?resume=1
+      (async () => {{
+        const wantResume = new URL(location.href).searchParams.get("resume") === "1";
+        if (wantResume && window.SessionSync) {{
+          await SessionSync.restore({{ setName, mode }}, (progress) => {{
+            if (progress && Number.isFinite(progress.index)) {{
+              currentIndex = Math.max(0, Math.min(cards.length - 1, progress.index));
+            }}
+            if (progress && progress.per) Object.assign(tracker.per, progress.per);
+            renderCard();
+          }});
+        }}
+        try {{ localStorage.setItem("lp_last", JSON.stringify({{ set_name:setName, mode, ts: Date.now() }})); }} catch(_ignore) {{}}
+      }})();
     }});
 
     function goHome() {{ window.location.href = "../../index.html"; }}
