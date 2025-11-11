@@ -1,51 +1,50 @@
+# app/auth.py
 from flask import Blueprint, request, jsonify, current_app, redirect
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 import jwt, datetime
+import os, re
 
-from .models import db, User
-from .config import ADMIN_EMAIL   # still fine to use for initial admin flag
 from flask_cors import cross_origin
 
+from .models import db, User
+from .config import ADMIN_EMAIL
 from .emailer import send_email
-import os, re
 
 try:
     import boto3
     from botocore.exceptions import ClientError
 except Exception:
-    # Keep app booting even if boto3 isn't installed;
-    # SES routes will respond with a clear error when called.
     boto3 = None
     class ClientError(Exception):
         pass
+
 auth_bp = Blueprint("auth", __name__)
 
 # ----------------------------
 # JWT helpers
 # ----------------------------
-
 def create_token(user_id: int) -> str:
     payload = {
         "sub": user_id,
         "iat": datetime.datetime.utcnow(),
-        "exp": datetime.datetime.utcnow() + datetime.timedelta(days=7),  # 7 days
+        "exp": datetime.datetime.utcnow() + datetime.timedelta(days=7),
     }
     token = jwt.encode(payload, current_app.config["JWT_SECRET"], algorithm="HS256")
     return token if isinstance(token, str) else token.decode("utf-8")
 
 
 def _get_bearer_token():
-    """Read Bearer token from header, or ?token= query (for HTML navigations)."""
     auth_header = request.headers.get("Authorization", "")
     if auth_header.startswith("Bearer "):
         return auth_header.split(" ", 1)[1]
     return request.args.get("token") or None
 
+
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        # --- Allow CORS preflight to pass without auth ---
+        # Allow CORS preflight without auth
         if request.method == "OPTIONS":
             return ("", 204)
 
@@ -65,8 +64,6 @@ def token_required(f):
     return decorated
 
 
-
-# Decorator for (optional) server HTML routes: redirect to static /login.html on failure
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -76,7 +73,6 @@ def login_required(f):
             login_url = (base + "/login.html") if base else "/login.html"
             return redirect(login_url)
 
-        user = None  # avoid unbound var in some static analysis paths
         try:
             data = jwt.decode(token, current_app.config["JWT_SECRET"], algorithms=["HS256"])
             user = User.query.get(data["sub"])
@@ -91,15 +87,14 @@ def login_required(f):
         return f(user, *args, **kwargs)
     return decorated_function
 
+
 # ----------------------------
 # API bootstrap admin
 # ----------------------------
-
 @auth_bp.route("/admin/promote_me", methods=["POST", "OPTIONS"])
 @cross_origin()
 @token_required
 def promote_me(current_user):
-    # Only allow if the caller matches the configured ADMIN_EMAIL
     admin_email = (current_app.config.get("ADMIN_EMAIL") or "").strip().lower()
     if not admin_email:
         return jsonify({"ok": False, "error": "ADMIN_EMAIL not set"}), 400
@@ -111,10 +106,10 @@ def promote_me(current_user):
     db.session.commit()
     return jsonify({"ok": True, "email": current_user.email, "is_admin": True})
 
-# ----------------------------
-# API routes
-# ----------------------------
 
+# ----------------------------
+# Auth routes
+# ----------------------------
 @auth_bp.route("/signup", methods=["POST", "OPTIONS"])
 @cross_origin()
 def signup():
@@ -132,8 +127,6 @@ def signup():
 
     pw_hash = generate_password_hash(password)
     user = User(email=email, password_hash=pw_hash, name=name)
-
-    # Mark admin at creation if matches configured admin email
     if ADMIN_EMAIL and email == (ADMIN_EMAIL or "").lower():
         user.is_admin = True
 
@@ -163,9 +156,7 @@ def login():
 
     if not getattr(user, "password_hash", None):
         current_app.logger.warning("User %s missing password hash", email)
-        return jsonify({
-            "message": "Password not set for this account. Use the reset link to create one."
-        }), 400
+        return jsonify({"message": "Password not set for this account. Use the reset link to create one."}), 400
 
     try:
         valid = check_password_hash(user.password_hash, password)
@@ -186,11 +177,10 @@ def login():
 @auth_bp.route("/token", methods=["GET"])
 @cross_origin()
 def token_ping():
-    """Simple reachability endpoint used by the static frontend."""
     return jsonify({"ok": True, "authenticated": bool(_get_bearer_token())})
 
 
-@auth_bp.route("/me", methods=["GET"])
+@auth_bp.route("/me", methods=["GET", "OPTIONS"])
 @cross_origin()
 @token_required
 def me(current_user):
@@ -200,8 +190,9 @@ def me(current_user):
         "name": current_user.name,
         "is_admin": current_user.is_admin
     })
-# --- SES email identity helpers (admin-only) --------------------------------
 
+
+# --- SES email identity helpers (admin-only) --------------------------------
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 def _guess_ses_region() -> str:
@@ -220,39 +211,23 @@ def _guess_ses_region() -> str:
 
 
 def _ses_client():
-    """
-    Build a boto3 SESv2 client using SES-specific creds if provided,
-    falling back to generic AWS_* only if SES_* are not set.
-    This prevents your Cloudflare R2 AWS_* from interfering.
-    """
     if boto3 is None:
         raise RuntimeError("boto3 is not installed; add 'boto3>=1.34' to requirements.txt")
 
     region = _guess_ses_region()
-
-    # Prefer SES_* (IAM keys you created for SES API), else fall back to generic AWS_* if present
     ak = os.getenv("SES_AWS_ACCESS_KEY_ID") or os.getenv("AWS_SES_ACCESS_KEY_ID") or os.getenv("AWS_ACCESS_KEY_ID")
     sk = os.getenv("SES_AWS_SECRET_ACCESS_KEY") or os.getenv("AWS_SES_SECRET_ACCESS_KEY") or os.getenv("AWS_SECRET_ACCESS_KEY")
-
     if not ak or not sk:
         raise RuntimeError("Missing SES API creds: set SES_AWS_ACCESS_KEY_ID and SES_AWS_SECRET_ACCESS_KEY")
 
-    session = boto3.Session(
-        aws_access_key_id=ak,
-        aws_secret_access_key=sk,
-        region_name=region,
-    )
+    session = boto3.Session(aws_access_key_id=ak, aws_secret_access_key=sk, region_name=region)
     return session.client("sesv2")
+
 
 @auth_bp.route("/admin/ses/create_identity", methods=["POST", "OPTIONS"])
 @cross_origin()
 @token_required
 def ses_create_identity(current_user):
-    """
-    Trigger SES to send a verification email to a recipient (Sandbox requirement).
-    Body: { "email": "tester@example.com" }
-    Returns SES response (trimmed) or an error.
-    """
     if not getattr(current_user, "is_admin", False):
         return jsonify({"ok": False, "error": "forbidden"}), 403
 
@@ -264,7 +239,6 @@ def ses_create_identity(current_user):
     try:
         ses = _ses_client()
         resp = ses.create_email_identity(EmailIdentity=email)
-        # Optional: attach a default configuration set if you use one
         cfg = (os.getenv("SES_DEFAULT_CONFIG_SET") or "").strip()
         if cfg:
             try:
@@ -273,7 +247,6 @@ def ses_create_identity(current_user):
                     ConfigurationSetName=cfg
                 )
             except ClientError as e:
-                # Non-fatal: return as warning
                 return jsonify({
                     "ok": True,
                     "email": email,
@@ -300,14 +273,11 @@ def ses_create_identity(current_user):
     except Exception as e:
         return jsonify({"ok": False, "error": "exception", "message": str(e)}), 500
 
-@auth_bp.route("/admin/ses/get_identity", methods=["GET"])
+
+@auth_bp.route("/admin/ses/get_identity", methods=["GET", "OPTIONS"])
 @cross_origin()
 @token_required
 def ses_get_identity(current_user):
-    """
-    Check verification status.
-    Query: ?email=tester@example.com
-    """
     if not getattr(current_user, "is_admin", False):
         return jsonify({"ok": False, "error": "forbidden"}), 403
 
@@ -318,7 +288,6 @@ def ses_get_identity(current_user):
     try:
         ses = _ses_client()
         resp = ses.get_email_identity(EmailIdentity=email)
-        # Typical fields: 'VerifiedStatus' (e.g., PENDING | SUCCESS | FAILED | TEMPORARY_FAILURE)
         return jsonify({
             "ok": True,
             "email": email,
@@ -333,13 +302,11 @@ def ses_get_identity(current_user):
     except Exception as e:
         return jsonify({"ok": False, "error": "exception", "message": str(e)}), 500
 
-@auth_bp.route("/admin/ses/list_emails", methods=["GET"])
+
+@auth_bp.route("/admin/ses/list_emails", methods=["GET", "OPTIONS"])
 @cross_origin()
 @token_required
 def ses_list_emails(current_user):
-    """
-    List email-address identities (not domains).
-    """
     if not getattr(current_user, "is_admin", False):
         return jsonify({"ok": False, "error": "forbidden"}), 403
 
@@ -371,11 +338,11 @@ def ses_list_emails(current_user):
     except Exception as e:
         return jsonify({"ok": False, "error": "exception", "message": str(e)}), 500
 
+
 # ----------------------------
 # Password reset
 # ----------------------------
-
-@auth_bp.route("/reset_request", methods=["POST"])
+@auth_bp.route("/reset_request", methods=["POST", "OPTIONS"])
 @cross_origin()
 def reset_request():
     data = request.get_json() or {}
@@ -385,7 +352,6 @@ def reset_request():
         return jsonify({"message": "Email is required"}), 400
 
     user = User.query.filter_by(email=email).first()
-    # Privacy-friendly response (don’t reveal whether the email exists)
     if not user:
         return jsonify({"message": "If the email exists, a reset link has been sent."}), 200
 
@@ -397,35 +363,33 @@ def reset_request():
     token = jwt.encode(payload, current_app.config["JWT_SECRET"], algorithm="HS256")
     token = token if isinstance(token, str) else token.decode("utf-8")
 
-    # Build a link to the static reset page (public URL)
     base = (current_app.config.get("FRONTEND_BASE_URL")
             or current_app.config.get("APP_BASE_URL")
             or "").rstrip("/")
     reset_link = (base + "/reset_confirm.html?token=" + token) if base else ("/reset_confirm.html?token=" + token)
 
-    # Send the email (don’t leak errors to the client)
     try:
         subject = "Reset your Path to POLISH password"
         text = f"""Hi,
 
-    We received a request to reset your Path to POLISH password.
+We received a request to reset your Path to POLISH password.
 
-    Reset your password using this link:
-    {reset_link}
+Reset your password using this link:
+{reset_link}
 
-    If you didn’t request this, you can safely ignore this email.
+If you didn’t request this, you can safely ignore this email.
 
-    Thanks,
-    Path to POLISH Support
-    """
+Thanks,
+Path to POLISH Support
+"""
         html = f"""<html><body>
-    <p>Hi,</p>
-    <p>We received a request to reset your <b>Path to POLISH</b> password.</p>
-    <p><b>Reset your password using this link:</b><br>
-    <a href="{reset_link}">{reset_link}</a></p>
-    <p>If you didn’t request this, you can safely ignore this email.</p>
-    <p>Thanks,<br>Path to POLISH Support</p>
-    </body></html>"""
+<p>Hi,</p>
+<p>We received a request to reset your <b>Path to POLISH</b> password.</p>
+<p><b>Reset your password using this link:</b><br>
+<a href="{reset_link}">{reset_link}</a></p>
+<p>If you didn’t request this, you can safely ignore this email.</p>
+<p>Thanks,<br>Path to POLISH Support</p>
+</body></html>"""
         send_email(subject=subject, text=text, html=html, to=[email], bcc=None, reply_to=None)
     except Exception as e:
         print("Reset email failed:", repr(e))
@@ -433,8 +397,7 @@ def reset_request():
     return jsonify({"message": "If the email exists, a reset link has been sent."}), 200
 
 
-
-@auth_bp.route("/reset_confirm", methods=["POST"])
+@auth_bp.route("/reset_confirm", methods=["POST", "OPTIONS"])
 @cross_origin()
 def reset_confirm():
     data = request.get_json() or {}
@@ -460,20 +423,14 @@ def reset_confirm():
         return jsonify({"message": "Reset token has expired"}), 400
     except jwt.InvalidTokenError:
         return jsonify({"message": "Invalid reset token"}), 400
-# --- Compatibility + convenience routes ---
 
+
+# --- Compatibility + convenience routes ---
 @auth_bp.route("/logout", methods=["POST", "OPTIONS"])
 def logout():
-    """
-    Frontend calls this and then clears its own token.
-    We don't keep server-side sessions, so just return 204.
-    """
     return ("", 204)
+
 
 @auth_bp.route("/register", methods=["POST", "OPTIONS"])
 def register():
-    """
-    Frontend compatibility for older /api/register callers.
-    Delegates to signup() so the logic stays in one place.
-    """
     return signup()

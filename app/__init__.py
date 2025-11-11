@@ -4,9 +4,8 @@ import re
 from urllib.parse import urlparse, urlunparse, unquote
 from datetime import datetime, timezone
 
-from flask import Flask, jsonify, redirect, current_app
-from flask_cors import CORS
-from flask_cors import cross_origin
+from flask import Flask, jsonify, redirect
+from flask_cors import CORS, cross_origin
 
 # Optional Flask-Migrate
 try:
@@ -20,27 +19,18 @@ from .models import db
 
 # ----------------------- DB URL helpers -----------------------
 def _normalize_db_url(u: str | None) -> str | None:
-    """
-    Normalizes Postgres URLs and appends safe defaults that reduce
-    'SSL SYSCALL error: EOF detected' by enforcing SSL and TCP keepalives.
-    """
     if not u:
         return None
 
-    # Normalize scheme/driver
     if u.startswith("postgres://"):
         u = u.replace("postgres://", "postgresql://", 1)
     if u.startswith("postgresql://") and "+" not in u.split(":", 1)[0]:
-        # Use SQLAlchemy 2.x + psycopg3 driver name
         u = u.replace("postgresql://", "postgresql+psycopg://", 1)
 
     parsed = urlparse(u)
-
-    # Only touch Postgres URLs
     if not parsed.scheme.startswith("postgresql"):
         return u
 
-    # Decode any percent-encoded DB names
     path = parsed.path
     if "%" in path:
         try:
@@ -48,7 +38,6 @@ def _normalize_db_url(u: str | None) -> str | None:
         except Exception:
             pass
 
-    # Append ssl + keepalive params unless already present
     q = parsed.query or ""
 
     def _ensure(qs: str, key: str, value: str) -> str:
@@ -56,9 +45,9 @@ def _normalize_db_url(u: str | None) -> str | None:
 
     q = _ensure(q, "sslmode", "require")
     q = _ensure(q, "keepalives", "1")
-    q = _ensure(q, "keepalives_idle", "30")       # seconds before first probe
-    q = _ensure(q, "keepalives_interval", "10")   # seconds between probes
-    q = _ensure(q, "keepalives_count", "3")       # failed probes before drop
+    q = _ensure(q, "keepalives_idle", "30")
+    q = _ensure(q, "keepalives_interval", "10")
+    q = _ensure(q, "keepalives_count", "3")
 
     return urlunparse(parsed._replace(path=path, query=q))
 
@@ -132,6 +121,7 @@ def _derive_allowed_origins() -> list[str]:
         if "github.io" in candidate and "https://*.github.io" not in origins:
             origins.append("https://*.github.io")
 
+    # de-dup
     seen = set()
     deduped = []
     for item in origins:
@@ -145,29 +135,18 @@ def _derive_allowed_origins() -> list[str]:
 
 # ----------------------- R2 env name bridge -----------------------
 def _bridge_r2_env_names():
-    """
-    Canonicalize R2 env names so the app can always rely on:
-      - R2_ENDPOINT             (or R2_S3_ENDPOINT / CLOUDFLARE_R2_ENDPOINT)
-      - R2_BUCKET               (or CLOUDFLARE_R2_BUCKET)
-      - R2_ACCESS_KEY_ID        (or R2_ACCESS_KEY / R2_KEY_ID)
-      - R2_SECRET_ACCESS_KEY    (or R2_SECRET_KEY)
-      - R2_CDN_BASE             (or R2_PUBLIC_BASE / CLOUDFLARE_R2_PUBLIC_BASE)
-    """
-    # endpoint
     for src in ("R2_ENDPOINT", "R2_S3_ENDPOINT", "CLOUDFLARE_R2_ENDPOINT"):
         val = os.getenv(src)
         if val:
             os.environ.setdefault("R2_ENDPOINT", val)
             break
 
-    # bucket
     for src in ("R2_BUCKET", "CLOUDFLARE_R2_BUCKET"):
         val = os.getenv(src)
         if val:
             os.environ.setdefault("R2_BUCKET", val)
             break
 
-    # access key id
     if not os.getenv("R2_ACCESS_KEY_ID"):
         for src in ("R2_ACCESS_KEY", "R2_KEY_ID"):
             val = os.getenv(src)
@@ -175,13 +154,11 @@ def _bridge_r2_env_names():
                 os.environ["R2_ACCESS_KEY_ID"] = val
                 break
 
-    # secret access key
     if not os.getenv("R2_SECRET_ACCESS_KEY"):
         val = os.getenv("R2_SECRET_KEY")
         if val:
             os.environ["R2_SECRET_ACCESS_KEY"] = val
 
-    # public CDN/base
     if not os.getenv("R2_CDN_BASE"):
         for src in ("R2_CDN_BASE", "R2_PUBLIC_BASE", "CLOUDFLARE_R2_PUBLIC_BASE"):
             val = os.getenv(src)
@@ -205,7 +182,7 @@ def create_app():
     app.config["SECRET_KEY"] = secret
     app.config["JWT_SECRET"] = os.getenv("JWT_SECRET") or secret
 
-    # Bridge Cloudflare R2 env names (supports your current Render vars)
+    # Bridge Cloudflare R2 env names
     _bridge_r2_env_names()
 
     # --- Database config ---
@@ -216,10 +193,9 @@ def create_app():
             "DATABASE_URL, DATABASE_CONNECTION_STRING, DATABASE_INTERNAL_URL."
         )
 
-    # Pool + reconnect settings that heal stale/idle connections
     engine_options = {
-        "pool_pre_ping": True,                       # validate before use; auto-reconnect
-        "pool_recycle": 280,                         # recycle before common infra timeouts
+        "pool_pre_ping": True,
+        "pool_recycle": 280,
         "pool_size": int(os.getenv("DB_POOL_SIZE", "5")),
         "max_overflow": int(os.getenv("DB_MAX_OVERFLOW", "5")),
         "pool_timeout": int(os.getenv("DB_POOL_TIMEOUT", "30")),
@@ -273,11 +249,10 @@ def create_app():
 
     _bootstrap_db()
 
-        # --- CORS ---
+    # --- CORS ---
     allowed = _derive_allowed_origins()
     strict_cors = os.getenv("CORS_STRICT", "0").lower() in ("1", "true", "yes", "on")
 
-    # Build a list suitable for Flask-CORS: exact strings or compiled regex
     cors_allow_list: list[object] = []
     for item in allowed:
         if isinstance(item, str) and item.startswith("regex:"):
@@ -286,31 +261,31 @@ def create_app():
             except re.error:
                 continue
         elif isinstance(item, str) and "*" in item:
-            # Turn wildcard strings like "https://*.github.io" into a regex
             pattern = "^" + re.escape(item).replace("\\*", ".*") + "$"
             cors_allow_list.append(re.compile(pattern))
         else:
             cors_allow_list.append(item)
 
     cors_origins = cors_allow_list if (strict_cors and cors_allow_list) else "*"
+    # We use token auth (no cookies). Keep this False so wildcard "*" remains valid.
+    supports_creds = False
 
     resources = {
-        r"/api/*": {"origins": cors_origins, "methods": ["GET","POST","PUT","PATCH","DELETE","OPTIONS"]},
-        r"/api/healthz": {"origins": cors_origins, "methods": ["GET","OPTIONS"]},
-        r"/ping": {"origins": cors_origins, "methods": ["GET","OPTIONS"]},
+        r"/api/*": {"origins": cors_origins, "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]},
+        r"/api/healthz": {"origins": cors_origins, "methods": ["GET", "OPTIONS"]},
+        r"/ping": {"origins": cors_origins, "methods": ["GET", "OPTIONS"]},
     }
 
     CORS(
         app,
         resources=resources,
-        supports_credentials=False,  # you aren't using cookies; keep this False so "*" is legal
+        supports_credentials=supports_creds,
         allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
         expose_headers=["Content-Type"],
         max_age=600,
         send_wildcard=(cors_origins == "*"),
         vary_header=True,
     )
-
 
     from flask import request as flask_request
 
@@ -319,10 +294,9 @@ def create_app():
         resp,
         cors_origins=cors_origins,
         allowed=allowed,
-        supports_credentials=supports_credentials,
+        supports_creds=supports_creds,
     ):
         origin = flask_request.headers.get("Origin")
-
         if cors_origins == "*":
             resp.headers.setdefault("Access-Control-Allow-Origin", "*")
             resp.headers.setdefault(
@@ -364,10 +338,9 @@ def create_app():
                 "Access-Control-Allow-Headers",
                 "Authorization, Content-Type, X-Requested-With",
             )
-            if supports_credentials:
+            if supports_creds:
                 resp.headers.setdefault("Access-Control-Allow-Credentials", "true")
             resp.headers.setdefault("Vary", "Origin")
-
         return resp
 
     @app.route("/api/<path:_subpath>", methods=["OPTIONS"])
@@ -415,7 +388,6 @@ def create_app():
             "access_key_present": bool(ak),
             "secret_key_present": bool(sk),
             "disabled_flag": (os.getenv("DISABLE_R2") or "0"),
-            # masked previews
             "ak_last4": _mask(ak, 4),
             "sk_last4": _mask(sk, 4),
         }
@@ -435,16 +407,12 @@ def create_app():
                 region_name="auto",
                 config=_BotoCfg(signature_version="s3v4") if _BotoCfg else None,
             )
-
-            # Light touch: does the bucket exist / are creds valid?
             s3.head_bucket(Bucket=bucket)
             result = {"ok": True, "info": info, "bucket_head": "ok"}
 
-            # Optional write test
             if (flask_request.args.get("write") == "1") and os.getenv("DISABLE_R2", "0") not in ("1", "true", "yes"):
                 key = f"diag/{int(time.time())}-{secrets.token_hex(4)}.txt"
                 s3.put_object(Bucket=bucket, Key=key, Body=b"ok", ContentType="text/plain")
-                # Try a public read if a public base URL exists
                 public_read_ok = None
                 if public_base:
                     import requests
@@ -533,6 +501,7 @@ def create_app():
         key, region, endpoint = _azure_env()
         ok = bool(key and region)
         resp = {"ok": ok, "has_key": bool(key), "region": region or None, "endpoint": endpoint or None}
+        from flask import request as flask_request
         if flask_request.args.get("probe") == "1" and ok:
             try:
                 _tok, _reg, _exp = _azure_issue_token()
@@ -544,7 +513,7 @@ def create_app():
 
     @app.get("/api/azure/token")
     @app.get("/api/token/azure")
-    @cross_origin(origins=cors_origins, supports_credentials=False, max_age=600)
+    @cross_origin(origins=cors_origins, supports_credentials=supports_creds, max_age=600)
     def azure_token():
         try:
             token, region, expires_at = _azure_issue_token()
@@ -557,12 +526,11 @@ def create_app():
         except Exception as e:
             app.logger.error("Azure token error: %s", e)
             return jsonify({"ok": False, "error": "azure_token_error"}), 500
-    
+
     # Alias for legacy clients/pages
     @app.get("/api/speech_token")
-    @cross_origin(origins=cors_origins, supports_credentials=False, max_age=600)
+    @cross_origin(origins=cors_origins, supports_credentials=supports_creds, max_age=600)
     def speech_token_alias():
-        # Reuse the same handler
         return azure_token()
 
     # --- Blueprints ---
@@ -584,7 +552,7 @@ def create_app():
 
     try:
         from .routes import routes_bp
-        app.register_blueprint(routes_bp)  # usually no prefix
+        app.register_blueprint(routes_bp)
     except Exception:
         pass
 
@@ -592,11 +560,9 @@ def create_app():
     def root_redirect():
         return redirect("https://andrewdionne.github.io/LearnPolish/", code=302)
 
-
-    # Optional local-only init
     if os.getenv("AUTO_INIT_DB", "0").lower() in ("1", "true", "yes"):
         with app.app_context():
-            import app.models as _all_models  # ensure models loaded
+            import app.models as _all_models  # noqa
             db.create_all()
 
     @app.errorhandler(Exception)
