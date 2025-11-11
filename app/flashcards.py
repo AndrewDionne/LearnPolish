@@ -11,16 +11,18 @@ def generate_flashcard_html(set_name, data):
       - docs/flashcards/<set_name>/index.html   (learning UI, capture-first)
       - docs/flashcards/<set_name>/summary.html (results UI)
 
-    Capture-first recognizer:
-      - Click once → records ~2.5s → streams PCM to Azure → returns score
-      - Tiny level meter while recording
-      - Uses /api/speech_token for Azure auth
-      - Audio preloads (current + next)
+    Kept features
+      - ?debug=1 overlay with reasons/raw JSON
+      - ?live=1 forces live mic path
+      - ?capture=0/1 overrides capture mode (default capture)
+      - Audio preloading (current + next)
+      - R2 manifest support via AudioPaths if present
 
-    URL switches:
-      - ?debug=1     → show debug overlay (reason/raw JSON)
-      - ?live=1      → force live mic (recognizeOnce on default mic)
-      - ?capture=0/1 → force capture off/on (default is capture)
+    Speed-ups
+      - Default capture ~1.6s with early-stop VAD (energy-based)
+      - Token caching (prefetch on load)
+      - No word-level timestamps on both paths
+      - WAV download gated to ?debug=1 only
     """
     output_dir = DOCS_DIR / "flashcards" / set_name
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -41,90 +43,177 @@ def generate_flashcard_html(set_name, data):
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>{set_name} • Learn</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="icon" type="image/svg+xml" href="../../static/brand.svg" />
+
+  <!-- Dual-host <base>: GitHub Pages vs Flask -->
+  <script>
+    (function () {{
+      var isGH = /\\.github\\.io$/i.test(location.hostname);
+      var baseHref = isGH ? '/LearnPolish/' : '/';
+      document.write('<base href="' + baseHref + '">');
+    }})();
+  </script>
+
+  <title>{set_name} • Learn • Path to POLISH</title>
+
+  <!-- Site styles -->
+  <link rel="stylesheet" href="static/app.css?v=5">
+
   <style>
-    body {{ font-family: -apple-system,BlinkMacSystemFont, sans-serif; margin:0; padding:20px; background:#f8f9fa; display:flex; flex-direction:column; align-items:center; min-height:100vh; }}
-    h1 {{ font-size:1.5em; margin:0 0 8px; position:relative; width:100%; text-align:center; }}
-    .home-btn {{ position:absolute; right:0; top:0; font-size:1.4em; background:none; border:none; cursor:pointer; }}
+    /* Page-local tweaks that sit on top of app.css */
 
-    .hint {{ color:#5a6472; font-size:.9em; margin-bottom:8px; }}
+    .wrap{{ max-width:900px; margin:0 auto; padding:0 16px 80px; }}
 
-    .card {{ width:90%; max-width:360px; height:260px; perspective:1000px; margin:12px auto; }}
-    .card-inner {{
-      width:100%; height:100%; position:relative; transition:transform .6s; transform-style:preserve-3d;
-      cursor:pointer; box-shadow:0 4px 10px rgba(0,0,0,.1); display:flex; justify-content:center; align-items:center; border-radius:12px;
+    .learn-frame{{ display:grid; gap:16px; grid-template-columns:1fr; }}
+    @media (min-width:880px) {{
+      .learn-frame{{ grid-template-columns: 1.1fr .9fr; }}
     }}
-    .card.flipped .card-inner {{ transform: rotateY(180deg); }}
-    .side {{ position:absolute; width:100%; height:100%; border-radius:12px; padding:20px; backface-visibility:hidden; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; }}
-    .front {{ background:#fff; }}
-    .back  {{ background:#e9ecef; transform:rotateY(180deg); }}
 
-    .cue {{ font-size:1.1em; margin-bottom:12px; }}
-    .answer-phrase {{ font-weight:700; font-size:1.2em; }}
-    .answer-pron {{ font-style:italic; margin-top:4px; }}
+    .card.flip {{
+      width:100%; height:320px; perspective:1000px; margin:8px 0;
+      background:none; border:none; box-shadow:none; padding:0;
+    }}
+    .flip-inner {{
+      width:100%; height:100%; position:relative; transition:transform .6s; transform-style:preserve-3d;
+      cursor:pointer;
+    }}
+    .flip.flipped .flip-inner {{ transform: rotateY(180deg); }}
+    .face {{
+      position:absolute; inset:0; border-radius:var(--radius);
+      background:var(--card); border:1px solid var(--border);
+      display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:18px;
+      backface-visibility:hidden;
+    }}
+    .face.back {{ transform:rotateY(180deg); background:var(--bg); }}
 
-    .actions {{ display:flex; gap:8px; margin-top:16px; }}
-    .btn-small {{ padding:10px 14px; font-size:1em; background:#2d6cdf; color:#fff; border:none; border-radius:10px; cursor:pointer; }}
-    .btn-green {{ background:#28a745; }}
+    .cue {{ font-size:18px; color:var(--muted); }}
+    .phrase {{ font-size:22px; font-weight:700; }}
+    .pron {{ margin-top:6px; font-style:italic; color:var(--muted); }}
 
-    .result {{ margin-top:8px; font-size:.95em; min-height:1.2em; }}
+    .act-row{{ display:flex; gap:8px; margin-top:14px; }}
+    .result{{ margin-top:8px; min-height:1.2em; }}
 
-    .nav-buttons {{ display:flex; gap:12px; margin-top:16px; }}
-    .nav-button {{ padding:10px 14px; font-size:1em; background:#007bff; color:#fff; border:none; border-radius:10px; min-width:110px; cursor:pointer; }}
-    .nav-button:disabled {{ background:#aaa; cursor:default; }}
+    /* Level meter (capture mode) */
+    #meterWrap {{ display:none; margin-top:10px; width:260px; height:8px; background:#e6e6ef; border-radius:999px; overflow:hidden; }}
+    #meterBar  {{ width:0%; height:100%; background:var(--brand); }}
 
-    /* Debug overlay (only shows when ?debug=1) */
+    /* Debug overlay */
     #dbg {{ display:none; position:fixed; bottom:8px; left:8px; right:8px; max-height:46vh; overflow:auto;
-           background:#000; color:#0f0; padding:8px 10px; border-radius:10px; font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px; white-space:pre-wrap; z-index:9999; }}
-    #dbg .row {{ opacity:.95; }}
+           background:#000; color:#0f0; padding:8px 10px; border-radius:10px; font-family:ui-monospace, SFMono-Regular, Menlo, monospace;
+           font-size:12px; white-space:pre-wrap; z-index:9999; }}
     #dbg .raw {{ color:#9ef; }}
-
-    /* Tiny level meter (capture mode) */
-    #meterWrap {{ display:none; margin-top:10px; width:260px; height:8px; background:#e6e6ef; border-radius:6px; overflow:hidden; }}
-    #meterBar {{ width:0%; height:100%; background:#2d6cdf; }}
-    #dlWav {{ display:none; margin-top:8px; }}
   </style>
 </head>
-<body>
-  <h1>{set_name} • Learn <button class="home-btn" onclick="goHome()">🏠</button></h1>
-  <div class="hint" id="speakHint">Tap to record, then we’ll score it.</div>
 
-  <div class="card" id="cardContainer" aria-live="polite">
-    <div class="card-inner" id="cardInner">
-      <div class="side front" id="frontSide">
-        <div class="cue" id="frontCue"></div>
-        <div class="actions">
-          <button class="btn-small" id="btnSayFront" title="Record then score">🎤 Say it in Polish</button>
-        </div>
-        <div id="meterWrap"><div id="meterBar"></div></div>
-        <a id="dlWav" class="btn-small" download="capture.wav">⬇️ Download last capture</a>
-        <div class="result" id="frontResult"></div>
+<body
+  data-header="Path to Polish"
+  data-note-lead="Flashcards"
+  data-note-tail="{set_name}"
+  style="--logo-size: 40px; --banner-size: 24px; --banner-size-lg: 30px;">
+
+  <!-- Header (brand + actions) -->
+  <header class="topbar no-nav">
+    <div class="row container">
+      <div class="header-left">
+        <a class="brand" href="index.html" aria-label="Path to Polish — Home">
+          <svg class="brand-mark" aria-hidden="true" focusable="false">
+            <use href="static/brand.svg#ptp-mark"></use>
+          </svg>
+          <span id="headerBanner" class="header-banner"></span>
+        </a>
       </div>
-      <div class="side back" id="backSide">
-        <div class="answer-phrase" id="answerPhrase"></div>
-        <div class="answer-pron" id="answerPron"></div>
-        <div class="actions">
-          <button class="btn-small btn-green" id="btnPlay">🔊 Play</button>
-        </div>
-        <div class="result" id="backResult"></div>
-      </div>
+      <nav class="head-actions">
+        <a href="profile.html"  id="profileBtn">Profile</a>
+        <a href="login.html"    id="loginLink">Sign In</a>
+        <a href="register.html" id="registerLink">Register</a>
+        <button id="logoutBtn" style="display:none;">Logout</button>
+      </nav>
     </div>
-  </div>
+  </header>
 
-  <div class="nav-buttons">
-    <button id="prevBtn" class="nav-button">Previous</button>
-    <button id="nextBtn" class="nav-button">Next</button>
-  </div>
+  <!-- Slim page note -->
+  <div class="wrap page-note-wrap"><div id="pageNote" class="page-note"></div></div>
+
+  <main class="wrap learn-frame">
+    <!-- LEFT: Card -->
+    <section class="stack">
+      <div class="card flip" id="cardContainer" aria-live="polite">
+        <div class="flip-inner" id="cardInner">
+          <div class="face front" id="frontSide">
+            <div class="cue" id="frontCue"></div>
+            <div class="act-row">
+              <button class="btn btn-primary" id="btnSayFront" title="Record then score">🎤 Say it in Polish</button>
+            </div>
+            <div id="meterWrap"><div id="meterBar"></div></div>
+            <a id="dlWav" class="btn tiny" download="capture.wav" style="display:none;">⬇️ Download capture</a>
+            <div class="result" id="frontResult"></div>
+          </div>
+          <div class="face back" id="backSide">
+            <div class="phrase" id="answerPhrase"></div>
+            <div class="pron"   id="answerPron"></div>
+            <div class="act-row">
+              <button class="btn" id="btnPlay">🔊 Play</button>
+            </div>
+            <div class="result" id="backResult"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <button id="prevBtn" class="btn">Previous</button>
+        <button id="nextBtn" class="btn btn-primary">Next</button>
+        <span id="speakHint" class="tiny" style="margin-left:auto; color:var(--muted)">Tap to record, then we’ll score it.</span>
+      </div>
+    </section>
+
+    <!-- RIGHT: Tips / Help -->
+    <aside class="stack">
+      <div class="card">
+        <h3 style="margin:0 0 8px">How it works</h3>
+        <ol class="tiny" style="margin:8px 0 0 18px; color:var(--muted)">
+          <li>Press <b>🎤 Say it in Polish</b> and speak the phrase.</li>
+          <li>We auto-stop when you finish, then score your pronunciation.</li>
+          <li>Flip the card to hear the reference audio and compare.</li>
+        </ol>
+      </div>
+      <div class="card">
+        <h3 style="margin:0 0 8px">Scoring</h3>
+        <div class="tiny" style="color:var(--muted)">100% is perfect; 75%+ counts as a pass. Earn bonus gold for perfect, no-flip attempts.</div>
+      </div>
+    </aside>
+  </main>
 
   <div id="dbg"></div>
 
+  <!-- Bottom nav -->
+  <nav class="bottom" aria-label="Primary">
+    <a href="index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1v-10.5Z" stroke-width="1.5"/></svg>
+      <span>Home</span>
+    </a>
+    <a href="learn.html" class="active" aria-current="page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 12h16M4 18h9" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <span>Learn</span>
+    </a>
+    <a href="manage_sets/index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="16" rx="2" ry="2" stroke-width="1.5"/><path d="M7 8h10M7 12h10M7 16h7" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <span>Library</span>
+    </a>
+    <a href="dashboard.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 14h6V4H4v10Zm10 6h6V4h-6v16Z" stroke-width="1.5"/></svg>
+      <span>Dashboard</span>
+    </a>
+    <a href="groups.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm-9 9a9 9 0 0 1 18 0" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <span>Groups</span>
+    </a>
+  </nav>
+
   <!-- Scripts -->
-  <script src="../../static/js/app-config.js"></script>
-  <script src="../../static/js/api.js"></script>
-  <!-- session_state.js intentionally omitted to avoid races -->
-  <script src="../../static/js/audio-paths.js"></script>
+  <script src="static/js/app-config.js"></script>
+  <script src="static/js/api.js"></script>
+  <script src="static/js/page-chrome.js" defer></script>
+  <script src="static/js/audio-paths.js"></script>
   <!-- Azure Speech SDK -->
   <script src="https://aka.ms/csspeech/jsbrowserpackageraw"></script>
 
@@ -178,11 +267,9 @@ def generate_flashcard_html(set_name, data):
     const ua = navigator.userAgent || '';
     const IS_IOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     const IS_SAFARI = /^((?!chrome|android).)*safari/i.test(ua);
-    document.getElementById('speakHint').textContent =
-      CAPTURE_MODE ? "Tap to record, then we’ll score it." :
-      (IS_IOS || IS_SAFARI) ? "Tap, then speak." : "Click, then speak.";
+    const hint = document.getElementById('speakHint');
 
-    // Mic prewarm (helps Safari start cleanly)
+    // Mic prewarm (helps Safari)
     async function prewarmMic() {{
       try {{
         if (!navigator.mediaDevices?.getUserMedia) return;
@@ -192,9 +279,7 @@ def generate_flashcard_html(set_name, data):
           const Ctx = window.AudioContext || window.webkitAudioContext;
           if (Ctx) {{ const ctx = new Ctx(); await ctx.resume(); await new Promise(r => setTimeout(r, 40)); await ctx.close(); }}
         }} catch (_e) {{}}
-      }} catch (e) {{
-        logDbg('prewarm error', e && e.message);
-      }}
+      }} catch (e) {{ logDbg('prewarm error', e && e.message); }}
     }}
 
     // Filename helper (mirror Python sanitize)
@@ -211,7 +296,7 @@ def generate_flashcard_html(set_name, data):
       const fnEnc  = encodeURIComponent(fn);
       const explicit = e.audio_url || e.audio;
       if (explicit && /^https?:\\/\\//i.test(explicit)) return explicit;
-      return `../../static/${{setEnc}}/audio/${{fnEnc}}`;
+      return `static/${{setEnc}}/audio/${{fnEnc}}`; // base href handles nesting
     }}
 
     function buildAudioSrc(index) {{
@@ -255,65 +340,96 @@ def generate_flashcard_html(set_name, data):
       resetAndPrimeAround(currentIndex);
     }}
 
-    // --------------- Token fetch ----------------
+    // ---------- Token cache ----------
+    const tokenCache = {{ token:null, region:null, exp:0 }};
     async function fetchToken() {{
+      const now = Date.now();
+      if (tokenCache.token && tokenCache.region && now < tokenCache.exp) return tokenCache;
       try {{
         const tok = await api.get('/api/speech_token', {{ noAuth: true }});
         const token  = tok && (tok.token || tok.access_token);
         const region = tok && (tok.region || tok.location || tok.regionName);
         if (!token || !region) throw new Error('no_token_or_region');
+        tokenCache.token  = token;
+        tokenCache.region = region;
+        tokenCache.exp    = now + 9*60*1000; // 9 min cache
         logDbg('SDK?', !!window.SpeechSDK, 'region', region, 'tok', !!token);
-        return {{ token, region }};
+        return tokenCache;
       }} catch (e) {{
         logDbg('token fetch error', e?.message || e);
-        return {{ token: null, region: null }};
+        return {{ token:null, region:null, exp:0 }};
       }}
     }}
+    async function prefetchToken() {{ try {{ await fetchToken(); }} catch(_ignore) {{}} }}
 
-    // --------------- Capture-first path ----------------
+    // ---------- Capture with early-stop VAD ----------
     const meterWrap = document.getElementById('meterWrap');
     const meterBar  = document.getElementById('meterBar');
     const dlWav     = document.getElementById('dlWav');
 
-    async function recordBlob(ms=2500) {{
+    async function recordBlobVAD(maxMs=1600) {{
       meterWrap.style.display = CAPTURE_MODE ? 'block' : 'none';
-      let mediaStream = null;
-      let mediaRec = null;
-      let chunks = [];
-      let meterTimer = null;
+
+      let mediaStream = null, mediaRec = null, chunks = [];
+      let analyser = null, data = null, ctx = null, src = null;
+      let meterTimer = null, started = false, silentMs = 0, startedAt = 0;
+
       try {{
         mediaStream = await navigator.mediaDevices.getUserMedia({{ audio: true }});
-        // Level meter
+        // Level/VAD
         try {{
           const ACtx = window.AudioContext || window.webkitAudioContext;
           if (ACtx) {{
-            const ctx = new ACtx();
-            const src = ctx.createMediaStreamSource(mediaStream);
-            const analyser = ctx.createAnalyser();
+            ctx = new ACtx();
+            src = ctx.createMediaStreamSource(mediaStream);
+            analyser = ctx.createAnalyser();
             analyser.fftSize = 2048;
             src.connect(analyser);
-            const data = new Uint8Array(analyser.fftSize);
-            meterTimer = setInterval(() => {{
-              analyser.getByteTimeDomainData(data);
-              let sum = 0; for (let i=0; i<data.length; i++) {{ const v=(data[i]-128)/128; sum += v*v; }}
-              const rms = Math.sqrt(sum/data.length);
-              const pct = Math.min(100, Math.round(rms*180));
-              meterBar.style.width = pct + '%';
-            }}, 60);
+            data = new Uint8Array(analyser.fftSize);
           }}
         }} catch(_ignore) {{}}
 
         mediaRec = new MediaRecorder(mediaStream, {{ mimeType: 'audio/webm' }});
-        mediaRec.ondataavailable = e => {{ if (e.data && e.data.size) chunks.push(e.data); }};
+        mediaRec.ondataavailable = (e) => {{ if (e.data && e.data.size) chunks.push(e.data); }};
+        const stopNow = () => {{ try {{ mediaRec && mediaRec.state !== 'inactive' && mediaRec.stop(); }} catch(_ignore) {{}} }};
         mediaRec.start();
-        await new Promise(r => setTimeout(r, ms));
-        mediaRec.stop();
-        await new Promise(r => mediaRec.onstop = r);
+
+        const t0 = performance.now();
+        const THRESH = 0.035;      // speech threshold (RMS)
+        const SIL_HOLD = 350;      // ms of silence to stop after speech
+
+        await new Promise((resolve) => {{
+          meterTimer = setInterval(() => {{
+            const t = performance.now();
+            if (analyser && data) {{
+              analyser.getByteTimeDomainData(data);
+              let sum=0;
+              for(let i=0;i<data.length;i++) {{ const v=(data[i]-128)/128; sum+=v*v; }}
+              const rms = Math.sqrt(sum/data.length);
+              meterBar.style.width = Math.min(100, Math.round(rms*180)) + '%';
+
+              if (!started && rms > THRESH) {{
+                started = true;
+                startedAt = t;
+              }} else if (started) {{
+                if (rms < THRESH*0.6) silentMs += 40; else silentMs = 0;
+                if (silentMs >= SIL_HOLD && (t - startedAt) > 280) {{
+                  stopNow();
+                }}
+              }}
+            }}
+            if ((t - t0) > maxMs) stopNow();
+          }}, 40);
+
+          mediaRec.onstop = resolve;
+        }});
+
         return new Blob(chunks, {{ type: 'audio/webm' }});
       }} finally {{
         try {{ if (meterTimer) clearInterval(meterTimer); }} catch(_ignore) {{}}
         try {{ meterBar.style.width = '0%'; }} catch(_ignore) {{}}
         try {{ mediaStream && mediaStream.getTracks().forEach(t => t.stop()); }} catch(_ignore) {{}}
+        try {{ ctx && ctx.close(); }} catch(_ignore) {{}}
         meterWrap.style.display = 'none';
       }}
     }}
@@ -403,7 +519,17 @@ def generate_flashcard_html(set_name, data):
       if (!ref) {{ targetEl.textContent = "⚠️ No reference text."; return 0; }}
 
       targetEl.textContent = "🎤 Recording…";
-      const blob = await recordBlob(2500);
+      const blob = await recordBlobVAD(1600);
+
+      // Prepare PCM for push (and optional debug WAV)
+      const pcm = await blobToPCM16Mono(blob, 16000);
+      if (DEBUG) {{
+        try {{
+          const wav = pcmToWavBlob(pcm, 16000);
+          const url = URL.createObjectURL(wav);
+          dlWav.href = url; dlWav.style.display = 'inline-flex';
+        }} catch(_ignore) {{}}
+      }}
 
       const {{ token, region }} = await fetchToken();
       if (!token || !region) {{ targetEl.textContent = "⚠️ Token/region issue"; return 0; }}
@@ -411,13 +537,11 @@ def generate_flashcard_html(set_name, data):
       const SDK = window.SpeechSDK;
       const speechConfig = SDK.SpeechConfig.fromAuthorizationToken(token, region);
       speechConfig.speechRecognitionLanguage = "pl-PL";
-      speechConfig.outputFormat = SDK.OutputFormat.Detailed;
+      speechConfig.outputFormat = SDK.OutputFormat.Detailed; // keep for PA robustness
       speechConfig.setProperty(SDK.PropertyId.SpeechServiceResponse_RequestDetailedResultTrueFalse, "true");
-      speechConfig.setProperty(SDK.PropertyId.SpeechServiceResponse_RequestWordLevelTimestamps, "true");
-      // IMPORTANT: Do NOT set EndSilenceTimeout on push-stream capture; it can suppress PA payloads.
+      speechConfig.setProperty(SDK.PropertyId.SpeechServiceResponse_RequestWordLevelTimestamps, "false");
 
       // Push 16k/16-bit/mono PCM
-      const pcm = await blobToPCM16Mono(blob, 16000);
       const format = SDK.AudioStreamFormat.getWaveFormatPCM(16000, 16, 1);
       const push = SDK.AudioInputStream.createPushStream(format);
       push.write(new Uint8Array(pcm.buffer));
@@ -450,7 +574,7 @@ def generate_flashcard_html(set_name, data):
 
       if (!result) {{ targetEl.textContent = "⚠️ Speech error"; return 0; }}
 
-      // Optional debug details
+      // Optional debug
       try {{
         logDbg('reason', result?.reason);
         const SDKR = window.SpeechSDK;
@@ -472,7 +596,7 @@ def generate_flashcard_html(set_name, data):
       return score || 0;
     }}
 
-    // Optional live path (only if forced via ?live=1 or ?capture=0)
+    // Optional live path (only if forced)
     async function assessLive(referenceText, targetEl) {{
       const ref = (referenceText || "").trim();
       if (!window.SpeechSDK) {{ targetEl.textContent = "⚠️ SDK not loaded."; return 0; }}
@@ -489,7 +613,7 @@ def generate_flashcard_html(set_name, data):
       speechConfig.speechRecognitionLanguage = "pl-PL";
       speechConfig.outputFormat = SDK.OutputFormat.Detailed;
       speechConfig.setProperty(SDK.PropertyId.SpeechServiceResponse_RequestDetailedResultTrueFalse, "true");
-      speechConfig.setProperty(SDK.PropertyId.SpeechServiceResponse_RequestWordLevelTimestamps, "true");
+      speechConfig.setProperty(SDK.PropertyId.SpeechServiceResponse_RequestWordLevelTimestamps, "false");
       speechConfig.setProperty(SDK.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, (IS_IOS || IS_SAFARI) ? "2200" : "1600");
       speechConfig.setProperty(SDK.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "250");
 
@@ -519,7 +643,6 @@ def generate_flashcard_html(set_name, data):
 
       if (!result) {{ targetEl.textContent = "⚠️ Speech error"; return 0; }}
 
-      // Optional debug details
       try {{
         logDbg('reason', result?.reason);
         const SDKR = window.SpeechSDK;
@@ -543,7 +666,19 @@ def generate_flashcard_html(set_name, data):
 
     // ---------- UI wiring ----------
     window.addEventListener("DOMContentLoaded", async function() {{
+      // Set hint text per mode/platform
+      hint.textContent =
+        CAPTURE_MODE ? "Tap to record, then we’ll score it."
+        : (IS_IOS || IS_SAFARI) ? "Tap, then speak."
+        : "Click, then speak.";
+
+      // Prefetch token to shave latency
+      prefetchToken().catch(()=>{{}});
+
+      // Try to load R2 manifest (non-blocking)
       try {{ if (window.AudioPaths) r2Manifest = await AudioPaths.fetchManifest(setName); }} catch (_ignore) {{ r2Manifest = null; }}
+
+      // SDK version diag
       try {{ logDbg('SDK version?', window.SpeechSDK?.Version || 'unknown'); }} catch(_ignore) {{}}
 
       renderCard();
@@ -595,7 +730,6 @@ def generate_flashcard_html(set_name, data):
         if (currentIndex > 0) {{
           currentIndex--;
           renderCard();
-          if (window.SessionSync) SessionSync.save({{ setName, mode, progress: {{ index: currentIndex, per: tracker.per }} }});
         }}
       }});
 
@@ -603,7 +737,6 @@ def generate_flashcard_html(set_name, data):
         if (currentIndex < cards.length - 1) {{
           currentIndex++;
           renderCard();
-          if (window.SessionSync) SessionSync.save({{ setName, mode, progress: {{ index: currentIndex, per: tracker.per }} }});
         }} else {{
           const totalCards = Math.max(1, cards.length);
           const correct = Object.values(tracker.per).filter(r => (r?.best || 0) >= PASS).length;
@@ -635,32 +768,18 @@ def generate_flashcard_html(set_name, data):
             }}
           }} catch (_ignore) {{}}
 
-          try {{ if (window.SessionSync) await SessionSync.complete({{ setName, mode }}); }} catch(_ignore) {{}}
           try {{ localStorage.removeItem("lp_last"); }} catch(_ignore) {{}}
           const q = awarded != null ? ("?awarded=" + encodeURIComponent(awarded)) : "";
           window.location.href = "summary.html" + q;
         }}
       }});
 
-      // Optional resume
-      (async () => {{
-        const wantResume = new URL(location.href).searchParams.get("resume") === "1";
-        if (wantResume && window.SessionSync) {{
-          await SessionSync.restore({{ setName, mode }}, (progress) => {{
-            if (progress && Number.isFinite(progress.index)) {{
-              currentIndex = Math.max(0, Math.min(cards.length - 1, progress.index));
-            }}
-            if (progress && progress.per) Object.assign(tracker.per, progress.per);
-            renderCard();
-          }});
-        }}
-        try {{ localStorage.setItem("lp_last", JSON.stringify({{ set_name:setName, mode, ts: Date.now() }})); }} catch(_ignore) {{}}
-      }})();
+      // UX: prefetch token + mic warmup opportunistically
+      prewarmMic().catch(()=>{{}});
     }});
 
-    function goHome() {{ window.location.href = "../../index.html"; }}
+    function goHome() {{ window.location.href = "index.html"; }}
   </script>
-
 </body>
 </html>
 """
@@ -671,35 +790,87 @@ def generate_flashcard_html(set_name, data):
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>{set_name} • Results</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="icon" type="image/svg+xml" href="../../static/brand.svg" />
 
+  <!-- Dual-host <base>: GitHub Pages vs Flask -->
+  <script>
+    (function () {{
+      var isGH = /\\.github\\.io$/i.test(location.hostname);
+      var baseHref = isGH ? '/LearnPolish/' : '/';
+      document.write('<base href="' + baseHref + '">');
+    }})();
+  </script>
+
+  <title>{set_name} • Results • Path to POLISH</title>
+
+  <link rel="stylesheet" href="static/app.css?v=5">
   <style>
-    body {{ font-family: -apple-system,BlinkMacSystemFont, sans-serif; margin:0; padding:24px; background:#f8f9fa; display:flex; justify-content:center; }}
-    .card {{ background:#fff; border:1px solid #e6e6ef; border-radius:12px; padding:20px; box-shadow:0 1px 2px rgba(8,15,52,.04); width:100%; max-width:560px; }}
-    h1 {{ margin-top:0; font-size:22px; }}
-    .row {{ display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }}
-    .btn {{ display:inline-block; padding:10px 12px; border-radius:10px; border:1px solid #cfd3e6; background:#fff; text-decoration:none; color:#222; }}
-    .btn-primary {{ background:#2d6cdf; border-color:#2d6cdf; color:#fff; }}
-    .muted {{ color:#666; }}
-    .big {{ font-size:32px; font-weight:700; }}
+    .wrap{{ max-width:860px; margin:0 auto; padding:16px; }}
   </style>
 </head>
-<body>
-  <div class="card">
-    <h1>See how you did</h1>
-    <div id="resultLine" class="big">Loading…</div>
-    <div id="detailLine" class="muted" style="margin-top:6px;"></div>
+<body
+  data-header="Path to Polish"
+  data-note-lead="Results"
+  data-note-tail="{set_name}">
 
-    <div class="row" style="margin-top:16px;">
-      <a id="retryBtn" class="btn btn-primary" href="./">Try again</a>
-      <a class="btn" href="../../learn.html">Back to Learn</a>
-      <a class="btn" href="../../index.html">Home</a>
+  <header class="topbar no-nav">
+    <div class="row container">
+      <div class="header-left">
+        <a class="brand" href="index.html" aria-label="Path to Polish — Home">
+          <svg class="brand-mark" aria-hidden="true" focusable="false">
+            <use href="static/brand.svg#ptp-mark"></use>
+          </svg>
+          <span id="headerBanner" class="header-banner"></span>
+        </a>
+      </div>
+      <nav class="head-actions">
+        <a href="profile.html"  id="profileBtn">Profile</a>
+        <a href="login.html"    id="loginLink">Sign In</a>
+        <a href="register.html" id="registerLink">Register</a>
+        <button id="logoutBtn" style="display:none;">Logout</button>
+      </nav>
     </div>
-  </div>
+  </header>
 
-  <script src="../../static/js/api.js"></script>
+  <main class="wrap">
+    <div class="card">
+      <h2 style="margin:0 0 8px">See how you did</h2>
+      <div id="resultLine" class="big">Loading…</div>
+      <div id="detailLine" class="muted" style="margin-top:6px;"></div>
+
+      <div class="row" style="margin-top:16px;">
+        <a id="retryBtn" class="btn btn-primary" href="./">Try again</a>
+        <a class="btn" href="learn.html">Back to Learn</a>
+        <a class="btn" href="index.html">Home</a>
+      </div>
+    </div>
+  </main>
+
+  <nav class="bottom" aria-label="Primary">
+    <a href="index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1v-10.5Z" stroke-width="1.5"/></svg>
+      <span>Home</span>
+    </a>
+    <a href="learn.html" class="active" aria-current="page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 12h16M4 18h9" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <span>Learn</span>
+    </a>
+    <a href="manage_sets/index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="16" rx="2" ry="2" stroke-width="1.5"/><path d="M7 8h10M7 12h10M7 16h7" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <span>Library</span>
+    </a>
+    <a href="dashboard.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 14h6V4H4v10Zm10 6h6V4h-6v16Z" stroke-width="1.5"/></svg>
+      <span>Dashboard</span>
+    </a>
+    <a href="groups.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm-9 9a9 9 0 0 1 18 0" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <span>Groups</span>
+    </a>
+  </nav>
+
+  <script src="static/js/api.js"></script>
+  <script src="static/js/page-chrome.js" defer></script>
   <script>
     const setName = "{set_name}";
 
