@@ -42,11 +42,13 @@ def _get_bearer_token():
         return auth_header.split(" ", 1)[1]
     return request.args.get("token") or None
 
-
-# Decorator for JSON API routes (returns JSON 401 on failure)
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
+        # --- Allow CORS preflight to pass without auth ---
+        if request.method == "OPTIONS":
+            return ("", 204)
+
         token = _get_bearer_token()
         if not token:
             return jsonify({"message": "Authorization token is missing"}), 401
@@ -61,6 +63,7 @@ def token_required(f):
             return jsonify({"message": "Authorization token is invalid", "error": str(e)}), 401
         return f(user, *args, **kwargs)
     return decorated
+
 
 
 # Decorator for (optional) server HTML routes: redirect to static /login.html on failure

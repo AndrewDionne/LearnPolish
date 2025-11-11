@@ -315,8 +315,14 @@ def create_app():
     from flask import request as flask_request
 
     @app.after_request
-    def ensure_cors_headers(resp):
+    def ensure_cors_headers(
+        resp,
+        cors_origins=cors_origins,
+        allowed=allowed,
+        supports_credentials=supports_credentials,
+    ):
         origin = flask_request.headers.get("Origin")
+
         if cors_origins == "*":
             resp.headers.setdefault("Access-Control-Allow-Origin", "*")
             resp.headers.setdefault(
@@ -324,14 +330,16 @@ def create_app():
                 "DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT",
             )
             resp.headers.setdefault(
-                "Access-Control-Allow-Headers", "Authorization, Content-Type, X-Requested-With"
+                "Access-Control-Allow-Headers",
+                "Authorization, Content-Type, X-Requested-With",
             )
             resp.headers.setdefault("Vary", "Origin")
             return resp
 
         # strict allow-list mode
         literal = {
-            o for o in allowed if isinstance(o, str) and "*" not in o and not o.startswith("regex:")
+            o for o in allowed
+            if isinstance(o, str) and "*" not in o and not (isinstance(o, str) and o.startswith("regex:"))
         }
         patterns = []
         for item in allowed:
@@ -353,11 +361,13 @@ def create_app():
                 "DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT",
             )
             resp.headers.setdefault(
-                "Access-Control-Allow-Headers", "Authorization, Content-Type, X-Requested-With"
+                "Access-Control-Allow-Headers",
+                "Authorization, Content-Type, X-Requested-With",
             )
             if supports_credentials:
                 resp.headers.setdefault("Access-Control-Allow-Credentials", "true")
             resp.headers.setdefault("Vary", "Origin")
+
         return resp
 
     @app.route("/api/<path:_subpath>", methods=["OPTIONS"])
