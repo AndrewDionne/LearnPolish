@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>11-11-11 • Results</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/svg+xml" href="../../static/brand.svg" />
+
+  <style>
+    body { font-family: -apple-system,BlinkMacSystemFont, sans-serif; margin:0; padding:24px; background:#f8f9fa; display:flex; justify-content:center; }
+    .card { background:#fff; border:1px solid #e6e6ef; border-radius:12px; padding:20px; box-shadow:0 1px 2px rgba(8,15,52,.04); width:100%; max-width:560px; }
+    h1 { margin-top:0; font-size:22px; }
+    .row { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
+    .btn { display:inline-block; padding:10px 12px; border-radius:10px; border:1px solid #cfd3e6; background:#fff; text-decoration:none; color:#222; }
+    .btn-primary { background:#2d6cdf; border-color:#2d6cdf; color:#fff; }
+    .muted { color:#666; }
+    .big { font-size:32px; font-weight:700; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>See how you did</h1>
+    <div id="resultLine" class="big">Loading…</div>
+    <div id="detailLine" class="muted" style="margin-top:6px;"></div>
+
+    <div class="row" style="margin-top:16px;">
+      <a id="retryBtn" class="btn btn-primary" href="./">Try again</a>
+      <a class="btn" href="../../learn.html">Back to Learn</a>
+      <a class="btn" href="../../index.html">Home</a>
+    </div>
+  </div>
+
+  <script src="../../static/js/api.js"></script>
+  <script>
+    const setName = "11-11-11";
+
+    function apply(score, attempts, total, pointsTotal, awarded) {
+      document.getElementById('resultLine').textContent = score + '%';
+      let tail = (attempts||0) + ' attempts • ' + (total||'?') + ' cards';
+      if (pointsTotal != null) tail += ' • ' + pointsTotal + ' pts';
+      if (awarded != null)     tail += ' (+' + awarded + ')';
+      document.getElementById('detailLine').textContent = tail;
+    }
+
+    (async () => {
+      const urlAwarded = (() => {
+        const v = new URL(location.href).searchParams.get('awarded');
+        return (v != null) ? Number(v) : null;
+      })();
+
+      let done = false, awarded = urlAwarded;
+
+      try {
+        let r = await api.fetch('/api/my/scores?limit=1&set_name=' + encodeURIComponent(setName));
+        if (!r.ok) r = await api.fetch('/api/get_scores?set_name=' + encodeURIComponent(setName) + '&limit=1');
+        if (r.ok) {
+          const payload = await r.json();
+          const last = Array.isArray(payload) ? payload[0] : (payload && Array.isArray(payload.scores) ? payload.scores[0] : null);
+          if (last && (last.set_name === setName || !last.set_name)) {
+            const d = last.details || {};
+            if (awarded == null && d.points_awarded != null) awarded = Number(d.points_awarded);
+            apply(Math.round(Number(last.score) || 0), Number(last.attempts) || 0, Number(d.total) || undefined, Number(d.points_total) || undefined, awarded);
+            done = true;
+          }
+        }
+      } catch (_ignore) { }
+
+      if (!done) {
+        try {
+          const raw = localStorage.getItem('lp_last_result_' + setName);
+          if (raw) {
+            const j = JSON.parse(raw);
+            apply(Math.round(Number(j.score)||0), Number(j.attempts)||0, Number(j.total)||undefined, Number(j.points_total)||undefined, awarded);
+            done = true;
+          }
+        } catch(_ignore) { }
+      }
+
+      if (!done) {
+        document.getElementById('resultLine').textContent = '—';
+        document.getElementById('detailLine').textContent = 'No recent result found.';
+      }
+    })();
+  </script>
+</body>
+</html>
