@@ -11,15 +11,11 @@ def generate_flashcard_html(set_name, data):
       - docs/flashcards/<set_name>/index.html   (learning UI)
       - docs/flashcards/<set_name>/summary.html (results UI)
 
-    - TRUE FLIP: Front has “Say it in Polish”; Back has ONLY “Play”.
-    - Finish: computes score + points, POSTs /api/submit_score, clears session, -> summary.html
-    - Resume mid-set via SessionSync.
-    - Correct relative paths for nested pages.
-
-    ➕ Enhancements in this version:
-      - Continuous recognition for a short, fixed window (≈2.6s) to stabilize iOS mic timing.
-      - Preloaded audio (current + next card) for instant playback.
-      - Manifest-aware audio path with local fallback.
+    Notes / changes:
+      - Press & Hold to Speak (default on iOS/Safari), Tap-once window on desktop.
+      - Reuses a single Azure recognizer instance to reduce mic on/off flicker.
+      - Preloads audio (current + next) for instant playback.
+      - Debug overlay: add ?debug=1 to URL to see timeline + raw JSON.
     """
     output_dir = DOCS_DIR / "flashcards" / set_name
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -41,14 +37,16 @@ def generate_flashcard_html(set_name, data):
 <head>
   <meta charset="UTF-8" />
   <title>{set_name} • Learn</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" type="image/svg+xml" href="../../static/brand.svg" />
   <style>
     body {{ font-family: -apple-system,BlinkMacSystemFont, sans-serif; margin:0; padding:20px; background:#f8f9fa; display:flex; flex-direction:column; align-items:center; min-height:100vh; }}
-    h1 {{ font-size:1.5em; margin:0 0 16px; position:relative; width:100%; text-align:center; }}
+    h1 {{ font-size:1.5em; margin:0 0 8px; position:relative; width:100%; text-align:center; }}
     .home-btn {{ position:absolute; right:0; top:0; font-size:1.4em; background:none; border:none; cursor:pointer; }}
 
-    .card {{ width:90%; max-width:360px; height:260px; perspective:1000px; margin:18px auto; }}
+    .hint {{ color:#5a6472; font-size:.9em; margin-bottom:8px; }}
+
+    .card {{ width:90%; max-width:360px; height:260px; perspective:1000px; margin:12px auto; }}
     .card-inner {{
       width:100%; height:100%; position:relative; transition:transform .6s; transform-style:preserve-3d;
       cursor:pointer; box-shadow:0 4px 10px rgba(0,0,0,.1); display:flex; justify-content:center; align-items:center; border-radius:12px;
@@ -63,25 +61,32 @@ def generate_flashcard_html(set_name, data):
     .answer-pron {{ font-style:italic; margin-top:4px; }}
 
     .actions {{ display:flex; gap:8px; margin-top:16px; }}
-    .btn-small {{ padding:8px 12px; font-size:1em; background:#2d6cdf; color:#fff; border:none; border-radius:8px; cursor:pointer; }}
+    .btn-small {{ padding:10px 14px; font-size:1em; background:#2d6cdf; color:#fff; border:none; border-radius:10px; cursor:pointer; }}
     .btn-green {{ background:#28a745; }}
 
     .result {{ margin-top:8px; font-size:.95em; min-height:1.2em; }}
 
     .nav-buttons {{ display:flex; gap:12px; margin-top:16px; }}
-    .nav-button {{ padding:8px 12px; font-size:1em; background:#007bff; color:#fff; border:none; border-radius:8px; min-width:110px; cursor:pointer; }}
+    .nav-button {{ padding:10px 14px; font-size:1em; background:#007bff; color:#fff; border:none; border-radius:10px; min-width:110px; cursor:pointer; }}
     .nav-button:disabled {{ background:#aaa; cursor:default; }}
+
+    /* Debug overlay */
+    #dbg {{ display:none; position:fixed; bottom:8px; left:8px; right:8px; max-height:42vh; overflow:auto;
+           background:#000; color:#0f0; padding:8px 10px; border-radius:10px; font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px; white-space:pre-wrap; }}
+    #dbg .row {{ opacity:.9; }}
+    #dbg .raw {{ color:#9ef; }}
   </style>
 </head>
 <body>
   <h1>{set_name} • Learn <button class="home-btn" onclick="goHome()">🏠</button></h1>
+  <div class="hint" id="speakHint">Hold the button and speak clearly.</div>
 
   <div class="card" id="cardContainer" aria-live="polite">
     <div class="card-inner" id="cardInner">
       <div class="side front" id="frontSide">
         <div class="cue" id="frontCue"></div>
         <div class="actions">
-          <button class="btn-small" id="btnSayFront">Say it in Polish</button>
+          <button class="btn-small" id="btnSayFront" title="Press & hold to speak">🎤 Say it in Polish</button>
         </div>
         <div class="result" id="frontResult"></div>
       </div>
@@ -89,7 +94,7 @@ def generate_flashcard_html(set_name, data):
         <div class="answer-phrase" id="answerPhrase"></div>
         <div class="answer-pron" id="answerPron"></div>
         <div class="actions">
-          <button class="btn-small btn-green" id="btnPlay">Play</button>
+          <button class="btn-small btn-green" id="btnPlay">🔊 Play</button>
         </div>
         <div class="result" id="backResult"></div>
       </div>
@@ -100,6 +105,8 @@ def generate_flashcard_html(set_name, data):
     <button id="prevBtn" class="nav-button">Previous</button>
     <button id="nextBtn" class="nav-button">Next</button>
   </div>
+
+  <div id="dbg"></div>
 
   <!-- Scripts -->
   <script src="../../static/js/app-config.js"></script>
@@ -124,22 +131,47 @@ def generate_flashcard_html(set_name, data):
     const tracker = {{
       attempts: 0,
       per: {{}},               // per[idx] = {{ tries, best, got100BeforeFlip: boolean }}
-      perfectNoFlipCount: 0,   // increments when score==100 before first flip on that card
+      perfectNoFlipCount: 0,
     }};
     let hasFlippedCurrent = false;
 
     // --- Audio preload cache ---
     const audioCache = new Map(); // index -> HTMLAudioElement
 
-    function debugFC(...args) {{ try {{ console.debug('[FLASHCARDS]', ...args); }} catch(_){{}} }}
+    // --- Debug overlay ---
+    const DEBUG = new URL(location.href).searchParams.get('debug') === '1';
+    const dbgEl = document.getElementById('dbg');
+    if (DEBUG) dbgEl.style.display = 'block';
+    function logDbg(...a) {{
+      if (!DEBUG) return;
+      const line = document.createElement('div');
+      line.className = 'row';
+      line.textContent = a.map(x => (typeof x === 'string' ? x : JSON.stringify(x))).join(' ');
+      dbgEl.appendChild(line);
+      dbgEl.scrollTop = dbgEl.scrollHeight;
+      try {{ console.debug('[FC]', ...a); }} catch(_) {{}}
+    }}
+    function logRaw(j) {{
+      if (!DEBUG) return;
+      const line = document.createElement('div');
+      line.className = 'row raw';
+      line.textContent = (typeof j === 'string') ? j : JSON.stringify(j);
+      dbgEl.appendChild(line);
+      dbgEl.scrollTop = dbgEl.scrollHeight;
+    }}
 
-    // --- Mic pre-warm (Safari/macOS friendly) ---
+    // --- Platform detect ---
+    const ua = navigator.userAgent || '';
+    const IS_IOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const IS_SAFARI = /^((?!chrome|android).)*safari/i.test(ua);
+
+    // --- Mic pre-warm (helps Safari) ---
     async function prewarmMic() {{
       try {{
         if (!navigator.mediaDevices?.getUserMedia) return;
         const stream = await navigator.mediaDevices.getUserMedia({{ audio: true }});
         stream.getTracks().forEach(tr => tr.stop());
-        // Nudge AudioContext (helps Safari)
+        // Nudge AudioContext (helps Safari start recording without clipping)
         try {{
           const Ctx = window.AudioContext || window.webkitAudioContext;
           if (Ctx) {{
@@ -149,7 +181,9 @@ def generate_flashcard_html(set_name, data):
             await ctx.close();
           }}
         }} catch (_) {{}}
-      }} catch (_) {{}}
+      }} catch (e) {{
+        logDbg('prewarm error', e && e.message);
+      }}
     }}
 
     // Mirror of Python sanitize_filename (for audio file names)
@@ -167,7 +201,6 @@ def generate_flashcard_html(set_name, data):
       const setEnc = encodeURIComponent(setName);
       const fnEnc  = encodeURIComponent(fn);
 
-      // Absolute URL in data wins
       const explicit = e.audio_url || e.audio;
       if (explicit && /^https?:\\/\\//i.test(explicit)) return explicit;
 
@@ -196,7 +229,6 @@ def generate_flashcard_html(set_name, data):
     }}
 
     function resetAndPrimeAround(index) {{
-      // Clear cache when manifest appears/changes to avoid stale src
       audioCache.clear();
       primeAudio(index);
       primeAudio(index + 1);
@@ -210,135 +242,138 @@ def generate_flashcard_html(set_name, data):
 
     function renderCard() {{
       const e = cards[currentIndex] || {{}};
-      // Front
       document.getElementById("frontCue").textContent = e.meaning || "";
       document.getElementById("frontResult").textContent = "";
-      // Back
       document.getElementById("answerPhrase").textContent = e.phrase || "";
       document.getElementById("answerPron").textContent   = e.pronunciation || "";
       document.getElementById("backResult").textContent   = "";
       setNavUI();
       hasFlippedCurrent = false;
-
-      // Ensure audio is ready for this and next card
       resetAndPrimeAround(currentIndex);
     }}
 
-    // --- Continuous-window Pronunciation Assessment (≈2.6s) ---
-    async function assess(referenceText, targetEl) {{
+    // ---------------- Azure speech (single recognizer) ----------------
+    let recognizer = null;               // SpeechSDK.SpeechRecognizer
+    let paConfig = null;                 // SpeechSDK.PronunciationAssessmentConfig
+    let isListening = false;
+    let bestScore = 0;
+
+    async function ensureRecognizer() {{
+      if (!window.SpeechSDK) throw new Error("sdk_not_loaded");
+      if (recognizer) return recognizer;
+
+      // Token
+      const tok = await api.get('/api/speech_token', {{ noAuth: true }});
+      const token  = tok && (tok.token || tok.access_token);
+      const region = tok && (tok.region || tok.location || tok.regionName);
+      if (!token || !region) throw new Error("no_token");
+
+      const SpeechSDK = window.SpeechSDK;
+      const cfg = SpeechSDK.SpeechConfig.fromAuthorizationToken(token, region);
+      cfg.speechRecognitionLanguage = "pl-PL";
+      cfg.outputFormat = SpeechSDK.OutputFormat.Detailed;
+      cfg.setProperty(SpeechSDK.PropertyId.SpeechServiceResponse_RequestDetailedResultTrueFalse, "true");
+      // iOS benefits from slightly longer initial window
+      cfg.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, IS_IOS ? "2800" : "2200");
+      cfg.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "250");
+
+      const audioCfg = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
+      recognizer = new SpeechSDK.SpeechRecognizer(cfg, audioCfg);
+
+      recognizer.sessionStarted = () => logDbg('sessionStarted');
+      recognizer.sessionStopped = () => logDbg('sessionStopped');
+      recognizer.canceled = (_s, e) => logDbg('canceled', e?.reason, e?.errorDetails);
+
+      const parse = (raw) => {{
+        try {{
+          const j = JSON.parse(raw);
+          const s = Math.round(
+            (j?.NBest?.[0]?.PronunciationAssessment?.AccuracyScore) ??
+            (j?.PronunciationAssessment?.AccuracyScore) ?? 0
+          );
+          if (Number.isFinite(s)) bestScore = Math.max(bestScore, s);
+          if (DEBUG) logRaw(j);
+        }} catch (e) {{
+          /* ignore */
+        }}
+      }};
+
+      recognizer.recognizing = (_s, e) => {{
+        const raw = e?.result?.properties?.getProperty(SpeechSDK.PropertyId.SpeechServiceResponse_JsonResult)
+                 || e?.result?.privPronunciationAssessmentJson;
+        if (raw) parse(raw);
+      }};
+      recognizer.recognized = (_s, e) => {{
+        const raw = e?.result?.properties?.getProperty(SpeechSDK.PropertyId.SpeechServiceResponse_JsonResult)
+                 || e?.result?.privPronunciationAssessmentJson;
+        if (raw) parse(raw);
+      }};
+
+      return recognizer;
+    }}
+
+    function applyReferenceText(referenceText) {{
+      const SpeechSDK = window.SpeechSDK;
+      paConfig = new SpeechSDK.PronunciationAssessmentConfig(
+        referenceText,
+        SpeechSDK.PronunciationAssessmentGradingSystem.HundredMark,
+        SpeechSDK.PronunciationAssessmentGranularity.Word,
+        true // miscue
+      );
+      paConfig.applyTo(recognizer);
+    }}
+
+    // ---- Two interaction modes:
+    // iOS/Safari: PRESS & HOLD (pointerdown -> start, pointerup -> stop)
+    // Desktop: single TAP opens a short window
+    async function startListenWindow(referenceText) {{
+      await prewarmMic();
+      const r = await ensureRecognizer();
+      applyReferenceText(referenceText);
+      bestScore = 0;
+      isListening = true;
+      logDbg('startContinuous');
+      await new Promise(res => {{
+        try {{ r.startContinuousRecognitionAsync(() => res(), () => res()); }}
+        catch (_e) {{ res(); }}
+      }});
+    }}
+
+    async function stopListenWindow() {{
+      if (!recognizer) return 0;
+      logDbg('stopContinuous');
+      await new Promise(res => {{
+        try {{ recognizer.stopContinuousRecognitionAsync(() => res(), () => res()); }}
+        catch (_e) {{ res(); }}
+      }});
+      isListening = false;
+      return bestScore || 0;
+    }}
+
+    async function tapOnceAssess(referenceText, targetEl) {{
+      // Desktop / non-iOS fallback → 2.4s window
       try {{
-        const ref = (referenceText || "").trim();
-        if (!window.SpeechSDK) {{
-          if (targetEl) targetEl.textContent = "⚠️ Speech SDK not loaded.";
-          return {{ score: 0, error: "sdk_not_loaded" }};
-        }}
-        if (!ref) {{
-          if (targetEl) targetEl.textContent = "⚠️ No reference text.";
-          return {{ score: 0, error: "no_reference" }};
-        }}
-
-        // UX: pre-warm mic + let UI update before opening the mic
-        if (targetEl) targetEl.textContent = "🎤 Preparing mic…";
-        await prewarmMic();
-        await new Promise(r => setTimeout(r, 250));
-        if (targetEl) targetEl.textContent = "🎙 Listening…";
-
-        // Token
-        const tok = await api.get('/api/speech_token', {{ noAuth: true }});
-        const token  = tok && (tok.token || tok.access_token);
-        const region = tok && (tok.region || tok.location || tok.regionName);
-        if (!token || !region) {{
-          if (targetEl) targetEl.textContent = "⚠️ Could not get speech token.";
-          return {{ score: 0, error: "no_token" }};
-        }}
-
-        // Config tuned for short utterances
-        const SpeechSDK = window.SpeechSDK;
-        const speechConfig = SpeechSDK.SpeechConfig.fromAuthorizationToken(token, region);
-        speechConfig.speechRecognitionLanguage = "pl-PL";
-        speechConfig.outputFormat = SpeechSDK.OutputFormat.Detailed;
-        speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceResponse_RequestDetailedResultTrueFalse, "true");
-        // More forgiving initial silence (user needs a beat to speak), snappier end
-        speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, "2500");
-        speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "300");
-
-        const audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
-        const recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
-
-        const pa = new SpeechSDK.PronunciationAssessmentConfig(
-          ref,
-          SpeechSDK.PronunciationAssessmentGradingSystem.HundredMark,
-          SpeechSDK.PronunciationAssessmentGranularity.Word,
-          true // miscue
-        );
-        pa.applyTo(recognizer);
-
-        // Accumulate the best score seen during the window
-        let best = 0;
-        const parseJSON = (raw) => {{
-          try {{
-            const j = JSON.parse(raw);
-            // Prefer PA on NBest[0], fallback to top-level
-            const s = Math.round(
-              (j?.NBest?.[0]?.PronunciationAssessment?.AccuracyScore) ??
-              (j?.PronunciationAssessment?.AccuracyScore) ?? 0
-            );
-            if (Number.isFinite(s) && s > best) best = s;
-          }} catch (_e) {{}}
-        }};
-
-        const hook = (e) => {{
-          try {{
-            const raw =
-              e?.result?.properties?.getProperty(SpeechSDK.PropertyId.SpeechServiceResponse_JsonResult) ||
-              e?.result?.privPronunciationAssessmentJson ||
-              e?.privPronunciationAssessmentJson;
-            if (raw) parseJSON(raw);
-          }} catch(_){{
-            /* ignore */
-          }}
-        }};
-
-        recognizer.recognizing = hook;
-        recognizer.recognized  = hook;
-
-        // Start continuous, hold mic for a short window, then stop
-        await new Promise((resolve) => {{
-          try {{ recognizer.startContinuousRecognitionAsync(() => resolve(), () => resolve()); }}
-          catch (_e) {{ resolve(); }}
-        }});
-
-        await new Promise(r => setTimeout(r, 2600)); // listening window
-
-        await new Promise((resolve) => {{
-          try {{ recognizer.stopContinuousRecognitionAsync(() => resolve(), () => resolve()); }}
-          catch (_e) {{ resolve(); }}
-        }});
-
-        try {{ recognizer.close(); }} catch (_) {{}}
-
-        if (targetEl) targetEl.textContent = (best ? `✅ ${{best}}%` : "⚠️ No score");
-        return {{ score: best }};
+        targetEl.textContent = "🎙 Listening…";
+        await startListenWindow(referenceText);
+        await new Promise(r => setTimeout(r, 2400));
+        const s = await stopListenWindow();
+        targetEl.textContent = s ? `✅ ${{s}}%` : "⚠️ No score";
+        return s;
       }} catch (e) {{
-        debugFC('assess error', e);
-        if (targetEl) {{
-          const msg = (e && e.message) ? e.message : String(e);
-          targetEl.textContent = (msg === "timeout") ? "⏱️ Try again (speak right away)" : "⚠️ Speech error";
-        }}
-        return {{ score: 0, error: String(e) }};
+        logDbg('tapOnceAssess error', e?.message || e);
+        targetEl.textContent = "⚠️ Speech error";
+        return 0;
       }}
     }}
 
-    // ---------- Wire UI ----------
+    // ---------- UI wiring ----------
     window.addEventListener("DOMContentLoaded", async function() {{
-      // Try to load R2 manifest (non-blocking; safe if missing)
-      try {{
-        if (window.AudioPaths) {{
-          r2Manifest = await AudioPaths.fetchManifest(setName);
-        }}
-      }} catch (_e) {{
-        r2Manifest = null;
-      }}
+      // Hint line
+      document.getElementById('speakHint').textContent =
+        (IS_IOS || IS_SAFARI) ? "Hold the button while you speak." : "Click, then speak.";
+
+      // Try to load R2 manifest (non-blocking)
+      try {{ if (window.AudioPaths) r2Manifest = await AudioPaths.fetchManifest(setName); }} catch (_e) {{ r2Manifest = null; }}
 
       renderCard();
 
@@ -349,37 +384,82 @@ def generate_flashcard_html(set_name, data):
         hasFlippedCurrent = true;
       }});
 
-      // Front: Say it
-      document.getElementById("btnSayFront").addEventListener("click", async (e) => {{
-        e.stopPropagation();
-        const eCard = cards[currentIndex] || {{}};
-        const res = await assess(eCard.phrase || "", document.getElementById("frontResult"));
-        // record stats
-        tracker.attempts++;
-        if (!tracker.per[currentIndex]) tracker.per[currentIndex] = {{ tries: 0, best: 0, got100BeforeFlip: false }};
-        const r = tracker.per[currentIndex];
-        r.tries++;
-        if (res && Number.isFinite(res.score)) {{
-          r.best = Math.max(r.best || 0, res.score);
-          if (!hasFlippedCurrent && res.score === 100 && !r.got100BeforeFlip) {{
-            r.got100BeforeFlip = true;
-            tracker.perfectNoFlipCount++;
-          }}
-        }}
-      }});
+      // ---- Front: Say it (press & hold on iOS/Safari; single tap elsewhere)
+      const sayBtn = document.getElementById("btnSayFront");
+      const frontRes = document.getElementById("frontResult");
 
-      // Back: Play (use preloaded element)
+      const getRef = () => (cards[currentIndex] && cards[currentIndex].phrase) || "";
+
+      if (IS_IOS || IS_SAFARI) {{
+        // Press & hold
+        const start = async () => {{
+          const ref = getRef();
+          if (!ref.trim()) {{ frontRes.textContent = "⚠️ No reference text."; return; }}
+          frontRes.textContent = "🎤 Hold… speaking";
+          try {{ await startListenWindow(ref); }} catch (e) {{
+            frontRes.textContent = "⚠️ Mic error";
+            logDbg('start error', e?.message || e);
+          }}
+        }};
+        const end = async () => {{
+          try {{
+            const s = await stopListenWindow();
+            // record stats
+            tracker.attempts++;
+            if (!tracker.per[currentIndex]) tracker.per[currentIndex] = {{ tries: 0, best: 0, got100BeforeFlip: false }};
+            const r = tracker.per[currentIndex];
+            r.tries++;
+            if (Number.isFinite(s)) {{
+              r.best = Math.max(r.best || 0, s);
+              if (!hasFlippedCurrent && s === 100 && !r.got100BeforeFlip) {{
+                r.got100BeforeFlip = true;
+                tracker.perfectNoFlipCount++;
+              }}
+            }}
+            frontRes.textContent = s ? `✅ ${{s}}%` : "⚠️ No score";
+          }} catch (e) {{
+            frontRes.textContent = "⚠️ Speech error";
+            logDbg('stop error', e?.message || e);
+          }}
+        }};
+
+        // Pointer/touch handlers
+        sayBtn.addEventListener('pointerdown', (ev) => {{ ev.preventDefault(); start(); }});
+        sayBtn.addEventListener('pointerup',   (ev) => {{ ev.preventDefault(); end(); }});
+        sayBtn.addEventListener('pointerleave',(ev) => {{ ev.preventDefault(); if (isListening) end(); }});
+        // Touch fallback
+        sayBtn.addEventListener('touchstart', (ev) => {{ ev.preventDefault(); start(); }}, {{passive:false}});
+        sayBtn.addEventListener('touchend',   (ev) => {{ ev.preventDefault(); end(); }},   {{passive:false}});
+      }} else {{
+        // Single tap window (desktop)
+        sayBtn.addEventListener("click", async (e) => {{
+          e.stopPropagation();
+          const ref = getRef();
+          if (!ref.trim()) {{ frontRes.textContent = "⚠️ No reference text."; return; }}
+          const s = await tapOnceAssess(ref, frontRes);
+          // record stats
+          tracker.attempts++;
+          if (!tracker.per[currentIndex]) tracker.per[currentIndex] = {{ tries: 0, best: 0, got100BeforeFlip: false }};
+          const r = tracker.per[currentIndex];
+          r.tries++;
+          if (Number.isFinite(s)) {{
+            r.best = Math.max(r.best || 0, s);
+            if (!hasFlippedCurrent && s === 100 && !r.got100BeforeFlip) {{
+              r.got100BeforeFlip = true;
+              tracker.perfectNoFlipCount++;
+            }}
+          }}
+        }});
+      }}
+
+      // ---- Back: Play (preloaded)
       document.getElementById("btnPlay").addEventListener("click", async (e) => {{
         e.stopPropagation();
         let a = audioCache.get(currentIndex);
-        if (!a) {{
-          primeAudio(currentIndex);
-          a = audioCache.get(currentIndex);
-        }}
+        if (!a) {{ primeAudio(currentIndex); a = audioCache.get(currentIndex); }}
         if (a) {{
-          try {{ a.currentTime = 0; }} catch(_){{
-          }}
-          a.play().catch(()=>{{}});
+          try {{ a.currentTime = 0; }} catch(_){{}}
+          a.play().catch(err => logDbg('audio play err', err?.message || err));
         }}
       }});
 
@@ -403,51 +483,32 @@ def generate_flashcard_html(set_name, data):
           const correct = Object.values(tracker.per).filter(r => (r?.best || 0) >= PASS).length;
           const scorePct = Math.round((correct / totalCards) * 100);
 
-          // Points:
-          //  - base 10 for finishing
-          //  - +1 per 100%-before-first-flip
-          //  - if score==100, 2x the total
           let pointsTotal = 10 + tracker.perfectNoFlipCount;
           if (scorePct === 100) pointsTotal = pointsTotal * 2;
 
-          // Cache locally for summary
           try {{
             localStorage.setItem("lp_last_result_" + setName, JSON.stringify({{
-              score: scorePct,
-              attempts: tracker.attempts,
-              total: totalCards,
-              points_total: pointsTotal,
-              perfect_before_flip: tracker.perfectNoFlipCount
+              score: scorePct, attempts: tracker.attempts, total: totalCards,
+              points_total: pointsTotal, perfect_before_flip: tracker.perfectNoFlipCount
             }}));
           }} catch (_ignore) {{}}
 
-          // Submit to server
           let awarded = null;
           try {{
             const resp = await api.fetch("/api/submit_score", {{
               method: "POST",
               headers: {{ "Content-Type": "application/json" }},
               body: JSON.stringify({{
-                set_name: setName,
-                mode: "flashcards",
-                score: scorePct,
-                attempts: tracker.attempts,
-                details: {{
-                  per: tracker.per,
-                  total: totalCards,
-                  perfect_before_flip: tracker.perfectNoFlipCount,
-                  points_total: pointsTotal
-                }}
+                set_name: setName, mode: "flashcards", score: scorePct, attempts: tracker.attempts,
+                details: {{ per: tracker.per, total: totalCards, perfect_before_flip: tracker.perfectNoFlipCount, points_total: pointsTotal }}
               }})
             }});
             if (resp.ok) {{
               const js = await resp.json();
-              awarded = (js && js.details && js.details.points_awarded != null)
-                ? Number(js.details.points_awarded) : null;
+              awarded = (js && js.details && js.details.points_awarded != null) ? Number(js.details.points_awarded) : null;
             }}
           }} catch (_ignore) {{}}
 
-          // Clear session state & go to summary
           try {{ if (window.SessionSync) await SessionSync.complete({{ setName, mode }}); }} catch(_ignore) {{}}
           try {{ localStorage.removeItem("lp_last"); }} catch(_ignore) {{}}
           const q = awarded != null ? ("?awarded=" + encodeURIComponent(awarded)) : "";
@@ -467,7 +528,6 @@ def generate_flashcard_html(set_name, data):
             renderCard();
           }});
         }}
-        // Always record "last activity" (Home "Continue" fallback)
         try {{ localStorage.setItem("lp_last", JSON.stringify({{ set_name:setName, mode, ts: Date.now() }})); }} catch(_ignore) {{}}
       }})();
     }});
@@ -486,7 +546,7 @@ def generate_flashcard_html(set_name, data):
 <head>
   <meta charset="UTF-8" />
   <title>{set_name} • Results</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" type="image/svg+xml" href="../../static/brand.svg" />
 
   <style>
@@ -526,7 +586,6 @@ def generate_flashcard_html(set_name, data):
     }}
 
     (async () => {{
-      // pick up awarded delta from the redirect (?awarded=)
       const urlAwarded = (() => {{
         const v = new URL(location.href).searchParams.get('awarded');
         return (v != null) ? Number(v) : null;
@@ -534,43 +593,27 @@ def generate_flashcard_html(set_name, data):
 
       let done = false, awarded = urlAwarded;
 
-      // Server last score first (new API, then legacy fallback)
       try {{
-        // new: array payload
         let r = await api.fetch('/api/my/scores?limit=1&set_name=' + encodeURIComponent(setName));
-        if (!r.ok) {{
-          // legacy: object with {{ scores: [...] }}
-          r = await api.fetch('/api/get_scores?set_name=' + encodeURIComponent(setName) + '&limit=1');
-        }}
+        if (!r.ok) r = await api.fetch('/api/get_scores?set_name=' + encodeURIComponent(setName) + '&limit=1');
         if (r.ok) {{
           const payload = await r.json();
-          const last = Array.isArray(payload)
-            ? payload[0]
-            : (payload && Array.isArray(payload.scores) ? payload.scores[0] : null);
-
+          const last = Array.isArray(payload) ? payload[0] : (payload && Array.isArray(payload.scores) ? payload.scores[0] : null);
           if (last && (last.set_name === setName || !last.set_name)) {{
             const d = last.details || {{}};
             if (awarded == null && d.points_awarded != null) awarded = Number(d.points_awarded);
-            apply(
-              Math.round(Number(last.score) || 0),
-              Number(last.attempts) || 0,
-              Number(d.total) || undefined,
-              Number(d.points_total) || undefined,
-              awarded
-            );
+            apply(Math.round(Number(last.score) || 0), Number(last.attempts) || 0, Number(d.total) || undefined, Number(d.points_total) || undefined, awarded);
             done = true;
           }}
         }}
       }} catch (_) {{}}
 
       if (!done) {{
-        // Fallback to local cache saved before redirect
         try {{
           const raw = localStorage.getItem('lp_last_result_' + setName);
           if (raw) {{
             const j = JSON.parse(raw);
-            apply(Math.round(Number(j.score)||0), Number(j.attempts)||0, Number(j.total)||undefined,
-                  Number(j.points_total)||undefined, awarded);
+            apply(Math.round(Number(j.score)||0), Number(j.attempts)||0, Number(j.total)||undefined, Number(j.points_total)||undefined, awarded);
             done = true;
           }}
         }} catch(_) {{}}
