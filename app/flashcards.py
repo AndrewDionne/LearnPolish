@@ -12,11 +12,10 @@ def generate_flashcard_html(set_name, data):
       - docs/flashcards/<set_name>/summary.html (results UI)
 
     This version:
-      - Uses per-utterance recognizers (recognizeOnceAsync) with PhraseList bias.
-      - Avoids continuous start/stop flicker that can cause iOS mic route changes.
-      - Adds ?debug=1 overlay (reasons, cancel details, raw JSON).
-      - Keeps audio preloading (current + next).
-      - Drops session_state.js include to silence 502 preflight noise.
+      - Per-utterance recognizer (recognizeOnceAsync) with PhraseList bias.
+      - Debug overlay via ?debug=1 (reasons, cancel details, raw JSON).
+      - Audio preloading (current + next).
+      - session_state.js excluded to avoid 502/CORS console spam.
     """
     output_dir = DOCS_DIR / "flashcards" / set_name
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -112,7 +111,7 @@ def generate_flashcard_html(set_name, data):
   <!-- Scripts -->
   <script src="../../static/js/app-config.js"></script>
   <script src="../../static/js/api.js"></script>
-  <!-- NOTE: session_state.js temporarily removed to avoid 502 preflight noise -->
+  <!-- session_state.js intentionally omitted -->
   <script src="../../static/js/audio-paths.js"></script>
   <!-- Azure Speech SDK -->
   <script src="https://aka.ms/csspeech/jsbrowserpackageraw"></script>
@@ -141,16 +140,20 @@ def generate_flashcard_html(set_name, data):
     if (DEBUG) dbgEl.style.display = 'block';
     function logDbg(...a) {{
       if (!DEBUG) return;
-      const line = document.createElement('div'); line.className = 'row';
+      const line = document.createElement('div');
+      line.className = 'row';
       line.textContent = a.map(x => (typeof x === 'string' ? x : JSON.stringify(x))).join(' ');
-      dbgEl.appendChild(line); dbgEl.scrollTop = dbgEl.scrollHeight;
+      dbgEl.appendChild(line);
+      dbgEl.scrollTop = dbgEl.scrollHeight;
       try {{ console.debug('[FC]', ...a); }} catch(_) {{}}
     }}
     function logRaw(j) {{
       if (!DEBUG) return;
-      const line = document.createElement('div'); line.className = 'row raw';
+      const line = document.createElement('div');
+      line.className = 'row raw';
       line.textContent = (typeof j === 'string') ? j : JSON.stringify(j);
-      dbgEl.appendChild(line); dbgEl.scrollTop = dbgEl.scrollHeight;
+      dbgEl.appendChild(line);
+      dbgEl.scrollTop = dbgEl.scrollHeight;
     }}
 
     // --- Platform detect ---
@@ -167,9 +170,16 @@ def generate_flashcard_html(set_name, data):
         // Nudge AudioContext (helps Safari start without clipping first syllable)
         try {{
           const Ctx = window.AudioContext || window.webkitAudioContext;
-          if (Ctx) {{ const ctx = new Ctx(); await ctx.resume(); await new Promise(r => setTimeout(r, 40)); await ctx.close(); }}
+          if (Ctx) {{
+            const ctx = new Ctx();
+            await ctx.resume();
+            await new Promise(r => setTimeout(r, 40));
+            await ctx.close();
+          }}
         }} catch (_) {{}}
-      }} catch (e) {{ logDbg('prewarm error', e && e.message); }}
+      }} catch (e) {{
+        logDbg('prewarm error', e && e.message);
+      }}
     }}
 
     // Mirror of Python sanitize_filename (for audio file names)
@@ -191,7 +201,11 @@ def generate_flashcard_html(set_name, data):
 
     function buildAudioSrc(index) {{
       let src = localAudioPath(index);
-      try {{ if (window.AudioPaths) src = AudioPaths.buildAudioPath(setName, index, cards[index], r2Manifest); }} catch (_ignore) {{}}
+      try {{
+        if (window.AudioPaths) {{
+          src = AudioPaths.buildAudioPath(setName, index, cards[index], r2Manifest);
+        }}
+      }} catch (_ignore) {{}}
       return src;
     }}
 
@@ -199,14 +213,17 @@ def generate_flashcard_html(set_name, data):
       if (index < 0 || index >= cards.length) return;
       if (audioCache.has(index)) return;
       const src = buildAudioSrc(index);
-      const a = new Audio(); a.preload = "auto"; a.src = src;
+      const a = new Audio();
+      a.preload = "auto";
+      a.src = src;
       try {{ a.load(); }} catch(_e) {{}}
       audioCache.set(index, a);
     }}
 
     function resetAndPrimeAround(index) {{
       audioCache.clear();
-      primeAudio(index); primeAudio(index + 1);
+      primeAudio(index);
+      primeAudio(index + 1);
     }}
 
     function setNavUI() {{
@@ -222,7 +239,9 @@ def generate_flashcard_html(set_name, data):
       document.getElementById("answerPhrase").textContent = e.phrase || "";
       document.getElementById("answerPron").textContent   = e.pronunciation || "";
       document.getElementById("backResult").textContent   = "";
-      setNavUI(); hasFlippedCurrent = false; resetAndPrimeAround(currentIndex);
+      setNavUI();
+      hasFlippedCurrent = false;
+      resetAndPrimeAround(currentIndex);
     }}
 
     // ---------------- Azure speech (per-utterance recognizer) ----------------
@@ -233,7 +252,9 @@ def generate_flashcard_html(set_name, data):
         const region = tok && (tok.region || tok.location || tok.regionName);
         if (!token || !region) throw new Error('no_token');
         return {{ token, region }};
-      }} catch (e) {{ throw new Error('no_token'); }}
+      }} catch (e) {{
+        throw new Error('no_token');
+      }}
     }}
 
     async function assess(referenceText, targetEl) {{
@@ -273,7 +294,7 @@ def generate_flashcard_html(set_name, data):
         try {{
           const pl = SDK.PhraseListGrammar.fromRecognizer(recognizer);
           if (pl) pl.add(ref);
-        }} catch (_){{
+        }} catch (_ignore) {{ }}
 
         targetEl.textContent = "🎙 Listening…";
 
@@ -283,7 +304,9 @@ def generate_flashcard_html(set_name, data):
               r => resolve(r),
               err => reject(err)
             );
-          }} catch (e) {{ reject(e); }}
+          }} catch (e) {{
+            reject(e);
+          }}
         }});
 
         // Log reasons when debugging
@@ -297,7 +320,7 @@ def generate_flashcard_html(set_name, data):
             const d = SDK.NoMatchDetails.fromResult(result);
             logDbg('noMatch', d?.reason);
           }}
-        }} catch(_){{
+        }} catch(_ignore) {{ }}
 
         // Parse JSON for PA
         let raw = null;
@@ -305,7 +328,7 @@ def generate_flashcard_html(set_name, data):
           raw = result?.properties?.getProperty(SDK.PropertyId.SpeechServiceResponse_JsonResult)
              || result?.privPronunciationAssessmentJson
              || result?.privJson; // some builds expose this
-        }} catch(_){{
+        }} catch(_ignore) {{ }}
 
         let score = 0;
         if (raw) {{
@@ -316,12 +339,10 @@ def generate_flashcard_html(set_name, data):
               (j?.NBest?.[0]?.PronunciationAssessment?.AccuracyScore) ??
               (j?.PronunciationAssessment?.AccuracyScore) ?? 0
             );
-          }} catch(_){{
-            // ignore JSON parse error
-          }}
+          }} catch(_ignore) {{ }}
         }}
 
-        try {{ recognizer.close(); }} catch(_){{
+        try {{ recognizer.close(); }} catch(_ignore) {{ }}
 
         targetEl.textContent = score ? `✅ ${{score}}%` : "⚠️ No score";
         return score || 0;
@@ -341,7 +362,11 @@ def generate_flashcard_html(set_name, data):
         (IS_IOS || IS_SAFARI) ? "Hold the button while you speak." : "Click, then speak.";
 
       // Try to load R2 manifest (non-blocking)
-      try {{ if (window.AudioPaths) r2Manifest = await AudioPaths.fetchManifest(setName); }} catch (_e) {{ r2Manifest = null; }}
+      try {{
+        if (window.AudioPaths) r2Manifest = await AudioPaths.fetchManifest(setName);
+      }} catch (_ignore) {{
+        r2Manifest = null;
+      }}
 
       renderCard();
 
@@ -352,12 +377,11 @@ def generate_flashcard_html(set_name, data):
         hasFlippedCurrent = true;
       }});
 
-      // ---- Front: Say it  (press & hold UX; technically single-shot underneath) ----
+      // ---- Front: Say it  (press & hold UX; single-shot underneath) ----
       const sayBtn = document.getElementById("btnSayFront");
       const frontRes = document.getElementById("frontResult");
       const getRef = () => (cards[currentIndex] && cards[currentIndex].phrase) || "";
 
-      // Press & hold visuals; we kick off recognizeOnce on press.
       const startSpeak = async () => {{
         const ref = getRef();
         if (!ref.trim()) {{ frontRes.textContent = "⚠️ No reference text."; return; }}
@@ -388,7 +412,10 @@ def generate_flashcard_html(set_name, data):
         e.stopPropagation();
         let a = audioCache.get(currentIndex);
         if (!a) {{ primeAudio(currentIndex); a = audioCache.get(currentIndex); }}
-        if (a) {{ try {{ a.currentTime = 0; }} catch(_){{}} a.play().catch(err => logDbg('audio play err', err?.message || err)); }}
+        if (a) {{
+          try {{ a.currentTime = 0; }} catch(_ignore) {{ }}
+          a.play().catch(err => logDbg('audio play err', err?.message || err));
+        }}
       }});
 
       // Prev / Next / Finish
@@ -396,7 +423,6 @@ def generate_flashcard_html(set_name, data):
         if (currentIndex > 0) {{
           currentIndex--;
           renderCard();
-          // (SessionSync disabled while session_state CORS is noisy)
         }}
       }});
 
@@ -418,7 +444,7 @@ def generate_flashcard_html(set_name, data):
               score: scorePct, attempts: tracker.attempts, total: totalCards,
               points_total: pointsTotal, perfect_before_flip: tracker.perfectNoFlipCount
             }}));
-          }} catch (_ignore) {{}}
+          }} catch (_ignore) {{ }}
 
           let awarded = null;
           try {{
@@ -434,7 +460,7 @@ def generate_flashcard_html(set_name, data):
               const js = await resp.json();
               awarded = (js && js.details && js.details.points_awarded != null) ? Number(js.details.points_awarded) : null;
             }}
-          }} catch (_ignore) {{}}
+          }} catch (_ignore) {{ }}
 
           const q = awarded != null ? ("?awarded=" + encodeURIComponent(awarded)) : "";
           window.location.href = "summary.html" + q;
@@ -442,7 +468,9 @@ def generate_flashcard_html(set_name, data):
       }});
 
       // Load audio manifest last
-      try {{ if (window.AudioPaths) r2Manifest = await AudioPaths.fetchManifest(setName); }} catch(_e) {{}}
+      try {{
+        if (window.AudioPaths) r2Manifest = await AudioPaths.fetchManifest(setName);
+      }} catch(_ignore) {{ }}
     }});
 
     function goHome() {{ window.location.href = "../../index.html"; }}
@@ -519,7 +547,7 @@ def generate_flashcard_html(set_name, data):
             done = true;
           }}
         }}
-      }} catch (_) {{}}
+      }} catch (_ignore) {{ }}
 
       if (!done) {{
         try {{
@@ -529,7 +557,7 @@ def generate_flashcard_html(set_name, data):
             apply(Math.round(Number(j.score)||0), Number(j.attempts)||0, Number(j.total)||undefined, Number(j.points_total)||undefined, awarded);
             done = true;
           }}
-        }} catch(_) {{}}
+        }} catch(_ignore) {{ }}
       }}
 
       if (!done) {{
