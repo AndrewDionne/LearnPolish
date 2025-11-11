@@ -112,7 +112,6 @@ def generate_flashcard_html(set_name, data):
   <!-- Scripts -->
   <script src="../../static/js/app-config.js"></script>
   <script src="../../static/js/api.js"></script>
-  // <script src="../../static/js/session_state.js"></script>
   <script src="../../static/js/audio-paths.js"></script>
   <!-- Azure Speech SDK -->
   <script src="https://aka.ms/csspeech/jsbrowserpackageraw"></script>
@@ -137,8 +136,6 @@ def generate_flashcard_html(set_name, data):
 
     // URL overrides: default to capture; allow ?live=1 or ?capture=0 to force live
     const URLP = new URL(location.href).searchParams;
-    //const FORCE_LIVE = URLP.get('live') === '1';
-    //const capParam = URLP.get('capture');
     const CAPTURE_MODE = FORCE_LIVE ? false : (capParam === '1' || capParam === null);
 
     // Platform hint text
@@ -357,7 +354,6 @@ def generate_flashcard_html(set_name, data):
       speechConfig.outputFormat = SDK.OutputFormat.Detailed;
       speechConfig.setProperty(SDK.PropertyId.SpeechServiceResponse_RequestDetailedResultTrueFalse, "true");
       speechConfig.setProperty(SDK.PropertyId.SpeechServiceResponse_RequestWordLevelTimestamps, "true");
-      //speechConfig.setProperty(SDK.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "250");
 
       // Push 16k/16-bit/mono PCM
       const pcm = await blobToPCM16Mono(blob, 16000);
