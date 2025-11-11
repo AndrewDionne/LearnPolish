@@ -11,11 +11,12 @@ def generate_flashcard_html(set_name, data):
       - docs/flashcards/<set_name>/index.html   (learning UI)
       - docs/flashcards/<set_name>/summary.html (results UI)
 
-    Notes / changes:
-      - Press & Hold to Speak (default on iOS/Safari), Tap-once window on desktop.
-      - Reuses a single Azure recognizer instance to reduce mic on/off flicker.
-      - Preloads audio (current + next) for instant playback.
-      - Debug overlay: add ?debug=1 to URL to see timeline + raw JSON.
+    This version:
+      - Uses per-utterance recognizers (recognizeOnceAsync) with PhraseList bias.
+      - Avoids continuous start/stop flicker that can cause iOS mic route changes.
+      - Adds ?debug=1 overlay (reasons, cancel details, raw JSON).
+      - Keeps audio preloading (current + next).
+      - Drops session_state.js include to silence 502 preflight noise.
     """
     output_dir = DOCS_DIR / "flashcards" / set_name
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -111,7 +112,7 @@ def generate_flashcard_html(set_name, data):
   <!-- Scripts -->
   <script src="../../static/js/app-config.js"></script>
   <script src="../../static/js/api.js"></script>
-  <script src="../../static/js/session_state.js"></script>
+  <!-- NOTE: session_state.js temporarily removed to avoid 502 preflight noise -->
   <script src="../../static/js/audio-paths.js"></script>
   <!-- Azure Speech SDK -->
   <script src="https://aka.ms/csspeech/jsbrowserpackageraw"></script>
@@ -123,16 +124,12 @@ def generate_flashcard_html(set_name, data):
     const mode = "flashcards";
     let currentIndex = 0;
 
-    // Optional CDN manifest (loaded later; safe to be null)
+    // Optional CDN manifest
     let r2Manifest = null;
 
     // Scoring + points
     const PASS = 75;
-    const tracker = {{
-      attempts: 0,
-      per: {{}},               // per[idx] = {{ tries, best, got100BeforeFlip: boolean }}
-      perfectNoFlipCount: 0,
-    }};
+    const tracker = {{ attempts: 0, per: {{}}, perfectNoFlipCount: 0 }};
     let hasFlippedCurrent = false;
 
     // --- Audio preload cache ---
@@ -144,20 +141,16 @@ def generate_flashcard_html(set_name, data):
     if (DEBUG) dbgEl.style.display = 'block';
     function logDbg(...a) {{
       if (!DEBUG) return;
-      const line = document.createElement('div');
-      line.className = 'row';
+      const line = document.createElement('div'); line.className = 'row';
       line.textContent = a.map(x => (typeof x === 'string' ? x : JSON.stringify(x))).join(' ');
-      dbgEl.appendChild(line);
-      dbgEl.scrollTop = dbgEl.scrollHeight;
+      dbgEl.appendChild(line); dbgEl.scrollTop = dbgEl.scrollHeight;
       try {{ console.debug('[FC]', ...a); }} catch(_) {{}}
     }}
     function logRaw(j) {{
       if (!DEBUG) return;
-      const line = document.createElement('div');
-      line.className = 'row raw';
+      const line = document.createElement('div'); line.className = 'row raw';
       line.textContent = (typeof j === 'string') ? j : JSON.stringify(j);
-      dbgEl.appendChild(line);
-      dbgEl.scrollTop = dbgEl.scrollHeight;
+      dbgEl.appendChild(line); dbgEl.scrollTop = dbgEl.scrollHeight;
     }}
 
     // --- Platform detect ---
@@ -171,28 +164,19 @@ def generate_flashcard_html(set_name, data):
         if (!navigator.mediaDevices?.getUserMedia) return;
         const stream = await navigator.mediaDevices.getUserMedia({{ audio: true }});
         stream.getTracks().forEach(tr => tr.stop());
-        // Nudge AudioContext (helps Safari start recording without clipping)
+        // Nudge AudioContext (helps Safari start without clipping first syllable)
         try {{
           const Ctx = window.AudioContext || window.webkitAudioContext;
-          if (Ctx) {{
-            const ctx = new Ctx();
-            await ctx.resume();
-            await new Promise(r => setTimeout(r, 50));
-            await ctx.close();
-          }}
+          if (Ctx) {{ const ctx = new Ctx(); await ctx.resume(); await new Promise(r => setTimeout(r, 40)); await ctx.close(); }}
         }} catch (_) {{}}
-      }} catch (e) {{
-        logDbg('prewarm error', e && e.message);
-      }}
+      }} catch (e) {{ logDbg('prewarm error', e && e.message); }}
     }}
 
     // Mirror of Python sanitize_filename (for audio file names)
     function sanitizeFilename(text) {{
       return (text || "")
-        .normalize("NFD")
-        .replace(/[\\u0300-\\u036f]/g, "")
-        .replace(/[^a-zA-Z0-9_-]+/g, "_")
-        .replace(/^_+|_+$/g, "");
+        .normalize("NFD").replace(/[\\u0300-\\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9_-]+/g, "_").replace(/^_+|_+$/g, "");
     }}
 
     function localAudioPath(index) {{
@@ -200,20 +184,14 @@ def generate_flashcard_html(set_name, data):
       const fn = String(index) + "_" + sanitizeFilename(e.phrase || "") + ".mp3";
       const setEnc = encodeURIComponent(setName);
       const fnEnc  = encodeURIComponent(fn);
-
       const explicit = e.audio_url || e.audio;
       if (explicit && /^https?:\\/\\//i.test(explicit)) return explicit;
-
       return `../../static/${{setEnc}}/audio/${{fnEnc}}`;
     }}
 
     function buildAudioSrc(index) {{
       let src = localAudioPath(index);
-      try {{
-        if (window.AudioPaths) {{
-          src = AudioPaths.buildAudioPath(setName, index, cards[index], r2Manifest);
-        }}
-      }} catch (_ignore) {{}}
+      try {{ if (window.AudioPaths) src = AudioPaths.buildAudioPath(setName, index, cards[index], r2Manifest); }} catch (_ignore) {{}}
       return src;
     }}
 
@@ -221,17 +199,14 @@ def generate_flashcard_html(set_name, data):
       if (index < 0 || index >= cards.length) return;
       if (audioCache.has(index)) return;
       const src = buildAudioSrc(index);
-      const a = new Audio();
-      a.preload = "auto";
-      a.src = src;
+      const a = new Audio(); a.preload = "auto"; a.src = src;
       try {{ a.load(); }} catch(_e) {{}}
       audioCache.set(index, a);
     }}
 
     function resetAndPrimeAround(index) {{
       audioCache.clear();
-      primeAudio(index);
-      primeAudio(index + 1);
+      primeAudio(index); primeAudio(index + 1);
     }}
 
     function setNavUI() {{
@@ -247,121 +222,114 @@ def generate_flashcard_html(set_name, data):
       document.getElementById("answerPhrase").textContent = e.phrase || "";
       document.getElementById("answerPron").textContent   = e.pronunciation || "";
       document.getElementById("backResult").textContent   = "";
-      setNavUI();
-      hasFlippedCurrent = false;
-      resetAndPrimeAround(currentIndex);
+      setNavUI(); hasFlippedCurrent = false; resetAndPrimeAround(currentIndex);
     }}
 
-    // ---------------- Azure speech (single recognizer) ----------------
-    let recognizer = null;               // SpeechSDK.SpeechRecognizer
-    let paConfig = null;                 // SpeechSDK.PronunciationAssessmentConfig
-    let isListening = false;
-    let bestScore = 0;
-
-    async function ensureRecognizer() {{
-      if (!window.SpeechSDK) throw new Error("sdk_not_loaded");
-      if (recognizer) return recognizer;
-
-      // Token
-      const tok = await api.get('/api/speech_token', {{ noAuth: true }});
-      const token  = tok && (tok.token || tok.access_token);
-      const region = tok && (tok.region || tok.location || tok.regionName);
-      if (!token || !region) throw new Error("no_token");
-
-      const SpeechSDK = window.SpeechSDK;
-      const cfg = SpeechSDK.SpeechConfig.fromAuthorizationToken(token, region);
-      cfg.speechRecognitionLanguage = "pl-PL";
-      cfg.outputFormat = SpeechSDK.OutputFormat.Detailed;
-      cfg.setProperty(SpeechSDK.PropertyId.SpeechServiceResponse_RequestDetailedResultTrueFalse, "true");
-      // iOS benefits from slightly longer initial window
-      cfg.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, IS_IOS ? "2800" : "2200");
-      cfg.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "250");
-
-      const audioCfg = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
-      recognizer = new SpeechSDK.SpeechRecognizer(cfg, audioCfg);
-
-      recognizer.sessionStarted = () => logDbg('sessionStarted');
-      recognizer.sessionStopped = () => logDbg('sessionStopped');
-      recognizer.canceled = (_s, e) => logDbg('canceled', e?.reason, e?.errorDetails);
-
-      const parse = (raw) => {{
-        try {{
-          const j = JSON.parse(raw);
-          const s = Math.round(
-            (j?.NBest?.[0]?.PronunciationAssessment?.AccuracyScore) ??
-            (j?.PronunciationAssessment?.AccuracyScore) ?? 0
-          );
-          if (Number.isFinite(s)) bestScore = Math.max(bestScore, s);
-          if (DEBUG) logRaw(j);
-        }} catch (e) {{
-          /* ignore */
-        }}
-      }};
-
-      recognizer.recognizing = (_s, e) => {{
-        const raw = e?.result?.properties?.getProperty(SpeechSDK.PropertyId.SpeechServiceResponse_JsonResult)
-                 || e?.result?.privPronunciationAssessmentJson;
-        if (raw) parse(raw);
-      }};
-      recognizer.recognized = (_s, e) => {{
-        const raw = e?.result?.properties?.getProperty(SpeechSDK.PropertyId.SpeechServiceResponse_JsonResult)
-                 || e?.result?.privPronunciationAssessmentJson;
-        if (raw) parse(raw);
-      }};
-
-      return recognizer;
-    }}
-
-    function applyReferenceText(referenceText) {{
-      const SpeechSDK = window.SpeechSDK;
-      paConfig = new SpeechSDK.PronunciationAssessmentConfig(
-        referenceText,
-        SpeechSDK.PronunciationAssessmentGradingSystem.HundredMark,
-        SpeechSDK.PronunciationAssessmentGranularity.Word,
-        true // miscue
-      );
-      paConfig.applyTo(recognizer);
-    }}
-
-    // ---- Two interaction modes:
-    // iOS/Safari: PRESS & HOLD (pointerdown -> start, pointerup -> stop)
-    // Desktop: single TAP opens a short window
-    async function startListenWindow(referenceText) {{
-      await prewarmMic();
-      const r = await ensureRecognizer();
-      applyReferenceText(referenceText);
-      bestScore = 0;
-      isListening = true;
-      logDbg('startContinuous');
-      await new Promise(res => {{
-        try {{ r.startContinuousRecognitionAsync(() => res(), () => res()); }}
-        catch (_e) {{ res(); }}
-      }});
-    }}
-
-    async function stopListenWindow() {{
-      if (!recognizer) return 0;
-      logDbg('stopContinuous');
-      await new Promise(res => {{
-        try {{ recognizer.stopContinuousRecognitionAsync(() => res(), () => res()); }}
-        catch (_e) {{ res(); }}
-      }});
-      isListening = false;
-      return bestScore || 0;
-    }}
-
-    async function tapOnceAssess(referenceText, targetEl) {{
-      // Desktop / non-iOS fallback → 2.4s window
+    // ---------------- Azure speech (per-utterance recognizer) ----------------
+    async function fetchToken() {{
       try {{
+        const tok = await api.get('/api/speech_token', {{ noAuth: true }});
+        const token  = tok && (tok.token || tok.access_token);
+        const region = tok && (tok.region || tok.location || tok.regionName);
+        if (!token || !region) throw new Error('no_token');
+        return {{ token, region }};
+      }} catch (e) {{ throw new Error('no_token'); }}
+    }}
+
+    async function assess(referenceText, targetEl) {{
+      const ref = (referenceText || "").trim();
+      if (!window.SpeechSDK) {{ targetEl.textContent = "⚠️ Speech SDK not loaded."; return 0; }}
+      if (!ref) {{ targetEl.textContent = "⚠️ No reference text."; return 0; }}
+
+      try {{
+        targetEl.textContent = "🎤 Preparing…";
+        await prewarmMic();
+        await new Promise(r => setTimeout(r, 120)); // let UI update
+
+        const {{ token, region }} = await fetchToken();
+        const SDK = window.SpeechSDK;
+
+        const speechConfig = SDK.SpeechConfig.fromAuthorizationToken(token, region);
+        speechConfig.speechRecognitionLanguage = "pl-PL";
+        // Detailed JSON + word timings to ensure PA shows up
+        speechConfig.outputFormat = SDK.OutputFormat.Detailed;
+        speechConfig.setProperty(SDK.PropertyId.SpeechServiceResponse_RequestDetailedResultTrueFalse, "true");
+        speechConfig.setProperty(SDK.PropertyId.SpeechServiceResponse_RequestWordLevelTimestamps, "true");
+        // Short utterance: allow a beat to start, end quickly after silence
+        speechConfig.setProperty(SDK.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, (IS_IOS || IS_SAFARI) ? "2200" : "1600");
+        speechConfig.setProperty(SDK.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "250");
+
+        const audioConfig = SDK.AudioConfig.fromDefaultMicrophoneInput();
+        const recognizer = new SDK.SpeechRecognizer(speechConfig, audioConfig);
+
+        // Pronunciation Assessment + Phrase biasing toward the expected word
+        const pa = new SDK.PronunciationAssessmentConfig(
+          ref,
+          SDK.PronunciationAssessmentGradingSystem.HundredMark,
+          SDK.PronunciationAssessmentGranularity.Word,
+          true /* miscue */
+        );
+        pa.applyTo(recognizer);
+        try {{
+          const pl = SDK.PhraseListGrammar.fromRecognizer(recognizer);
+          if (pl) pl.add(ref);
+        }} catch (_){{
+
         targetEl.textContent = "🎙 Listening…";
-        await startListenWindow(referenceText);
-        await new Promise(r => setTimeout(r, 2400));
-        const s = await stopListenWindow();
-        targetEl.textContent = s ? `✅ ${{s}}%` : "⚠️ No score";
-        return s;
+
+        const result = await new Promise((resolve, reject) => {{
+          try {{
+            recognizer.recognizeOnceAsync(
+              r => resolve(r),
+              err => reject(err)
+            );
+          }} catch (e) {{ reject(e); }}
+        }});
+
+        // Log reasons when debugging
+        try {{
+          logDbg('reason', result?.reason);
+          if (result?.reason === SDK.ResultReason.Canceled) {{
+            const c = SDK.CancellationDetails.fromResult(result);
+            logDbg('canceled', c?.reason, c?.errorCode, c?.errorDetails);
+          }}
+          if (result?.reason === SDK.ResultReason.NoMatch) {{
+            const d = SDK.NoMatchDetails.fromResult(result);
+            logDbg('noMatch', d?.reason);
+          }}
+        }} catch(_){{
+
+        // Parse JSON for PA
+        let raw = null;
+        try {{
+          raw = result?.properties?.getProperty(SDK.PropertyId.SpeechServiceResponse_JsonResult)
+             || result?.privPronunciationAssessmentJson
+             || result?.privJson; // some builds expose this
+        }} catch(_){{
+
+        let score = 0;
+        if (raw) {{
+          try {{
+            const j = JSON.parse(raw);
+            logRaw(j);
+            score = Math.round(
+              (j?.NBest?.[0]?.PronunciationAssessment?.AccuracyScore) ??
+              (j?.PronunciationAssessment?.AccuracyScore) ?? 0
+            );
+          }} catch(_){{
+            // ignore JSON parse error
+          }}
+        }}
+
+        try {{ recognizer.close(); }} catch(_){{
+
+        targetEl.textContent = score ? `✅ ${{score}}%` : "⚠️ No score";
+        return score || 0;
+
       }} catch (e) {{
-        logDbg('tapOnceAssess error', e?.message || e);
-        targetEl.textContent = "⚠️ Speech error";
+        const msg = (e && e.message) || String(e);
+        logDbg('assess error', msg);
+        targetEl.textContent = (msg === "no_token") ? "⚠️ Token issue" : "⚠️ Speech error";
         return 0;
       }}
     }}
@@ -384,83 +352,43 @@ def generate_flashcard_html(set_name, data):
         hasFlippedCurrent = true;
       }});
 
-      // ---- Front: Say it (press & hold on iOS/Safari; single tap elsewhere)
+      // ---- Front: Say it  (press & hold UX; technically single-shot underneath) ----
       const sayBtn = document.getElementById("btnSayFront");
       const frontRes = document.getElementById("frontResult");
-
       const getRef = () => (cards[currentIndex] && cards[currentIndex].phrase) || "";
 
-      if (IS_IOS || IS_SAFARI) {{
-        // Press & hold
-        const start = async () => {{
-          const ref = getRef();
-          if (!ref.trim()) {{ frontRes.textContent = "⚠️ No reference text."; return; }}
-          frontRes.textContent = "🎤 Hold… speaking";
-          try {{ await startListenWindow(ref); }} catch (e) {{
-            frontRes.textContent = "⚠️ Mic error";
-            logDbg('start error', e?.message || e);
+      // Press & hold visuals; we kick off recognizeOnce on press.
+      const startSpeak = async () => {{
+        const ref = getRef();
+        if (!ref.trim()) {{ frontRes.textContent = "⚠️ No reference text."; return; }}
+        sayBtn.disabled = true;
+        const s = await assess(ref, frontRes);
+        // record stats
+        tracker.attempts++;
+        if (!tracker.per[currentIndex]) tracker.per[currentIndex] = {{ tries: 0, best: 0, got100BeforeFlip: false }};
+        const r = tracker.per[currentIndex];
+        r.tries++;
+        if (Number.isFinite(s)) {{
+          r.best = Math.max(r.best || 0, s);
+          if (!hasFlippedCurrent && s === 100 && !r.got100BeforeFlip) {{
+            r.got100BeforeFlip = true; tracker.perfectNoFlipCount++;
           }}
-        }};
-        const end = async () => {{
-          try {{
-            const s = await stopListenWindow();
-            // record stats
-            tracker.attempts++;
-            if (!tracker.per[currentIndex]) tracker.per[currentIndex] = {{ tries: 0, best: 0, got100BeforeFlip: false }};
-            const r = tracker.per[currentIndex];
-            r.tries++;
-            if (Number.isFinite(s)) {{
-              r.best = Math.max(r.best || 0, s);
-              if (!hasFlippedCurrent && s === 100 && !r.got100BeforeFlip) {{
-                r.got100BeforeFlip = true;
-                tracker.perfectNoFlipCount++;
-              }}
-            }}
-            frontRes.textContent = s ? `✅ ${{s}}%` : "⚠️ No score";
-          }} catch (e) {{
-            frontRes.textContent = "⚠️ Speech error";
-            logDbg('stop error', e?.message || e);
-          }}
-        }};
+        }}
+        sayBtn.disabled = false;
+      }};
 
-        // Pointer/touch handlers
-        sayBtn.addEventListener('pointerdown', (ev) => {{ ev.preventDefault(); start(); }});
-        sayBtn.addEventListener('pointerup',   (ev) => {{ ev.preventDefault(); end(); }});
-        sayBtn.addEventListener('pointerleave',(ev) => {{ ev.preventDefault(); if (isListening) end(); }});
-        // Touch fallback
-        sayBtn.addEventListener('touchstart', (ev) => {{ ev.preventDefault(); start(); }}, {{passive:false}});
-        sayBtn.addEventListener('touchend',   (ev) => {{ ev.preventDefault(); end(); }},   {{passive:false}});
-      }} else {{
-        // Single tap window (desktop)
-        sayBtn.addEventListener("click", async (e) => {{
-          e.stopPropagation();
-          const ref = getRef();
-          if (!ref.trim()) {{ frontRes.textContent = "⚠️ No reference text."; return; }}
-          const s = await tapOnceAssess(ref, frontRes);
-          // record stats
-          tracker.attempts++;
-          if (!tracker.per[currentIndex]) tracker.per[currentIndex] = {{ tries: 0, best: 0, got100BeforeFlip: false }};
-          const r = tracker.per[currentIndex];
-          r.tries++;
-          if (Number.isFinite(s)) {{
-            r.best = Math.max(r.best || 0, s);
-            if (!hasFlippedCurrent && s === 100 && !r.got100BeforeFlip) {{
-              r.got100BeforeFlip = true;
-              tracker.perfectNoFlipCount++;
-            }}
-          }}
-        }});
-      }}
+      // pointer/touch (we don't cancel on release; recognizeOnce ends on silence)
+      sayBtn.addEventListener('pointerdown', (ev) => {{ ev.preventDefault(); startSpeak(); }});
+      sayBtn.addEventListener('touchstart',  (ev) => {{ ev.preventDefault(); startSpeak(); }}, {{passive:false}});
+      // Desktop click fallback
+      sayBtn.addEventListener("click", (e) => {{ e.stopPropagation(); startSpeak(); }});
 
       // ---- Back: Play (preloaded)
       document.getElementById("btnPlay").addEventListener("click", async (e) => {{
         e.stopPropagation();
         let a = audioCache.get(currentIndex);
         if (!a) {{ primeAudio(currentIndex); a = audioCache.get(currentIndex); }}
-        if (a) {{
-          try {{ a.currentTime = 0; }} catch(_){{}}
-          a.play().catch(err => logDbg('audio play err', err?.message || err));
-        }}
+        if (a) {{ try {{ a.currentTime = 0; }} catch(_){{}} a.play().catch(err => logDbg('audio play err', err?.message || err)); }}
       }});
 
       // Prev / Next / Finish
@@ -468,7 +396,7 @@ def generate_flashcard_html(set_name, data):
         if (currentIndex > 0) {{
           currentIndex--;
           renderCard();
-          if (window.SessionSync) SessionSync.save({{ setName, mode, progress: {{ index: currentIndex, per: tracker.per }} }});
+          // (SessionSync disabled while session_state CORS is noisy)
         }}
       }});
 
@@ -476,7 +404,6 @@ def generate_flashcard_html(set_name, data):
         if (currentIndex < cards.length - 1) {{
           currentIndex++;
           renderCard();
-          if (window.SessionSync) SessionSync.save({{ setName, mode, progress: {{ index: currentIndex, per: tracker.per }} }});
         }} else {{
           // FINISH
           const totalCards = Math.max(1, cards.length);
@@ -509,27 +436,13 @@ def generate_flashcard_html(set_name, data):
             }}
           }} catch (_ignore) {{}}
 
-          try {{ if (window.SessionSync) await SessionSync.complete({{ setName, mode }}); }} catch(_ignore) {{}}
-          try {{ localStorage.removeItem("lp_last"); }} catch(_ignore) {{}}
           const q = awarded != null ? ("?awarded=" + encodeURIComponent(awarded)) : "";
           window.location.href = "summary.html" + q;
         }}
       }});
 
-      // Resume mid-set if ?resume=1
-      (async () => {{
-        const wantResume = new URL(location.href).searchParams.get("resume") === "1";
-        if (wantResume && window.SessionSync) {{
-          await SessionSync.restore({{ setName, mode }}, (progress) => {{
-            if (progress && Number.isFinite(progress.index)) {{
-              currentIndex = Math.max(0, Math.min(cards.length - 1, progress.index));
-            }}
-            if (progress && progress.per) Object.assign(tracker.per, progress.per);
-            renderCard();
-          }});
-        }}
-        try {{ localStorage.setItem("lp_last", JSON.stringify({{ set_name:setName, mode, ts: Date.now() }})); }} catch(_ignore) {{}}
-      }})();
+      // Load audio manifest last
+      try {{ if (window.AudioPaths) r2Manifest = await AudioPaths.fetchManifest(setName); }} catch(_e) {{}}
     }});
 
     function goHome() {{ window.location.href = "../../index.html"; }}
