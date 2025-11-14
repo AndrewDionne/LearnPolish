@@ -16,6 +16,7 @@ except Exception:  # pragma: no cover
 from .config import Config
 from .models import db
 
+migrate = Migrate() 
 
 # ----------------------- DB URL helpers -----------------------
 def _normalize_db_url(u: str | None) -> str | None:

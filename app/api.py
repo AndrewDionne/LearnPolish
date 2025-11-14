@@ -398,7 +398,13 @@ def avatar_upload(current_user):
 def submit_score(current_user):
     data = request.get_json(silent=True) or {}
     set_name = (data.get("set_name") or "").strip()
-    mode = (data.get("mode") or "practice").strip() or "practice"
+    mode = (data.get("mode") or "practice").strip().lower()
+    if mode in ("learn","vocab","flashcard","flashcards",""):   mode = "flashcards"
+    elif mode in ("speak","practice"):                           mode = "practice"
+    elif mode in ("read","reading"):                             mode = "reading"
+    elif mode in ("listen","listening"):                         mode = "listening"
+    else:                                                        mode = "flashcards"
+
     score_val = data.get("score")
     attempts = data.get("attempts", 1)
     details = data.get("details", {})
@@ -413,6 +419,33 @@ def submit_score(current_user):
         attempts = int(attempts)
     except (TypeError, ValueError):
         return jsonify({"message": "attempts must be an integer"}), 400
+    # ---- details normalization + size cap (~50 KB JSON) ----
+    if not isinstance(details, dict):
+        details = {"raw": str(details)[:2000]}
+
+    def _cap_details(obj, cap=50_000):
+        try:
+            s = json.dumps(obj, ensure_ascii=False)
+            if len(s) <= cap:
+                return obj
+        except Exception:
+            return {"raw": "unserializable"}
+        # try targeted trim if common large fields exist
+        if isinstance(obj, dict):
+            out = dict(obj)
+            if isinstance(out.get("perDialogueLog"), list):
+                out["perDialogueLog"] = out["perDialogueLog"][:200]
+            if isinstance(out.get("items"), list):
+                out["items"] = out["items"][:200]
+            try:
+                if len(json.dumps(out, ensure_ascii=False)) <= cap:
+                    return out
+            except Exception:
+                pass
+        return {"truncated": True}
+
+    details = _cap_details(details)
+    # -----------------------------------------------
 
     s = Score(
         user_id=current_user.id,
@@ -429,7 +462,7 @@ def submit_score(current_user):
 @api_bp.route("/scores", methods=["POST"])
 @token_required
 def post_scores_alias(current_user):
-    return submit_score(current_user)
+    return _call_view(submit_score, current_user)
 
 @api_bp.route("/get_scores", methods=["GET"])
 @token_required
@@ -479,6 +512,25 @@ def my_scores(current_user):
         "id": s.id, "set_name": s.set_name, "mode": s.mode, "score": s.score, "attempts": s.attempts,
         "details": s.details, "timestamp": s.timestamp.isoformat() if s.timestamp else None
     } for s in rows])
+
+@api_bp.route("/points_event", methods=["POST"])
+@token_required
+def points_event(current_user):
+    try:
+        from .models import PointsEvent  # type: ignore
+    except Exception:
+        return jsonify({"ok": False, "error": "points_event_not_enabled"}), 501
+    data = request.get_json(silent=True) or {}
+    set_name = (data.get("set_name") or "").strip() or None
+    mode     = (data.get("mode") or "").strip() or None
+    try: points = int(data.get("points") or 0)
+    except: points = 0
+    meta = data.get("meta") if isinstance(data.get("meta"), dict) else None
+    row = PointsEvent(user_id=current_user.id, set_name=set_name, mode=mode, points=points, meta=meta)
+    db.session.add(row)
+    safe_commit()
+    return jsonify({"ok": True, "id": row.id})
+
 
 # ---------------------------
 # Stats

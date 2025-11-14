@@ -193,6 +193,7 @@ def generate_flashcard_html(set_name, data):
   <script src="static/js/api.js"></script>
   <script src="static/js/page-chrome.js" defer></script>
   <script src="static/js/audio-paths.js"></script>
+  <script src="static/js/results.js"></script>
   <script src="https://aka.ms/csspeech/jsbrowserpackageraw"></script>
 
   <script>

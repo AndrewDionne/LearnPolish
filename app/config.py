@@ -159,6 +159,23 @@ GH_TOKEN = os.getenv("GH_TOKEN") or os.getenv("GITHUB_TOKEN", "")
 
 # ---------- database ----------
 DATABASE_URL = _canon_db_url(os.getenv("DATABASE_URL", ""))
+# Local vs Render DB choice
+LOCAL_DB_URI = os.getenv("SQLALCHEMY_DATABASE_URI", "sqlite:///dev.db")
+USE_REMOTE_DB = bool(os.getenv("USE_REMOTE_DB")) or IN_RENDER or bool(os.getenv("GITHUB_ACTIONS"))
+
+def _engine_options_for(uri: str) -> dict:
+    # Defaults for any backend
+    opts = {"pool_pre_ping": True, "pool_recycle": 280, "pool_size": 5, "max_overflow": 5}
+    # Only add Postgres SSL/keepalive knobs when using Postgres
+    if uri.startswith("postgresql://") or uri.startswith("postgresql+"):
+        opts["connect_args"] = {
+            "keepalives": 1,
+            "keepalives_idle": 30,
+            "keepalives_interval": 10,
+            "keepalives_count": 5,
+            "sslmode": "require",
+        }
+    return opts
 
 # ---------- canonical Config used by Flask ----------
 class Config:
@@ -179,22 +196,9 @@ class Config:
     TEMPLATES_AUTO_RELOAD = True
 
     # DB URI + robust pool for Render Postgres over SSL
-    SQLALCHEMY_DATABASE_URI = DATABASE_URL or "sqlite:///app.db"
-    SQLALCHEMY_ENGINE_OPTIONS = {
-        "pool_pre_ping": True,         # validates before use; reconnects if dead
-        "pool_recycle": 280,           # seconds; below common 300s idle kills
-        "pool_size": 5,
-        "max_overflow": 5,
-        "connect_args": {
-            # libpq keepalives (psycopg3 honors these)
-            "keepalives": 1,
-            "keepalives_idle": 30,
-            "keepalives_interval": 10,
-            "keepalives_count": 5,
-            # Render PG usually requires SSL:
-            "sslmode": "require",
-        },
-    }
+    SQLALCHEMY_DATABASE_URI = (DATABASE_URL if USE_REMOTE_DB else LOCAL_DB_URI)
+    SQLALCHEMY_ENGINE_OPTIONS = _engine_options_for(SQLALCHEMY_DATABASE_URI)
+
 
     # Email (SMTP)
     EMAIL_PROVIDER = EMAIL_PROVIDER

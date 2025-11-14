@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <script>
+    (function(){var isGH=/\.github\.io$/i.test(location.hostname);document.write('<base href="'+(isGH?'/LearnPolish/':'/')+'">')})();
+  </script>
+  <title>Session Summary • Path to POLISH</title>
+  <link rel="stylesheet" href="static/app.css?v=5"/>
+  <style>
+    .wrap{max-width:900px;margin:0 auto 92px;padding:0 16px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin:16px 0}
+    .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .grid{display:grid;gap:12px}
+    .kv{display:grid;grid-template-columns:140px 1fr;gap:8px}
+    .muted{color:var(--muted)}
+    .badge{display:inline-block;border:1px solid var(--border);border-radius:999px;padding:4px 8px}
+  </style>
+</head>
+<body data-header="Path to Polish" data-note-lead="Session complete" data-note-tail="Here’s how you did.">
+  <header class="topbar no-nav">
+    <div class="row container">
+      <div class="header-left">
+        <a class="brand" href="index.html">
+          <svg class="brand-mark"><use href="static/brand.svg#ptp-mark"></use></svg>
+          <span id="headerBanner" class="header-banner"></span>
+        </a>
+      </div>
+      <nav class="head-actions">
+        <a href="profile.html" id="profileBtn">Profile</a>
+        <a href="login.html" id="loginLink">Sign In</a>
+        <a href="register.html" id="registerLink">Register</a>
+        <button id="logoutBtn" style="display:none;">Logout</button>
+      </nav>
+    </div>
+  </header>
+
+  <div class="wrap page-note-wrap"><div id="pageNote" class="page-note"></div></div>
+
+  <main class="wrap">
+    <section class="card">
+      <h2 style="margin:0 0 8px">Result</h2>
+      <div id="topLine" class="row"></div>
+      <div class="kv" style="margin-top:8px">
+        <div class="muted">Collection</div><div id="setName">—</div>
+        <div class="muted">Mode</div><div id="mode">—</div>
+        <div class="muted">Score</div><div id="score">—</div>
+        <div class="muted">Gold earned</div><div id="gold">—</div>
+        <div class="muted">Notes</div><div id="notes" class="muted">—</div>
+      </div>
+    </section>
+
+    <section id="breakdownCard" class="card" style="display:none;">
+      <h3 style="margin-top:0">Breakdown</h3>
+      <pre id="breakdown" style="white-space:pre-wrap;margin:0"></pre>
+    </section>
+
+    <section class="card">
+      <h3 style="margin-top:0">Progress</h3>
+      <div id="progressLine" class="row"></div>
+      <div class="muted" id="progressHint" style="margin-top:6px"></div>
+    </section>
+
+    <section class="row" style="justify-content:flex-end">
+      <a class="btn" href="learn.html">Try another set</a>
+      <a class="btn" href="dashboard.html">Dashboard</a>
+      <a class="btn btn-primary" href="index.html">Home</a>
+    </section>
+  </main>
+
+  <nav class="bottom">
+    <a href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 10.5L12 3l9 7.5V21"/></svg><span>Home</span></a>
+    <a href="learn.html" class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 12h16M4 18h9"/></svg><span>Learn</span></a>
+    <a href="dashboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 14h6V4H4v10Zm10 6h6V4h-6v16Z"/></svg><span>Dashboard</span></a>
+  </nav>
+
+  <script src="static/js/app-config.js"></script>
+  <script src="static/js/api.js"></script>
+  <script src="static/js/page-chrome.js" defer></script>
+  <script src="static/js/finish.js"></script>
+  <script>
+  (function(){
+    function qp(k){ return new URLSearchParams(location.search).get(k) || ''; }
+    const q = { set: qp('set'), mode: (qp('mode')||'').toLowerCase(), score: Number(qp('score')||0) };
+
+    let last = null;
+    try { last = JSON.parse(sessionStorage.getItem('lp.lastResult') || 'null'); } catch(_){}
+    if (!q.set && last) { q.set = last.set; q.mode = last.mode; q.score = Number(last.score||0); }
+
+    document.getElementById('meta').textContent =
+      `${q.mode ? q.mode[0].toUpperCase()+q.mode.slice(1) : 'Learn'} • ${q.set || '—'}`;
+    document.getElementById('gold').textContent = Math.max(0, Math.round(q.score||0));
+
+    // Build "Try again" href
+    document.getElementById('againBtn').href = (()=>{
+      const enc = encodeURIComponent(q.set||'');
+      if (!enc) return 'learn.html';
+      if (q.mode==='reading'||q.mode==='read')     return `reading/${enc}/`;
+      if (q.mode==='listening'||q.mode==='listen') return `listening/${enc}/`;
+      if (q.mode==='practice'||q.mode==='speak')   return `practice/${enc}/`;
+      return `flashcards/${enc}/`;
+    })();
+
+    // Normalize mode values same as server
+    function normMode(m){
+      m = (m||'').toLowerCase();
+      if (m===''||m==='learn'||m==='vocab'||m==='flashcard'||m==='flashcards') return 'flashcards';
+      if (m==='speak'||m==='practice') return 'practice';
+      if (m==='read'||m==='reading')   return 'reading';
+      if (m==='listen'||m==='listening') return 'listening';
+      return 'flashcards';
+    }
+
+    // Idempotency key (avoid double-posting the same result)
+    function keyFor(set, mode, score){
+      return 'lp.posted.'+ btoa([set,mode,score,new Date().toDateString()].join('|'));
+    }
+
+    async function submitIfNeeded(){
+      try{
+        await api.requireAuth('login.html');
+        const mode = normMode(q.mode);
+        const k = keyFor(q.set||'', mode, q.score||0);
+        if (!sessionStorage.getItem(k)){
+          const body = {
+            set_name: q.set || '',
+            mode,
+            score: Math.max(0, Math.round(q.score||0)),
+            attempts: 1,
+            // keep details tiny here; the heavy payloads come from mode pages
+            details: { summary: 'Session finished', client: 'summary' }
+          };
+          await api.fetch('/api/submit_score', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          });
+          sessionStorage.setItem(k,'1');
+        }
+      }catch(_){}
+    }
+
+    async function refreshWeeklyBar(){
+      try{
+        const r = await api.fetch('/api/my/stats');
+        if (!r.ok) return;
+        const s = await r.json();
+        const weekly = Number(s.weekly_gold ?? s.weekly_points ?? 0);
+        const goal   = Number(s.goal_gold   ?? s.goal_points   ?? 500) || 500;
+        const pct = Math.max(0, Math.min(100, Math.round((weekly/goal)*100)));
+        document.getElementById('wbar').style.width = pct + '%';
+        document.getElementById('wtext').textContent = `${weekly} / ${goal}`;
+        document.getElementById('extras').textContent =
+          `Streak: ${(s.streak_days||0)} day(s) • Best: ${(s.longest_streak||0)} day(s)`;
+      }catch(_){}
+    }
+
+    (async function run(){
+      await submitIfNeeded();
+      await refreshWeeklyBar();
+    })();
+  })();
+  </script>
+
+</body>
+</html>

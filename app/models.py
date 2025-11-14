@@ -65,6 +65,21 @@ class Score(db.Model):
     def __repr__(self) -> str:
         return f"<Score u={self.user_id} set={self.set_name} mode={self.mode} score={self.score}>"
 
+# === Gold ledger (per-award event) ===
+class PointsEvent(db.Model):
+    __tablename__ = "points_events"
+
+    id        = db.Column(db.Integer, primary_key=True)
+    user_id   = db.Column(db.Integer, db.ForeignKey("users.id"), index=True, nullable=False)
+    set_name  = db.Column(db.String(200), nullable=True, index=True)
+    mode      = db.Column(db.String(50), nullable=True, index=True)   # flashcards|practice|read|listen|speak
+    points    = db.Column(db.Integer, nullable=False, default=0)      # "gold" delta (positive)
+    meta      = db.Column(db.JSON, nullable=True)                     # optional breakdown
+    created_at= db.Column(db.DateTime, default=datetime.utcnow, index=True)
+
+    def __repr__(self) -> str:
+        return f"<PointsEvent u={self.user_id} +{self.points} {self.mode}:{self.set_name}>"
+
 
 class UserSet(db.Model):
     __tablename__ = "user_sets"

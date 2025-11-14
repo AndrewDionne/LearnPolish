@@ -214,13 +214,17 @@ def _publish_listening_audio_to_r2(set_name: str) -> None:
 
 def generate_listening_html(set_name: str, data=None):
     """
-    Generate docs/listening/<set_name>/index.html with:
-      - top site header + weekly gold bar
-      - bottom nav
-      - Play→Replay with cap
-      - 0.75× speed toggle
-      - MCQs with safe fallback distractors
-      - R2 manifest-aware audio resolution
+    Generate docs/listening/<set_name>/index.html and sw.js.
+
+    UI/UX:
+      - Dual-host <base> (GH Pages vs Flask), topbar/page-chrome, bottom nav
+      - Player: Play/Replay, 0.75× toggle, length display, replay cap
+      - MCQs: Gist + Detail with stable shuffles, tries, earned gold
+      - Transcript reveal after answering
+      - R2 manifest-aware audio resolution via AudioPaths.resolveListening
+      - Offline caching buttons (⬇️ Offline / 🗑 Remove), cache-first SW
+      - Performance: manifest prefetch, preloading current+next audio,
+        canplaythrough gating, minimal DOM churn
     """
     out_dir = PAGES_DIR / "listening" / set_name
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -232,464 +236,643 @@ def generate_listening_html(set_name: str, data=None):
     dialogues = normalize_listening_items(set_name, data)
     dlg_json = json.dumps(dialogues, ensure_ascii=False).replace(r"</", r"<\/")
 
-    title = f"{_esc(set_name)} • Listening"
+    title = f"Listening • {_esc(set_name)} • Path to POLISH"
 
     html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Dual-host <base>: GitHub Pages vs Flask -->
+  <script>
+    (function () {{
+      var isGH = /\\.github\\.io$/i.test(location.hostname);
+      var baseHref = isGH ? '/LearnPolish/' : '/';
+      document.write('<base href="' + baseHref + '">');
+    }})();
+  </script>
+
   <title>{title}</title>
+  <link rel="stylesheet" href="static/app.css?v=5" />
+  <link rel="icon" type="image/svg+xml" href="../../static/brand.svg" />
+
   <style>
-    :root{{ --brand:#2d6cdf; --bg:#0b0c10; --card:#121418; --text:#e9ecf1; --muted:#8b94a7; --border:#1e2230; --good:#2dcf6c; --bad:#ff5a5f; --pad:16px; --radius:14px; --shadow:0 8px 24px rgba(0,0,0,.25); }}
-    @media (prefers-color-scheme: light){{ :root{{ --bg:#f7f7fb; --card:#fff; --text:#0c0f14; --muted:#5a6472; --border:#e6e6ef; --shadow:0 8px 24px rgba(0,0,0,.08); }} }}
-    *{{ box-sizing:border-box }}
-    html,body{{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Inter,system-ui,sans-serif}}
-    .wrap{{max-width:900px;margin:0 auto;padding:16px}}
-    .card{{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;margin:16px 0}}
-    /* Top site header + gold bar */
-    .site-header{{position:sticky;top:0;z-index:20;background:var(--card);border-bottom:1px solid var(--border)}}
-    .site-header .row{{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px}}
-    .brand{{font-weight:800;letter-spacing:.2px}}
-    .gold-wrap{{display:flex;align-items:center;gap:8px}}
-    .goldbar{{width:140px;height:8px;border-radius:999px;background:rgba(45,108,223,.15);overflow:hidden}}
-    .goldbar .fill{{height:100%;width:0;border-radius:999px;background:#2d6cdf;transition:width .25s ease}}
-    .gold-label{{font-size:12px;opacity:.8}}
+    .wrap{{ max-width:900px; margin:0 auto 92px; padding:0 16px; }}
+    .stack{{ display:grid; gap:16px }}
+    .row{{ display:flex; align-items:center; gap:10px; flex-wrap:wrap }}
+    .card{{ background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px }}
 
-    header.page{{padding:12px 16px}}
-    .title{{font-weight:700}}
-    .pill{{font-size:.95rem;color:var(--muted)}}
+    .toolbar .btn{{ display:inline-flex; align-items:center; gap:8px; padding:10px 14px; border-radius:10px;
+      border:1px solid var(--border); background:var(--card); cursor:pointer }}
+    .btn-primary{{ background:var(--brand); border-color:var(--brand); color:#fff }}
+    .btn:disabled{{ opacity:.6; cursor:default }}
 
-    .player{{display:flex;gap:12px;align-items:center;flex-wrap:wrap}}
-    button{{appearance:none;border:0;background:var(--brand);color:#fff;border-radius:12px;padding:10px 14px;font-weight:600;cursor:pointer}}
-    button.ghost{{background:transparent;color:var(--text);border:1px solid var(--border)}}
-    button[disabled]{{opacity:.5;cursor:not-allowed}}
+    .meta{{ color:var(--muted); font-size:.95rem }}
+    .section-title{{ font-weight:700; margin:0 0 6px }}
 
-    .speed-btn{{border:1px solid var(--border);background:var(--card);color:var(--text);border-radius:10px;padding:6px 10px}}
-    .speed-btn.active{{background:rgba(45,108,223,.12);color:#2d6cdf;border-color:transparent}}
-    .play-btn.replay::before{{content:"↻ ";}}
+    .player{{ display:flex; gap:12px; align-items:center; flex-wrap:wrap }}
+    .speed-btn{{ border:1px solid var(--border); background:var(--card); color:var(--text); border-radius:10px; padding:6px 10px }}
+    .speed-btn.active{{ background:rgba(45,108,223,.12); color:#2d6cdf; border-color:transparent }}
+    .play-btn.replay::before{{ content:"↻ "; }}
 
-    .choices{{display:grid;grid-template-columns:1fr;gap:10px;margin-top:10px}}
-    .choice{{background:#1a1f27;border:1px solid rgba(128,128,128,.25);padding:12px;border-radius:12px;text-align:left}}
-    @media (prefers-color-scheme: light){{ .choice{{background:#fff}} }}
-    .choice.correct{{outline:2px solid var(--good)}}
-    .choice.wrong{{outline:2px solid var(--bad)}}
-    .meta{{display:flex;gap:12px;align-items:center;color:var(--muted);font-size:.95rem}}
-    .section-title{{font-weight:700;margin:0 0 6px}}
-    .hidden{{display:none}}
-    .tr{{white-space:pre-wrap;color:var(--muted)}}
-    .footer{{display:flex;justify-content:space-between;align-items:center;margin:12px 0 96px}}
+    .choices{{ display:grid; grid-template-columns:1fr; gap:10px; margin-top:10px }}
+    .choice{{ background:var(--card); border:1px solid var(--border); padding:12px; border-radius:12px; text-align:left }}
+    .choice.correct{{ outline:2px solid var(--gold) }}
+    .choice.wrong{{ outline:2px solid #ff5a5f }}
 
-    /* Bottom nav */
-    nav.bottom{{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--border);display:flex;justify-content:space-around;padding:6px 8px;gap:8px}}
-    nav.bottom a{{flex:1;text-align:center;padding:8px;text-decoration:none;color:var(--text);border-radius:10px;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12px}}
-    nav.bottom a svg{{width:20px;height:20px}}
-    nav.bottom a.active{{background:rgba(45,108,223,.12);color:#2d6cdf}}
-    @supports(padding: max(0px)){{ nav.bottom{{ padding-bottom: max(6px, env(safe-area-inset-bottom)) }} }}
+    .tr{{ white-space:pre-wrap; color:var(--muted) }}
+    .footer{{ display:flex; justify-content:space-between; align-items:center; margin:12px 0 0 }}
+    .hidden{{ display:none }}
+
+    /* Debug overlay (toggle via ?debug=1) */
+    #dbg{{ display:none; position:fixed; bottom:8px; left:8px; right:8px; max-height:44vh; overflow:auto;
+      background:#000; color:#0f0; padding:8px 10px; border-radius:10px; font-family:ui-monospace, Menlo, monospace;
+      font-size:12px; white-space:pre-wrap; z-index:9999 }}
   </style>
 </head>
-<body>
-  <header class="site-header">
-    <div class="row">
-      <div class="brand">Path to POLISH</div>
-      <div class="gold-wrap">
-        <div class="goldbar"><div id="goldFill" class="fill"></div></div>
-        <span id="goldLabel" class="gold-label">0 / 500</span>
+<body
+  data-header="Path to Polish"
+  data-note-lead="Listening"
+  data-note-tail="{_esc(set_name)}"
+  style="--logo-size:40px; --banner-size:24px; --banner-size-lg:30px">
+
+  <!-- Header (brand + auth) -->
+  <header class="topbar no-nav">
+    <div class="row container">
+      <div class="header-left">
+        <a class="brand" href="index.html" aria-label="Path to Polish — Home">
+          <svg class="brand-mark" aria-hidden="true" focusable="false">
+            <use href="static/brand.svg#ptp-mark"></use>
+          </svg>
+          <span id="headerBanner" class="header-banner"></span>
+        </a>
       </div>
+      <nav class="head-actions">
+        <a href="profile.html"  id="profileBtn">Profile</a>
+        <a href="login.html"    id="loginLink">Sign In</a>
+        <a href="register.html" id="registerLink">Register</a>
+        <button id="logoutBtn" style="display:none;">Logout</button>
+      </nav>
     </div>
   </header>
 
-  <header class="page wrap">
-    <div class="title">🎧 Listening • {_esc(set_name)}</div>
-    <div class="pill"><span id="gold">0</span> gold • <span id="progress">0/0</span></div>
-  </header>
+  <!-- Tight page note -->
+  <div class="wrap page-note-wrap">
+    <div id="pageNote" class="page-note"></div>
+  </div>
 
-  <main class="wrap">
-    <div class="card">
-      <div class="meta"><span id="countLabel"></span><span id="lengthLabel"></span><span id="replayLabel"></span></div>
+  <!-- Main -->
+  <main class="wrap stack">
+    <section class="card">
+      <div class="row toolbar">
+        <div id="countLabel" class="meta">Dialog 1</div>
+        <div id="lengthLabel" class="meta"></div>
+        <div id="replayLabel" class="meta"></div>
+        <div style="flex:1"></div>
+        <button id="btnOffline" class="btn">⬇️ Offline</button>
+        <button id="btnOfflineRm" class="btn" style="display:none;">🗑 Remove</button>
+      </div>
+
       <div class="player" style="margin-top:8px;">
-        <button id="playBtn" class="play-btn" type="button">Play</button>
+        <button id="playBtn" class="play-btn btn btn-primary" type="button">Play</button>
         <button id="speedBtn" class="speed-btn" type="button" aria-pressed="false" title="Toggle 0.75×">0.75×</button>
         <audio id="audio" preload="auto"></audio>
       </div>
-    </div>
+      <div id="offlineStatus" class="meta" style="margin-top:6px"></div>
+    </section>
 
-    <div class="card" id="gistCard" aria-live="polite">
+    <section class="card" id="gistCard" aria-live="polite">
       <div class="section-title">Gist</div>
       <div id="gistPrompt"></div>
       <div class="choices" id="gistChoices"></div>
-    </div>
+    </section>
 
-    <div class="card" id="detailCard" aria-live="polite">
+    <section class="card" id="detailCard" aria-live="polite">
       <div class="section-title">Details</div>
       <div id="detailPrompt"></div>
       <div class="choices" id="detailChoices"></div>
-    </div>
+    </section>
 
-    <div class="card" id="revealCard">
+    <section class="card" id="revealCard">
       <div class="section-title">Transcript</div>
       <div class="tr" id="plText"></div>
       <div style="height:6px"></div>
       <div class="section-title">English</div>
       <div class="tr" id="enText"></div>
-    </div>
+    </section>
 
-    <div class="footer">
-      <div></div>
-      <div class="row"><button id="nextBtn" disabled>Next ▶</button></div>
-    </div>
+    <section class="footer">
+      <div class="meta"><b id="gold">0</b> gold • <span id="progress">0/0</span></div>
+      <div class="row"><button id="nextBtn" class="btn" disabled>Next ▶</button></div>
+    </section>
 
-    <div class="card hidden" id="summaryCard">
+    <section class="card hidden" id="summaryCard">
       <div class="section-title">Session Summary</div>
-      <div id="summaryBody"></div>
+      <div id="summaryBody" style="white-space:pre-wrap"></div>
       <div class="row" style="margin-top:10px;">
-        <button id="restartBtn" class="ghost">Restart</button>
-        <button id="toHomeBtn">Done</button>
+        <button id="restartBtn" class="btn">Restart</button>
+        <button id="toHomeBtn" class="btn btn-primary">Done</button>
       </div>
-    </div>
+    </section>
   </main>
 
   <!-- Bottom nav -->
-  <nav class="bottom">
-    <a href="../../index.html">
+  <nav class="bottom" aria-label="Primary">
+    <a href="index.html">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1v-10.5Z" stroke-width="1.5"/></svg>
       <span>Home</span>
     </a>
-    <a href="../../learn.html">
+    <a href="learn.html" class="active" aria-current="page">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 12h16M4 18h9" stroke-width="1.5" stroke-linecap="round"/></svg>
       <span>Learn</span>
     </a>
-    <a href="../../manage_sets/">
+    <a href="manage_sets/index.html">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="16" rx="2" ry="2" stroke-width="1.5"/><path d="M7 8h10M7 12h10M7 16h7" stroke-width="1.5" stroke-linecap="round"/></svg>
       <span>Library</span>
     </a>
-    <a href="../../dashboard.html">
+    <a href="dashboard.html">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 14h6V4H4v10Zm10 6h6V4h-6v16Z" stroke-width="1.5"/></svg>
       <span>Dashboard</span>
     </a>
-    <a href="../../groups.html">
+    <a href="groups.html">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm-9 9a9 9 0 0 1 18 0" stroke-width="1.5" stroke-linecap="round"/></svg>
       <span>Groups</span>
     </a>
   </nav>
 
-  <script src="../../static/js/app-config.js"></script>
-  <script src="../../static/js/api.js"></script>
-  <script src="../../static/js/audio-paths.js"></script>
-
+  <!-- Scripts -->
+  <script src="static/js/app-config.js"></script>
+  <script src="static/js/api.js"></script>
+  <script src="static/js/page-chrome.js" defer></script>
+  <script src="static/js/audio-paths.js"></script>
+  <script src="static/js/results.js"></script>
 
   <script>
-// ---- Manifest (shared helper) ----
-let r2Manifest = null;
-const SET_NAME = {json.dumps(set_name)};
+    // ---------- Data / State ----------
+    const SET_NAME = {json.dumps(set_name)};
+    const DIALOGUES = {dlg_json};
 
-  function repoBase(){{
-    if (location.hostname === "andrewdionne.github.io") {{
-      const parts = location.pathname.split("/").filter(Boolean);
-      const repo = parts.length ? parts[0] : "LearnPolish";
-      return "/" + repo;
-    }}
-    return "";
-  }}
-  function apiFetch(path, init) {{
-    // Prefer global api.js helper if present
-    if (window.api && typeof window.api.fetch === 'function') {{
-      return window.api.fetch(path, init);
-    }}
-    // Otherwise, try app-config.js (APP_CONFIG.apiBase or APP_CONFIG.API_BASE)
-    const base = (window.APP_CONFIG && (APP_CONFIG.apiBase || APP_CONFIG.API_BASE)) || '';
-    const prefix = base ? base.replace(/\\/$/, '') : '';
-    return fetch(prefix + path, init);
-  }}
+    let r2Manifest = null;
+    const $ = (id) => document.getElementById(id);
 
+    const audioEl = $("audio");
+    const playBtn = $("playBtn");
+    const speedBtn = $("speedBtn");
+    const nextBtn = $("nextBtn");
 
-  function resolveAudioUrl(it) {{
-    // 1) absolute URL is honored as-is (audio_url)
-    const abs = (it.audio_url || '').trim();
-    if (abs && /^(https?:)?\\/\\/|^\\/\\//i.test(abs)) return abs;
+    const gistCard = $("gistCard"), gistPrompt = $("gistPrompt"), gistChoices = $("gistChoices");
+    const detailCard = $("detailCard"), detailPrompt = $("detailPrompt"), detailChoices = $("detailChoices");
+    const revealCard = $("revealCard"), plText = $("plText"), enText = $("enText");
+    const summaryCard = $("summaryCard"), summaryBody = $("summaryBody");
 
-    // 2) also honor absolute in `audio` (after normalization/coercion)
-    const absAudio = (it.audio || '').trim();
-    if (absAudio && /^(https?:)?\\/\\/|^\\/\\//i.test(absAudio)) return absAudio;
+    const goldLbl = $("gold"), progressLbl = $("progress");
+    const countLabel = $("countLabel"), lengthLabel = $("lengthLabel"), replayLabel = $("replayLabel");
+    const offlineStatus = $("offlineStatus");
 
-    // 3) set-relative static key (e.g., "listening/d001.mp3")
-    const rel = (it.audio || '').trim().replace(/^\\/+/, '');
-    if (!rel) return '';
+    const state = {{
+      i: 0,
+      gold: 0,
+      slowOn: false,
+      slowCharged: false,
+      replays: 0,
+      answeredGist: false,
+      answeredDetail: false,
+      wrongGist: 0,
+      wrongDetail: 0,
+      gistTriesLeft: 3,
+      detailTriesLeft: 3,
+      currentDurationS: 0,
+      started:false,
+      perDialogueLog:[],
+      preloaded: Object.create(null)  // index -> HTMLAudioElement
+    }};
 
-    // 4) R2 manifest lookup: listening/<set>/<file>
-    const file = rel.split('/').pop();
-    const key = `listening/${{SET_NAME}}/${{file}}`;
-
-    if (r2Manifest && r2Manifest.files && r2Manifest.files[key]) return r2Manifest.files[key];
-    if (r2Manifest && r2Manifest.assetsBase) {{
-      return r2Manifest.assetsBase.replace(/\\/$/, '') + '/' + key;
-    }}
-
-    // 5) Fallback to static (GH Pages vs local dev)
-    if (location.hostname === "andrewdionne.github.io") {{
-      return repoBase() + `/static/${{SET_NAME}}/${{rel}}`;
-    }}
-    // Local dev (Flask): use relative docs/static path to match other modes
-    return "../../static/" + encodeURIComponent(SET_NAME) + "/" + rel;
-  }}
-
-
-  // ---- Config ----
-  const CONFIG = {{
-    sessionBonus: 20,
-    basePerDialogue: 10,
-    lengthBonusEverySec: 20,
-    lengthBonusCap: 5,
-    slowCost: 2,
-    replayCost: 1,
-    wrongCost: 1,
-    replayMax: 3,
-    weightGist: 0.4,
-    weightDetail: 0.6,
-    triesPerQuestion: 3,
-  }};
-
-  const DIALOGUES = {dlg_json};
-
-  // ---- State / DOM ----
-  const $ = (id) => document.getElementById(id);
-  const audioEl = $("audio");
-  const playBtn = $("playBtn");
-  const speedBtn = $("speedBtn");
-  const nextBtn = $("nextBtn");
-  const gistCard = $("gistCard"), gistPrompt = $("gistPrompt"), gistChoices = $("gistChoices");
-  const detailCard = $("detailCard"), detailPrompt = $("detailPrompt"), detailChoices = $("detailChoices");
-  const revealCard = $("revealCard"), plText = $("plText"), enText = $("enText");
-  const summaryCard = $("summaryCard"), summaryBody = $("summaryBody");
-  const goldLbl = $("gold"), progressLbl = $("progress");
-  const countLabel = $("countLabel"), lengthLabel = $("lengthLabel"), replayLabel = $("replayLabel");
-
-  const state = {{
-    i: 0, gold: 0, slowOn: false, slowCharged: false,
-    replays: 0, answeredGist: false, answeredDetail: false,
-    wrongGist: 0, wrongDetail: 0, gistTriesLeft: CONFIG.triesPerQuestion,
-    detailTriesLeft: CONFIG.triesPerQuestion, currentDurationS: 0,
-    started:false, perDialogueLog:[]
-  }};
-
-  // ---- UI helpers ----
-  function setHidden(el, h=true){{ el.classList.toggle("hidden", h); }}
-  function shuffle(a){{ for(let i=a.length-1;i>0;i--){{const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}} return a; }}
-
-  function setHeader(){{
-    goldLbl.textContent = state.gold;
-    progressLbl.textContent = `${{state.i+1}}/${{DIALOGUES.length}}`;
-    countLabel.textContent = `Dialog ${{state.i+1}} of ${{DIALOGUES.length}}`;
-    const dur = (DIALOGUES[state.i]?.duration_s || state.currentDurationS || 0);
-    lengthLabel.textContent = dur ? `• ${{dur}}s` : "";
-    replayLabel.textContent = `• Replays left: ${{Math.max(0, CONFIG.replayMax - state.replays)}}`;
-  }}
-
-  function beginSessionIfNeeded(){{
-    if(!state.started){{ state.gold += CONFIG.sessionBonus; state.started = true; goldLbl.textContent = state.gold; }}
-  }}
-
-  function loadAudio(it){{
-    let src = "";
-    try {{
-      src = AudioPaths.resolveListening(SET_NAME, it, r2Manifest);
-    }} catch (_e) {{
-      src = "";
-    }}
-
-    if (!src) {{ console.warn("No audio for item", it); audioEl.removeAttribute("src"); return; }}
-    audioEl.src = src;
-    audioEl.playbackRate = state.slowOn ? 0.75 : 1.0;
-  }}
-
-  function computePool(it){{
-    const dur = (it.duration_s || state.currentDurationS || 0);
-    const lenBonus = Math.min(CONFIG.lengthBonusCap, Math.floor(dur / CONFIG.lengthBonusEverySec));
-    let pool = CONFIG.basePerDialogue + lenBonus;
-    if(state.slowCharged) pool -= CONFIG.slowCost;
-    pool -= state.replays * CONFIG.replayCost;
-    const gShare = pool * CONFIG.weightGist;
-    const dShare = pool * CONFIG.weightDetail;
-    const gEarn = Math.max(0, Math.floor(gShare - state.wrongGist*CONFIG.wrongCost));
-    const dEarn = Math.max(0, Math.floor(dShare - state.wrongDetail*CONFIG.wrongCost));
-    return Math.max(0, gEarn + dEarn);
-  }}
-
-  function resetPerDialogue(){{
-    state.slowOn = false; state.slowCharged = false; speedBtn.classList.remove('active'); speedBtn.textContent='0.75×'; speedBtn.setAttribute('aria-pressed','false');
-    state.replays = 0; state.answeredGist = false; state.answeredDetail = false;
-    state.wrongGist = 0; state.wrongDetail = 0;
-    state.gistTriesLeft = CONFIG.triesPerQuestion; state.detailTriesLeft = CONFIG.triesPerQuestion;
-    state.currentDurationS = 0;
-    nextBtn.disabled = true;
-    gistChoices.innerHTML = ""; detailChoices.innerHTML = "";
-    setHidden(gistCard,true); setHidden(detailCard,true); setHidden(revealCard,true);
-  }}
-
-  function startDialogue(idx){{
-    if(idx >= DIALOGUES.length) return endSession();
-    resetPerDialogue();
-    const it = DIALOGUES[idx];
-    state.currentDurationS = Math.round(it?.duration_s||0);
-    setHeader();
-    loadAudio(it);
-    playBtn.classList.remove('replay'); playBtn.textContent = 'Play';
-  }}
-
-  function endSession(){{
-    setHidden(gistCard,true); setHidden(detailCard,true); setHidden(revealCard,true);
-    setHidden(summaryCard,false);
-    const rows = state.perDialogueLog.map((r,k)=>`#${{k+1}} • +${{r.payout}} gold • replay:${{r.replays}} • slow:${{r.slow?'y':'n'}} • gist×${{r.wrongGist}} • detail×${{r.wrongDetail}}`).join("\\n");
-    summaryBody.textContent = `Total gold: ${{state.gold}}\\n\\n${{rows}}`;
-  }}
-
-  function renderGist(it){{
-    const g = it.gist || {{}};
-    setHidden(gistCard,false);
-    gistPrompt.textContent = g.prompt || "Which best matches the audio?";
-    const opts = shuffle([ g.correct, ...(g.distractors||[]).slice(0,3) ]);
-    gistChoices.innerHTML = "";
-    opts.forEach(txt=>{{
-      const b = document.createElement('button');
-      b.className='choice'; b.textContent = txt || "—";
-      b.onclick = ()=> onGistAnswer(it, b, txt === g.correct);
-      gistChoices.appendChild(b);
-    }});
-  }}
-
-  function renderDetail(it){{
-    const d = it.detail || {{}};
-    setHidden(detailCard,false);
-    detailPrompt.textContent = d.prompt || "What exactly did you hear (in Polish)?";
-    const bank = (d.distractor_bank||[]).filter(x=>x && x!==d.correct);
-    const opts = shuffle([ d.correct, ...bank.slice(0,3) ]);
-    detailChoices.innerHTML = "";
-    opts.forEach(txt=>{{
-      const b = document.createElement('button');
-      b.className='choice'; b.textContent = txt || "—";
-      b.onclick = ()=> onDetailAnswer(it, b, txt === d.correct);
-      detailChoices.appendChild(b);
-    }});
-  }}
-
-  function lockButtons(containerId){{ [...document.getElementById(containerId).children].forEach(c=>c.disabled=true); }}
-
-  function onGistAnswer(it, btn, ok){{
-    if(state.answeredGist) return;
-    if(ok){{ btn.classList.add('correct'); state.answeredGist=true; lockButtons('gistChoices'); if(!state.answeredDetail) renderDetail(it); if(state.answeredDetail) finalize(it); }}
-    else {{
-      btn.classList.add('wrong'); btn.disabled=true; state.wrongGist++; state.gistTriesLeft--;
-      if(state.gistTriesLeft<=0){{ state.answeredGist=true; [...gistChoices.children].forEach(c=>{{ if(c.textContent==(it.gist?.correct||'')) c.classList.add('correct'); c.disabled=true; }}); if(!state.answeredDetail) renderDetail(it); if(state.answeredDetail) finalize(it); }}
-    }}
-  }}
-
-  function onDetailAnswer(it, btn, ok){{
-    if(state.answeredDetail) return;
-    if(ok){{ btn.classList.add('correct'); state.answeredDetail=true; lockButtons('detailChoices'); if(state.answeredGist) finalize(it); }}
-    else {{
-      btn.classList.add('wrong'); btn.disabled=true; state.wrongDetail++; state.detailTriesLeft--;
-      if(state.detailTriesLeft<=0){{ state.answeredDetail=true; [...detailChoices.children].forEach(c=>{{ if(c.textContent==(it.detail?.correct||'')) c.classList.add('correct'); c.disabled=true; }}); if(state.answeredGist) finalize(it); }}
-    }}
-  }}
-
-  function finalize(it){{
-    const gained = computePool(it);
-    state.gold += gained;
-    state.perDialogueLog.push({{
-      id: it.id||`d${{state.i+1}}`,
-      slow: state.slowCharged, replays: state.replays,
-      wrongGist: state.wrongGist, wrongDetail: state.wrongDetail,
-      payout: gained, duration_s: it.duration_s || state.currentDurationS || 0
-    }});
-    goldLbl.textContent = state.gold;
-    plText.textContent = it.transcript_pl || "(no transcript)";
-    enText.textContent = it.translation_en || "";
-    setHidden(revealCard,false);
-    nextBtn.disabled = false;
-  }}
-
-  // ---- Controls ----
-  (function wirePlayReplay(){{
-    let hasPlayed=false;
-    playBtn.addEventListener('click', ()=>{{
-      beginSessionIfNeeded();
-      if(hasPlayed){{
-        if(state.replays >= CONFIG.replayMax) return;
-        state.replays++;
-        setHeader();
+    // ---------- Helpers ----------
+    function setHidden(el, h=true){{ el.classList.toggle("hidden", h); }}
+    function shuffleStable(arr){{
+      // Stable shuffle by seeding with dialog index to keep answers consistent per load
+      const seed = (state.i+1) * 9301 + 49297; // simple LCG seed
+      let a = arr.slice();
+      let s = seed;
+      for (let i=a.length-1;i>0;i--) {{
+        s = (s * 1103515245 + 12345) & 0x7fffffff;
+        const j = s % (i+1);
+        [a[i],a[j]] = [a[j],a[i]];
       }}
-      audioEl.currentTime = 0;
-      audioEl.play().catch(()=>{{}});
-    }});
-    audioEl.addEventListener('play', ()=>{{
-      if(!hasPlayed){{
-        hasPlayed = true;
-        playBtn.classList.add('replay');
-        playBtn.textContent = 'Replay';
-      }}
-    }});
-    audioEl.addEventListener('ended', ()=>{{ renderGist(DIALOGUES[state.i]); }});
-    audioEl.addEventListener('loadedmetadata', ()=>{{
-      const d = isFinite(audioEl.duration) ? Math.round(audioEl.duration) : 0;
-      if(d>0) state.currentDurationS = d;
-      setHeader();
-    }});
-  }})();
+      return a;
+    }}
+    function updateHeader(){{
+      goldLbl.textContent = state.gold;
+      progressLbl.textContent = `${{state.i+1}}/${{DIALOGUES.length}}`;
+      countLabel.textContent = `Dialog ${{state.i+1}} of ${{DIALOGUES.length}}`;
+      const dur = (DIALOGUES[state.i]?.duration_s || state.currentDurationS || 0);
+      lengthLabel.textContent = dur ? `• ${{dur}}s` : "";
+      replayLabel.textContent = `• Replays left: ${{Math.max(0, 3 - state.replays)}}`;
+    }}
+    function beginSessionIfNeeded(){{
+      if(!state.started){{ state.gold += 20; state.started = true; goldLbl.textContent = state.gold; }}
+    }}
 
-  (function wireSpeed(){{
-    function apply(){{
+    // ---------- Audio paths / manifest ----------
+    async function loadManifest(){{
+      try {{ r2Manifest = await AudioPaths.fetchManifest(SET_NAME); }} catch(_e) {{ r2Manifest = null; }}
+    }}
+    function resolveAudio(it){{
+      try {{ return AudioPaths.resolveListening(SET_NAME, it, r2Manifest); }}
+      catch(_e) {{ return ""; }}
+    }}
+
+    // ---------- Preloading (speed-up) ----------
+    function preloadAudio(idx){{
+      if (state.preloaded[idx]) return;
+      const it = DIALOGUES[idx];
+      if (!it) return;
+      const src = resolveAudio(it);
+      if (!src) return;
+      const a = new Audio();
+      a.preload = 'auto';
+      a.src = src;
+      // Trigger download; catch to avoid autoplay warnings
+      a.load();
+      state.preloaded[idx] = a;
+    }}
+
+    // ---------- Scoring / gold ----------
+    function computePayout(it){{
+      const dur = (it.duration_s || state.currentDurationS || 0);
+      const lenBonus = Math.min(5, Math.floor(dur / 20));  // +1 per 20s, cap 5
+      let pool = 10 + lenBonus;
+      if(state.slowCharged) pool -= 2;
+      pool -= state.replays * 1;
+      const gShare = pool * 0.4;
+      const dShare = pool * 0.6;
+      const gEarn = Math.max(0, Math.floor(gShare - state.wrongGist*1));
+      const dEarn = Math.max(0, Math.floor(dShare - state.wrongDetail*1));
+      return Math.max(0, gEarn + dEarn);
+    }}
+
+    function resetPerDialogue(){{
+      state.slowOn = false; state.slowCharged = false;
+      speedBtn.classList.remove('active'); speedBtn.textContent='0.75×'; speedBtn.setAttribute('aria-pressed','false');
+      state.replays = 0; state.answeredGist = false; state.answeredDetail = false;
+      state.wrongGist = 0; state.wrongDetail = 0;
+      state.gistTriesLeft = 3; state.detailTriesLeft = 3;
+      state.currentDurationS = 0;
+      nextBtn.disabled = true;
+      gistChoices.innerHTML = ""; detailChoices.innerHTML = "";
+      setHidden(gistCard,true); setHidden(detailCard,true); setHidden(revealCard,true);
+    }}
+
+    function startDialogue(idx){{
+      if(idx >= DIALOGUES.length) return endSession();
+      resetPerDialogue();
+      const it = DIALOGUES[idx];
+
+      // Prefer preloaded element if present; fallback to set src directly
+      const pre = state.preloaded[idx];
+      if (pre) {{
+        // Rebind the preloaded element into place to keep events
+        audioEl.src = pre.src;
+      }} else {{
+        audioEl.src = resolveAudio(it) || '';
+      }}
+
       audioEl.playbackRate = state.slowOn ? 0.75 : 1.0;
-      speedBtn.classList.toggle('active', state.slowOn);
-      speedBtn.setAttribute('aria-pressed', state.slowOn ? 'true' : 'false');
-      speedBtn.textContent = state.slowOn ? '1.0×' : '0.75×';
-      speedBtn.title = state.slowOn ? 'Back to 0.75×' : 'Switch to 0.75×';
+      playBtn.classList.remove('replay'); playBtn.textContent = 'Play';
+
+      // Preload NEXT in idle time
+      (window.requestIdleCallback || window.setTimeout)(()=> preloadAudio(idx+1), 50);
+      updateHeader();
     }}
-    speedBtn.addEventListener('click', ()=>{{
-      if(!state.slowOn && !state.slowCharged) state.slowCharged = true;
-      state.slowOn = !state.slowOn; apply();
+
+    async function endSession(){{
+      // 1) Try posting score (safe if token present; ignore errors)
+      try{{
+        await api.requireAuth('../../login.html');
+        const details = {{ perDialogueLog: state.perDialogueLog, total_gold: state.gold }};
+        await api.fetch('/api/submit_score', {{
+          method:'POST',
+          headers:{{'Content-Type':'application/json'}},
+          body: JSON.stringify({{
+            set_name: SET_NAME,
+            mode: 'listening',
+            score: Math.max(0, Math.round(state.gold||0)),
+            attempts: 1,
+            details
+          }})
+        }});
+      }}catch(_){{}}
+
+      // 2) Persist a lightweight lastResult for summary.html (optional)
+      try {{
+        sessionStorage.setItem('lp.lastResult', JSON.stringify({{
+          set: SET_NAME, mode: 'listening', score: Math.max(0, Math.round(state.gold||0))
+        }}));
+      }} catch(_){{}}
+
+      // 3) Redirect to unified summary page (it will also fetch weekly/streak)
+      location.href = '../../summary.html'
+        + '?set='  + encodeURIComponent(SET_NAME)
+        + '&mode=' + 'listening'
+        + '&score='+ encodeURIComponent(Math.max(0, Math.round(state.gold||0)));
+    }}
+
+
+
+    // ---------- MCQs ----------
+    function renderGist(it){{
+      setHidden(gistCard,false);
+      const g = it.gist || {{}};
+      gistPrompt.textContent = g.prompt || "Which best matches the audio?";
+      const opts = shuffleStable([ g.correct, ...(g.distractors||[]).slice(0,3) ]);
+      gistChoices.innerHTML = "";
+      for (const txt of opts) {{
+        const b = document.createElement('button');
+        b.className='choice'; b.textContent = txt || "—";
+        b.onclick = ()=> onGist(it, b, txt === g.correct);
+        gistChoices.appendChild(b);
+      }}
+    }}
+    function renderDetail(it){{
+      setHidden(detailCard,false);
+      const d = it.detail || {{}};
+      detailPrompt.textContent = d.prompt || "What exactly did you hear (in Polish)?";
+      const bank = (d.distractor_bank||[]).filter(x=>x && x!==d.correct);
+      const opts = shuffleStable([ d.correct, ...bank.slice(0,3) ]);
+      detailChoices.innerHTML = "";
+      for (const txt of opts) {{
+        const b = document.createElement('button');
+        b.className='choice'; b.textContent = txt || "—";
+        b.onclick = ()=> onDetail(it, b, txt === d.correct);
+        detailChoices.appendChild(b);
+      }}
+    }}
+    function lockButtons(el){{ [...el.children].forEach(c=>c.disabled=true); }}
+
+    function onGist(it, btn, ok){{
+      if(state.answeredGist) return;
+      if(ok){{
+        btn.classList.add('correct'); state.answeredGist=true; lockButtons(gistChoices);
+        if(!state.answeredDetail) renderDetail(it);
+        if(state.answeredDetail) finalize(it);
+      }} else {{
+        btn.classList.add('wrong'); btn.disabled=true; state.wrongGist++; state.gistTriesLeft--;
+        if(state.gistTriesLeft<=0){{
+          state.answeredGist=true;
+          [...gistChoices.children].forEach(c=>{{ if(c.textContent==(it.gist?.correct||'')) c.classList.add('correct'); c.disabled=true; }});
+          if(!state.answeredDetail) renderDetail(it);
+          if(state.answeredDetail) finalize(it);
+        }}
+      }}
+    }}
+    function onDetail(it, btn, ok){{
+      if(state.answeredDetail) return;
+      if(ok){{
+        btn.classList.add('correct'); state.answeredDetail=true; lockButtons(detailChoices);
+        if(state.answeredGist) finalize(it);
+      }} else {{
+        btn.classList.add('wrong'); btn.disabled=true; state.wrongDetail++; state.detailTriesLeft--;
+        if(state.detailTriesLeft<=0){{
+          state.answeredDetail=true;
+          [...detailChoices.children].forEach(c=>{{ if(c.textContent==(it.detail?.correct||'')) c.classList.add('correct'); c.disabled=true; }});
+          if(state.answeredGist) finalize(it);
+        }}
+      }}
+    }}
+
+    function finalize(it){{
+      const gained = computePayout(it);
+      state.gold += gained;
+      state.perDialogueLog.push({{
+        id: it.id||`d${{state.i+1}}`,
+        slow: state.slowCharged, replays: state.replays,
+        wrongGist: state.wrongGist, wrongDetail: state.wrongDetail,
+        payout: gained, duration_s: it.duration_s || state.currentDurationS || 0
+      }});
+      goldLbl.textContent = state.gold;
+      plText.textContent = it.transcript_pl || "(no transcript)";
+      enText.textContent = it.translation_en || "";
+      setHidden(revealCard,false);
+      nextBtn.disabled = false;
+    }}
+
+    // ---------- Controls ----------
+    (function wirePlayReplay(){{
+      let hasPlayed=false;
+
+      playBtn.addEventListener('click', ()=>{{
+        beginSessionIfNeeded();
+        if(hasPlayed){{
+          if(state.replays >= 3) return;
+          state.replays++; updateHeader();
+        }}
+        // Prefer preloaded element for seek/play
+        const pre = state.preloaded[state.i];
+        if (pre && pre.src === audioEl.src) {{
+          pre.currentTime = 0; pre.playbackRate = audioEl.playbackRate;
+          pre.play().catch(()=>{{}});
+          // keep audioEl as the canonical element for events
+          // mirror duration from preloaded
+          if (isFinite(pre.duration)) state.currentDurationS = Math.round(pre.duration);
+        }} else {{
+          audioEl.currentTime = 0;
+          audioEl.play().catch(()=>{{}});
+        }}
+      }});
+
+      audioEl.addEventListener('play', ()=>{{
+        if(!hasPlayed){{
+          hasPlayed = true;
+          playBtn.classList.add('replay');
+          playBtn.textContent = 'Replay';
+        }}
+      }});
+
+      audioEl.addEventListener('canplaythrough', ()=>{{
+        if (isFinite(audioEl.duration) && audioEl.duration>0) {{
+          state.currentDurationS = Math.round(audioEl.duration);
+          updateHeader();
+        }}
+      }});
+
+      audioEl.addEventListener('ended', ()=>{{ renderGist(DIALOGUES[state.i]); }});
+      audioEl.addEventListener('loadedmetadata', ()=>{{
+        const d = isFinite(audioEl.duration) ? Math.round(audioEl.duration) : 0;
+        if(d>0) state.currentDurationS = d;
+        updateHeader();
+      }});
+      audioEl.addEventListener('error', ()=>{{
+        offlineStatus.textContent = "🔇 Audio failed to load.";
+      }});
+    }})();
+
+    (function wireSpeed(){{
+      function apply(){{
+        audioEl.playbackRate = state.slowOn ? 0.75 : 1.0;
+        const pre = state.preloaded[state.i]; if (pre) pre.playbackRate = audioEl.playbackRate;
+        speedBtn.classList.toggle('active', state.slowOn);
+        speedBtn.setAttribute('aria-pressed', state.slowOn ? 'true' : 'false');
+        speedBtn.textContent = state.slowOn ? '1.0×' : '0.75×';
+        speedBtn.title = state.slowOn ? 'Back to 0.75×' : 'Switch to 0.75×';
+      }}
+      speedBtn.addEventListener('click', ()=>{{
+        if(!state.slowOn && !state.slowCharged) state.slowCharged = true;
+        state.slowOn = !state.slowOn; apply();
+      }});
+      apply();
+    }})();
+
+    nextBtn.onclick = ()=>{{ state.i++; if(state.i >= DIALOGUES.length) endSession(); else startDialogue(state.i); }};
+    $("toHomeBtn").onclick = ()=>{{ location.href='index.html'; }};
+    $("restartBtn").onclick = ()=>{{ location.reload(); }};
+
+    // ---------- Offline SW ----------
+    function listeningUrls(){{
+      const urls = [];
+      for (let i=0;i<DIALOGUES.length;i++){{
+        try {{ urls.push(AudioPaths.resolveListening(SET_NAME, DIALOGUES[i], r2Manifest)); }} catch(_){{
+        }}
+      }}
+      return Array.from(new Set(urls.filter(Boolean)));
+    }}
+    async function ensureSW(){{
+      if (!('serviceWorker' in navigator)) return null;
+      try {{
+        const reg = await navigator.serviceWorker.register('./sw.js', {{ scope:'./' }});
+        await navigator.serviceWorker.ready;
+        return reg;
+      }} catch(e) {{
+        offlineStatus.textContent = '❌ Offline not available.';
+        return null;
+      }}
+    }}
+    $("btnOffline").addEventListener('click', async ()=>{{
+      const reg = await ensureSW();
+      if (!reg || !reg.active) return;
+      offlineStatus.textContent = '⬇️ Downloading…';
+      reg.active.postMessage({{ type:'CACHE_SET', cache:`listening-{set_name}`, urls: listeningUrls() }});
     }});
-    apply();
-  }})();
+    $("btnOfflineRm").addEventListener('click', async ()=>{{
+      const reg = await ensureSW(); if (!reg || !reg.active) return;
+      reg.active.postMessage({{ type:'UNCACHE_SET', cache:`listening-{set_name}` }});
+    }});
+    navigator.serviceWorker?.addEventListener('message', (ev) => {{
+      const d = ev.data || {{}};
+      if (d.type === 'CACHE_PROGRESS') {{
+        offlineStatus.textContent = `⬇️ ${{d.done}} / ${{d.total}} files cached…`;
+      }} else if (d.type === 'CACHE_DONE') {{
+        offlineStatus.textContent = "✅ Available offline";
+        $("btnOfflineRm").style.display = "inline-flex";
+      }} else if (d.type === 'UNCACHE_DONE') {{
+        offlineStatus.textContent = "🗑 Removed offline copy";
+        $("btnOfflineRm").style.display = "none";
+      }} else if (d.type === 'CACHE_ERROR') {{
+        offlineStatus.textContent = "❌ Offline failed";
+      }}
+    }});
 
-  nextBtn.onclick = ()=>{{ state.i++; if(state.i >= DIALOGUES.length) endSession(); else startDialogue(state.i); }};
-  $("toHomeBtn").onclick = ()=>{{ location.href='../../index.html'; }};
-  $("restartBtn").onclick = ()=>{{ location.reload(); }};
+    // ---------- Auth chrome ----------
+    (async () => {{
+      await api.requireAuth('login.html');
+      const logoutBtn   = document.getElementById('logoutBtn');
+      const loginLink   = document.getElementById('loginLink');
+      const registerLink= document.getElementById('registerLink');
+      try {{
+        const r = await api.fetch('/api/me');
+        if (r.ok) {{
+          loginLink.style.display='none';
+          registerLink.style.display='none';
+          logoutBtn.style.display='inline-flex';
+        }}
+      }} catch(_){{
+      }}
+      logoutBtn?.addEventListener('click', async ()=>{{
+        try {{ await api.fetch('/api/logout',{{method:'POST'}}); }} catch(_){{
+        }}
+        api.clearToken(); location.href='login.html';
+      }});
+    }})();
 
-  // gold bar (if token present)
-  (async function wireGold() {{
-    try {{
-      const t = localStorage.getItem('lp_token') || '';
-      if (!t) return;
-      const r = await apiFetch('/api/my/stats', {{ headers: {{ Authorization: 'Bearer ' + t }} }});
-      if (!r.ok) return;
-      const s = await r.json();
-      const got = Number(s.weekly_gold || s.weekly_points || 0);
-      const goal = Number(s.goal_gold || s.goal_points || 500) || 500;
-      const pct = Math.max(0, Math.min(100, Math.round((got / goal) * 100)));
-      const fill = document.getElementById('goldFill');
-      const lab  = document.getElementById('goldLabel');
-      if (fill) fill.style.width = pct + '%';
-      if (lab)  lab.textContent = `${{got}} / ${{goal}}`;
-    }} catch (_err) {{
-      /* no-op */
-    }}
-  }})();
+    // ---------- Init ----------
+    (async function init(){{
+      if (!Array.isArray(DIALOGUES) || !DIALOGUES.length){{
+        document.body.innerHTML = '<div class="wrap" style="padding:20px;">⚠️ No dialogues found for this set.</div>';
+        return;
+      }}
+      await loadManifest();
+      // Preload first two audios to reduce first-click latency
+      preloadAudio(0); preloadAudio(1);
+      startDialogue(0);
+    }})();
 
-
-  // mount
-  (async function init(){{
-    try {{ r2Manifest = await AudioPaths.fetchManifest(SET_NAME); }} catch(_e) {{ r2Manifest = null; }}
-    if(!Array.isArray(DIALOGUES) || !DIALOGUES.length){{
-      document.body.innerHTML = '<div style="padding:20px;font-family:sans-serif;">⚠️ No dialogues found for this set.</div>';
-      return;
-    }}
-    startDialogue(0);
-  }})();
+    // Housekeeping
+    window.addEventListener('beforeunload', ()=>{{
+      try {{ for (const k in state.preloaded) {{ const a = state.preloaded[k]; a && a.pause && a.pause(); }} }} catch(_){{
+      }}
+    }});
   </script>
 </body>
 </html>"""
 
     out_path.write_text(html, encoding="utf-8")
+
+    # --- Service worker for offline listening audio ---
+    sw_js = """/* listening SW */
+self.addEventListener('install', (e) => { self.skipWaiting(); });
+self.addEventListener('activate', (e) => { self.clients.claim(); });
+
+function toAbs(u){
+  try { return new URL(u, self.registration.scope || self.location.href).href; }
+  catch(_) { return null; }
+}
+
+self.addEventListener('message', async (e) => {
+  const data = e.data || {};
+  const client = await self.clients.get(e.source && e.source.id);
+  if (data.type === 'CACHE_SET') {
+    const cacheName = data.cache || 'listening-cache';
+    const urls = Array.isArray(data.urls) ? data.urls.map(toAbs).filter(Boolean) : [];
+    try {
+      const cache = await caches.open(cacheName);
+      let done = 0, total = urls.length;
+      for (const u of urls) {
+        try {
+          const res = await fetch(u, { mode: 'cors' });
+          if (res.ok || res.type === 'opaque') {
+            await cache.put(u, res.clone());
+          }
+        } catch (_) { /* skip failed */ }
+        done++;
+        client && client.postMessage({ type: 'CACHE_PROGRESS', done, total });
+      }
+      client && client.postMessage({ type: 'CACHE_DONE', cache: cacheName });
+    } catch (err) {
+      client && client.postMessage({ type: 'CACHE_ERROR', error: String(err) });
+    }
+  } else if (data.type === 'UNCACHE_SET') {
+    const cacheName = data.cache || 'listening-cache';
+    await caches.delete(cacheName);
+    client && client.postMessage({ type: 'UNCACHE_DONE', cache: cacheName });
+  }
+});
+
+// Cache-first if present; fall through to network
+self.addEventListener('fetch', (event) => {
+  event.respondWith((async () => {
+    const reqUrl = event.request.url;
+    const names = await caches.keys();
+    for (const name of names) {
+      const cache = await caches.open(name);
+      const hit = await cache.match(reqUrl, { ignoreSearch: true });
+      if (hit) return hit;
+    }
+    try { return await fetch(event.request); } catch (_) { return new Response('', { status: 504 }); }
+  })());
+});
+"""
+    (out_dir / "sw.js").write_text(sw_js, encoding="utf-8")
+
     print(f"✅ listening page generated: {out_path}")
     return out_path
 
@@ -778,9 +961,7 @@ def render_missing_audio_for_listening(set_name: str, voice_lang: str = "pl"):
         set item["audio"] = "listening/dXXX.mp3",
         and try to upload to R2 (item["audio_url"] on success).
     """
-    # TTS helper is imported at module level as _tts_to_mp3
     cdn = _cdn_base()
-
 
     base = PAGES_DIR / "listening" / set_name
     dlg_path = base / "dialogues.json"
@@ -810,22 +991,21 @@ def render_missing_audio_for_listening(set_name: str, voice_lang: str = "pl"):
         # If we have a local relative audio path and the file exists, keep (but may still upload)
         existing_rel = (item.get("audio") or "").strip()  # e.g., 'listening/d001.mp3'
         if existing_rel:
-          candidate = STATIC_DIR / set_name / existing_rel
-          if candidate.exists():
-              # Upload existing file if possible (use consistent key space)
-              if r2_enabled and r2_put_file and "audio_url" not in item:
-                  try:
-                      fname = candidate.name
-                      r2_key = f"listening/{set_name}/{fname}"
-                      url = r2_put_file(candidate, r2_key) or (f"{cdn}/{r2_key}" if cdn else None)
-                      if url:
-                          item["audio_url"] = url
-                          r2_map[r2_key] = url
-                          changed = True
-                  except Exception as e:
-                      print(f"[listen] R2 upload failed for existing {existing_rel}: {e}")
-          continue  # no need to synthesize
-
+            candidate = STATIC_DIR / set_name / existing_rel
+            if candidate.exists():
+                # Upload existing file if possible (use consistent key space)
+                if r2_enabled and r2_put_file and "audio_url" not in item:
+                    try:
+                        fname = candidate.name
+                        r2_key = f"listening/{set_name}/{fname}"
+                        url = r2_put_file(candidate, r2_key) or (f"{cdn}/{r2_key}" if cdn else None)
+                        if url:
+                            item["audio_url"] = url
+                            r2_map[r2_key] = url
+                            changed = True
+                    except Exception as e:
+                        print(f"[listen] R2 upload failed for existing {existing_rel}: {e}")
+            continue  # no need to synthesize
 
         # Choose text to synthesize
         text = (
@@ -834,7 +1014,6 @@ def render_missing_audio_for_listening(set_name: str, voice_lang: str = "pl"):
             or (item.get("translation_en") or "").strip()
         )
         if not text:
-            # Nothing to synthesize; leave item as-is
             continue
 
         # Render MP3 locally (Azure→gTTS helper)
@@ -848,7 +1027,6 @@ def render_missing_audio_for_listening(set_name: str, voice_lang: str = "pl"):
         except Exception as e:
             print(f"[listen] TTS failed for {set_name} #{idx}: {e}")
             continue
-
 
         # Always set local relative path for dev/offline
         item["audio"] = f"listening/{filename}"
@@ -877,7 +1055,6 @@ def render_missing_audio_for_listening(set_name: str, voice_lang: str = "pl"):
             print(f"[listen] Failed to write r2_manifest.json: {e}")
 
     return changed
-
 
 def create_listening_set(set_name: str, items):
     """
