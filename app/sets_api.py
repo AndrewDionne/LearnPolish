@@ -1088,15 +1088,21 @@ def create_set(current_user):
 @token_required
 def delete_set(current_user, set_name):
     """
-    Owner action:
-      - If only the owner has this set: delete files and unlink all rows.
-      - If others also have it: transfer ownership to another user, unlink current owner, keep files.
+    Delete action:
+
+      - Admins:
+          * Can fully delete any set (files + all UserSet links), regardless of owner.
+      - Owners:
+          * If only the owner has this set: delete files and unlink all rows.
+          * If others also have it: transfer ownership to another user, unlink current owner, keep files.
     """
     safe_name = sanitize_filename(set_name or "")
     if not safe_name:
         return jsonify({"message": "Invalid set name"}), 400
 
     links = UserSet.query.filter_by(set_name=safe_name).all()
+
+    # If nothing references this set, just nuke files and exit.
     if not links:
         try:
             _delete_set_files_everywhere(safe_name)
@@ -1104,12 +1110,42 @@ def delete_set(current_user, set_name):
             pass
         return jsonify({"ok": True, "deleted": True}), 200
 
+    is_admin = bool(getattr(current_user, "is_admin", False))
+
+    # ---- Admin override: delete all references + files -----------------------
+    if is_admin:
+        for l in links:
+            db.session.delete(l)
+        db.session.commit()
+
+        try:
+            _delete_set_files_everywhere(safe_name)
+        except Exception:
+            pass
+
+        try:
+            build_all_mode_indexes()
+        except Exception as e:
+            current_app.logger.warning(
+                "Failed to rebuild mode indexes after admin delete: %s", e
+            )
+        try:
+            rebuild_set_modes_map()
+        except Exception as e:
+            current_app.logger.warning(
+                "Failed to rebuild set_modes.json after admin delete: %s", e
+            )
+
+        return jsonify({"ok": True, "deleted": True, "admin_override": True}), 200
+
+    # ---- Normal owner flow ---------------------------------------------------
     me_link = next((l for l in links if l.user_id == current_user.id), None)
     if not me_link or not getattr(me_link, "is_owner", False):
         return jsonify({"message": "Only the owner can delete this set"}), 403
 
     others = [l for l in links if l.user_id != current_user.id]
 
+    # Only owner has it -> full delete
     if not others:
         for l in links:
             db.session.delete(l)
@@ -1121,13 +1157,18 @@ def delete_set(current_user, set_name):
         try:
             build_all_mode_indexes()
         except Exception as e:
-            current_app.logger.warning("Failed to rebuild mode indexes after delete: %s", e)
+            current_app.logger.warning(
+                "Failed to rebuild mode indexes after delete: %s", e
+            )
         try:
             rebuild_set_modes_map()
         except Exception as e:
-            current_app.logger.warning("Failed to rebuild set_modes.json after delete: %s", e)
+            current_app.logger.warning(
+                "Failed to rebuild set_modes.json after delete: %s", e
+            )
         return jsonify({"ok": True, "deleted": True}), 200
 
+    # Others also have it -> hand over ownership, keep files
     new_owner_link = sorted(others, key=lambda l: l.id)[0]
     me_link.is_owner = False
     new_owner_link.is_owner = True
@@ -1137,13 +1178,17 @@ def delete_set(current_user, set_name):
     try:
         build_all_mode_indexes()
     except Exception as e:
-        current_app.logger.warning("Failed to rebuild mode indexes after handover: %s", e)
+        current_app.logger.warning(
+            "Failed to rebuild mode indexes after handover: %s", e
+        )
     try:
         rebuild_set_modes_map()
     except Exception as e:
-        current_app.logger.warning("Failed to rebuild set_modes.json after handover: %s", e)
+        current_app.logger.warning(
+            "Failed to rebuild set_modes.json after handover: %s", e
+        )
 
-    return jsonify({"ok": True, "handover": True, "new_owner_id": new_owner_link.user_id}), 200
+    return jsonify({"ok": True, "deleted": False, "handover": True}), 200
 
 # 6) Admin build & publish (server-side)
 @sets_api.route("/admin/build_publish", methods=["POST", "OPTIONS"])

@@ -212,21 +212,29 @@
 
   (async () => {
     let me = null;
-    try { const r = await api.fetch('/api/me'); if (r.ok) me = await r.json(); } catch(_){}
+    try {
+      const r = await api.fetch('/api/me');
+      if (r.ok) me = await r.json();
+    } catch(_) {}
+
+    // Expose for the rest of this page (and any other scripts)
+    window.LP_ME = me;
+    window.LP_IS_ADMIN = !!(me && me.is_admin);
+
     if (me) {
-      loginLink   && (loginLink.style.display = 'none');
-      registerLink&& (registerLink.style.display = 'none');
-      logoutBtn   && (logoutBtn.style.display = 'inline-flex');
+      loginLink    && (loginLink.style.display    = 'none');
+      registerLink && (registerLink.style.display = 'none');
+      logoutBtn    && (logoutBtn.style.display    = 'inline-flex');
     } else {
-      loginLink   && (loginLink.style.display = 'inline-flex');
-      registerLink&& (registerLink.style.display = 'inline-flex');
-      logoutBtn   && (logoutBtn.style.display = 'none');
+      loginLink    && (loginLink.style.display    = 'inline-flex');
+      registerLink && (registerLink.style.display = 'inline-flex');
+      logoutBtn    && (logoutBtn.style.display    = 'none');
     }
+
     logoutBtn?.addEventListener('click', async () => {
       try { await api.fetch('/api/logout', { method:'POST' }); } catch(_){}
       api.clearToken();        // clears lp_token + any future storage
       location.href = 'login.html';
-
     });
   })();
 
@@ -553,7 +561,10 @@
       const tdAct = document.createElement('td');
       if (activeTab === 'my') {
         const rm = document.createElement('button'); rm.className='action-btn remove-btn'; rm.dataset.set=set.name; rm.textContent='Remove'; tdAct.appendChild(rm);
-        const isOwner = !!(myMap.get(set.name)?.is_owner) || !globalMap.has(set.name);
+        const isOwner = !!(myMap.get(set.name)?.is_owner)
+              || !globalMap.has(set.name)
+              || (window.LP_IS_ADMIN === true);
+
         if (isOwner){
           const del = document.createElement('button'); del.className='delete-link'; del.dataset.set=set.name; del.title='Delete the set file (use only for upload mistakes)'; del.textContent='Delete permanently';
           tdAct.appendChild(document.createTextNode(' ')); tdAct.appendChild(del);
