@@ -1,0 +1,23 @@
+{
+  "name": "Directions_Reading",
+  "modes": [
+    "read"
+  ],
+  "meta": {
+    "modes": [
+      "read"
+    ]
+  },
+  "passages": [
+    {
+      "polish": "Turysta zatrzymuje mnie na ulicy i mówi: „Przepraszam, jak dojść do najbliższej stacji metra?”. Tłumaczę, że musi iść prosto do świateł, potem skręcić w lewo przy aptece. Na rogu jest przejście dla pieszych, a po drugiej stronie ulicy widać wejście do metra. Dodaję, że stacja jest blisko i można dojść pieszo w pięć minut.",
+      "english": "A tourist stops me in the street and says, “Excuse me, how do I get to the nearest metro station?”. I explain that he has to go straight to the traffic lights, then turn left at the pharmacy. On the corner there is a pedestrian crossing, and on the other side of the street you can see the entrance to the metro. I add that the station is close and you can walk there in five minutes.",
+      "title": "Jak dojść do stacji metra?"
+    },
+    {
+      "polish": "Para pyta mnie, gdzie jest urząd miasta. Mówię, że najłatwiej pojechać tam tramwajem. Trzeba wsiąść na przystanku obok centrum handlowego i wysiąść na trzecim przystanku. Urząd miasta jest na przeciwko dużego placu, obok kościoła. Jeśli ktoś woli iść pieszo, można też iść prosto do ronda i tam skręcić w prawo.",
+      "english": "A couple asks me where the city hall is. I say that the easiest way is to go there by tram. You need to get on at the stop next to the shopping mall and get off at the third stop. The city hall is opposite a large square, next to the church. If someone prefers to walk, you can also go straight to the roundabout and turn right there.",
+      "title": "Gdzie jest urząd miasta?"
+    }
+  ]
+}

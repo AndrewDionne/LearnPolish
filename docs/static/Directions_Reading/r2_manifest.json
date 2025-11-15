@@ -1,0 +1,8 @@
+{
+  "set": "Directions_Reading",
+  "assetsBase": "https://cdn.polishpath.com",
+  "files": {
+    "reading/Directions_Reading/0.mp3": "https://cdn.polishpath.com/reading/Directions_Reading/0.mp3",
+    "reading/Directions_Reading/1.mp3": "https://cdn.polishpath.com/reading/Directions_Reading/1.mp3"
+  }
+}
