@@ -1,0 +1,20 @@
+{
+  "name": "15-03",
+  "modes": [
+    "learn",
+    "speak"
+  ],
+  "meta": {
+    "modes": [
+      "learn",
+      "speak"
+    ]
+  },
+  "cards": [
+    {
+      "phrase": "Cześć",
+      "meaning": "Hello",
+      "pronunciation": "cheshch"
+    }
+  ]
+}
