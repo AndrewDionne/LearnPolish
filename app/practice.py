@@ -180,6 +180,12 @@ def generate_practice_html(set_name, data):
     let hasStarted = false, paused = false, isRunning = false;
     let index = 0, attempts = 0;
 
+    // Track per-card best scores for this run
+    const tracker = {{
+      per: {{}},     // key: card index -> best/last/attempts/phrase
+      attempts: 0    // total scoring attempts this run
+    }};
+
     // Debug overlay
     const DEBUG = new URL(location.href).searchParams.get('debug') === '1';
     const dbgEl = document.getElementById('dbg');
@@ -553,10 +559,105 @@ def generate_practice_html(set_name, data):
       return computeStrictScore(paJson, base, ref, approxVoiced);
     }}
 
+    // Finish: compute score, send to API, go to summary
+    async function finishPractice() {{
+      const totalCards = Math.max(1, cards.length);
+      const perStats = Object.values(tracker.per || {{}});
+
+      let sumBest = 0;
+      let n100 = 0;
+      let nPass = 0;
+
+      for (const r of perStats) {{
+        const best = Number((r && r.best) || 0);
+        if (!Number.isFinite(best)) continue;
+        const clamped = Math.max(0, Math.min(100, best));
+        sumBest += clamped;
+        if (clamped >= 100) n100++;
+        if (clamped >= PASS_THRESHOLD) nPass++;
+      }}
+
+      // Average best-score across all cards (unseen cards count as 0)
+      const avgScore = totalCards ? Math.round(sumBest / totalCards) : 0;
+      const scorePct = avgScore;
+
+      // Build compact per-card breakdown with phrase text
+      const perOut = {{}};
+      Object.entries(tracker.per || {{}}).forEach(([idxStr, r]) => {{
+        const idx = Number(idxStr);
+        const card = cards[idx] || {{}};
+        perOut[idx] = {{
+          best: Number((r && r.best) || 0),
+          last: Number((r && r.last) || 0),
+          attempts: Number((r && r.attempts) || 0),
+          phrase: card.phrase || ""
+        }};
+      }});
+
+      // Cache global lastResult so /summary.html can show it
+      try {{
+        sessionStorage.setItem(
+          "lp.lastResult",
+          JSON.stringify({{
+            set: setName,
+            mode: "practice",
+            score: scorePct,
+            attempts: tracker.attempts,
+            details: {{
+              total: totalCards,
+              n100,
+              n_pass: nPass,
+              per: perOut
+            }},
+            ts: Date.now()
+          }})
+        );
+      }} catch (_e) {{}}
+
+      // Submit to backend (other-modes path in /api/submit_score handles gold & caps)
+      let awarded = null;
+      try {{
+        const resp = await api.fetch("/api/submit_score", {{
+          method: "POST",
+          headers: {{ "Content-Type": "application/json" }},
+          body: JSON.stringify({{
+            set_name: setName,
+            mode: "practice",
+            score: scorePct,
+            attempts: tracker.attempts,
+            details: {{
+              total: totalCards,
+              n100,
+              n_pass: nPass,
+              per: perOut
+            }}
+          }})
+        }});
+        if (resp.ok) {{
+          const js = await resp.json();
+          if (js && js.details && js.details.points_awarded != null) {{
+            awarded = Number(js.details.points_awarded);
+          }}
+        }}
+      }} catch (_e) {{}}
+
+      const q = awarded != null ? ("?awarded=" + encodeURIComponent(awarded)) : "";
+      window.location.href = "summary.html" + q;
+    }}
+
     // Loop
-    async function runPractice(){{
+    async function runPractice() {{
       if (paused || isRunning) return;
-      if (index >= cards.length) {{ promptEl.textContent='Done!'; phraseEl.textContent=''; resultEl.textContent='✅ Complete'; return; }}
+
+      // End of set → compute score, send to API, go to summary
+      if (index >= cards.length) {{
+        promptEl.textContent = "Done!";
+        phraseEl.textContent = "";
+        resultEl.textContent = "✅ Complete";
+        await finishPractice();
+        return;
+      }}
+
       isRunning = true;
 
       // Update UI
@@ -567,23 +668,36 @@ def generate_practice_html(set_name, data):
 
       // Play Polish
       await playAudio(index);
-      if (paused) {{ isRunning=false; return; }}
+      if (paused) {{ isRunning = false; return; }}
 
       // User says it
       promptEl.textContent = "Say:";
       const score = CAPTURE_MODE ? await assessCapture(phrase) : await assessLive(phrase);
-      if (paused) {{ isRunning=false; return; }}
+      if (paused) {{ isRunning = false; return; }}
 
       resultEl.textContent = score ? ("Score: " + score + "%") : "⚠️ No score";
 
+      // Update per-card tracker
+      tracker.attempts++;
+      const k = index;
+      const prev = tracker.per[k] || {{ best: 0, last: 0, attempts: 0 }};
+      prev.attempts = (prev.attempts || 0) + 1;
+      prev.last = score;
+      if (!Number.isFinite(prev.best) || score > prev.best) {{
+        prev.best = score;
+      }}
+      tracker.per[k] = prev;
+
       // Feedback sound (optional – matches your system audio set)
       try {{
-        if (score >= PASS_THRESHOLD) await playSys("good"); else await playSys("try_again");
-      }} catch(_){{
+        if (score >= PASS_THRESHOLD) await playSys("good");
+        else await playSys("try_again");
+      }} catch (_){{
       }}
 
       if (score >= PASS_THRESHOLD || attempts >= 2) {{
-        index++; attempts = 0;
+        index++;
+        attempts = 0;
       }} else {{
         attempts++;
       }}
@@ -591,6 +705,7 @@ def generate_practice_html(set_name, data):
       isRunning = false;
       if (!paused) setTimeout(runPractice, 600);
     }}
+
 
     // Offline SW
     async function ensureSW(){{
