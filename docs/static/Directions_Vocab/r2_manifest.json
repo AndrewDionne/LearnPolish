@@ -1,0 +1,33 @@
+{
+  "assetsBase": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev",
+  "files": {
+    "audio/Directions_Vocab/0_przepraszam_jak_dojsc_do.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Directions_Vocab/0_przepraszam_jak_dojsc_do.mp3",
+    "audio/Directions_Vocab/10_stacja_metra.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Directions_Vocab/10_stacja_metra.mp3",
+    "audio/Directions_Vocab/11_dworzec_kolejowy.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Directions_Vocab/11_dworzec_kolejowy.mp3",
+    "audio/Directions_Vocab/12_stacja_benzynowa.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Directions_Vocab/12_stacja_benzynowa.mp3",
+    "audio/Directions_Vocab/13_centrum_handlowe.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Directions_Vocab/13_centrum_handlowe.mp3",
+    "audio/Directions_Vocab/14_urzad_miasta.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Directions_Vocab/14_urzad_miasta.mp3",
+    "audio/Directions_Vocab/15_komisariat_policji.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Directions_Vocab/15_komisariat_policji.mp3",
+    "audio/Directions_Vocab/16_pieszo.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Directions_Vocab/16_pieszo.mp3",
+    "audio/Directions_Vocab/17_to_jest_blisko.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Directions_Vocab/17_to_jest_blisko.mp3",
+    "audio/Directions_Vocab/18_to_jest_daleko.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Directions_Vocab/18_to_jest_daleko.mp3",
+    "audio/Directions_Vocab/19_przesiadka.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Directions_Vocab/19_przesiadka.mp3",
+    "audio/Directions_Vocab/1_gdzie_jest_najblizszy_przystanek.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Directions_Vocab/1_gdzie_jest_najblizszy_przystanek.mp3",
+    "audio/Directions_Vocab/20_wysiasc_na_nastepnym_przystanku.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Directions_Vocab/20_wysiasc_na_nastepnym_przystanku.mp3",
+    "audio/Directions_Vocab/21_wsiasc_do_tramwaju.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Directions_Vocab/21_wsiasc_do_tramwaju.mp3",
+    "audio/Directions_Vocab/22_po_prawej_stronie.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Directions_Vocab/22_po_prawej_stronie.mp3",
+    "audio/Directions_Vocab/23_po_lewej_stronie.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Directions_Vocab/23_po_lewej_stronie.mp3",
+    "audio/Directions_Vocab/24_na_przeciwko.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Directions_Vocab/24_na_przeciwko.mp3",
+    "audio/Directions_Vocab/25_obok.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Directions_Vocab/25_obok.mp3",
+    "audio/Directions_Vocab/26_za_rogiem.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Directions_Vocab/26_za_rogiem.mp3",
+    "audio/Directions_Vocab/27_czy_moze_mi_pan_pani_pomoc.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Directions_Vocab/27_czy_moze_mi_pan_pani_pomoc.mp3",
+    "audio/Directions_Vocab/2_gdzie_jest_najblizsza_stacja_metra.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Directions_Vocab/2_gdzie_jest_najblizsza_stacja_metra.mp3",
+    "audio/Directions_Vocab/3_skrecic_w_prawo.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Directions_Vocab/3_skrecic_w_prawo.mp3",
+    "audio/Directions_Vocab/4_skrecic_w_lewo.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Directions_Vocab/4_skrecic_w_lewo.mp3",
+    "audio/Directions_Vocab/5_isc_prosto.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Directions_Vocab/5_isc_prosto.mp3",
+    "audio/Directions_Vocab/6_na_rogu.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Directions_Vocab/6_na_rogu.mp3",
+    "audio/Directions_Vocab/7_przejscie_dla_pieszych.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Directions_Vocab/7_przejscie_dla_pieszych.mp3",
+    "audio/Directions_Vocab/8_swiat_a.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Directions_Vocab/8_swiat_a.mp3",
+    "audio/Directions_Vocab/9_rondo.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Directions_Vocab/9_rondo.mp3"
+  }
+}

@@ -1,0 +1,155 @@
+{
+  "name": "Directions_Vocab",
+  "modes": [
+    "learn",
+    "speak"
+  ],
+  "meta": {
+    "modes": [
+      "learn",
+      "speak"
+    ]
+  },
+  "cards": [
+    {
+      "phrase": "przepraszam, jak dojść do...?",
+      "meaning": "excuse me, how do I get to...?",
+      "pronunciation": "psheh-pra-sham yak doishch doh"
+    },
+    {
+      "phrase": "gdzie jest najbliższy przystanek?",
+      "meaning": "where is the nearest stop?",
+      "pronunciation": "g-jeh yest nai-bleesh-shih pshe-sta-nek"
+    },
+    {
+      "phrase": "gdzie jest najbliższa stacja metra?",
+      "meaning": "where is the nearest metro station?",
+      "pronunciation": "g-jeh yest nai-bleesh-shah stah-tsya meh-trah"
+    },
+    {
+      "phrase": "skręcić w prawo",
+      "meaning": "to turn right",
+      "pronunciation": "skren-chich v prah-voh"
+    },
+    {
+      "phrase": "skręcić w lewo",
+      "meaning": "to turn left",
+      "pronunciation": "skren-chich v leh-voh"
+    },
+    {
+      "phrase": "iść prosto",
+      "meaning": "to go straight",
+      "pronunciation": "eesh pro-stoh"
+    },
+    {
+      "phrase": "na rogu",
+      "meaning": "on the corner",
+      "pronunciation": "nah roh-goo"
+    },
+    {
+      "phrase": "przejście dla pieszych",
+      "meaning": "pedestrian crossing",
+      "pronunciation": "psheh-ish-chye dla pye-shykh"
+    },
+    {
+      "phrase": "światła",
+      "meaning": "traffic lights",
+      "pronunciation": "shvyat-wah"
+    },
+    {
+      "phrase": "rondo",
+      "meaning": "roundabout",
+      "pronunciation": "ron-doh"
+    },
+    {
+      "phrase": "stacja metra",
+      "meaning": "metro station",
+      "pronunciation": "stah-tsya meh-trah"
+    },
+    {
+      "phrase": "dworzec kolejowy",
+      "meaning": "train station",
+      "pronunciation": "dvo-zhets koh-lay-yo-vih"
+    },
+    {
+      "phrase": "stacja benzynowa",
+      "meaning": "gas station",
+      "pronunciation": "stah-tsya ben-zih-no-vah"
+    },
+    {
+      "phrase": "centrum handlowe",
+      "meaning": "shopping mall",
+      "pronunciation": "tsen-trum han-dlov-eh"
+    },
+    {
+      "phrase": "urząd miasta",
+      "meaning": "city hall",
+      "pronunciation": "oo-zhont myas-tah"
+    },
+    {
+      "phrase": "komisariat policji",
+      "meaning": "police station",
+      "pronunciation": "ko-mee-sah-ryat po-leet-syee"
+    },
+    {
+      "phrase": "pieszo",
+      "meaning": "on foot",
+      "pronunciation": "pyeh-shoh"
+    },
+    {
+      "phrase": "to jest blisko",
+      "meaning": "it is close",
+      "pronunciation": "to yest blees-koh"
+    },
+    {
+      "phrase": "to jest daleko",
+      "meaning": "it is far",
+      "pronunciation": "to yest dah-leh-koh"
+    },
+    {
+      "phrase": "przesiadka",
+      "meaning": "transfer (change)",
+      "pronunciation": "psheh-shyat-kah"
+    },
+    {
+      "phrase": "wysiąść na następnym przystanku",
+      "meaning": "to get off at the next stop",
+      "pronunciation": "vih-shonshch na nas-tem-nem pshe-stan-koo"
+    },
+    {
+      "phrase": "wsiąść do tramwaju",
+      "meaning": "to get on the tram",
+      "pronunciation": "fshonshch doh tram-vyoo"
+    },
+    {
+      "phrase": "po prawej stronie",
+      "meaning": "on the right side",
+      "pronunciation": "po prah-vey stro-nyeh"
+    },
+    {
+      "phrase": "po lewej stronie",
+      "meaning": "on the left side",
+      "pronunciation": "po leh-vey stro-nyeh"
+    },
+    {
+      "phrase": "na przeciwko",
+      "meaning": "opposite",
+      "pronunciation": "na pshe-chiv-koh"
+    },
+    {
+      "phrase": "obok",
+      "meaning": "next to",
+      "pronunciation": "oh-bok"
+    },
+    {
+      "phrase": "za rogiem",
+      "meaning": "around the corner",
+      "pronunciation": "zah roh-gyem"
+    },
+    {
+      "phrase": "czy może mi pan/pani pomóc?",
+      "meaning": "could you help me?",
+      "pronunciation": "chih moh-zheh mee pan pah-nee poh-moots"
+    }
+  ]
+}
