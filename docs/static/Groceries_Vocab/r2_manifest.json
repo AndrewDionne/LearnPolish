@@ -1,0 +1,33 @@
+{
+  "set": "Groceries_Vocab",
+  "assetsBase": "https://cdn.polishpath.com",
+  "files": {
+    "audio/Groceries_Vocab/0_sklep_spozywczy.mp3": "https://cdn.polishpath.com/audio/Groceries_Vocab/0_sklep_spozywczy.mp3",
+    "audio/Groceries_Vocab/10_pieczywo.mp3": "https://cdn.polishpath.com/audio/Groceries_Vocab/10_pieczywo.mp3",
+    "audio/Groceries_Vocab/11_napoje_gazowane.mp3": "https://cdn.polishpath.com/audio/Groceries_Vocab/11_napoje_gazowane.mp3",
+    "audio/Groceries_Vocab/12_woda_niegazowana.mp3": "https://cdn.polishpath.com/audio/Groceries_Vocab/12_woda_niegazowana.mp3",
+    "audio/Groceries_Vocab/13_woda_gazowana.mp3": "https://cdn.polishpath.com/audio/Groceries_Vocab/13_woda_gazowana.mp3",
+    "audio/Groceries_Vocab/14_kilogram_jab_ek.mp3": "https://cdn.polishpath.com/audio/Groceries_Vocab/14_kilogram_jab_ek.mp3",
+    "audio/Groceries_Vocab/15_plasterki_szynki.mp3": "https://cdn.polishpath.com/audio/Groceries_Vocab/15_plasterki_szynki.mp3",
+    "audio/Groceries_Vocab/16_ser_zo_ty.mp3": "https://cdn.polishpath.com/audio/Groceries_Vocab/16_ser_zo_ty.mp3",
+    "audio/Groceries_Vocab/17_jajka_z_wolnego_wybiegu.mp3": "https://cdn.polishpath.com/audio/Groceries_Vocab/17_jajka_z_wolnego_wybiegu.mp3",
+    "audio/Groceries_Vocab/18_karta_lojalnosciowa.mp3": "https://cdn.polishpath.com/audio/Groceries_Vocab/18_karta_lojalnosciowa.mp3",
+    "audio/Groceries_Vocab/19_p_acic_karta.mp3": "https://cdn.polishpath.com/audio/Groceries_Vocab/19_p_acic_karta.mp3",
+    "audio/Groceries_Vocab/1_wozek_sklepowy.mp3": "https://cdn.polishpath.com/audio/Groceries_Vocab/1_wozek_sklepowy.mp3",
+    "audio/Groceries_Vocab/20_p_acic_gotowka.mp3": "https://cdn.polishpath.com/audio/Groceries_Vocab/20_p_acic_gotowka.mp3",
+    "audio/Groceries_Vocab/21_mam_w_asna_torbe.mp3": "https://cdn.polishpath.com/audio/Groceries_Vocab/21_mam_w_asna_torbe.mp3",
+    "audio/Groceries_Vocab/22_czy_moge_zap_acic_karta.mp3": "https://cdn.polishpath.com/audio/Groceries_Vocab/22_czy_moge_zap_acic_karta.mp3",
+    "audio/Groceries_Vocab/23_czy_ma_pan_pani_drobne.mp3": "https://cdn.polishpath.com/audio/Groceries_Vocab/23_czy_ma_pan_pani_drobne.mp3",
+    "audio/Groceries_Vocab/24_poprosze.mp3": "https://cdn.polishpath.com/audio/Groceries_Vocab/24_poprosze.mp3",
+    "audio/Groceries_Vocab/25_to_wszystko.mp3": "https://cdn.polishpath.com/audio/Groceries_Vocab/25_to_wszystko.mp3",
+    "audio/Groceries_Vocab/26_dziekuje_nawzajem.mp3": "https://cdn.polishpath.com/audio/Groceries_Vocab/26_dziekuje_nawzajem.mp3",
+    "audio/Groceries_Vocab/2_koszyk.mp3": "https://cdn.polishpath.com/audio/Groceries_Vocab/2_koszyk.mp3",
+    "audio/Groceries_Vocab/3_kasa.mp3": "https://cdn.polishpath.com/audio/Groceries_Vocab/3_kasa.mp3",
+    "audio/Groceries_Vocab/4_kolejka.mp3": "https://cdn.polishpath.com/audio/Groceries_Vocab/4_kolejka.mp3",
+    "audio/Groceries_Vocab/5_paragon.mp3": "https://cdn.polishpath.com/audio/Groceries_Vocab/5_paragon.mp3",
+    "audio/Groceries_Vocab/6_promocja.mp3": "https://cdn.polishpath.com/audio/Groceries_Vocab/6_promocja.mp3",
+    "audio/Groceries_Vocab/7_dzia_warzywny.mp3": "https://cdn.polishpath.com/audio/Groceries_Vocab/7_dzia_warzywny.mp3",
+    "audio/Groceries_Vocab/8_dzia_nabia_owy.mp3": "https://cdn.polishpath.com/audio/Groceries_Vocab/8_dzia_nabia_owy.mp3",
+    "audio/Groceries_Vocab/9_dzia_miesny.mp3": "https://cdn.polishpath.com/audio/Groceries_Vocab/9_dzia_miesny.mp3"
+  }
+}

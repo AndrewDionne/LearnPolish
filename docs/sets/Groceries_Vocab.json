@@ -1,0 +1,150 @@
+{
+  "name": "Groceries_Vocab",
+  "modes": [
+    "learn",
+    "speak"
+  ],
+  "meta": {
+    "modes": [
+      "learn",
+      "speak"
+    ]
+  },
+  "cards": [
+    {
+      "phrase": "sklep spożywczy",
+      "meaning": "grocery store",
+      "pronunciation": "sklep spoh-zhiv-chih"
+    },
+    {
+      "phrase": "wózek sklepowy",
+      "meaning": "shopping cart",
+      "pronunciation": "voo-zek skle-poh-vih"
+    },
+    {
+      "phrase": "koszyk",
+      "meaning": "basket",
+      "pronunciation": "koh-shik"
+    },
+    {
+      "phrase": "kasa",
+      "meaning": "checkout, cash register",
+      "pronunciation": "kah-sah"
+    },
+    {
+      "phrase": "kolejka",
+      "meaning": "queue, line",
+      "pronunciation": "koh-lay-kah"
+    },
+    {
+      "phrase": "paragon",
+      "meaning": "receipt",
+      "pronunciation": "pa-rah-gon"
+    },
+    {
+      "phrase": "promocja",
+      "meaning": "sale, promotion",
+      "pronunciation": "pro-mots-ya"
+    },
+    {
+      "phrase": "dział warzywny",
+      "meaning": "produce section",
+      "pronunciation": "jow va-zhiv-nih"
+    },
+    {
+      "phrase": "dział nabiałowy",
+      "meaning": "dairy section",
+      "pronunciation": "jow nah-bya-wo-vih"
+    },
+    {
+      "phrase": "dział mięsny",
+      "meaning": "meat counter",
+      "pronunciation": "jow myen-snih"
+    },
+    {
+      "phrase": "pieczywo",
+      "meaning": "bread, baked goods",
+      "pronunciation": "pye-chih-voh"
+    },
+    {
+      "phrase": "napoje gazowane",
+      "meaning": "soft drinks",
+      "pronunciation": "na-poh-yeh ga-zo-va-neh"
+    },
+    {
+      "phrase": "woda niegazowana",
+      "meaning": "still water",
+      "pronunciation": "voh-dah nye-ga-zo-va-nah"
+    },
+    {
+      "phrase": "woda gazowana",
+      "meaning": "sparkling water",
+      "pronunciation": "voh-dah ga-zo-va-nah"
+    },
+    {
+      "phrase": "kilogram jabłek",
+      "meaning": "a kilo of apples",
+      "pronunciation": "kee-lo-gram yab-wek"
+    },
+    {
+      "phrase": "plasterki szynki",
+      "meaning": "slices of ham",
+      "pronunciation": "plas-ter-kee shyn-kee"
+    },
+    {
+      "phrase": "ser żółty",
+      "meaning": "yellow cheese",
+      "pronunciation": "ser zhoo-tih"
+    },
+    {
+      "phrase": "jajka z wolnego wybiegu",
+      "meaning": "free-range eggs",
+      "pronunciation": "yai-kah z vol-neh-go vih-bye-goo"
+    },
+    {
+      "phrase": "karta lojalnościowa",
+      "meaning": "loyalty card",
+      "pronunciation": "kar-tah loy-al-nos-tyo-vah"
+    },
+    {
+      "phrase": "płacić kartą",
+      "meaning": "to pay by card",
+      "pronunciation": "pwah-chich kar-tong"
+    },
+    {
+      "phrase": "płacić gotówką",
+      "meaning": "to pay in cash",
+      "pronunciation": "pwah-chich go-toov-kong"
+    },
+    {
+      "phrase": "mam własną torbę",
+      "meaning": "I have my own bag",
+      "pronunciation": "mam vwahs-nohn tor-beh"
+    },
+    {
+      "phrase": "czy mogę zapłacić kartą?",
+      "meaning": "can I pay by card?",
+      "pronunciation": "chih moh-geh za-pwah-chich kar-tong"
+    },
+    {
+      "phrase": "czy ma pan/pani drobne?",
+      "meaning": "do you have small change?",
+      "pronunciation": "chih mah pan pah-nee drob-neh"
+    },
+    {
+      "phrase": "poproszę...",
+      "meaning": "I’d like..., please",
+      "pronunciation": "po-pro-sheh"
+    },
+    {
+      "phrase": "to wszystko",
+      "meaning": "that’s all",
+      "pronunciation": "toh fshyst-koh"
+    },
+    {
+      "phrase": "dziękuję, nawzajem",
+      "meaning": "thank you, same to you",
+      "pronunciation": "jen-koo-yeh nav-za-yem"
+    }
+  ]
+}
