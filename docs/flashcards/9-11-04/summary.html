@@ -1,102 +1,482 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>9-11-04 • Results</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <script>
+    (function () {
+      var isGH = /\.github\.io$/i.test(location.hostname);
+      var baseHref = isGH ? '/LearnPolish/' : '/';
+      document.write('<base href="' + baseHref + '">');
+    })();
+  </script>
+  <title>Session Summary • Path to POLISH</title>
+  <link rel="stylesheet" href="static/app.css?v=6"/>
   <style>
-    body { font-family: -apple-system,BlinkMacSystemFont, sans-serif; margin:0; padding:24px; background:#f8f9fa; display:flex; justify-content:center; }
-    .card { background:#fff; border:1px solid #e6e6ef; border-radius:12px; padding:20px; box-shadow:0 1px 2px rgba(8,15,52,.04); width:100%; max-width:560px; }
-    h1 { margin-top:0; font-size:22px; }
-    .row { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
-    .btn { display:inline-block; padding:10px 12px; border-radius:10px; border:1px solid #cfd3e6; background:#fff; text-decoration:none; color:#222; }
-    .btn-primary { background:#2d6cdf; border-color:#2d6cdf; color:#fff; }
-    .muted { color:#666; }
-    .big { font-size:32px; font-weight:700; }
+    :root{
+      --gold:#c58b0f;
+    }
+    .wrap{max-width:900px;margin:0 auto 92px;padding:0 16px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin:16px 0;box-shadow:var(--shadow,0 1px 2px rgba(8,15,52,.04))}
+    .row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+    .kv{display:grid;grid-template-columns:auto 1fr;column-gap:12px;row-gap:4px;font-size:14px}
+    .kv>div:nth-child(odd){color:var(--muted)}
+    .big{font-size:22px;font-weight:600}
+    .bar{position:relative;width:100%;height:10px;border-radius:999px;background:var(--border);overflow:hidden;margin:8px 0 4px}
+    .bar-inner{height:100%;width:0%;background:var(--gold);transition:width .4s ease}
+    #progressHint{font-size:13px;color:var(--muted)}
+    .gold-pill{padding:8px 12px;border-radius:999px;border:1px solid rgba(197,139,15,.3);background:rgba(197,139,15,.06);font-size:13px;display:inline-flex;flex-direction:column;gap:2px;min-width:160px}
+    .gold-pill strong{font-weight:600}
+    .gold-coin{font-size:14px;margin-right:4px}
+    table.breakdown{width:100%;border-collapse:collapse;font-size:14px}
+    table.breakdown th,table.breakdown td{padding:6px 4px;border-bottom:1px solid #ececf5;text-align:left}
+    table.breakdown th{font-weight:600;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+    table.breakdown td.score{text-align:right;white-space:nowrap}
+    table.breakdown td.coin{text-align:center;width:40px}
+    .pill{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid var(--border);font-size:11px;color:var(--muted)}
+    .pill-perfect{border-color:rgba(197,139,15,.4);background:rgba(197,139,15,.06);color:var(--gold);}
+    .muted-small{font-size:12px;color:var(--muted)}
   </style>
 </head>
-<body>
-  <div class="card">
-    <h1>See how you did</h1>
-    <div id="resultLine" class="big">Loading…</div>
-    <div id="detailLine" class="muted" style="margin-top:6px;"></div>
+<body
+  data-header="Path to Polish"
+  data-note-lead="Summary"
+  data-note-tail="">
 
-    <div class="row" style="margin-top:16px;">
-      <a id="retryBtn" class="btn btn-primary" href="./">Try again</a>
-      <a class="btn" href="../../learn.html">Back to Learn</a>
-      <a class="btn" href="../../index.html">Home</a>
+  <header class="topbar no-nav">
+    <div class="row container">
+      <div class="header-left">
+        <a class="brand" href="index.html" aria-label="Path to Polish — Home">
+          <svg class="brand-mark" aria-hidden="true" focusable="false">
+            <use href="static/brand.svg#ptp-mark"></use>
+          </svg>
+          <span id="headerBanner" class="header-banner">Session summary</span>
+        </a>
+      </div>
+      <nav class="head-actions">
+        <a href="profile.html"  id="profileBtn">Profile</a>
+        <a href="login.html"    id="loginLink">Sign In</a>
+        <a href="register.html" id="registerLink">Register</a>
+        <button id="logoutBtn" style="display:none;">Logout</button>
+      </nav>
     </div>
+  </header>
+
+  <div class="wrap page-note-wrap">
+    <div id="pageNote" class="page-note"></div>
   </div>
 
-  <script src="../../static/js/api.js"></script>
-  <script>
-    const setName = "9-11-04";
+  <main class="wrap">
+    <!-- Result + gold -->
+    <section class="card">
+      <div class="row">
+        <div style="flex:1 1 260px;min-width:0;">
+          <h2 style="margin:0 0 4px">Result</h2>
+          <div id="topLine" class="big">Loading…</div>
+          <div class="kv" style="margin-top:8px">
+            <div class="muted">Collection</div><div id="setName">—</div>
+            <div class="muted">Mode</div><div id="mode">—</div>
+            <div class="muted">Cards</div><div id="cardCount">—</div>
+            <div class="muted">Average score</div><div id="avgScore">—</div>
+            <div class="muted">Perfect cards</div><div id="perfectInfo">—</div>
+            <div class="muted">Notes</div><div id="notes" class="muted">—</div>
+          </div>
+        </div>
+        <div style="flex:0 0 210px;display:flex;justify-content:flex-end">
+          <div class="gold-pill">
+            <div><span class="gold-coin">🪙</span><strong>Gold</strong></div>
+            <div id="goldRunLine" class="muted-small">This run: —</div>
+            <div id="goldWeekLine" class="muted-small">This week: —</div>
+          </div>
+        </div>
+      </div>
+    </section>
 
-    function apply(score, attempts, total, pointsTotal, awarded) {
-      document.getElementById('resultLine').textContent = score + '%';
-      let tail = (attempts||0) + ' attempts • ' + (total||'?') + ' cards';
-      if (pointsTotal != null) tail += ' • ' + pointsTotal + ' pts';
-      if (awarded != null)     tail += ' (+' + awarded + ')';
-      document.getElementById('detailLine').textContent = tail;
+    <!-- Weekly progress -->
+    <section class="card">
+      <h3 style="margin-top:0">Weekly progress</h3>
+      <div id="progressLine" class="row" style="margin-bottom:4px"></div>
+      <div class="bar"><div id="wbar" class="bar-inner"></div></div>
+      <div class="row" style="margin-top:2px;align-items:flex-end">
+        <div id="wtext">0 / 500</div>
+        <div id="extras" class="muted-small"></div>
+      </div>
+      <div id="progressHint" class="muted-small" style="margin-top:4px"></div>
+      <div class="muted-small" style="margin-top:6px">
+        Reach your weekly goal to earn a <strong>+100 gold</strong> bonus. (Bonus logic is visual for now; server award to be wired next.)
+      </div>
+    </section>
+
+    <!-- Breakdown -->
+    <section id="breakdownCard" class="card" style="display:none;">
+      <h3 style="margin-top:0;margin-bottom:8px;">Breakdown</h3>
+      <div id="breakdownEmpty" class="muted-small" style="display:none;">No per-card data is available for this session.</div>
+      <div id="breakdownWrap" style="overflow-x:auto;">
+        <table class="breakdown">
+          <thead>
+            <tr>
+              <th>Card</th>
+              <th class="score">Best score</th>
+              <th>Perfect?</th>
+              <th class="coin">Gold</th>
+            </tr>
+          </thead>
+          <tbody id="breakdownBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Next steps -->
+    <section class="card">
+      <h3 style="margin-top:0">Next steps</h3>
+      <div class="row" style="gap:8px;flex-wrap:wrap;">
+        <a id="againBtn" class="btn btn-primary" href="learn.html">Try again</a>
+      </div>
+    </section>
+  </main>
+
+  <nav class="bottom" aria-label="Primary">
+    <a href="index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1V10.5Z"/></svg>
+      <span>Home</span>
+    </a>
+    <a href="learn.html" class="active" aria-current="page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6h16M4 12h10M4 18h7" stroke-linecap="round"/></svg>
+      <span>Learn</span>
+    </a>
+    <a href="manage_sets/index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 5h16v4H4zM4 11h10v4H4zM4 17h7v4H4z"/></svg>
+      <span>Library</span>
+    </a>
+    <a href="dashboard.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 14h6V4H4zm10 0h6V4h-6zm0 6h6v-4h-6zM4 20h6v-2H4z"/></svg>
+      <span>Dashboard</span>
+    </a>
+    <a href="groups.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 11a4 4 0 1 1 4-4 4 4 0 0 1-4 4Zm8 0a3 3 0 1 0-3-3 3 3 0 0 0 3 3ZM4 21v-1a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v1Zm10.5 0A3.5 3.5 0 0 1 21 17.5V17a4 4 0 0 0-3.5-4"/></svg>
+      <span>Groups</span>
+    </a>
+  </nav>
+
+  <script src="static/js/app-config.js"></script>
+  <script src="static/js/api.js"></script>
+  <script src="static/js/page-chrome.js"></script>
+  <script>
+  (function(){
+    function qp(k){ return new URLSearchParams(location.search).get(k) || ''; }
+
+    const q = {
+      set:   qp('set'),
+      mode: (qp('mode')||'').toLowerCase(),
+      score: Number(qp('score')||0),
+      awarded: (function(){ const v = qp('awarded'); return v ? Number(v) : null; })()
+    };
+
+    let last = null;
+    try { last = JSON.parse(sessionStorage.getItem('lp.lastResult') || 'null'); } catch(_){}
+
+    if (!q.set && last){
+      q.set   = last.set   || q.set;
+      q.mode  = (last.mode || q.mode || '').toLowerCase();
+      if (!q.score && last.score != null) q.score = Number(last.score) || 0;
     }
 
-    (async () => {
-      // pick up awarded delta from the redirect (?awarded=)
-      const urlAwarded = (() => {
-        const v = new URL(location.href).searchParams.get('awarded');
-        return (v != null) ? Number(v) : null;
-      })();
+    const setNameRaw = q.set || (last && last.set) || '';
+    const modeRaw    = q.mode || (last && last.mode) || '';
+    const scoreRaw   = (Number.isFinite(q.score) ? q.score : 0);
+    const details    = last && typeof last.details === 'object' ? last.details : null;
 
-      let done = false, awarded = urlAwarded;
+    function normMode(m){
+      m = (m||'').toLowerCase();
+      if (m===''||m==='learn'||m==='vocab'||m==='flashcard'||m==='flashcards') return 'flashcards';
+      if (m==='speak'||m==='practice') return 'practice';
+      if (m==='read'||m==='reading')   return 'reading';
+      if (m==='listen'||m==='listening') return 'listening';
+      return 'flashcards';
+    }
 
-      // Server last score first (new API, then legacy fallback)
-      try {
-        // new: array payload
-        let r = await api.fetch('/api/my/scores?limit=1&set_name=' + encodeURIComponent(setName));
-        if (!r.ok) {
-          // legacy: object with { scores: [...] }
-          r = await api.fetch('/api/get_scores?set_name=' + encodeURIComponent(setName) + '&limit=1');
+    const modeNorm   = normMode(modeRaw);
+    const prettyMode = modeNorm.charAt(0).toUpperCase() + modeNorm.slice(1);
+    const setName    = setNameRaw || '—';
+    const scorePct   = Math.max(0, Math.round(scoreRaw || 0));
+
+    const setEl      = document.getElementById('setName');
+    const modeEl     = document.getElementById('mode');
+    const cardCountEl= document.getElementById('cardCount');
+    const avgScoreEl = document.getElementById('avgScore');
+    const perfectEl  = document.getElementById('perfectInfo');
+    const notesEl    = document.getElementById('notes');
+    const topLine    = document.getElementById('topLine');
+
+    if (setEl)   setEl.textContent   = setName;
+    if (modeEl)  modeEl.textContent  = prettyMode;
+
+    // ---- derive card stats (for flashcards; others fallback) ----
+    let totalCards = null;
+    let n100 = null;
+    let avgCardScore = null;
+    let highestCardScore = null;
+
+    if (details && typeof details === 'object'){
+      if (details.total != null) {
+        const t = Number(details.total);
+        if (Number.isFinite(t) && t > 0) totalCards = t;
+      }
+      if (details.n100 != null) {
+        const v = Number(details.n100);
+        if (Number.isFinite(v) && v >= 0) n100 = v;
+      }
+      if (details.avg_card_score != null) {
+        const v = Number(details.avg_card_score);
+        if (Number.isFinite(v) && v >= 0) avgCardScore = v;
+      }
+      // Try to compute avg/highest from per-card stats if present
+      if (!avgCardScore && details.per && typeof details.per === 'object') {
+        let sum = 0, count = 0, hi = 0;
+        Object.values(details.per).forEach(function(r){
+          const b = Number(r && r.best);
+          if (!Number.isFinite(b)) return;
+          sum += b; count += 1;
+          if (b > hi) hi = b;
+        });
+        if (count > 0) {
+          avgCardScore = sum / count;
+          highestCardScore = hi;
         }
-        if (r.ok) {
-          const payload = await r.json();
-          const last = Array.isArray(payload)
-            ? payload[0]
-            : (payload && Array.isArray(payload.scores) ? payload.scores[0] : null);
+      }
+    }
 
-          if (last && (last.set_name === setName || !last.set_name)) {
-            const d = last.details || {};
-            if (awarded == null && d.points_awarded != null) awarded = Number(d.points_awarded);
-            apply(
-              Math.round(Number(last.score) || 0),
-              Number(last.attempts) || 0,
-              Number(d.total) || undefined,
-              Number(d.points_total) || undefined,
-              awarded
-            );
-            done = true;
+    if (!totalCards && details && typeof details.total === 'number'){
+      totalCards = details.total;
+    }
+
+    if (cardCountEl) {
+      cardCountEl.textContent = totalCards ? String(totalCards) : '—';
+    }
+
+    const avgDisplay = (avgCardScore != null)
+      ? Math.round(avgCardScore) + '%'
+      : (scorePct ? (scorePct + '%') : '—');
+    if (avgScoreEl) avgScoreEl.textContent = avgDisplay;
+
+    let perfectText = '—';
+    if (n100 != null && totalCards) {
+      perfectText = n100 + ' / ' + totalCards;
+    } else if (n100 != null) {
+      perfectText = String(n100);
+    } else if (highestCardScore != null) {
+      perfectText = 'Highest card: ' + Math.round(highestCardScore) + '%';
+    }
+    if (perfectEl) perfectEl.textContent = perfectText;
+
+    if (topLine){
+      const parts = [];
+      if (scorePct) parts.push(scorePct + '%');
+      if (setName) parts.push(setName);
+      parts.push(prettyMode);
+      topLine.textContent = parts.join(' • ');
+    }
+
+    // ---- Notes: mode-aware summary ----
+    if (notesEl){
+      const parts = [];
+      if (modeNorm === 'flashcards') {
+        if (totalCards != null && n100 != null) {
+          parts.push(`Perfect cards ${n100}/${totalCards}`);
+        }
+        if (avgCardScore != null) {
+          parts.push(`Avg card ${Math.round(avgCardScore)}%`);
+        }
+        if (details && typeof details === 'object' && details.perfect_before_flip != null) {
+          parts.push(`No-flip perfects ${details.perfect_before_flip}`);
+        }
+      } else if (modeNorm === 'reading') {
+        if (details) {
+          if (typeof details.passage_index === 'number') {
+            parts.push(`Passage ${details.passage_index + 1}`);
+          }
+          if (typeof details.avg_accuracy === 'number') {
+            parts.push(`Avg accuracy ${Math.round(details.avg_accuracy)}%`);
+          }
+          if (typeof details.wpm === 'number') {
+            parts.push(`${Math.round(details.wpm)} wpm`);
           }
         }
-      } catch (_) {}
-
-
-      if (!done) {
-        // Fallback to local cache saved before redirect
-        try {
-          const raw = localStorage.getItem('lp_last_result_' + setName);
-          if (raw) {
-            const j = JSON.parse(raw);
-            apply(Math.round(Number(j.score)||0), Number(j.attempts)||0, Number(j.total)||undefined,
-                  Number(j.points_total)||undefined, awarded);
-            done = true;
+      } else {
+        if (details && typeof details === 'object') {
+          if (typeof details.avg_accuracy === 'number') {
+            parts.push(`Avg accuracy ${Math.round(details.avg_accuracy)}%`);
           }
-        } catch(_) {}
+          if (typeof details.attempts === 'number') {
+            parts.push(`Attempts ${details.attempts}`);
+          }
+        }
       }
+      notesEl.textContent = parts.length ? parts.join(' • ') : '—';
+    }
 
-      if (!done) {
-        document.getElementById('resultLine').textContent = '—';
-        document.getElementById('detailLine').textContent = 'No recent result found.';
+    // ---- "Try again" link ----
+    (function(){
+      const btn = document.getElementById('againBtn');
+      if (!btn) return;
+      const enc = encodeURIComponent(setNameRaw || '');
+      if (!enc){
+        btn.href = 'learn.html';
+        return;
       }
+      if (modeNorm === 'reading')        btn.href = `reading/${enc}/`;
+      else if (modeNorm === 'listening') btn.href = `listening/${enc}/`;
+      else if (modeNorm === 'practice')  btn.href = `practice/${enc}/`;
+      else                               btn.href = `flashcards/${enc}/`;
     })();
+
+    // ---- Gold for this run (from URL or details) ----
+    function goldFromDetails(score, det){
+      if (det && typeof det === 'object'){
+        const primary = ['gold_awarded','points_awarded'];
+        for (const k of primary){
+          if (Object.prototype.hasOwnProperty.call(det, k)){
+            const v = Number(det[k]);
+            if (Number.isFinite(v)) return Math.max(0, Math.round(v));
+          }
+        }
+        const secondary = ['gold_rounded','gold_raw','gold','points_total'];
+        for (const k of secondary){
+          if (Object.prototype.hasOwnProperty.call(det, k)){
+            const v = Number(det[k]);
+            if (Number.isFinite(v)) return Math.max(0, Math.round(v));
+          }
+        }
+      }
+      return Math.max(0, Math.round(score || 0));
+    }
+
+    let runGold = null;
+    if (q.awarded != null && Number.isFinite(q.awarded)) {
+      runGold = Math.max(0, Math.round(q.awarded));
+    } else if (details) {
+      runGold = goldFromDetails(scorePct, details);
+    }
+
+    const goldRunLine  = document.getElementById('goldRunLine');
+    const goldWeekLine = document.getElementById('goldWeekLine');
+
+    if (goldRunLine) {
+      goldRunLine.textContent = runGold != null
+        ? `This run: +${runGold}`
+        : `This run: —`;
+    }
+
+    // ---- Breakdown table ----
+    function buildBreakdown(){
+      const card = document.getElementById('breakdownCard');
+      const body = document.getElementById('breakdownBody');
+      const empty = document.getElementById('breakdownEmpty');
+      if (!card || !body || !empty) return;
+      body.innerHTML = '';
+
+      const per = details && details.per && typeof details.per === 'object'
+        ? details.per
+        : null;
+
+      if (!per) {
+        empty.style.display = 'block';
+        card.style.display = 'block';
+        return;
+      }
+
+      const entries = Object.entries(per);
+      if (!entries.length) {
+        empty.style.display = 'block';
+        card.style.display = 'block';
+        return;
+      }
+
+      empty.style.display = 'none';
+      card.style.display = 'block';
+
+      entries.forEach(function([key, r], idx){
+        const tr = document.createElement('tr');
+
+        const labelCell = document.createElement('td');
+        const label = (r && (r.label || r.text || r.phrase)) || key || ('Card ' + (idx+1));
+        labelCell.textContent = String(label).length > 48
+          ? String(label).slice(0, 45) + '…'
+          : String(label);
+
+        const bestCell = document.createElement('td');
+        bestCell.className = 'score';
+        const best = Number(r && r.best);
+        bestCell.textContent = Number.isFinite(best) ? (Math.round(best) + '%') : '—';
+
+        const perfCell = document.createElement('td');
+        if (Number.isFinite(best) && best >= 100) {
+          perfCell.innerHTML = '<span class="pill pill-perfect">Perfect</span>';
+        } else if (Number.isFinite(best)) {
+          perfCell.innerHTML = '<span class="pill">In progress</span>';
+        } else {
+          perfCell.innerHTML = '<span class="pill">—</span>';
+        }
+
+        const coinCell = document.createElement('td');
+        coinCell.className = 'coin';
+        if (Number.isFinite(best) && best >= 100) {
+          coinCell.textContent = '🪙';
+        } else {
+          coinCell.textContent = '○';
+        }
+
+        tr.appendChild(labelCell);
+        tr.appendChild(bestCell);
+        tr.appendChild(perfCell);
+        tr.appendChild(coinCell);
+        body.appendChild(tr);
+      });
+    }
+
+    buildBreakdown();
+
+    // ---- Weekly progress bar ----
+    async function refreshWeeklyBar(){
+      try{
+        const r = await api.fetch('/api/my/stats');
+        if (!r.ok) return;
+        const s = await r.json();
+
+        const weekly = Number(s.weekly_gold ?? s.weekly_points ?? 0) || 0;
+        const goal   = Number(s.goal_gold   ?? s.goal_points   ?? 500) || 500;
+        const pct = goal > 0 ? Math.max(0, Math.min(100, Math.round((weekly/goal)*100))) : 0;
+
+        const wbar  = document.getElementById('wbar');
+        const wtext = document.getElementById('wtext');
+        const pline = document.getElementById('progressLine');
+        const phint = document.getElementById('progressHint');
+        const extras= document.getElementById('extras');
+
+        if (wbar)  wbar.style.width = pct + '%';
+        if (wtext) wtext.textContent = `${weekly} / ${goal}`;
+        if (pline) pline.textContent = `This week: ${weekly} gold`;
+        if (phint) phint.textContent =
+          `Streak: ${(s.streak_days||0)} day(s) • Best: ${(s.longest_streak||0)} day(s)`;
+
+        if (extras){
+          extras.textContent =
+            `Streak: ${(s.streak_days||0)} day(s) • Best: ${(s.longest_streak||0)} day(s)`;
+        }
+
+        // Update gold weekly line with "before/after" approximation
+        if (goldWeekLine) {
+          const rg = runGold != null ? runGold : 0;
+          const before = Math.max(0, weekly - rg);
+          goldWeekLine.textContent = `This week: ${before} → ${weekly} (goal ${goal})`;
+        }
+      }catch(_){}
+    }
+
+    (async function run(){
+      await refreshWeeklyBar();
+    })();
+  })();
   </script>
 </body>
 </html>

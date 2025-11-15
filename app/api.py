@@ -399,16 +399,14 @@ def submit_score(current_user):
     """
     Store one run (set + mode) + award gold.
 
-    Input JSON:
-      - set_name : str  (required)
-      - mode     : str  (flashcards | practice | reading | listening, etc.)
-      - score    : float (0–100, required)
-      - attempts : int   (optional, default 1)
-      - gold     : float (optional; if omitted we derive from details or score)
-      - details  : dict  (optional; we truncate if huge)
+    Flashcards gold logic:
+      - +10 gold for first-ever run on a set (per user+set+mode)
+      - +1 gold per card that has *ever* reached 100% (permanent unlock)
+      - Weekly perfect bonus: if the set is fully perfect in a run,
+        grant +n100 gold once per week for that set+mode.
 
-    Output JSON:
-      { "message": "saved", "score_id": <id>, "details": {"points_awarded": <int>} }
+    Other modes:
+      - Keep prior behaviour (score/points-based with a per-set cap).
     """
     data = request.get_json(silent=True) or {}
 
@@ -475,48 +473,25 @@ def submit_score(current_user):
 
     details = _cap_details(details)
 
-    # ---- derive gold for THIS run ----
-    def _gold_from_details(d):
-        if not isinstance(d, dict):
-            return None
-        for key in ("gold_rounded", "gold_raw", "gold", "points_total"):
-            if key in d:
-                try:
-                    return float(d[key])
-                except (TypeError, ValueError):
-                    continue
-        return None
+    run_gold_awarded: float | None = None
+    run_gold_raw: float | None = None
 
-    run_gold_raw = None
-
-    # 1) explicit "gold" field from client
-    if gold_in is not None:
+    # ---------------- FLASHCARDS GOLD ENGINE ----------------
+    if mode == "flashcards":
+        # We expect the frontend to send:
+        #   details.total  -> totalCards
+        #   details.n100   -> cards at 100% this run
         try:
-            run_gold_raw = float(gold_in)
+            total_cards = int(details.get("total") or 0)
         except (TypeError, ValueError):
-            run_gold_raw = None
+            total_cards = 0
 
-    # 2) else derive from details
-    if run_gold_raw is None:
-        run_gold_raw = _gold_from_details(details)
+        try:
+            n100 = int(details.get("n100") or 0)
+        except (TypeError, ValueError):
+            n100 = 0
 
-    # 3) final fallback: capped score
-    if run_gold_raw is None:
-        run_gold_raw = float(_cap_points(score_val))
-
-    if run_gold_raw < 0:
-        run_gold_raw = 0.0
-
-    gold_rounded = round(run_gold_raw * 2.0) / 2.0
-
-    # ---- per-set cap (lifetime) ----
-    # You can tune this. Example: 50 gold max per (user, set, mode)
-    MAX_GOLD_PER_SET = 50
-
-    points_awarded = gold_rounded
-
-    if MAX_GOLD_PER_SET is not None and MAX_GOLD_PER_SET > 0:
-        # Sum gold already earned for this user+set+mode
+        # All past runs for this user+set+mode
         existing_rows = (
             Score.query
             .filter(
@@ -524,37 +499,173 @@ def submit_score(current_user):
                 Score.set_name == set_name,
                 Score.mode == mode,
             )
+            .order_by(Score.timestamp.asc())
             .all()
         )
+        first_time = len(existing_rows) == 0
 
-        def _row_gold(row):
-            d = row.details or {}
+        # Highest n100 we've ever seen before on this set+mode
+        prev_max_n100 = 0
+        for r in existing_rows:
+            d = r.details or {}
             if isinstance(d, dict):
-                for key in (
-                    "gold_awarded",
-                    "points_awarded",
-                    "gold_rounded",
-                    "gold_raw",
-                    "gold",
-                    "points_total",
-                ):
-                    if key in d:
-                        try:
-                            return float(d[key])
-                        except (TypeError, ValueError):
-                            continue
-            return float(_cap_points(row.score))
+                try:
+                    v = int(d.get("n100") or 0)
+                except (TypeError, ValueError):
+                    v = 0
+                if v > prev_max_n100:
+                    prev_max_n100 = v
 
-        already = sum(_row_gold(r) for r in existing_rows)
-        remaining = max(0.0, float(MAX_GOLD_PER_SET) - already)
-        points_awarded = max(0.0, min(gold_rounded, remaining))
+        new_perfect_cards = max(0, n100 - prev_max_n100)
+
+        # 10 gold the first time only (ever for this set+mode)
+        first_time_bonus = 10.0 if first_time else 0.0
+
+        # 1 gold per newly-perfected card
+        per_card_gold = float(new_perfect_cards)
+
+        # Weekly perfect-set bonus: +n100 once per week per set+mode
+        perfect_run = bool(
+            score_val >= 100.0 or (total_cards > 0 and n100 >= total_cards)
+        )
+        perfect_bonus = 0.0
+        if perfect_run and total_cards > 0 and n100 >= total_cards:
+            today = datetime.utcnow().date()
+            week_start = _week_start_utc(today)
+            weekly_rows = (
+                Score.query
+                .filter(
+                    Score.user_id == current_user.id,
+                    Score.set_name == set_name,
+                    Score.mode == mode,
+                    Score.timestamp >= week_start,
+                )
+                .all()
+            )
+            weekly_bonus_used = False
+            for r in weekly_rows:
+                d = r.details or {}
+                if isinstance(d, dict):
+                    try:
+                        if float(d.get("perfect_bonus") or 0) > 0:
+                            weekly_bonus_used = True
+                            break
+                    except (TypeError, ValueError):
+                        continue
+
+            if not weekly_bonus_used:
+                # +1 per card this run as a weekly perfect bonus
+                perfect_bonus = float(n100 or 0)
+
+        run_gold_awarded = max(0.0, first_time_bonus + per_card_gold + perfect_bonus)
+        run_gold_raw = run_gold_awarded
+
+        # Annotate details for later summaries
+        if isinstance(details, dict):
+            details.setdefault("total", total_cards)
+            details.setdefault("n100", n100)
+            details["first_time_bonus"] = first_time_bonus
+            details["new_perfect_cards"] = new_perfect_cards
+            details["perfect_bonus"] = perfect_bonus
+
+    # ---------------- OTHER MODES (LEGACY LOGIC) ----------------
+    else:
+        def _gold_from_details(d):
+            if not isinstance(d, dict):
+                return None
+            for key in ("gold_rounded", "gold_raw", "gold", "points_total"):
+                if key in d:
+                    try:
+                        return float(d[key])
+                    except (TypeError, ValueError):
+                        continue
+            return None
+
+        run_gold_raw = None
+
+        # 1) explicit "gold" from client
+        if gold_in is not None:
+            try:
+                run_gold_raw = float(gold_in)
+            except (TypeError, ValueError):
+                run_gold_raw = None
+
+        # 2) else derive from details
+        if run_gold_raw is None:
+            run_gold_raw = _gold_from_details(details)
+
+        # 3) final fallback: capped score
+        if run_gold_raw is None:
+            run_gold_raw = float(_cap_points(score_val))
+
+        if run_gold_raw < 0:
+            run_gold_raw = 0.0
+
+        gold_rounded = round(run_gold_raw * 2.0) / 2.0
+
+        # Lifetime per-set cap for non-flashcards
+        MAX_GOLD_PER_SET = 50
+
+        points_awarded_local = gold_rounded
+
+        if MAX_GOLD_PER_SET is not None and MAX_GOLD_PER_SET > 0:
+            existing_rows = (
+                Score.query
+                .filter(
+                    Score.user_id == current_user.id,
+                    Score.set_name == set_name,
+                    Score.mode == mode,
+                )
+                .all()
+            )
+
+            def _row_gold(row):
+                d = row.details or {}
+                if isinstance(d, dict):
+                    for key in (
+                        "gold_awarded",
+                        "points_awarded",
+                        "gold_rounded",
+                        "gold_raw",
+                        "gold",
+                        "points_total",
+                    ):
+                        if key in d:
+                            try:
+                                return float(d[key])
+                            except (TypeError, ValueError):
+                                continue
+                return float(_cap_points(row.score))
+
+            already = sum(_row_gold(r) for r in existing_rows)
+            remaining = max(0.0, float(MAX_GOLD_PER_SET) - already)
+            points_awarded_local = max(0.0, min(gold_rounded, remaining))
+
+        run_gold_awarded = points_awarded_local
+        # keep run_gold_raw as-is for diagnostics
 
     # ---- embed gold into details ----
+    if run_gold_awarded is None:
+        run_gold_awarded = 0.0
+
+    if run_gold_raw is None:
+        run_gold_raw = run_gold_awarded
+
+    try:
+        gold_raw_val = float(run_gold_raw)
+    except (TypeError, ValueError):
+        gold_raw_val = float(run_gold_awarded)
+
+    if gold_raw_val < 0:
+        gold_raw_val = 0.0
+
+    gold_rounded_val = round(gold_raw_val * 2.0) / 2.0
+
     if isinstance(details, dict):
-        details.setdefault("gold_raw", run_gold_raw)
-        details.setdefault("gold_rounded", gold_rounded)
-        details.setdefault("gold_awarded", points_awarded)
-        details.setdefault("points_awarded", points_awarded)
+        details.setdefault("gold_raw", gold_raw_val)
+        details.setdefault("gold_rounded", gold_rounded_val)
+        details["gold_awarded"] = float(run_gold_awarded)
+        details["points_awarded"] = float(run_gold_awarded)
 
     # ---- persist ----
     s = Score(
@@ -572,10 +683,9 @@ def submit_score(current_user):
         {
             "message": "saved",
             "score_id": s.id,
-            "details": {"points_awarded": int(round(points_awarded))},
+            "details": {"points_awarded": int(round(run_gold_awarded))},
         }
     ), 201
-
 
 @api_bp.route("/scores", methods=["POST"])
 @token_required

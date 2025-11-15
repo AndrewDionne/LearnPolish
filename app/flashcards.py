@@ -713,37 +713,32 @@ def generate_flashcard_html(set_name, data):
           currentIndex++;
           renderCard(); // ensures flipped -> front
         }} else {{
+        
           // FINISH
           const totalCards = Math.max(1, cards.length);
           const perStats   = Object.values(tracker.per || {{}});
 
           let n100 = 0, n70_99 = 0, nBelow = 0;
+          let sumBest = 0, countBest = 0;
+
           for (const r of perStats) {{
             const best = Number((r && r.best) || 0);
             if (!Number.isFinite(best)) continue;
+            sumBest += best;
+            countBest += 1;
+
             if (best >= 100)       n100++;
             else if (best >= 70)  n70_99++;
             else                  nBelow++;
           }}
 
+          const avgCardScore = countBest > 0 ? (sumBest / countBest) : 0;
+
           // "Correct" = ≥ PASS for the in-game pass threshold
           const correct  = perStats.filter(r => Number((r && r.best) || 0) >= PASS).length;
           const scorePct = Math.round((correct / totalCards) * 100);
 
-          // Gold:
-          //   10 GP for finishing the set
-          //   +1 GP per answer at 100%
-          //   +0.5 GP per answer between 70–100%
-          //   +0 GP for <70%
-          //   DOUBLE total if final score is 100%
-          const baseGold = 10;
-          let   rawGold  = baseGold + n100 * 1.0 + n70_99 * 0.5;
-          if (scorePct === 100) {{
-            rawGold = rawGold * 2;
-          }}
-          const goldEarned = Math.round(rawGold * 2) / 2; // keep 0.5 steps
-
-          // Cache per-set last result (used by per-set summary pages)
+          // Cache per-set last result (useful for older per-set summaries)
           try {{
             localStorage.setItem(
               "lp_last_result_" + setName,
@@ -753,17 +748,16 @@ def generate_flashcard_html(set_name, data):
                 score: scorePct,
                 attempts: tracker.attempts,
                 total: totalCards,
-                gold: goldEarned,
-                gold_raw: rawGold,
                 n100,
                 n70_99,
                 nBelow,
+                avg_card_score: avgCardScore,
                 perfect_before_flip: tracker.perfectNoFlipCount
               }})
             );
           }} catch(_e) {{}}
 
-          // Also cache a global lastResult so /summary.html can show it
+          // Also cache a GLOBAL lastResult so docs/summary.html can drive the finish UI
           try {{
             sessionStorage.setItem(
               "lp.lastResult",
@@ -774,17 +768,26 @@ def generate_flashcard_html(set_name, data):
                 attempts: tracker.attempts,
                 details: {{
                   total: totalCards,
-                  gold_rounded: goldEarned,
-                  gold_raw: rawGold,
                   n100,
                   n70_99,
                   nBelow,
+                  avg_card_score: avgCardScore,
+                  per: tracker.per,
                   perfect_before_flip: tracker.perfectNoFlipCount
                 }},
                 ts: Date.now()
               }})
             );
           }} catch(_e) {{}}
+
+          // Helper for root summary URL (GitHub Pages vs Flask)
+          function _repoBase() {{
+            if (/\\.github\\.io$/i.test(location.hostname)) {{
+              const parts = location.pathname.split("/").filter(Boolean);
+              return "/" + (parts[0] || "LearnPolish");
+            }}
+            return "";
+          }}
 
           let awarded = null;
           try {{
@@ -796,15 +799,14 @@ def generate_flashcard_html(set_name, data):
                 mode: "flashcards",
                 score: scorePct,
                 attempts: tracker.attempts,
-                gold: goldEarned,
+                // Gold is fully computed server-side now (first-time, per-card, weekly perfect)
                 details: {{
                   per: tracker.per,
                   total: totalCards,
                   n100,
                   n70_99,
                   nBelow,
-                  gold_raw: rawGold,
-                  gold_rounded: goldEarned,
+                  avg_card_score: avgCardScore,
                   perfect_before_flip: tracker.perfectNoFlipCount
                 }}
               }})
@@ -818,8 +820,18 @@ def generate_flashcard_html(set_name, data):
           }} catch(_e) {{}}
 
           try {{ localStorage.removeItem("lp_last"); }} catch(_e) {{}}
-          const q = awarded != null ? ("?awarded=" + encodeURIComponent(awarded)) : "";
-          window.location.href = "summary.html" + q;
+
+          const base = _repoBase();
+          const params = new URLSearchParams({{
+            set: setName,
+            mode: "flashcards",
+            score: String(scorePct)
+          }});
+          if (awarded != null && !Number.isNaN(awarded)) {{
+            params.set("awarded", String(awarded));
+          }}
+
+          window.location.href = base + "/summary.html?" + params.toString();
 
         }}
       }});
