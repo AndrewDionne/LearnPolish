@@ -11,13 +11,14 @@
     })();
   </script>
   <title>Session Summary • Path to POLISH</title>
-  <link rel="stylesheet" href="static/app.css?v=8"/>
+  <link rel="stylesheet" href="static/app.css?v=9"/>
   <style>
     :root{
       --gold:#c58b0f;
     }
     .wrap{max-width:900px;margin:0 auto 92px;padding:0 16px}
     .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin:16px 0;box-shadow:var(--shadow,0 1px 2px rgba(8,15,52,.04))}
+    .card.card-compact{padding:10px 16px;}
     .row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
     .kv{display:grid;grid-template-columns:auto 1fr;column-gap:12px;row-gap:4px;font-size:14px}
     .kv>div:nth-child(odd){color:var(--muted)}
@@ -122,11 +123,15 @@
             <div><span class="gold-coin"></span><strong>Gold</strong></div>
             <div id="goldRunLine" class="muted-small">This run: —</div>
             <div id="goldTotalLine" class="muted-small">Gold earned: —</div>
-            <div style="margin-top:8px;text-align:right;">
-              <a id="againBtn" class="btn btn-primary" href="learn.html">Try again</a>
-            </div>
           </div>
         </div>
+      </div>
+    </section>
+
+    <!-- Try again (own compact card) -->
+    <section class="card card-compact">
+      <div class="row" style="justify-content:flex-start;">
+        <a id="againBtn" class="btn btn-primary" href="learn.html">Try again</a>
       </div>
     </section>
 
@@ -297,16 +302,25 @@
     }
     if (perfectEl) perfectEl.textContent = perfectText;
 
-    // ---- Top line: average score + collection name ----
-    if (topLine){
+    // ---- Top line: animate score 0 → displayScore ----
+    (function(){
+      if (!topLine) return;
       const displayScore = (avgCardScore != null)
         ? Math.round(avgCardScore)
         : (scorePct || 0);
-      const parts = [];
-      if (displayScore) parts.push(displayScore + '%');
-      if (setNameRaw) parts.push(setNameRaw);
-      topLine.textContent = parts.join(' • ');
-    }
+      const label = setNameRaw ? (' • ' + setNameRaw) : '';
+      if (!displayScore) {
+        topLine.textContent = setNameRaw || '—';
+        return;
+      }
+      animateNumber(
+        topLine,
+        0,
+        displayScore,
+        700,
+        function(v){ return v + '%' + label; }
+      );
+    })();
 
     // ---- "Try again" link ----
     (function(){
@@ -430,10 +444,14 @@
 
     // ---- Weekly progress bar ----
     async function refreshWeeklyBar(){
+      const wbar   = document.getElementById('wbar');
+      const wtext  = document.getElementById('wtext');
+      const pline  = document.getElementById('progressLine');
+      const wcoin  = document.getElementById('weeklyCoin');
+
       try{
         const r = await api.fetch('/api/my/stats');
         if (!r.ok) {
-          // If stats fail, at least keep the static run gold text
           if (goldTotalLine) goldTotalLine.textContent = 'Gold earned: —';
           return;
         }
@@ -442,21 +460,44 @@
         const weekly = Number(s.weekly_gold ?? s.weekly_points ?? 0) || 0;
         const goal   = Number(s.goal_gold   ?? s.goal_points   ?? 500) || 500;
         const total  = Number(s.total_gold  ?? 0) || 0;
-        const pct = goal > 0 ? Math.max(0, Math.min(100, Math.round((weekly/goal)*100))) : 0;
 
-        const wbar   = document.getElementById('wbar');
-        const wtext  = document.getElementById('wtext');
-        const pline  = document.getElementById('progressLine');
-        const wcoin  = document.getElementById('weeklyCoin');
+        const pct = goal > 0
+          ? Math.max(0, Math.min(100, Math.round((weekly/goal)*100)))
+          : 0;
 
-        if (wbar)  wbar.style.width = pct + '%';
-        if (wtext) wtext.textContent = `${weekly} / ${goal}`;
+        // Approximate "before this run" weekly value so we can animate
+        const baseWeekly = Math.max(0, weekly - (runGold || 0));
+        const basePct = goal > 0
+          ? Math.max(0, Math.min(100, Math.round((baseWeekly/goal)*100)))
+          : 0;
+
         if (pline) pline.textContent = `This week: ${weekly} gold`;
 
+        // Animate weekly number
+        if (wtext) {
+          animateNumber(
+            wtext,
+            baseWeekly,
+            weekly,
+            800,
+            function(v){ return v + ' / ' + goal; }
+          );
+        }
+
+        // Animate bar width (base → final)
+        if (wbar) {
+          wbar.style.transition = 'none';
+          wbar.style.width = basePct + '%';
+          requestAnimationFrame(function(){
+            wbar.style.transition = '';
+            wbar.style.width = pct + '%';
+          });
+        }
+
+        // Weekly bonus coin
         if (wcoin) {
           if (weekly >= goal) {
             wcoin.classList.remove('unearned');
-            // pop animation
             wcoin.classList.add('pop');
             setTimeout(function(){ wcoin.classList.remove('pop'); }, 500);
           } else {
