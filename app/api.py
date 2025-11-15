@@ -399,13 +399,25 @@ def submit_score(current_user):
     """
     Store one run (set + mode) + award gold.
 
-    Flashcards gold logic:
-      - +10 gold for first-ever run on a set (per user+set+mode)
-      - +1 gold per card that has *ever* reached 100% (permanent unlock)
-      - Weekly perfect bonus: if the set is fully perfect in a run,
-        grant +n100 gold once per week for that set+mode.
+    FLASHCARDS gold logic (server-side, history-aware):
 
-    Other modes:
+      Lifetime "base" component:
+        - +10 gold for the first-ever run on a set (per user+set+mode)
+        - +1 gold whenever a *new* card reaches 100% for the first time
+          (per card lifetime; approximated via max n100 across runs)
+        => This tops out at 10 + number_of_cards over the user's lifetime.
+
+      Weekly perfect bonus (NEW):
+        - If the set is fully perfect in a run (all cards 100%, score ≈ 100%)
+        - And no bonus has yet been given this week for that set+mode
+        - Then award a weekly bonus of (10 + number_of_cards).
+
+        This "bonus-only" part resets weekly: once per week, a perfect run
+        can give that extra chunk of gold. After you've maxed out the base
+        lifetime component, replays only give gold via this weekly bonus.
+
+    OTHER MODES:
+
       - Keep prior behaviour (score/points-based with a per-set cap).
     """
     data = request.get_json(silent=True) or {}
@@ -504,11 +516,15 @@ def submit_score(current_user):
         )
         first_time = len(existing_rows) == 0
 
-        # Highest n100 we've ever seen before on this set+mode
         prev_max_n100 = 0
+        today = datetime.utcnow().date()
+        week_start = _week_start_utc(today)
+        weekly_bonus_used = False
+
         for r in existing_rows:
             d = r.details or {}
             if isinstance(d, dict):
+                # Track best-ever n100
                 try:
                     v = int(d.get("n100") or 0)
                 except (TypeError, ValueError):
@@ -516,57 +532,56 @@ def submit_score(current_user):
                 if v > prev_max_n100:
                     prev_max_n100 = v
 
+                # Has a weekly bonus already been granted this week?
+                try:
+                    if (
+                        r.timestamp
+                        and r.timestamp.date() >= week_start.date()
+                        and float(d.get("weekly_bonus_awarded", 0) or 0) > 0.0
+                    ):
+                        weekly_bonus_used = True
+                except (TypeError, ValueError):
+                    pass
+
+        # New perfect cards compared to history
         new_perfect_cards = max(0, n100 - prev_max_n100)
 
-        # 10 gold the first time only (ever for this set+mode)
+        # Lifetime "base" component:
+        #  - 10 gold the first time only (ever for this set+mode)
+        #  - +1 per newly-perfected card
         first_time_bonus = 10.0 if first_time else 0.0
-
-        # 1 gold per newly-perfected card
         per_card_gold = float(new_perfect_cards)
+        base_component = max(0.0, first_time_bonus + per_card_gold)
 
-        # Weekly perfect-set bonus: +n100 once per week per set+mode
+        # Fully perfect run? (all cards at 100%, and high score)
         perfect_run = bool(
-            score_val >= 100.0 or (total_cards > 0 and n100 >= total_cards)
+            total_cards > 0
+            and n100 >= total_cards
+            and score_val is not None
+            and float(score_val) >= 99.5
         )
-        perfect_bonus = 0.0
-        if perfect_run and total_cards > 0 and n100 >= total_cards:
-            today = datetime.utcnow().date()
-            week_start = _week_start_utc(today)
-            weekly_rows = (
-                Score.query
-                .filter(
-                    Score.user_id == current_user.id,
-                    Score.set_name == set_name,
-                    Score.mode == mode,
-                    Score.timestamp >= week_start,
-                )
-                .all()
-            )
-            weekly_bonus_used = False
-            for r in weekly_rows:
-                d = r.details or {}
-                if isinstance(d, dict):
-                    try:
-                        if float(d.get("perfect_bonus") or 0) > 0:
-                            weekly_bonus_used = True
-                            break
-                    except (TypeError, ValueError):
-                        continue
 
-            if not weekly_bonus_used:
-                # +1 per card this run as a weekly perfect bonus
-                perfect_bonus = float(n100 or 0)
+        # Weekly perfect bonus: number_of_cards (once per week per set+mode)
+        set_gold = 0.0 + float(total_cards) if total_cards > 0 else 10.0
+        weekly_bonus = 0.0
+        if perfect_run and not weekly_bonus_used and total_cards > 0:
+            weekly_bonus = set_gold
 
-        run_gold_awarded = max(0.0, first_time_bonus + per_card_gold + perfect_bonus)
-        run_gold_raw = run_gold_awarded
+        # Total gold for this run
+        run_gold_raw = base_component + weekly_bonus
+        run_gold_awarded = max(0.0, float(run_gold_raw))
 
-        # Annotate details for later summaries
+        # Annotate details for later summaries / debugging
         if isinstance(details, dict):
             details.setdefault("total", total_cards)
             details.setdefault("n100", n100)
             details["first_time_bonus"] = first_time_bonus
             details["new_perfect_cards"] = new_perfect_cards
-            details["perfect_bonus"] = perfect_bonus
+            details["base_component_awarded"] = float(base_component)
+            details["weekly_bonus_awarded"] = float(weekly_bonus)
+            details["score_pct"] = float(score_val)
+            if perfect_run:
+                details["full_set_perfect"] = True
 
     # ---------------- OTHER MODES (LEGACY LOGIC) ----------------
     else:
