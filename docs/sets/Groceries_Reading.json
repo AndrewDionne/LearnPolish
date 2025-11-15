@@ -1,0 +1,23 @@
+{
+  "name": "Groceries_Reading",
+  "modes": [
+    "read"
+  ],
+  "meta": {
+    "modes": [
+      "read"
+    ]
+  },
+  "passages": [
+    {
+      "polish": "W sobotę rano idę do dużego sklepu spożywczego niedaleko domu. Przy wejściu biorę wózek sklepowy, ale czasem wystarczy mały koszyk. Najpierw idę do działu warzywnego po kilogram jabłek, kilka pomidorów i sałatę. Potem przechodzę do działu nabiałowego, gdzie biorę jajka z wolnego wybiegu, ser żółty i jogurt naturalny. Na końcu zatrzymuję się przy pieczywie i wybieram świeży chleb. Gdy mam wszystko, ustawiam się w kolejce do kasy. Kasjerka pyta, czy mam kartę lojalnościową i czy chcę paragon. Płacę kartą i mówię: „Dziękuję, do widzenia”.",
+      "english": "On Saturday morning I go to a big grocery store not far from home. At the entrance I take a shopping cart, but sometimes a small basket is enough. First I go to the produce section for a kilo of apples, some tomatoes and lettuce. Then I move to the dairy section, where I take free-range eggs, yellow cheese and natural yogurt. At the end I stop by the bread section and choose fresh bread. When I have everything, I line up at the checkout. The cashier asks if I have a loyalty card and if I want a receipt. I pay by card and say, “Thank you, goodbye.”",
+      "title": "Zakupy w sklepie spożywczym"
+    },
+    {
+      "polish": "Dzisiaj zapomniałem własnej torby na zakupy. Przy kasie kasjerka pyta, czy potrzebuję plastikowej torby. Mówię, że mam tylko kilka rzeczy i spróbuję wszystko zmieścić do plecaka. Przede mną w kolejce stoi starszy pan, który płaci gotówką i długo szuka drobnych. Kolejka idzie wolno, ale w tym czasie sprawdzam na paragonie ceny produktów w promocji.",
+      "english": "Today I forgot my own shopping bag. At the checkout the cashier asks if I need a plastic bag. I say that I only have a few things and I will try to fit everything into my backpack. In front of me in the line there is an older man who pays in cash and spends a long time looking for small change. The line moves slowly, but during that time I check the receipt to see the prices of the products on sale.",
+      "title": "Zapomniałem torby"
+    }
+  ]
+}

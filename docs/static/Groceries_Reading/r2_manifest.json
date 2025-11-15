@@ -1,0 +1,8 @@
+{
+  "set": "Groceries_Reading",
+  "assetsBase": "https://cdn.polishpath.com",
+  "files": {
+    "reading/Groceries_Reading/0.mp3": "https://cdn.polishpath.com/reading/Groceries_Reading/0.mp3",
+    "reading/Groceries_Reading/1.mp3": "https://cdn.polishpath.com/reading/Groceries_Reading/1.mp3"
+  }
+}
