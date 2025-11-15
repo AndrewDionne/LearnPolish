@@ -713,19 +713,78 @@ def generate_flashcard_html(set_name, data):
           currentIndex++;
           renderCard(); // ensures flipped -> front
         }} else {{
+          // FINISH
           const totalCards = Math.max(1, cards.length);
-          const correct = Object.values(tracker.per).filter(r => (r?.best || 0) >= PASS).length;
-          const scorePct = Math.round((correct / totalCards) * 100);
-          let pointsTotal = 10 + tracker.perfectNoFlipCount;
-          if (scorePct === 100) pointsTotal = pointsTotal * 2;
+          const perStats   = Object.values(tracker.per || {{}});
 
-          try {{
-            localStorage.setItem("lp_last_result_" + setName, JSON.stringify({{
-              score: scorePct, attempts: tracker.attempts, total: totalCards,
-              points_total: pointsTotal, perfect_before_flip: tracker.perfectNoFlipCount
-            }}));
-          }} catch(_){{
+          let n100 = 0, n70_99 = 0, nBelow = 0;
+          for (const r of perStats) {{
+            const best = Number((r && r.best) || 0);
+            if (!Number.isFinite(best)) continue;
+            if (best >= 100)       n100++;
+            else if (best >= 70)  n70_99++;
+            else                  nBelow++;
           }}
+
+          // "Correct" = ≥ PASS for the in-game pass threshold
+          const correct  = perStats.filter(r => Number((r && r.best) || 0) >= PASS).length;
+          const scorePct = Math.round((correct / totalCards) * 100);
+
+          // Gold:
+          //   10 GP for finishing the set
+          //   +1 GP per answer at 100%
+          //   +0.5 GP per answer between 70–100%
+          //   +0 GP for <70%
+          //   DOUBLE total if final score is 100%
+          const baseGold = 10;
+          let   rawGold  = baseGold + n100 * 1.0 + n70_99 * 0.5;
+          if (scorePct === 100) {{
+            rawGold = rawGold * 2;
+          }}
+          const goldEarned = Math.round(rawGold * 2) / 2; // keep 0.5 steps
+
+          // Cache per-set last result (used by per-set summary pages)
+          try {{
+            localStorage.setItem(
+              "lp_last_result_" + setName,
+              JSON.stringify({{
+                set: setName,
+                mode: "flashcards",
+                score: scorePct,
+                attempts: tracker.attempts,
+                total: totalCards,
+                gold: goldEarned,
+                gold_raw: rawGold,
+                n100,
+                n70_99,
+                nBelow,
+                perfect_before_flip: tracker.perfectNoFlipCount
+              }})
+            );
+          }} catch(_e) {{}}
+
+          // Also cache a global lastResult so /summary.html can show it
+          try {{
+            sessionStorage.setItem(
+              "lp.lastResult",
+              JSON.stringify({{
+                set: setName,
+                mode: "flashcards",
+                score: scorePct,
+                attempts: tracker.attempts,
+                details: {{
+                  total: totalCards,
+                  gold_rounded: goldEarned,
+                  gold_raw: rawGold,
+                  n100,
+                  n70_99,
+                  nBelow,
+                  perfect_before_flip: tracker.perfectNoFlipCount
+                }},
+                ts: Date.now()
+              }})
+            );
+          }} catch(_e) {{}}
 
           let awarded = null;
           try {{
@@ -733,21 +792,35 @@ def generate_flashcard_html(set_name, data):
               method: "POST",
               headers: {{ "Content-Type": "application/json" }},
               body: JSON.stringify({{
-                set_name: setName, mode: "flashcards", score: scorePct, attempts: tracker.attempts,
-                details: {{ per: tracker.per, total: totalCards, perfect_before_flip: tracker.perfectNoFlipCount, points_total: pointsTotal }}
+                set_name: setName,
+                mode: "flashcards",
+                score: scorePct,
+                attempts: tracker.attempts,
+                gold: goldEarned,
+                details: {{
+                  per: tracker.per,
+                  total: totalCards,
+                  n100,
+                  n70_99,
+                  nBelow,
+                  gold_raw: rawGold,
+                  gold_rounded: goldEarned,
+                  perfect_before_flip: tracker.perfectNoFlipCount
+                }}
               }})
             }});
             if (resp.ok) {{
               const js = await resp.json();
-              awarded = (js && js.details && js.details.points_awarded != null) ? Number(js.details.points_awarded) : null;
+              if (js && js.details && js.details.points_awarded != null) {{
+                awarded = Number(js.details.points_awarded);
+              }}
             }}
-          }} catch(_){{
-          }}
+          }} catch(_e) {{}}
 
-          try {{ localStorage.removeItem("lp_last"); }} catch(_){{
-          }}
+          try {{ localStorage.removeItem("lp_last"); }} catch(_e) {{}}
           const q = awarded != null ? ("?awarded=" + encodeURIComponent(awarded)) : "";
           window.location.href = "summary.html" + q;
+
         }}
       }});
     }});

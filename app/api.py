@@ -396,33 +396,61 @@ def avatar_upload(current_user):
 @api_bp.route("/submit_score", methods=["POST"])
 @token_required
 def submit_score(current_user):
+    """
+    Store one run (set + mode) + award gold.
+
+    Input JSON:
+      - set_name : str  (required)
+      - mode     : str  (flashcards | practice | reading | listening, etc.)
+      - score    : float (0–100, required)
+      - attempts : int   (optional, default 1)
+      - gold     : float (optional; if omitted we derive from details or score)
+      - details  : dict  (optional; we truncate if huge)
+
+    Output JSON:
+      { "message": "saved", "score_id": <id>, "details": {"points_awarded": <int>} }
+    """
     data = request.get_json(silent=True) or {}
+
     set_name = (data.get("set_name") or "").strip()
     mode = (data.get("mode") or "practice").strip().lower()
-    if mode in ("learn","vocab","flashcard","flashcards",""):   mode = "flashcards"
-    elif mode in ("speak","practice"):                           mode = "practice"
-    elif mode in ("read","reading"):                             mode = "reading"
-    elif mode in ("listen","listening"):                         mode = "listening"
-    else:                                                        mode = "flashcards"
+
+    # Normalise modes to a small set
+    if mode in ("learn", "vocab", "flashcard", "flashcards", ""):
+        mode = "flashcards"
+    elif mode in ("speak", "practice"):
+        mode = "practice"
+    elif mode in ("read", "reading"):
+        mode = "reading"
+    elif mode in ("listen", "listening"):
+        mode = "listening"
+    else:
+        mode = "flashcards"
 
     score_val = data.get("score")
     attempts = data.get("attempts", 1)
-    details = data.get("details", {})
+    details = data.get("details", {}) or {}
+    gold_in = data.get("gold", None)
 
     if not set_name:
         return jsonify({"message": "set_name is required"}), 400
+    if score_val is None:
+        return jsonify({"message": "score is required"}), 400
+
     try:
         score_val = float(score_val)
     except (TypeError, ValueError):
         return jsonify({"message": "score must be a number"}), 400
+
     try:
         attempts = int(attempts)
     except (TypeError, ValueError):
-        return jsonify({"message": "attempts must be an integer"}), 400
-    # ---- details normalization + size cap (~50 KB JSON) ----
+        attempts = 1
+
     if not isinstance(details, dict):
         details = {"raw": str(details)[:2000]}
 
+    # ---- details size cap (~50 KB) ----
     def _cap_details(obj, cap=50_000):
         try:
             s = json.dumps(obj, ensure_ascii=False)
@@ -430,34 +458,124 @@ def submit_score(current_user):
                 return obj
         except Exception:
             return {"raw": "unserializable"}
-        # try targeted trim if common large fields exist
+
         if isinstance(obj, dict):
-            out = dict(obj)
-            if isinstance(out.get("perDialogueLog"), list):
-                out["perDialogueLog"] = out["perDialogueLog"][:200]
-            if isinstance(out.get("items"), list):
-                out["items"] = out["items"][:200]
+            trimmed = dict(obj)
+            # Common "big" fields get trimmed
+            for key in ("perDialogueLog", "items", "per", "cards", "segments"):
+                if isinstance(trimmed.get(key), list):
+                    trimmed[key] = trimmed[key][:200]
             try:
-                if len(json.dumps(out, ensure_ascii=False)) <= cap:
-                    return out
+                s = json.dumps(trimmed, ensure_ascii=False)
+                if len(s) <= cap:
+                    return trimmed
             except Exception:
                 pass
         return {"truncated": True}
 
     details = _cap_details(details)
-    # -----------------------------------------------
 
+    # ---- derive gold for THIS run ----
+    def _gold_from_details(d):
+        if not isinstance(d, dict):
+            return None
+        for key in ("gold_rounded", "gold_raw", "gold", "points_total"):
+            if key in d:
+                try:
+                    return float(d[key])
+                except (TypeError, ValueError):
+                    continue
+        return None
+
+    run_gold_raw = None
+
+    # 1) explicit "gold" field from client
+    if gold_in is not None:
+        try:
+            run_gold_raw = float(gold_in)
+        except (TypeError, ValueError):
+            run_gold_raw = None
+
+    # 2) else derive from details
+    if run_gold_raw is None:
+        run_gold_raw = _gold_from_details(details)
+
+    # 3) final fallback: capped score
+    if run_gold_raw is None:
+        run_gold_raw = float(_cap_points(score_val))
+
+    if run_gold_raw < 0:
+        run_gold_raw = 0.0
+
+    gold_rounded = round(run_gold_raw * 2.0) / 2.0
+
+    # ---- per-set cap (lifetime) ----
+    # You can tune this. Example: 50 gold max per (user, set, mode)
+    MAX_GOLD_PER_SET = 50
+
+    points_awarded = gold_rounded
+
+    if MAX_GOLD_PER_SET is not None and MAX_GOLD_PER_SET > 0:
+        # Sum gold already earned for this user+set+mode
+        existing_rows = (
+            Score.query
+            .filter(
+                Score.user_id == current_user.id,
+                Score.set_name == set_name,
+                Score.mode == mode,
+            )
+            .all()
+        )
+
+        def _row_gold(row):
+            d = row.details or {}
+            if isinstance(d, dict):
+                for key in (
+                    "gold_awarded",
+                    "points_awarded",
+                    "gold_rounded",
+                    "gold_raw",
+                    "gold",
+                    "points_total",
+                ):
+                    if key in d:
+                        try:
+                            return float(d[key])
+                        except (TypeError, ValueError):
+                            continue
+            return float(_cap_points(row.score))
+
+        already = sum(_row_gold(r) for r in existing_rows)
+        remaining = max(0.0, float(MAX_GOLD_PER_SET) - already)
+        points_awarded = max(0.0, min(gold_rounded, remaining))
+
+    # ---- embed gold into details ----
+    if isinstance(details, dict):
+        details.setdefault("gold_raw", run_gold_raw)
+        details.setdefault("gold_rounded", gold_rounded)
+        details.setdefault("gold_awarded", points_awarded)
+        details.setdefault("points_awarded", points_awarded)
+
+    # ---- persist ----
     s = Score(
         user_id=current_user.id,
         set_name=set_name,
         mode=mode,
         score=score_val,
         attempts=attempts,
-        details=details if isinstance(details, dict) else {"raw": details},
+        details=details,
     )
     db.session.add(s)
     safe_commit()
-    return jsonify({"message": "saved", "score_id": s.id}), 201
+
+    return jsonify(
+        {
+            "message": "saved",
+            "score_id": s.id,
+            "details": {"points_awarded": int(round(points_awarded))},
+        }
+    ), 201
+
 
 @api_bp.route("/scores", methods=["POST"])
 @token_required
@@ -541,51 +659,89 @@ def points_event(current_user):
 def my_stats(current_user):
     since = datetime.utcnow() - timedelta(days=365)
     rows = (
-        db.session.query(Score.timestamp, Score.score)
+        db.session.query(Score.timestamp, Score.score, Score.details)
         .filter(Score.user_id == current_user.id, Score.timestamp >= since)
         .order_by(Score.timestamp.desc())
         .all()
     )
 
-    days = sorted({ts.date() for ts, _ in rows}, reverse=True)
+    # ---- streaks ----
     today = datetime.utcnow().date()
+    day_set = {ts.date() for ts, _, _ in rows}
+    days = sorted(day_set, reverse=True)
 
     streak = 0
     d = today
-    days_set = set(days)
-    while d in days_set:
+    while d in day_set:
         streak += 1
         d = d - timedelta(days=1)
 
     longest = 0
     if days:
-        s = sorted(days)
+        seq = sorted(days)
         run = 1
-        for i in range(1, len(s)):
-            if (s[i] - s[i-1]).days == 1:
+        for i in range(1, len(seq)):
+            if (seq[i] - seq[i - 1]).days == 1:
                 run += 1
             else:
-                if run > longest: longest = run
+                if run > longest:
+                    longest = run
                 run = 1
-        if run > longest: longest = run
+        if run > longest:
+            longest = run
 
     week_start = _week_start_utc(today)
-    weekly_points = sum(_cap_points(sc) for ts, sc in rows if ts >= week_start)
-    total_gold = sum(_cap_points(sc) for _, sc in rows)
 
+    def _points_from_row(score_val, details):
+        """Best-effort gold for stats.
+
+        Priority:
+        1) gold_awarded / points_awarded  (what we *actually* counted)
+        2) gold_rounded / gold_raw / gold / points_total
+        3) fallback: capped score
+        """
+        if isinstance(details, dict):
+            for key in (
+                "gold_awarded",
+                "points_awarded",
+                "gold_rounded",
+                "gold_raw",
+                "gold",
+                "points_total",
+            ):
+                if key in details:
+                    try:
+                        return max(0, int(round(float(details[key]))))
+                    except (TypeError, ValueError):
+                        continue
+        return _cap_points(score_val)
+
+    weekly_points = sum(
+        _points_from_row(sc, det) for ts, sc, det in rows if ts.date() >= week_start.date()
+    )
+    total_gold = sum(_points_from_row(sc, det) for _, sc, det in rows)
+
+    # ---- weekly goal ----
     goal = 500
-    if hasattr(current_user, "weekly_goal") and isinstance(getattr(current_user, "weekly_goal"), int):
-        goal = max(50, min(int(getattr(current_user, "weekly_goal")), 5000))
+    if hasattr(current_user, "weekly_goal"):
+        try:
+            g = int(getattr(current_user, "weekly_goal"))
+            if g > 0:
+                goal = max(50, min(g, 5000))
+        except (TypeError, ValueError):
+            pass
 
-    return jsonify({
-        "streak_days": streak,
-        "longest_streak": longest,
-        "weekly_points": weekly_points,
-        "weekly_gold": weekly_points,
-        "goal_points": goal,
-        "goal_gold": goal,
-        "total_gold": total_gold
-    })
+    return jsonify(
+        {
+            "streak_days": streak,
+            "longest_streak": longest,
+            "weekly_points": weekly_points,
+            "weekly_gold": weekly_points,
+            "goal_points": goal,
+            "goal_gold": goal,
+            "total_gold": total_gold,
+        }
+    )
 
 # ---------------------------
 # Groups
