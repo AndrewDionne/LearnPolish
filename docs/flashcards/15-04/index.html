@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Dual-host <base>: GitHub Pages vs Flask -->
+  <script>
+    (function () {
+      var isGH = /\.github\.io$/i.test(location.hostname);
+      var baseHref = isGH ? '/LearnPolish/' : '/';
+      document.write('<base href="' + baseHref + '">');
+    })();
+  </script>
+
+  <title>15-04 • Learn • Path to POLISH</title>
+
+  <!-- Site styles -->
+  <link rel="stylesheet" href="static/app.css?v=5">
+
+  <style>
+    .wrap{ max-width:900px; margin:0 auto; padding:0 16px 80px; }
+    .learn-frame{ display:grid; gap:16px; grid-template-columns:1fr; }
+    @media (min-width:880px){ .learn-frame{ grid-template-columns: 1.1fr .9fr; } }
+
+    .card.flip {
+      width:100%; height:320px; perspective:1000px; margin:8px 0;
+      background:none; border:none; box-shadow:none; padding:0;
+    }
+    .flip-inner {
+      width:100%; height:100%; position:relative; transition:transform .6s; transform-style:preserve-3d;
+      cursor:pointer;
+    }
+    .flip.flipped .flip-inner { transform: rotateY(180deg); }
+    .face {
+      position:absolute; inset:0; border-radius:var(--radius);
+      background:var(--card); border:1px solid var(--border);
+      display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:18px;
+      backface-visibility:hidden;
+    }
+    .face.back { transform:rotateY(180deg); background:var(--bg); }
+
+    .cue { font-size:18px; color:var(--muted); }
+    .phrase { font-size:22px; font-weight:700; }
+    .pron { margin-top:6px; font-style:italic; color:var(--muted); }
+
+    .act-row{ display:flex; gap:8px; margin-top:14px; }
+    .result{ margin-top:8px; min-height:1.2em; }
+
+    /* Level meter (capture mode) */
+    #meterWrap { display:none; margin-top:10px; width:260px; height:8px; background:#e6e6ef; border-radius:999px; overflow:hidden; }
+    #meterBar  { width:0%; height:100%; background:var(--brand); }
+
+    /* Debug overlay */
+    #dbg { display:none; position:fixed; bottom:8px; left:8px; right:8px; max-height:46vh; overflow:auto;
+           background:#000; color:#0f0; padding:8px 10px; border-radius:10px; font-family:ui-monospace, SFMono-Regular, Menlo, monospace;
+           font-size:12px; white-space:pre-wrap; z-index:9999; }
+    #dbg .raw { color:#9ef; }
+  </style>
+</head>
+
+<body
+  data-header="Path to Polish"
+  data-note-lead="Flashcards"
+  data-note-tail="15-04"
+  style="--logo-size: 40px; --banner-size: 24px; --banner-size-lg: 30px;">
+
+  <!-- Header -->
+  <header class="topbar no-nav">
+    <div class="row container">
+      <div class="header-left">
+        <a class="brand" href="index.html" aria-label="Path to Polish — Home">
+          <svg class="brand-mark" aria-hidden="true" focusable="false">
+            <use href="static/brand.svg#ptp-mark"></use>
+          </svg>
+          <span id="headerBanner" class="header-banner"></span>
+        </a>
+      </div>
+      <nav class="head-actions">
+        <a href="profile.html"  id="profileBtn">Profile</a>
+        <a href="login.html"    id="loginLink">Sign In</a>
+        <a href="register.html" id="registerLink">Register</a>
+        <button id="logoutBtn" style="display:none;">Logout</button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- (No "how it works" / "scoring" sidebar, no hint line) -->
+  <main class="wrap learn-frame">
+    <!-- LEFT: Card -->
+    <section class="stack">
+      <div class="card flip" id="cardContainer" aria-live="polite">
+        <div class="flip-inner" id="cardInner">
+          <div class="face front" id="frontSide">
+            <div class="cue" id="frontCue"></div>
+            <div class="act-row">
+              <button class="btn btn-primary" id="btnSayFront" title="Record then score">🎤 Say it in Polish</button>
+            </div>
+            <div id="meterWrap"><div id="meterBar"></div></div>
+            <a id="dlWav" class="btn tiny" download="capture.wav" style="display:none;">⬇️ Download capture</a>
+            <div class="result" id="frontResult"></div>
+          </div>
+          <div class="face back" id="backSide">
+            <div class="phrase" id="answerPhrase"></div>
+            <div class="pron"   id="answerPron"></div>
+            <div class="act-row">
+              <button class="btn" id="btnPlay">🔊 Play</button>
+            </div>
+            <div class="result" id="backResult"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <button id="prevBtn" class="btn">Previous</button>
+        <button id="nextBtn" class="btn btn-primary">Next</button>
+      </div>
+    </section>
+
+    <!-- RIGHT: (kept empty to match layout; easy to add helpers later) -->
+    <aside class="stack"></aside>
+  </main>
+
+  <div id="dbg"></div>
+
+  <!-- Bottom nav -->
+  <nav class="bottom" aria-label="Primary">
+    <a href="index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1v-10.5Z" stroke-width="1.5"/></svg>
+      <span>Home</span>
+    </a>
+    <a href="learn.html" class="active" aria-current="page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 12h16M4 18h9" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <span>Learn</span>
+    </a>
+    <a href="manage_sets/index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="16" rx="2" ry="2" stroke-width="1.5"/><path d="M7 8h10M7 12h10M7 16h7" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <span>Library</span>
+    </a>
+    <a href="dashboard.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 14h6V4H4v10Zm10 6h6V4h-6v16Z" stroke-width="1.5"/></svg>
+      <span>Dashboard</span>
+    </a>
+    <a href="groups.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm-9 9a9 9 0 0 1 18 0" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <span>Groups</span>
+    </a>
+  </nav>
+
+  <!-- Scripts -->
+  <script src="static/js/app-config.js"></script>
+  <script src="static/js/api.js"></script>
+  <script src="static/js/page-chrome.js" defer></script>
+  <script src="static/js/audio-paths.js"></script>
+  <script src="static/js/results.js"></script>
+  <script src="https://aka.ms/csspeech/jsbrowserpackageraw"></script>
+
+  <script>
+    // --- Data & state ---
+    const cards = [{"phrase": "Cześć", "meaning": "Hello", "pronunciation": "cheshch", "audio_file": "0_Czesc.mp3"}, {"phrase": "Dziękuję", "meaning": "Thank you", "pronunciation": "jen-koo-yeh", "audio_file": "1_Dziekuje.mp3"}];
+    const setName = "15-04";
+    const mode = "flashcards";
+    let currentIndex = 0;
+
+    // CDN manifest
+    let r2Manifest = null;
+
+    // Debug overlay
+    const DEBUG = new URL(location.href).searchParams.get('debug') === '1';
+    const dbgEl = document.getElementById('dbg');
+    if (DEBUG) dbgEl.style.display = 'block';
+    function logDbg(...a) {
+      if (!DEBUG) return;
+      const line = document.createElement('div');
+      line.className = 'row';
+      line.textContent = a.map(x => (typeof x === 'string' ? x : JSON.stringify(x))).join(' ');
+      dbgEl.appendChild(line); dbgEl.scrollTop = dbgEl.scrollHeight;
+      try { console.debug('[FC]', ...a); } catch(_) {}
+    }
+    function logRaw(j) {
+      if (!DEBUG) return;
+      const line = document.createElement('div');
+      line.className = 'row raw';
+      line.textContent = (typeof j === 'string') ? j : JSON.stringify(j);
+      dbgEl.appendChild(line); dbgEl.scrollTop = dbgEl.scrollHeight;
+    }
+
+    // URL overrides (default capture)
+    const URLP = new URL(location.href).searchParams;
+    const FORCE_LIVE = URLP.get('live') === '1';
+    const capQ = URLP.get('capture');
+    const CAPTURE_MODE = FORCE_LIVE ? false : (capQ === '0' ? false : true);
+
+    // Scoring + points
+    const PASS = 75;
+    const tracker = { attempts: 0, per: {}, perfectNoFlipCount: 0 };
+    let hasFlippedCurrent = false;
+
+    // Audio preload
+    const audioCache = new Map();
+    function sanitizeFilename(text){
+      return (text || "")
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9_-]+/g, "_").replace(/^_+|_+$/g, "");
+    }
+    function localAudioPath(index){
+      const e = cards[index] || {};
+      const fn = String(index) + "_" + sanitizeFilename(e.phrase || "") + ".mp3";
+      const setEnc = encodeURIComponent(setName);
+      const fnEnc  = encodeURIComponent(fn);
+      const explicit = e.audio_url || e.audio;
+      if (explicit && /^https?:\/\//i.test(explicit)) return explicit;
+      return `static/${setEnc}/audio/${fnEnc}`; // base href handles nesting
+    }
+    function buildAudioSrc(index){
+      let src = localAudioPath(index);
+      try { if (window.AudioPaths) src = AudioPaths.buildAudioPath(setName, index, cards[index], r2Manifest); } catch(_){
+      }
+      return src;
+    }
+    function primeAudio(index){
+      if (index < 0 || index >= cards.length) return;
+      if (audioCache.has(index)) return;
+      const a = new Audio(); a.preload="auto"; a.src = buildAudioSrc(index);
+      try{ a.load(); }catch(_){
+      } audioCache.set(index, a);
+    }
+    function resetAndPrimeAround(index){
+      audioCache.clear(); primeAudio(index); primeAudio(index+1);
+    }
+
+    function setNavUI(){
+      document.getElementById("prevBtn").disabled = (currentIndex === 0);
+      document.getElementById("nextBtn").textContent = (currentIndex < cards.length - 1) ? "Next" : "Finish";
+    }
+
+    function renderCard(){
+      const e = cards[currentIndex] || {};
+      document.getElementById("frontCue").textContent   = e.meaning || "";
+      document.getElementById("frontResult").textContent= "";
+      document.getElementById("answerPhrase").textContent = e.phrase || "";
+      document.getElementById("answerPron").textContent   = e.pronunciation || "";
+      document.getElementById("backResult").textContent   = "";
+      // Always flip to FRONT on render:
+      document.getElementById("cardContainer").classList.remove("flipped");
+      hasFlippedCurrent = false;
+      setNavUI();
+      resetAndPrimeAround(currentIndex);
+    }
+
+    // ---------- Token cache ----------
+    const tokenCache = { token:null, region:null, exp:0 };
+    async function fetchToken(){
+      const now = Date.now();
+      if (tokenCache.token && tokenCache.region && now < tokenCache.exp) return tokenCache;
+      try {
+        const tok = await api.get('/api/speech_token', { noAuth: true });
+        const token  = tok && (tok.token || tok.access_token);
+        const region = tok && (tok.region || tok.location || tok.regionName);
+        if (!token || !region) throw new Error('no_token_or_region');
+        tokenCache.token  = token;
+        tokenCache.region = region;
+        tokenCache.exp    = now + 9*60*1000;
+        logDbg('SDK?', !!window.SpeechSDK, 'region', region, 'tok', !!token);
+        return tokenCache;
+      } catch(e){
+        logDbg('token fetch error', e?.message || e); return { token:null, region:null, exp:0 };
+      }
+    }
+    async function prefetchToken(){
+      try { await fetchToken(); } catch(_){
+      }
+    }
+
+    // ---------- Early-stop capture with voiced-ms tracking ----------
+    const meterWrap = document.getElementById('meterWrap');
+    const meterBar  = document.getElementById('meterBar');
+    const dlWav     = document.getElementById('dlWav');
+
+    async function recordBlobVAD(maxMs=1400){
+      meterWrap.style.display = CAPTURE_MODE ? 'block' : 'none';
+
+      let mediaStream=null, mediaRec=null, chunks=[];
+      let analyser=null, data=null, ctx=null, src=null;
+      let meterTimer=null, started=false, silentMs=0, voicedMs=0, startedAt=0;
+
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        // VAD
+        try {
+          const ACtx = window.AudioContext || window.webkitAudioContext;
+          if (ACtx){
+            ctx = new ACtx(); src = ctx.createMediaStreamSource(mediaStream);
+            analyser = ctx.createAnalyser(); analyser.fftSize = 2048; src.connect(analyser);
+            data = new Uint8Array(analyser.fftSize);
+          }
+        } catch(_){
+        }
+
+        mediaRec = new MediaRecorder(mediaStream, { mimeType: 'audio/webm' });
+        mediaRec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+        const stopNow = () => { try { if (mediaRec && mediaRec.state !== 'inactive') mediaRec.stop(); } catch(_){
+        } };
+        mediaRec.start();
+
+        const t0 = performance.now();
+        const THRESH = 0.038;      // speech trigger (RMS)
+        const SIL_HOLD = 240;      // ms of silence to stop after speech
+
+        await new Promise((resolve) => {
+          meterTimer = setInterval(() => {
+            const t = performance.now();
+            if (analyser && data){
+              analyser.getByteTimeDomainData(data);
+              let sum=0; for(let i=0;i<data.length;i++){ const v=(data[i]-128)/128; sum+=v*v; }
+              const rms = Math.sqrt(sum/data.length);
+              meterBar.style.width = Math.min(100, Math.round(rms*180)) + '%';
+
+              if (!started && rms > THRESH) {
+                started = true; startedAt = t;
+              } else if (started) {
+                if (rms > THRESH*0.75) voicedMs += 40;           // voiced frame
+                if (rms < THRESH*0.6) silentMs += 40; else silentMs = 0;
+                if (silentMs >= SIL_HOLD && (t - startedAt) > 260) stopNow();
+              }
+            }
+            if ((t - t0) > maxMs) stopNow();
+          }, 40);
+
+          mediaRec.onstop = resolve;
+        });
+
+        return { blob: new Blob(chunks, { type: 'audio/webm' }), voicedMs };
+      } finally {
+        try { if (meterTimer) clearInterval(meterTimer); } catch(_){
+        }
+        try { meterBar.style.width = '0%'; } catch(_){
+        }
+        try { mediaStream && mediaStream.getTracks().forEach(t => t.stop()); } catch(_){
+        }
+        try { ctx && ctx.close(); } catch(_){
+        }
+        meterWrap.style.display = 'none';
+      }
+    }
+
+    async function blobToPCM16Mono(blob, targetRate=16000){
+      const arr = await blob.arrayBuffer();
+      const ACtx = window.AudioContext || window.webkitAudioContext;
+      if (!ACtx) throw new Error('no_audiocontext');
+      const ctx = new ACtx();
+      const buf = await ctx.decodeAudioData(arr.slice(0));
+      const chL = buf.getChannelData(0);
+      let mono;
+      if (buf.numberOfChannels > 1){
+        const chR = buf.getChannelData(1);
+        mono = new Float32Array(buf.length);
+        for (let i=0;i<buf.length;i++) mono[i] = 0.5*(chL[i] + chR[i]);
+      } else {
+        mono = chL;
+      }
+      const ratio = buf.sampleRate / targetRate;
+      const outLen = Math.round(mono.length / ratio);
+      const out = new Float32Array(outLen);
+      for (let i=0;i<outLen;i++) {
+        const idx = i * ratio;
+        const i0 = Math.floor(idx);
+        const i1 = Math.min(i0+1, mono.length-1);
+        const frac = idx - i0;
+        out[i] = mono[i0]*(1-frac) + mono[i1]*frac;
+      }
+      const pcm = new Int16Array(outLen);
+      for (let i=0;i<outLen;i++) {
+        let v = Math.max(-1, Math.min(1, out[i]));
+        pcm[i] = v < 0 ? v * 0x8000 : v * 0x7FFF;
+      }
+      try { ctx.close(); } catch(_){
+      }
+      return pcm;
+    }
+    function pcmToWavBlob(pcm, sampleRate=16000){
+      const numFrames = pcm.length, bytesPerSample=2, blockAlign=bytesPerSample, byteRate=sampleRate*blockAlign;
+      const dataSize = numFrames * bytesPerSample;
+      const buf = new ArrayBuffer(44 + dataSize), v = new DataView(buf);
+      let o = 0; function wstr(s){ for(let i=0;i<s.length;i++) v.setUint8(o++, s.charCodeAt(i)); }
+      function wu16(x){ v.setUint16(o, x, true); o+=2; } function wu32(x){ v.setUint32(o, x, true); o+=4; }
+      wstr('RIFF'); wu32(36 + dataSize); wstr('WAVE'); wstr('fmt '); wu32(16); wu16(1); wu16(1);
+      wu32(sampleRate); wu32(byteRate); wu16(blockAlign); wu16(16); wstr('data'); wu32(dataSize);
+      for (let i=0;i<pcm.length;i++) v.setInt16(o + i*2, pcm[i], true);
+      return new Blob([v], { type: 'audio/wav' });
+    }
+
+    // ---- Stricter scoring helpers ----
+    function extractPAJson(result, SDK){
+      try {
+        const raw = result?.properties?.getProperty(SDK.PropertyId.SpeechServiceResponse_JsonResult)
+                   || result?.privPronunciationAssessmentJson || result?.privJson;
+        if (!raw) return null;
+        try { return JSON.parse(raw); } catch(_){
+          return null;
+        }
+      } catch(_){
+        return null;
+      }
+    }
+    function estimateSyllablesPL(text){
+      const t = String(text||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+      const vowels = /[aąeęiouyó]/g; // rough
+      const m = t.match(vowels);
+      return Math.max(1, (m ? m.length : 0));
+    }
+    function computeStrictScore(paJson, fallback, refText, voicedMs){
+      // Extract metrics
+      let acc = fallback?.acc || 0, flu = fallback?.flu || 0, comp = fallback?.comp || 0;
+      let wordErrFrac = 0;
+      if (paJson){
+        const top = (paJson.NBest && paJson.NBest[0]) ? paJson.NBest[0] : null;
+        const pa  = top?.PronunciationAssessment || paJson.PronunciationAssessment;
+        if (pa){
+          acc = Math.round(Number(pa.AccuracyScore) || acc);
+          flu = Math.round(Number(pa.FluencyScore)  || flu);
+          comp= Math.round(Number(pa.CompletenessScore) || comp);
+        }
+        // Word error fraction from Azure (insertions/deletions/miscues)
+        const words = top?.Words || paJson.Words || [];
+        const refCount = Math.max(1, String(refText||'').trim().split(/\s+/).length);
+        let errs = 0;
+        for (const w of words){
+          const et = w?.PronunciationAssessment?.ErrorType;
+          if (et && et !== 'None') errs++;
+        }
+        wordErrFrac = Math.max(0, Math.min(1, errs / refCount));
+      }
+      // Base blend
+      let base = Math.round(0.55*acc + 0.25*flu + 0.20*comp);
+
+      // Energy/coverage penalty based on voiced duration vs expected
+      const syll = estimateSyllablesPL(refText);
+      const targetMs = Math.max(320, Math.min(1600, 280 + 110*syll));      // heuristic
+      const needed   = 0.85 * targetMs;                                    // stricter than before
+      const energyF  = Math.max(0.4, Math.min(1, (voicedMs||0) / needed)); // floor so quiet users aren't zeroed
+
+      // Word error penalty (strong)
+      const errF = 1 - 0.65 * wordErrFrac;
+
+      let strict = Math.round(base * energyF * errF);
+      strict = Math.max(0, Math.min(100, strict));
+      return { strict, acc, flu, comp, wordErrFrac, energyF };
+    }
+
+    function extractMetrics(result, SDK){
+      // Try official PA result object first
+      try {
+        const pa = SDK.PronunciationAssessmentResult.fromResult(result);
+        if (pa) return { acc: Math.round(pa.accuracyScore||0), flu: Math.round(pa.fluencyScore||0), comp: Math.round(pa.completenessScore||0) };
+      } catch(_){
+      }
+      // Fallback rough zeros; JSON path will fill
+      return { acc:0, flu:0, comp:0 };
+    }
+
+    async function assessCapture(referenceText, targetEl){
+      const ref = (referenceText || "").trim();
+      if (!window.SpeechSDK) { targetEl.textContent = "⚠️ SDK not loaded."; return 0; }
+      if (!ref) { targetEl.textContent = "⚠️ No reference text."; return 0; }
+
+      targetEl.textContent = "🎤 Recording…";
+      const rec = await recordBlobVAD(1400); // faster upper bound
+      const { token, region } = await fetchToken();
+      if (!token || !region) { targetEl.textContent = "⚠️ Token/region issue"; return 0; }
+
+      // Prepare PCM (and WAV in debug)
+      const pcm = await blobToPCM16Mono(rec.blob, 16000);
+      if (DEBUG){
+        try { const wav = pcmToWavBlob(pcm, 16000); const url = URL.createObjectURL(wav); dlWav.href = url; dlWav.style.display='inline-flex'; } catch(_){
+        }
+      }
+
+      const SDK = window.SpeechSDK;
+      const speechConfig = SDK.SpeechConfig.fromAuthorizationToken(token, region);
+      speechConfig.speechRecognitionLanguage = "pl-PL";
+      speechConfig.outputFormat = SDK.OutputFormat.Detailed;
+      speechConfig.setProperty(SDK.PropertyId.SpeechServiceResponse_RequestDetailedResultTrueFalse, "true");
+      speechConfig.setProperty(SDK.PropertyId.SpeechServiceResponse_RequestWordLevelTimestamps, "false");
+
+      // Push stream 16k/16-bit/mono
+      const format = SDK.AudioStreamFormat.getWaveFormatPCM(16000, 16, 1);
+      const push = SDK.AudioInputStream.createPushStream(format);
+      push.write(new Uint8Array(pcm.buffer)); push.close();
+      const audioConfig = SDK.AudioConfig.fromStreamInput(push);
+
+      const recognizer = new SDK.SpeechRecognizer(speechConfig, audioConfig);
+      const pa = new SDK.PronunciationAssessmentConfig(
+        ref,
+        SDK.PronunciationAssessmentGradingSystem.HundredMark,
+        // Use PHONEME granularity for higher sensitivity:
+        SDK.PronunciationAssessmentGranularity.Phoneme,
+        true // enable miscue (insertions/deletions)
+      );
+      pa.applyTo(recognizer);
+      try {
+        const pl = SDK.PhraseListGrammar.fromRecognizer(recognizer);
+        if (pl) pl.add(ref);
+      } catch(_){
+      }
+
+      targetEl.textContent = "🧠 Scoring…";
+
+      const result = await new Promise((resolve, reject) => {
+        try { recognizer.recognizeOnceAsync(resolve, reject); } catch(e) { reject(e); }
+      }).catch(e => { logDbg('recognizeOnce(push) error', e?.message || e); return null; });
+
+      try { recognizer.close(); } catch(_){
+      }
+
+      if (!result) { targetEl.textContent = "⚠️ Speech error"; return 0; }
+
+      // Debug dump
+      try {
+        logDbg('reason', result?.reason);
+        const SDKR = window.SpeechSDK;
+        if (result?.reason === SDKR.ResultReason.Canceled) {
+          const c = SDKR.CancellationDetails.fromResult(result);
+          logDbg('canceled', c?.reason, c?.errorCode, c?.errorDetails);
+        }
+        if (result?.reason === SDKR.ResultReason.NoMatch) {
+          const d = SDKR.NoMatchDetails.fromResult(result);
+          logDbg('noMatch', d?.reason);
+        }
+        const raw = result?.properties?.getProperty(SDK.PropertyId.SpeechServiceResponse_JsonResult)
+                 || result?.privPronunciationAssessmentJson || result?.privJson;
+        if (raw) try { logRaw(JSON.parse(raw)); } catch(_){
+          logRaw(raw);
+        }
+      } catch(_){
+      }
+
+      const base = extractMetrics(result, SDK);
+      const paJson = extractPAJson(result, SDK);
+      const { strict } = computeStrictScore(paJson, base, ref, rec.voicedMs);
+      targetEl.textContent = strict ? `✅ ${strict}%` : "⚠️ No score";
+      return strict || 0;
+    }
+
+    async function assessLive(referenceText, targetEl){
+      const ref = (referenceText || "").trim();
+      if (!window.SpeechSDK) { targetEl.textContent = "⚠️ SDK not loaded."; return 0; }
+      if (!ref) { targetEl.textContent = "⚠️ No reference text."; return 0; }
+
+      targetEl.textContent = "🎤 Preparing…";
+      // (Keep a tiny warmup for Safari)
+      try {
+        const s = await navigator.mediaDevices.getUserMedia({ audio:true }); s.getTracks().forEach(t=>t.stop());
+      } catch(_){
+      }
+
+      const { token, region } = await fetchToken();
+      if (!token || !region) { targetEl.textContent = "⚠️ Token/region issue"; return 0; }
+
+      const SDK = window.SpeechSDK;
+      const speechConfig = SDK.SpeechConfig.fromAuthorizationToken(token, region);
+      speechConfig.speechRecognitionLanguage = "pl-PL";
+      speechConfig.outputFormat = SDK.OutputFormat.Detailed;
+      speechConfig.setProperty(SDK.PropertyId.SpeechServiceResponse_RequestDetailedResultTrueFalse, "true");
+      speechConfig.setProperty(SDK.PropertyId.SpeechServiceResponse_RequestWordLevelTimestamps, "false");
+      speechConfig.setProperty(SDK.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, "1400");
+      speechConfig.setProperty(SDK.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "220");
+
+      const audioConfig = SDK.AudioConfig.fromDefaultMicrophoneInput();
+      const recognizer = new SDK.SpeechRecognizer(speechConfig, audioConfig);
+
+      const pa = new SDK.PronunciationAssessmentConfig(
+        ref,
+        SDK.PronunciationAssessmentGradingSystem.HundredMark,
+        SDK.PronunciationAssessmentGranularity.Phoneme,
+        true
+      );
+      pa.applyTo(recognizer);
+      try {
+        const pl = SDK.PhraseListGrammar.fromRecognizer(recognizer);
+        if (pl) pl.add(ref);
+      } catch(_){
+      }
+
+      targetEl.textContent = "🎙 Listening…";
+
+      const result = await new Promise((resolve, reject) => {
+        try { recognizer.recognizeOnceAsync(resolve, reject); } catch(e) { reject(e); }
+      }).catch(e => { logDbg('recognizeOnce(live) error', e?.message || e); return null; });
+
+      try { recognizer.close(); } catch(_){
+      }
+
+      if (!result) { targetEl.textContent = "⚠️ Speech error"; return 0; }
+
+      const base = extractMetrics(result, SDK);
+      const paJson = extractPAJson(result, SDK);
+      // Live path: we don't know voicedMs; approximate with expected for the phrase (lighter penalty)
+      const syll = estimateSyllablesPL(ref);
+      const approxVoiced = Math.max(320, Math.min(1600, 280 + 110*syll)) * 0.7;
+      const { strict } = computeStrictScore(paJson, base, ref, approxVoiced);
+      targetEl.textContent = strict ? `✅ ${strict}%` : "⚠️ No score";
+      return strict || 0;
+    }
+
+    // ---------- UI wiring ----------
+    window.addEventListener("DOMContentLoaded", async function(){
+      // Prefetch token & manifest
+      prefetchToken().catch(()=>{});
+      try { if (window.AudioPaths) r2Manifest = await AudioPaths.fetchManifest(setName); } catch(_){
+        r2Manifest = null;
+      }
+
+      // Debug SDK version
+      try { logDbg('SDK version?', window.SpeechSDK?.Version || 'unknown'); } catch(_){
+      }
+
+      renderCard();
+
+      // Flip on tap (ignore buttons/result)
+      document.getElementById("cardContainer").addEventListener("click", (e) => {
+        if (e.target.closest("button") || e.target.classList.contains("result")) return;
+        document.getElementById("cardContainer").classList.toggle("flipped");
+        hasFlippedCurrent = true;
+      });
+
+      // Front: Say it (capture-first by default)
+      const sayBtn = document.getElementById("btnSayFront");
+      const frontRes = document.getElementById("frontResult");
+      const getRef = () => (cards[currentIndex] && cards[currentIndex].phrase) || "";
+
+      sayBtn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        const ref = getRef();
+        if (!ref.trim()) { frontRes.textContent = "⚠️ No reference text."; return; }
+        sayBtn.disabled = true;
+        const s = CAPTURE_MODE ? await assessCapture(ref, frontRes) : await assessLive(ref, frontRes);
+        tracker.attempts++;
+        if (!tracker.per[currentIndex]) tracker.per[currentIndex] = { tries: 0, best: 0, got100BeforeFlip: false };
+        const r = tracker.per[currentIndex];
+        r.tries++;
+        if (Number.isFinite(s)) {
+          r.best = Math.max(r.best || 0, s);
+          if (!hasFlippedCurrent && s === 100 && !r.got100BeforeFlip) {
+            r.got100BeforeFlip = true; tracker.perfectNoFlipCount++;
+          }
+        }
+        sayBtn.disabled = false;
+      });
+
+      // Back: Play (preloaded)
+      document.getElementById("btnPlay").addEventListener("click", async (e) => {
+        e.stopPropagation();
+        let a = audioCache.get(currentIndex);
+        if (!a) { primeAudio(currentIndex); a = audioCache.get(currentIndex); }
+        if (a) {
+          try { a.currentTime = 0; } catch(_){}
+          a.play().catch(err => logDbg('audio play err', err?.message || err));
+        }
+      });
+
+      // Prev / Next / Finish
+      document.getElementById("prevBtn").addEventListener("click", () => {
+        if (currentIndex > 0) {
+          currentIndex--;
+          renderCard(); // ensures flipped -> front
+        }
+      });
+
+      document.getElementById("nextBtn").addEventListener("click", async () => {
+        if (currentIndex < cards.length - 1) {
+          currentIndex++;
+          renderCard(); // ensures flipped -> front
+        } else {
+        
+          // FINISH
+          const totalCards = Math.max(1, cards.length);
+          const perStats   = Object.values(tracker.per || {});
+
+          let n100 = 0, n70_99 = 0, nBelow = 0;
+          let sumBest = 0, countBest = 0;
+
+          for (const r of perStats) {
+            const best = Number((r && r.best) || 0);
+            if (!Number.isFinite(best)) continue;
+            sumBest += best;
+            countBest += 1;
+
+            if (best >= 100)       n100++;
+            else if (best >= 70)  n70_99++;
+            else                  nBelow++;
+          }
+
+          const avgCardScore = countBest > 0 ? (sumBest / countBest) : 0;
+
+          // "Correct" = ≥ PASS for the in-game pass threshold
+          const correct  = perStats.filter(r => Number((r && r.best) || 0) >= PASS).length;
+          const scorePct = Math.round((correct / totalCards) * 100);
+
+          // Cache per-set last result (useful for older per-set summaries)
+          try {
+            localStorage.setItem(
+              "lp_last_result_" + setName,
+              JSON.stringify({
+                set: setName,
+                mode: "flashcards",
+                score: scorePct,
+                attempts: tracker.attempts,
+                total: totalCards,
+                n100,
+                n70_99,
+                nBelow,
+                avg_card_score: avgCardScore,
+                perfect_before_flip: tracker.perfectNoFlipCount
+              })
+            );
+          } catch(_e) {}
+
+          // Also cache a GLOBAL lastResult so docs/summary.html can drive the finish UI
+          try {
+            sessionStorage.setItem(
+              "lp.lastResult",
+              JSON.stringify({
+                set: setName,
+                mode: "flashcards",
+                score: scorePct,
+                attempts: tracker.attempts,
+                details: {
+                  total: totalCards,
+                  n100,
+                  n70_99,
+                  nBelow,
+                  avg_card_score: avgCardScore,
+                  per: tracker.per,
+                  perfect_before_flip: tracker.perfectNoFlipCount
+                },
+                ts: Date.now()
+              })
+            );
+          } catch(_e) {}
+
+          // Helper for root summary URL (GitHub Pages vs Flask)
+          function _repoBase() {
+            if (/\.github\.io$/i.test(location.hostname)) {
+              const parts = location.pathname.split("/").filter(Boolean);
+              return "/" + (parts[0] || "LearnPolish");
+            }
+            return "";
+          }
+
+          let awarded = null;
+          try {
+            const resp = await api.fetch("/api/submit_score", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                set_name: setName,
+                mode: "flashcards",
+                score: scorePct,
+                attempts: tracker.attempts,
+                // Gold is fully computed server-side now (first-time, per-card, weekly perfect)
+                details: {
+                  per: tracker.per,
+                  total: totalCards,
+                  n100,
+                  n70_99,
+                  nBelow,
+                  avg_card_score: avgCardScore,
+                  perfect_before_flip: tracker.perfectNoFlipCount
+                }
+              })
+            });
+            if (resp.ok) {
+              const js = await resp.json();
+              if (js && js.details && js.details.points_awarded != null) {
+                awarded = Number(js.details.points_awarded);
+              }
+            }
+          } catch(_e) {}
+
+          try { localStorage.removeItem("lp_last"); } catch(_e) {}
+
+          const base = _repoBase();
+          const params = new URLSearchParams({
+            set: setName,
+            mode: "flashcards",
+            score: String(scorePct)
+          });
+          if (awarded != null && !Number.isNaN(awarded)) {
+            params.set("awarded", String(awarded));
+          }
+
+          window.location.href = base + "/summary.html?" + params.toString();
+
+        }
+      });
+    });
+
+    function goHome() { window.location.href = "index.html"; }
+  </script>
+</body>
+</html>
