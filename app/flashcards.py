@@ -318,7 +318,7 @@ def generate_flashcard_html(set_name, data):
     const meterBar  = document.getElementById('meterBar');
     const dlWav     = document.getElementById('dlWav');
 
-    async function recordBlobVAD(maxMs=1400){{
+    async function recordBlobVAD(maxMs=2200){{
       meterWrap.style.display = CAPTURE_MODE ? 'block' : 'none';
 
       let mediaStream=null, mediaRec=null, chunks=[];
@@ -346,7 +346,7 @@ def generate_flashcard_html(set_name, data):
 
         const t0 = performance.now();
         const THRESH = 0.038;      // speech trigger (RMS)
-        const SIL_HOLD = 240;      // ms of silence to stop after speech
+        const SIL_HOLD = 420;      // ms of silence to stop after speech
 
         await new Promise((resolve) => {{
           meterTimer = setInterval(() => {{
@@ -450,7 +450,16 @@ def generate_flashcard_html(set_name, data):
       const m = t.match(vowels);
       return Math.max(1, (m ? m.length : 0));
     }}
+    function computeCaptureWindowMs(text){{
+      const syll = estimateSyllablesPL(text);
+      const base = 900;
+      const per  = 220;
+      const min  = 1400;
+      const max  = 3200;
+      return Math.max(min, Math.min(max, base + per * syll));
+    }}
     function computeStrictScore(paJson, fallback, refText, voicedMs){{
+
       // Extract metrics
       let acc = fallback?.acc || 0, flu = fallback?.flu || 0, comp = fallback?.comp || 0;
       let wordErrFrac = 0;
@@ -505,10 +514,19 @@ def generate_flashcard_html(set_name, data):
       if (!window.SpeechSDK) {{ targetEl.textContent = "⚠️ SDK not loaded."; return 0; }}
       if (!ref) {{ targetEl.textContent = "⚠️ No reference text."; return 0; }}
 
+      // Offline → no scoring, but user can still listen & repeat
+      if (!navigator.onLine) {{
+        targetEl.textContent = "📴 Offline: scoring needs internet, but you can still listen and repeat.";
+        return 0;
+      }}
+
       targetEl.textContent = "🎤 Recording…";
-      const rec = await recordBlobVAD(1400); // faster upper bound
+      const rec = await recordBlobVAD(1400); // faster upper bound (or your new dynMax)
       const {{ token, region }} = await fetchToken();
-      if (!token || !region) {{ targetEl.textContent = "⚠️ Token/region issue"; return 0; }}
+      if (!token || !region) {{
+        targetEl.textContent = "⚠️ Speech service unavailable. Try again later.";
+        return 0;
+      }}
 
       // Prepare PCM (and WAV in debug)
       const pcm = await blobToPCM16Mono(rec.blob, 16000);
@@ -588,6 +606,11 @@ def generate_flashcard_html(set_name, data):
       if (!window.SpeechSDK) {{ targetEl.textContent = "⚠️ SDK not loaded."; return 0; }}
       if (!ref) {{ targetEl.textContent = "⚠️ No reference text."; return 0; }}
 
+      if (!navigator.onLine) {{
+        targetEl.textContent = "📴 Offline: scoring needs internet.";
+        return 0;
+      }}
+      
       targetEl.textContent = "🎤 Preparing…";
       // (Keep a tiny warmup for Safari)
       try {{
@@ -604,8 +627,9 @@ def generate_flashcard_html(set_name, data):
       speechConfig.outputFormat = SDK.OutputFormat.Detailed;
       speechConfig.setProperty(SDK.PropertyId.SpeechServiceResponse_RequestDetailedResultTrueFalse, "true");
       speechConfig.setProperty(SDK.PropertyId.SpeechServiceResponse_RequestWordLevelTimestamps, "false");
-      speechConfig.setProperty(SDK.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, "1400");
-      speechConfig.setProperty(SDK.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "220");
+      // More forgiving timeouts so users can think + finish
+      speechConfig.setProperty(SDK.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, "2600");
+      speechConfig.setProperty(SDK.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "800");
 
       const audioConfig = SDK.AudioConfig.fromDefaultMicrophoneInput();
       const recognizer = new SDK.SpeechRecognizer(speechConfig, audioConfig);

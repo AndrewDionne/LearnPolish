@@ -28,7 +28,7 @@
     ];
     for (const u of probes) {
       try {
-        const r = await fetch(u, { cache: "no-store" });
+        const r = await fetch(u, { cache: "no-cache" });
         if (r.ok) return await r.json();
       } catch (_) {}
     }

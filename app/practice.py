@@ -290,7 +290,7 @@ def generate_practice_html(set_name, data):
     }}
 
     // VAD capture (~1.4s max, early-stop on silence)
-    async function recordBlobVAD(maxMs=1400){{
+    async function recordBlobVAD(maxMs=2200){{
       meterWrap.style.display = CAPTURE_MODE ? 'block' : 'none';
       let mediaStream=null, mediaRec=null, chunks=[];
       let analyser=null, data=null, ctx=null, src=null;
@@ -315,7 +315,7 @@ def generate_practice_html(set_name, data):
         mediaRec.start();
 
         const t0 = performance.now();
-        const THRESH = 0.038, SIL_HOLD = 240; // match flashcards
+        const THRESH = 0.038, SIL_HOLD = 420; // match flashcards
 
         await new Promise((resolve) => {{
           meterTimer = setInterval(() => {{
@@ -397,6 +397,14 @@ def generate_practice_html(set_name, data):
       const m = t.match(/[aąeęiouyó]/g);
       return Math.max(1, m ? m.length : 0);
     }}
+    function computeCaptureWindowMs(text){{
+      const syll = estimateSyllablesPL(text);
+      const base = 900;
+      const per  = 220;
+      const min  = 1400;
+      const max  = 3200;
+      return Math.max(min, Math.min(max, base + per * syll));
+    }}
     function extractPAJson(result, SDK){{
       try {{
         const raw = result?.properties?.getProperty(SDK.PropertyId.SpeechServiceResponse_JsonResult)
@@ -447,8 +455,14 @@ def generate_practice_html(set_name, data):
       if (!window.SpeechSDK) return 0;
       if (!ref) return 0;
 
+      if (!navigator.onLine) {{
+        resultEl.textContent = "📴 Offline: scoring needs internet, but you can still listen and repeat.";
+        return 0;
+      }}
+
       resultEl.textContent = "🎤 Recording…";
-      const rec = await recordBlobVAD(1400);
+      const dynMax = computeCaptureWindowMs(ref);
+      const rec = await recordBlobVAD(dynMax);
       const {{ token, region }} = await fetchToken();
       if (!token || !region) {{ resultEl.textContent = "⚠️ Token/region issue"; return 0; }}
 
@@ -514,6 +528,11 @@ def generate_practice_html(set_name, data):
       if (!window.SpeechSDK) return 0;
       if (!ref) return 0;
 
+      if (!navigator.onLine) {{
+        resultEl.textContent = "📴 Offline: scoring needs internet.";
+        return 0;
+      }}
+
       // brief warm-up
       try {{
         const s = await navigator.mediaDevices.getUserMedia({{ audio:true }}); s.getTracks().forEach(t=>t.stop());
@@ -529,8 +548,10 @@ def generate_practice_html(set_name, data):
       speechConfig.outputFormat = SDK.OutputFormat.Detailed;
       speechConfig.setProperty(SDK.PropertyId.SpeechServiceResponse_RequestDetailedResultTrueFalse, "true");
       speechConfig.setProperty(SDK.PropertyId.SpeechServiceResponse_RequestWordLevelTimestamps, "false");
-      speechConfig.setProperty(SDK.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, "1400");
-      speechConfig.setProperty(SDK.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "220");
+      // More forgiving timeouts so users can think + finish
+      speechConfig.setProperty(SDK.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, "2600");
+      speechConfig.setProperty(SDK.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "800");
+
 
       const audioConfig = SDK.AudioConfig.fromDefaultMicrophoneInput();
       const recognizer = new SDK.SpeechRecognizer(speechConfig, audioConfig);
