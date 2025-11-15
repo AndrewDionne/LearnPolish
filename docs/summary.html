@@ -11,7 +11,7 @@
     })();
   </script>
   <title>Session Summary • Path to POLISH</title>
-  <link rel="stylesheet" href="static/app.css?v=7"/>
+  <link rel="stylesheet" href="static/app.css?v=8"/>
   <style>
     :root{
       --gold:#c58b0f;
@@ -66,6 +66,15 @@
     table.breakdown td.score{text-align:right;white-space:nowrap}
     table.breakdown td.score.is-perfect{color:var(--gold);font-weight:600}
     table.breakdown td.coin{text-align:center;width:40px}
+
+    @keyframes gold-pop {
+      0%   {transform:scale(0.8);}
+      60%  {transform:scale(1.2);}
+      100% {transform:scale(1);}
+    }
+    .pop {
+      animation: gold-pop 0.4s ease-out;
+    }
   </style>
 </head>
 <body
@@ -176,6 +185,25 @@
   (function(){
     function qp(k){ return new URLSearchParams(location.search).get(k) || ''; }
 
+    // Simple number animation helper
+    function animateNumber(el, from, to, duration, formatFn){
+      if (!el) return;
+      from = Number(from) || 0;
+      to   = Number(to)   || 0;
+      if (duration <= 0 || from === to){
+        el.textContent = formatFn(to);
+        return;
+      }
+      const start = performance.now();
+      function frame(now){
+        const t = Math.min(1, (now - start) / duration);
+        const val = Math.round(from + (to - from) * t);
+        el.textContent = formatFn(val);
+        if (t < 1) requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+    }
+
     // Query params
     const q = {
       set:   qp('set'),
@@ -271,10 +299,10 @@
 
     // ---- Top line: average score + collection name ----
     if (topLine){
-      const parts = [];
       const displayScore = (avgCardScore != null)
         ? Math.round(avgCardScore)
         : (scorePct || 0);
+      const parts = [];
       if (displayScore) parts.push(displayScore + '%');
       if (setNameRaw) parts.push(setNameRaw);
       topLine.textContent = parts.join(' • ');
@@ -326,6 +354,7 @@
     const goldRunLine   = document.getElementById('goldRunLine');
     const goldTotalLine = document.getElementById('goldTotalLine');
 
+    // Static initial text (will be overridden by animation if stats load)
     if (goldRunLine) {
       goldRunLine.textContent = runGold != null
         ? `This run: +${runGold}`
@@ -403,7 +432,11 @@
     async function refreshWeeklyBar(){
       try{
         const r = await api.fetch('/api/my/stats');
-        if (!r.ok) return;
+        if (!r.ok) {
+          // If stats fail, at least keep the static run gold text
+          if (goldTotalLine) goldTotalLine.textContent = 'Gold earned: —';
+          return;
+        }
         const s = await r.json();
 
         const weekly = Number(s.weekly_gold ?? s.weekly_points ?? 0) || 0;
@@ -419,18 +452,57 @@
         if (wbar)  wbar.style.width = pct + '%';
         if (wtext) wtext.textContent = `${weekly} / ${goal}`;
         if (pline) pline.textContent = `This week: ${weekly} gold`;
+
         if (wcoin) {
           if (weekly >= goal) {
             wcoin.classList.remove('unearned');
+            // pop animation
+            wcoin.classList.add('pop');
+            setTimeout(function(){ wcoin.classList.remove('pop'); }, 500);
           } else {
             wcoin.classList.add('unearned');
           }
         }
 
-        if (goldTotalLine) {
-          goldTotalLine.textContent = `Gold earned: ${total}`;
+        // Animate "This run" line if we know runGold
+        if (goldRunLine) {
+          if (runGold != null && runGold > 0) {
+            animateNumber(
+              goldRunLine,
+              0,
+              runGold,
+              600,
+              function(v){ return 'This run: +' + v; }
+            );
+          } else if (runGold != null) {
+            goldRunLine.textContent = 'This run: +' + runGold;
+          } else {
+            goldRunLine.textContent = 'This run: —';
+          }
         }
-      }catch(_){}
+
+        // Animate "Gold earned" total
+        if (goldTotalLine) {
+          if (Number.isFinite(total)) {
+            const base = Math.max(0, total - (runGold || 0));
+            if (total > base) {
+              animateNumber(
+                goldTotalLine,
+                base,
+                total,
+                800,
+                function(v){ return 'Gold earned: ' + v; }
+              );
+            } else {
+              goldTotalLine.textContent = 'Gold earned: ' + total;
+            }
+          } else {
+            goldTotalLine.textContent = 'Gold earned: —';
+          }
+        }
+      }catch(_){
+        if (goldTotalLine) goldTotalLine.textContent = 'Gold earned: —';
+      }
     }
 
     (async function run(){
