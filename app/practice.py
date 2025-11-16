@@ -650,9 +650,10 @@ def generate_practice_html(set_name, data):
 
       const base = extractBaseMetrics(result, SDK);
       const paJson = extractPAJson(result, SDK);
-      // Approx voiced time for live path
-      const syll = estimateSyllablesPL(ref);
-      const approxVoiced = Math.max(320, Math.min(1600, 280 + 110*syll)) * 0.7;
+      // Approx voiced time for live path – mirror computeStrictScore timing
+      const syll     = estimateSyllablesPL(ref);
+      const targetMs = Math.max(400, Math.min(2200, 320 + 130*syll));
+      const approxVoiced = targetMs * 0.9;
       const {{ strict, acc, flu, comp }} = computeStrictScore(paJson, base, ref, approxVoiced);
 
       if (strict) {{
