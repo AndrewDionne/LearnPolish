@@ -494,22 +494,20 @@
         .replace(/[^a-ząćęłńóśźż0-9]+/g,"");
     }
 
-    function computeStrictScore(paJson, fallback, refText, voicedMs){
-
-      // Extract metrics
-      let acc = fallback?.acc || 0;
-      let flu = fallback?.flu || 0;
-      let comp = fallback?.comp || 0;
+    function computeStrictScore(paJson, base, refText, voicedMs){
+      // Extract metrics (fallback to base from SDK)
+      let acc = base?.acc || 0;
+      let flu = base?.flu || 0;
+      let comp = base?.comp || 0;
       let wordErrFrac = 0;
-      let lexicalOk = false;
 
       if (paJson) {
         const top = (paJson.NBest && paJson.NBest[0]) ? paJson.NBest[0] : null;
         const pa  = top?.PronunciationAssessment || paJson.PronunciationAssessment;
         if (pa) {
-          acc  = Math.round(Number(pa.AccuracyScore)      || acc);
-          flu  = Math.round(Number(pa.FluencyScore)       || flu);
-          comp = Math.round(Number(pa.CompletenessScore)  || comp);
+          acc  = Math.round(Number(pa.AccuracyScore)     || acc);
+          flu  = Math.round(Number(pa.FluencyScore)      || flu);
+          comp = Math.round(Number(pa.CompletenessScore) || comp);
         }
 
         // Word error fraction from Azure (insertions/deletions/miscues)
@@ -521,18 +519,10 @@
           if (et && et !== "None") errs++;
         }
         wordErrFrac = Math.max(0, Math.min(1, errs / refCount));
-
-        // Lexical correctness: compare normalised Lexical/Display to reference
-        try {
-          const hypRaw = top?.Lexical || top?.Display || paJson.Lexical || paJson.Display || "";
-          const refNorm = normLexicalPL(refText);
-          const hypNorm = normLexicalPL(hypRaw);
-          if (refNorm && hypNorm && refNorm === hypNorm) lexicalOk = true;
-        } catch (_ignore) {}
       }
 
       // Base blend
-      let base = Math.round(0.55 * acc + 0.25 * flu + 0.20 * comp);
+      let baseScore = Math.round(0.55 * acc + 0.25 * flu + 0.20 * comp);
 
       // Energy/coverage penalty based on voiced duration vs expected
       const syll = estimateSyllablesPL(refText);
@@ -543,45 +533,7 @@
       // Word error penalty (strong)
       const errF = 1 - 0.65 * wordErrFrac;
 
-      let strict = Math.round(base * energyF * errF);
-      strict = Math.max(0, Math.min(100, strict));
-      return { strict, acc, flu, comp, wordErrFrac, energyF, lexicalOk };
-    }
-
-      // Extract metrics
-      let acc = fallback?.acc || 0, flu = fallback?.flu || 0, comp = fallback?.comp || 0;
-      let wordErrFrac = 0;
-      if (paJson){
-        const top = (paJson.NBest && paJson.NBest[0]) ? paJson.NBest[0] : null;
-        const pa  = top?.PronunciationAssessment || paJson.PronunciationAssessment;
-        if (pa){
-          acc = Math.round(Number(pa.AccuracyScore) || acc);
-          flu = Math.round(Number(pa.FluencyScore)  || flu);
-          comp= Math.round(Number(pa.CompletenessScore) || comp);
-        }
-        // Word error fraction from Azure (insertions/deletions/miscues)
-        const words = top?.Words || paJson.Words || [];
-        const refCount = Math.max(1, String(refText||'').trim().split(/\s+/).length);
-        let errs = 0;
-        for (const w of words){
-          const et = w?.PronunciationAssessment?.ErrorType;
-          if (et && et !== 'None') errs++;
-        }
-        wordErrFrac = Math.max(0, Math.min(1, errs / refCount));
-      }
-      // Base blend
-      let base = Math.round(0.55*acc + 0.25*flu + 0.20*comp);
-
-      // Energy/coverage penalty based on voiced duration vs expected
-      const syll = estimateSyllablesPL(refText);
-      const targetMs = Math.max(320, Math.min(1600, 280 + 110*syll));      // heuristic
-      const needed   = 0.85 * targetMs;                                    // stricter than before
-      const energyF  = Math.max(0.4, Math.min(1, (voicedMs||0) / needed)); // floor so quiet users aren't zeroed
-
-      // Word error penalty (strong)
-      const errF = 1 - 0.65 * wordErrFrac;
-
-      let strict = Math.round(base * energyF * errF);
+      let strict = Math.round(baseScore * energyF * errF);
       strict = Math.max(0, Math.min(100, strict));
       return { strict, acc, flu, comp, wordErrFrac, energyF };
     }

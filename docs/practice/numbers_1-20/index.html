@@ -317,7 +317,7 @@
         mediaRec.start();
 
         const t0 = performance.now();
-        const THRESH = 0.038, SIL_HOLD = 420; // match flashcards
+        const THRESH = 0.032, SIL_HOLD = 900; // match flashcards
 
         await new Promise((resolve) => {
           meterTimer = setInterval(() => {
@@ -401,10 +401,10 @@
     }
     function computeCaptureWindowMs(text){
       const syll = estimateSyllablesPL(text);
-      const base = 900;
-      const per  = 220;
-      const min  = 1400;
-      const max  = 3200;
+      const base = 1400;
+      const per  = 260;
+      const min  = 2000;
+      const max  = 4800;
       return Math.max(min, Math.min(max, base + per * syll));
     }
     function extractPAJson(result, SDK){
@@ -427,27 +427,40 @@
       }
       return { acc:0, flu:0, comp:0 };
     }
-        function computeStrictScore(paJson, base, refText, voicedMs){
+    function computeStrictScore(paJson, base, refText, voicedMs){
       let acc = base.acc || 0, flu = base.flu || 0, comp = base.comp || 0, wordErrFrac = 0;
+
       if (paJson){
         const top = (paJson.NBest && paJson.NBest[0]) ? paJson.NBest[0] : null;
         const pa  = top?.PronunciationAssessment || paJson.PronunciationAssessment;
         if (pa){
-          acc = Math.round(Number(pa.AccuracyScore) || acc);
-          flu = Math.round(Number(pa.FluencyScore)  || flu);
-          comp= Math.round(Number(pa.CompletenessScore) || comp);
+          acc  = Math.round(Number(pa.AccuracyScore)     || acc);
+          flu  = Math.round(Number(pa.FluencyScore)      || flu);
+          comp = Math.round(Number(pa.CompletenessScore) || comp);
         }
+
         const words = top?.Words || paJson.Words || [];
         const refCount = Math.max(1, String(refText||'').trim().split(/\s+/).length);
-        let errs=0; for(const w of words){ const et=w?.PronunciationAssessment?.ErrorType; if (et && et !== 'None') errs++; }
-        wordErrFrac = Math.max(0, Math.min(1, errs/refCount));
+        let errs = 0;
+        for (const w of words){
+          const et = w?.PronunciationAssessment?.ErrorType;
+          if (et && et !== 'None') errs++;
+        }
+        wordErrFrac = Math.max(0, Math.min(1, errs / refCount));
       }
-      let baseScore = Math.round(0.55*acc + 0.25*flu + 0.20*comp);
-      const syll = estimateSyllablesPL(refText);
-      const targetMs = Math.max(320, Math.min(1600, 280 + 110*syll));
-      const needed   = 0.85 * targetMs;
-      const energyF  = Math.max(0.4, Math.min(1, (voicedMs||0)/needed));
-      const errF     = 1 - 0.65*wordErrFrac;
+
+      // Base blend from Azure metrics
+      let baseScore = Math.round(0.55 * acc + 0.25 * flu + 0.20 * comp);
+
+      // More generous timing model
+      const syll     = estimateSyllablesPL(refText);
+      const targetMs = Math.max(400, Math.min(2200, 320 + 130 * syll));
+      const needed   = 0.65 * targetMs;
+      const energyF  = Math.max(0.7, Math.min(1, (voicedMs || 0) / needed));
+
+      // Softer word error penalty
+      const errF = Math.max(0.55, 1 - 0.45 * wordErrFrac);
+
       let strict = Math.round(baseScore * energyF * errF);
       strict = Math.max(0, Math.min(100, strict));
       return { strict, acc, flu, comp, wordErrFrac, energyF };
@@ -599,9 +612,10 @@
 
       const base = extractBaseMetrics(result, SDK);
       const paJson = extractPAJson(result, SDK);
-      // Approx voiced time for live path
-      const syll = estimateSyllablesPL(ref);
-      const approxVoiced = Math.max(320, Math.min(1600, 280 + 110*syll)) * 0.7;
+      // Approx voiced time for live path – mirror computeStrictScore timing
+      const syll     = estimateSyllablesPL(ref);
+      const targetMs = Math.max(400, Math.min(2200, 320 + 130*syll));
+      const approxVoiced = targetMs * 0.9;
       const { strict, acc, flu, comp } = computeStrictScore(paJson, base, ref, approxVoiced);
 
       if (strict) {
