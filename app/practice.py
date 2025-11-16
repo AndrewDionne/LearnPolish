@@ -119,12 +119,21 @@ def generate_practice_html(set_name, data):
           <button id="restartBtn" class="btn" style="display:none;">🔁 Restart</button>
           <a id="dlWav" class="btn" download="capture.wav" style="display:none;">⬇️ Capture</a>
         </div>
+      
+      </div>
+      <div class="row" style="margin-top:8px; gap:6px; flex-wrap:wrap;">
+        <span class="muted" style="font-size:13px;">Difficulty:</span>
+        <button type="button" class="btn tiny diff-btn" data-diff="easy">Easy</button>
+        <button type="button" class="btn tiny diff-btn" data-diff="normal">Normal</button>
+        <button type="button" class="btn tiny diff-btn" data-diff="hard">Hard</button>
       </div>
 
       <div id="prompt" class="prompt">Get ready…</div>
       <div id="phrase" class="phrase">—</div>
+      <div id="meaning" class="prompt" style="margin-top:4px; font-size:16px;"></div>
       <div id="meterWrap"><div id="meterBar"></div></div>
       <div id="result" class="result"></div>
+
     </section>
 
     <section class="card">
@@ -175,7 +184,37 @@ def generate_practice_html(set_name, data):
     // ===== State =====
     const setName = "{set_name}";
     const cards = {cards_json};
-    const PASS_THRESHOLD = 75; // stricter than before
+
+    const DIFF_PRESETS = {{ easy: 65, normal: 75, hard: 85 }};
+    let difficulty = (localStorage.getItem("lp.diff_practice") || "normal");
+    function currentPassThreshold() {{
+      return DIFF_PRESETS[difficulty] || 75;
+    }}
+
+    function applyDifficultyUI() {{
+      const btns = document.querySelectorAll(".diff-btn");
+      btns.forEach(btn => {{
+        const d = btn.dataset.diff;
+        if (d === difficulty) btn.classList.add("btn-primary");
+        else btn.classList.remove("btn-primary");
+      }});
+    }}
+
+    function wireDifficulty() {{
+      const btns = document.querySelectorAll(".diff-btn");
+      if (!btns.length) return;
+      btns.forEach(btn => {{
+        btn.addEventListener("click", (e) => {{
+          e.preventDefault();
+          const d = btn.dataset.diff || "normal";
+          difficulty = d;
+          try {{ localStorage.setItem("lp.diff_practice", difficulty); }} catch (_) {{}}
+          applyDifficultyUI();
+        }});
+      }});
+      applyDifficultyUI();
+    }}
+
 
     let hasStarted = false, paused = false, isRunning = false;
     let index = 0, attempts = 0;
@@ -218,6 +257,7 @@ def generate_practice_html(set_name, data):
     // UI els
     const promptEl = document.getElementById('prompt');
     const phraseEl = document.getElementById('phrase');
+    const meaningEl = document.getElementById('meaning');
     const resultEl = document.getElementById('result');
     const meterWrap = document.getElementById('meterWrap');
     const meterBar  = document.getElementById('meterBar');
@@ -425,8 +465,8 @@ def generate_practice_html(set_name, data):
       }}
       return {{ acc:0, flu:0, comp:0 }};
     }}
-    function computeStrictScore(paJson, base, refText, voicedMs){{
-      let acc=base.acc||0, flu=base.flu||0, comp=base.comp||0, wordErrFrac=0;
+        function computeStrictScore(paJson, base, refText, voicedMs){{
+      let acc = base.acc || 0, flu = base.flu || 0, comp = base.comp || 0, wordErrFrac = 0;
       if (paJson){{
         const top = (paJson.NBest && paJson.NBest[0]) ? paJson.NBest[0] : null;
         const pa  = top?.PronunciationAssessment || paJson.PronunciationAssessment;
@@ -436,7 +476,7 @@ def generate_practice_html(set_name, data):
           comp= Math.round(Number(pa.CompletenessScore) || comp);
         }}
         const words = top?.Words || paJson.Words || [];
-        const refCount = Math.max(1, String(refText||'').trim().split(/\\s+/).length);
+        const refCount = Math.max(1, String(refText||'').trim().split(/\s+/).length);
         let errs=0; for(const w of words){{ const et=w?.PronunciationAssessment?.ErrorType; if (et && et !== 'None') errs++; }}
         wordErrFrac = Math.max(0, Math.min(1, errs/refCount));
       }}
@@ -447,24 +487,29 @@ def generate_practice_html(set_name, data):
       const energyF  = Math.max(0.4, Math.min(1, (voicedMs||0)/needed));
       const errF     = 1 - 0.65*wordErrFrac;
       let strict = Math.round(baseScore * energyF * errF);
-      return Math.max(0, Math.min(100, strict));
+      strict = Math.max(0, Math.min(100, strict));
+      return {{ strict, acc, flu, comp, wordErrFrac, energyF }};
     }}
 
     async function assessCapture(referenceText){{
       const ref = (referenceText||"").trim();
-      if (!window.SpeechSDK) return 0;
-      if (!ref) return 0;
+      const empty = {{ score: 0, acc: 0, flu: 0, comp: 0 }};
+      if (!window.SpeechSDK) return empty;
+      if (!ref) return empty;
 
       if (!navigator.onLine) {{
         resultEl.textContent = "📴 Offline: scoring needs internet, but you can still listen and repeat.";
-        return 0;
+        return empty;
       }}
 
       resultEl.textContent = "🎤 Recording…";
       const dynMax = computeCaptureWindowMs(ref);
       const rec = await recordBlobVAD(dynMax);
       const {{ token, region }} = await fetchToken();
-      if (!token || !region) {{ resultEl.textContent = "⚠️ Token/region issue"; return 0; }}
+      if (!token || !region) {{
+        resultEl.textContent = "⚠️ Token/region issue";
+        return empty;
+      }}
 
       const pcm = await blobToPCM16Mono(rec.blob, 16000);
       if (DEBUG) try {{
@@ -502,7 +547,10 @@ def generate_practice_html(set_name, data):
       }}).catch(e => {{ logDbg('recognizeOnce(push) error', e?.message || e); return null; }});
       try {{ recognizer.close(); }} catch(_){{
       }}
-      if (!result) {{ resultEl.textContent = "⚠️ Speech error"; return 0; }}
+      if (!result) {{
+        resultEl.textContent = "⚠️ Speech error";
+        return empty;
+      }}
 
       try {{
         const SDKR = window.SpeechSDK;
@@ -520,27 +568,39 @@ def generate_practice_html(set_name, data):
 
       const base = extractBaseMetrics(result, SDK);
       const paJson = extractPAJson(result, SDK);
-      return computeStrictScore(paJson, base, ref, rec.voicedMs);
+      const {{ strict, acc, flu, comp }} = computeStrictScore(paJson, base, ref, rec.voicedMs);
+
+      if (strict) {{
+        resultEl.textContent = `✅ ${{strict}}%  (Acc ${{acc}} · Flu ${{flu}} · Comp ${{comp}})`;
+      }} else {{
+        resultEl.textContent = "⚠️ No score";
+      }}
+      return {{ score: strict || 0, acc, flu, comp }};
     }}
 
     async function assessLive(referenceText){{
       const ref = (referenceText||"").trim();
-      if (!window.SpeechSDK) return 0;
-      if (!ref) return 0;
+      const empty = {{ score: 0, acc: 0, flu: 0, comp: 0 }};
+      if (!window.SpeechSDK) return empty;
+      if (!ref) return empty;
 
       if (!navigator.onLine) {{
         resultEl.textContent = "📴 Offline: scoring needs internet.";
-        return 0;
+        return empty;
       }}
 
       // brief warm-up
       try {{
-        const s = await navigator.mediaDevices.getUserMedia({{ audio:true }}); s.getTracks().forEach(t=>t.stop());
+        const s = await navigator.mediaDevices.getUserMedia({{ audio:true }});
+        s.getTracks().forEach(t=>t.stop());
       }} catch(_){{
       }}
 
       const {{ token, region }} = await fetchToken();
-      if (!token || !region) return 0;
+      if (!token || !region) {{
+        resultEl.textContent = "⚠️ Token/region issue";
+        return empty;
+      }}
 
       const SDK = window.SpeechSDK;
       const speechConfig = SDK.SpeechConfig.fromAuthorizationToken(token, region);
@@ -551,7 +611,6 @@ def generate_practice_html(set_name, data):
       // More forgiving timeouts so users can think + finish
       speechConfig.setProperty(SDK.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, "2600");
       speechConfig.setProperty(SDK.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "800");
-
 
       const audioConfig = SDK.AudioConfig.fromDefaultMicrophoneInput();
       const recognizer = new SDK.SpeechRecognizer(speechConfig, audioConfig);
@@ -565,19 +624,30 @@ def generate_practice_html(set_name, data):
       try {{ SDK.PhraseListGrammar.fromRecognizer(recognizer)?.add(ref); }} catch(_){{
       }}
 
+      resultEl.textContent = "🎙 Listening…";
       const result = await new Promise((resolve, reject) => {{
         try {{ recognizer.recognizeOnceAsync(resolve, reject); }} catch(e) {{ reject(e); }}
-      }}).catch(_ => null);
+      }}).catch(e => {{ logDbg('recognizeOnce(live) error', e?.message || e); return null; }});
       try {{ recognizer.close(); }} catch(_){{
       }}
-      if (!result) return 0;
+      if (!result) {{
+        resultEl.textContent = "⚠️ Speech error";
+        return empty;
+      }}
 
       const base = extractBaseMetrics(result, SDK);
       const paJson = extractPAJson(result, SDK);
       // Approx voiced time for live path
       const syll = estimateSyllablesPL(ref);
       const approxVoiced = Math.max(320, Math.min(1600, 280 + 110*syll)) * 0.7;
-      return computeStrictScore(paJson, base, ref, approxVoiced);
+      const {{ strict, acc, flu, comp }} = computeStrictScore(paJson, base, ref, approxVoiced);
+
+      if (strict) {{
+        resultEl.textContent = `✅ ${{strict}}%  (Acc ${{acc}} · Flu ${{flu}} · Comp ${{comp}})`;
+      }} else {{
+        resultEl.textContent = "⚠️ No score";
+      }}
+      return {{ score: strict || 0, acc, flu, comp }};
     }}
 
     // Finish: compute score, send to API, go to summary
@@ -588,21 +658,44 @@ def generate_practice_html(set_name, data):
       let sumBest = 0;
       let n100 = 0;
       let nPass = 0;
+      const passNow = currentPassThreshold();
+
+      // For transparency: average Acc / Flu / Comp across cards
+      let sumAcc = 0;
+      let sumFlu = 0;
+      let sumComp = 0;
+      let countMetrics = 0;
 
       for (const r of perStats) {{
         const best = Number((r && r.best) || 0);
-        if (!Number.isFinite(best)) continue;
-        const clamped = Math.max(0, Math.min(100, best));
-        sumBest += clamped;
-        if (clamped >= 100) n100++;
-        if (clamped >= PASS_THRESHOLD) nPass++;
+        if (Number.isFinite(best)) {{
+          const clamped = Math.max(0, Math.min(100, best));
+          sumBest += clamped;
+          if (clamped >= 100) n100++;
+          if (clamped >= passNow) nPass++;
+        }}
+
+        const bestAcc  = Number((r && r.bestAcc)  || 0);
+        const bestFlu  = Number((r && r.bestFlu)  || 0);
+        const bestComp = Number((r && r.bestComp) || 0);
+        if (Number.isFinite(bestAcc) || Number.isFinite(bestFlu) || Number.isFinite(bestComp)) {{
+          sumAcc  += Math.max(0, Math.min(100, (bestAcc  || 0)));
+          sumFlu  += Math.max(0, Math.min(100, (bestFlu  || 0)));
+          sumComp += Math.max(0, Math.min(100, (bestComp || 0)));
+          countMetrics++;
+        }}
       }}
 
       // Average best-score across all cards (unseen cards count as 0)
       const avgScore = totalCards ? Math.round(sumBest / totalCards) : 0;
       const scorePct = avgScore;
 
-      // Build compact per-card breakdown with phrase text
+      const denom = totalCards || countMetrics || 1;
+      const avgAcc = Math.round(sumAcc / denom);
+      const avgFlu = Math.round(sumFlu / denom);
+      const avgComp = Math.round(sumComp / denom);
+
+      // Build compact per-card breakdown with phrase text & per-metrics
       const perOut = {{}};
       Object.entries(tracker.per || {{}}).forEach(([idxStr, r]) => {{
         const idx = Number(idxStr);
@@ -611,6 +704,12 @@ def generate_practice_html(set_name, data):
           best: Number((r && r.best) || 0),
           last: Number((r && r.last) || 0),
           attempts: Number((r && r.attempts) || 0),
+          bestAcc: Number((r && r.bestAcc) || 0),
+          bestFlu: Number((r && r.bestFlu) || 0),
+          bestComp: Number((r && r.bestComp) || 0),
+          lastAcc: Number((r && r.lastAcc) || 0),
+          lastFlu: Number((r && r.lastFlu) || 0),
+          lastComp: Number((r && r.lastComp) || 0),
           phrase: card.phrase || ""
         }};
       }});
@@ -628,6 +727,11 @@ def generate_practice_html(set_name, data):
               total: totalCards,
               n100,
               n_pass: nPass,
+              metrics: {{
+                acc: avgAcc,
+                flu: avgFlu,
+                comp: avgComp
+              }},
               per: perOut
             }},
             ts: Date.now()
@@ -650,7 +754,14 @@ def generate_practice_html(set_name, data):
               total: totalCards,
               n100,
               n_pass: nPass,
-              per: perOut
+              metrics: {{
+                acc: avgAcc,
+                flu: avgFlu,
+                comp: avgComp
+              }},
+              per: perOut,
+              difficulty,
+              pass_threshold: currentPassThreshold()
             }}
           }})
         }});
@@ -665,6 +776,7 @@ def generate_practice_html(set_name, data):
       const q = awarded != null ? ("?awarded=" + encodeURIComponent(awarded)) : "";
       window.location.href = "summary.html" + q;
     }}
+
 
     // Loop
     async function runPractice() {{
@@ -682,9 +794,13 @@ def generate_practice_html(set_name, data):
       isRunning = true;
 
       // Update UI
-      const phrase = (cards[index] || {{}}).phrase || "";
+      const card = cards[index] || {{}};
+      const phrase = card.phrase || "";
+      const meaning = card.meaning || "";
+
       promptEl.textContent = "Listen:";
       phraseEl.textContent = phrase;
+      meaningEl.textContent = meaning;
       resultEl.textContent = "";
 
       // Play Polish
@@ -693,40 +809,49 @@ def generate_practice_html(set_name, data):
 
       // User says it
       promptEl.textContent = "Say:";
-      const score = CAPTURE_MODE ? await assessCapture(phrase) : await assessLive(phrase);
+      const res = CAPTURE_MODE ? await assessCapture(phrase) : await assessLive(phrase);
       if (paused) {{ isRunning = false; return; }}
 
-      resultEl.textContent = score ? ("Score: " + score + "%") : "⚠️ No score";
+      const score = res && Number.isFinite(res.score) ? res.score : 0;
+      const acc   = res && Number.isFinite(res.acc)   ? res.acc   : 0;
+      const flu   = res && Number.isFinite(res.flu)   ? res.flu   : 0;
+      const comp  = res && Number.isFinite(res.comp)  ? res.comp  : 0;
 
       // Update per-card tracker
       tracker.attempts++;
       const k = index;
-      const prev = tracker.per[k] || {{ best: 0, last: 0, attempts: 0 }};
+      const prev = tracker.per[k] || {{
+        best: 0, last: 0, attempts: 0,
+        bestAcc: 0, bestFlu: 0, bestComp: 0,
+        lastAcc: 0, lastFlu: 0, lastComp: 0
+      }};
       prev.attempts = (prev.attempts || 0) + 1;
       prev.last = score;
+      prev.lastAcc = acc;
+      prev.lastFlu = flu;
+      prev.lastComp = comp;
       if (!Number.isFinite(prev.best) || score > prev.best) {{
         prev.best = score;
       }}
+      if (Number.isFinite(acc) && acc > (prev.bestAcc || 0)) prev.bestAcc = acc;
+      if (Number.isFinite(flu) && flu > (prev.bestFlu || 0)) prev.bestFlu = flu;
+      if (Number.isFinite(comp) && comp > (prev.bestComp || 0)) prev.bestComp = comp;
       tracker.per[k] = prev;
 
-      // Feedback sound (optional – matches your system audio set)
+      // Feedback sound based on difficulty threshold
+      const passNow = currentPassThreshold();
       try {{
-        if (score >= PASS_THRESHOLD) await playSys("good");
+        if (score >= passNow) await playSys("good");
         else await playSys("try_again");
       }} catch (_){{
       }}
 
-      if (score >= PASS_THRESHOLD || attempts >= 2) {{
-        index++;
-        attempts = 0;
-      }} else {{
-        attempts++;
-      }}
+      index++;
+      attempts = 0;
 
       isRunning = false;
       if (!paused) setTimeout(runPractice, 600);
     }}
-
 
     // Offline SW
     async function ensureSW(){{
@@ -758,8 +883,20 @@ def generate_practice_html(set_name, data):
       const offlineRemoveBtn = document.getElementById('offlineRemoveBtn');
       const offlineStatus = document.getElementById('offlineStatus');
 
-      let swReg = await ensureSW();
-      if (!swReg) offlineStatus.textContent = "⚠️ Offline not supported in this browser.";
+      // Try to register SW only where it's allowed (https or localhost)
+      let swReg = null;
+      if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {{
+        swReg = await ensureSW();
+      }}
+
+      if (!swReg) {{
+        // Hide action buttons; leave a calm note instead of a scary error
+        offlineBtn.style.display = "none";
+        offlineRemoveBtn.style.display = "none";
+        offlineStatus.textContent = "Offline download isn't available here, but you can still practice while online.";
+      }} else {{
+        offlineStatus.textContent = "Tap Download to make this set available offline.";
+      }}
 
       navigator.serviceWorker?.addEventListener('message', (ev) => {{
         const d = ev.data || {{}};
@@ -775,16 +912,21 @@ def generate_practice_html(set_name, data):
           offlineStatus.textContent = "❌ Offline failed";
         }}
       }});
+
       offlineBtn.addEventListener('click', async () => {{
-        const reg = await ensureSW();
-        if (!reg || !reg.active) return offlineStatus.textContent = "❌ Offline not available.";
+        if (!swReg || !swReg.active) {{
+          offlineStatus.textContent = "❌ Offline not available.";
+          return;
+        }}
         offlineStatus.textContent = "⬇️ Downloading…";
-        reg.active.postMessage({{ type:'CACHE_SET', cache:`practice-{set_name}`, urls: allAudioUrls() }});
+        swReg.active.postMessage({{ type:'CACHE_SET', cache:`practice-{set_name}`, urls: allAudioUrls() }});
       }});
+
       offlineRemoveBtn.addEventListener('click', async () => {{
-        const reg = await ensureSW(); if (!reg || !reg.active) return;
-        reg.active.postMessage({{ type:'UNCACHE_SET', cache:`practice-{set_name}` }});
+        if (!swReg || !swReg.active) return;
+        swReg.active.postMessage({{ type:'UNCACHE_SET', cache:`practice-{set_name}` }});
       }});
+
 
       // Controls
       const startBtn = document.getElementById('startBtn');
@@ -833,6 +975,7 @@ def generate_practice_html(set_name, data):
         api.clearToken();
         location.href='login.html';
       }});
+      wireDifficulty();
     }});
   </script>
 </body>

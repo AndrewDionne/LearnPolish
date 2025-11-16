@@ -152,14 +152,30 @@ def generate_flashcard_html(set_name, data):
         </div>
       </div>
 
+      <div class="row" style="margin-top:8px; gap:6px; flex-wrap:wrap;">
+        <span class="muted" style="font-size:13px;">Difficulty:</span>
+        <button type="button" class="btn tiny diff-btn" data-diff="easy">Easy</button>
+        <button type="button" class="btn tiny diff-btn" data-diff="normal">Normal</button>
+        <button type="button" class="btn tiny diff-btn" data-diff="hard">Hard</button>
+      </div>
+
       <div class="row">
         <button id="prevBtn" class="btn">Previous</button>
         <button id="nextBtn" class="btn btn-primary">Next</button>
       </div>
     </section>
 
-    <!-- RIGHT: (kept empty to match layout; easy to add helpers later) -->
-    <aside class="stack"></aside>
+    <!-- RIGHT: Offline audio helper -->
+    <aside class="stack">
+      <section class="card">
+        <div class="title" style="font-size:16px; font-weight:600; margin-bottom:4px;">Offline audio</div>
+        <div class="act-row" style="margin-top:8px;">
+          <button id="offlineBtn" class="btn">⬇️ Download</button>
+          <button id="offlineRemoveBtn" class="btn" style="display:none;">🗑 Remove</button>
+        </div>
+        <div id="offlineStatus" class="result" style="margin-top:8px;"></div>
+      </section>
+    </aside>
   </main>
 
   <div id="dbg"></div>
@@ -233,9 +249,15 @@ def generate_flashcard_html(set_name, data):
     const CAPTURE_MODE = FORCE_LIVE ? false : (capQ === '0' ? false : true);
 
     // Scoring + points
-    const PASS = 75;
+    const DIFF_PRESETS = {{ easy: 65, normal: 75, hard: 85 }};
+    let difficulty = (localStorage.getItem("lp.diff_flashcards") || "normal");
+    function currentPassThreshold() {{
+      return DIFF_PRESETS[difficulty] || 75;
+    }}
+
     const tracker = {{ attempts: 0, per: {{}}, perfectNoFlipCount: 0 }};
     let hasFlippedCurrent = false;
+
 
     // Audio preload
     const audioCache = new Map();
@@ -266,6 +288,28 @@ def generate_flashcard_html(set_name, data):
       try{{ a.load(); }}catch(_){{
       }} audioCache.set(index, a);
     }}
+
+    // ----- Offline audio helpers (Flashcards) -----
+    async function ensureSW(){{
+      if (!('serviceWorker' in navigator)) return null;
+      try {{
+        const reg = await navigator.serviceWorker.register('./sw.js', {{ scope: './' }});
+        await navigator.serviceWorker.ready;
+        return reg;
+      }} catch(e) {{
+        logDbg('SW register failed', e?.message || e);
+        return null;
+      }}
+    }}
+
+    function allAudioUrls(){{
+      const urls = [];
+      for (let i = 0; i < cards.length; i++) {{
+        urls.push(buildAudioSrc(i));
+      }}
+      return Array.from(new Set(urls));
+    }}
+
     function resetAndPrimeAround(index){{
       audioCache.clear(); primeAudio(index); primeAudio(index+1);
     }}
@@ -273,6 +317,29 @@ def generate_flashcard_html(set_name, data):
     function setNavUI(){{
       document.getElementById("prevBtn").disabled = (currentIndex === 0);
       document.getElementById("nextBtn").textContent = (currentIndex < cards.length - 1) ? "Next" : "Finish";
+    }}
+    function applyDifficultyUI() {{
+      const btns = document.querySelectorAll(".diff-btn");
+      btns.forEach(btn => {{
+        const d = btn.dataset.diff;
+        if (d === difficulty) btn.classList.add("btn-primary");
+        else btn.classList.remove("btn-primary");
+      }});
+    }}
+
+    function wireDifficulty() {{
+      const btns = document.querySelectorAll(".diff-btn");
+      if (!btns.length) return;
+      btns.forEach(btn => {{
+        btn.addEventListener("click", (e) => {{
+          e.preventDefault();
+          const d = btn.dataset.diff || "normal";
+          difficulty = d;
+          try {{ localStorage.setItem("lp.diff_flashcards", difficulty); }} catch (_) {{}}
+          applyDifficultyUI();
+        }});
+      }});
+      applyDifficultyUI();
     }}
 
     function renderCard(){{
@@ -444,8 +511,9 @@ def generate_flashcard_html(set_name, data):
         return null;
       }}
     }}
+
     function estimateSyllablesPL(text){{
-      const t = String(text||'').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'');
+      const t = String(text||"").toLowerCase().normalize("NFD").replace(/[\\u0300-\\u036f]/g,"");
       const vowels = /[aąeęiouyó]/g; // rough
       const m = t.match(vowels);
       return Math.max(1, (m ? m.length : 0));
@@ -458,7 +526,68 @@ def generate_flashcard_html(set_name, data):
       const max  = 3200;
       return Math.max(min, Math.min(max, base + per * syll));
     }}
+
+    // Normalise for lexical comparison (ignore case, accents, punctuation)
+    function normLexicalPL(text) {{
+      return String(text || "")
+        .toLowerCase()
+        .normalize("NFD").replace(/[\\u0300-\\u036f]/g,"")
+        .replace(/[^a-ząćęłńóśźż0-9]+/g,"");
+    }}
+
     function computeStrictScore(paJson, fallback, refText, voicedMs){{
+
+      // Extract metrics
+      let acc = fallback?.acc || 0;
+      let flu = fallback?.flu || 0;
+      let comp = fallback?.comp || 0;
+      let wordErrFrac = 0;
+      let lexicalOk = false;
+
+      if (paJson) {{
+        const top = (paJson.NBest && paJson.NBest[0]) ? paJson.NBest[0] : null;
+        const pa  = top?.PronunciationAssessment || paJson.PronunciationAssessment;
+        if (pa) {{
+          acc  = Math.round(Number(pa.AccuracyScore)      || acc);
+          flu  = Math.round(Number(pa.FluencyScore)       || flu);
+          comp = Math.round(Number(pa.CompletenessScore)  || comp);
+        }}
+
+        // Word error fraction from Azure (insertions/deletions/miscues)
+        const words = top?.Words || paJson.Words || [];
+        const refCount = Math.max(1, String(refText || "").trim().split(/\\s+/).length);
+        let errs = 0;
+        for (const w of words) {{
+          const et = w?.PronunciationAssessment?.ErrorType;
+          if (et && et !== "None") errs++;
+        }}
+        wordErrFrac = Math.max(0, Math.min(1, errs / refCount));
+
+        // Lexical correctness: compare normalised Lexical/Display to reference
+        try {{
+          const hypRaw = top?.Lexical || top?.Display || paJson.Lexical || paJson.Display || "";
+          const refNorm = normLexicalPL(refText);
+          const hypNorm = normLexicalPL(hypRaw);
+          if (refNorm && hypNorm && refNorm === hypNorm) lexicalOk = true;
+        }} catch (_ignore) {{}}
+      }}
+
+      // Base blend
+      let base = Math.round(0.55 * acc + 0.25 * flu + 0.20 * comp);
+
+      // Energy/coverage penalty based on voiced duration vs expected
+      const syll = estimateSyllablesPL(refText);
+      const targetMs = Math.max(320, Math.min(1600, 280 + 110 * syll));      // heuristic
+      const needed   = 0.85 * targetMs;                                      // stricter than before
+      const energyF  = Math.max(0.4, Math.min(1, (voicedMs || 0) / needed)); // floor so quiet users aren't zeroed
+
+      // Word error penalty (strong)
+      const errF = 1 - 0.65 * wordErrFrac;
+
+      let strict = Math.round(base * energyF * errF);
+      strict = Math.max(0, Math.min(100, strict));
+      return {{ strict, acc, flu, comp, wordErrFrac, energyF, lexicalOk }};
+    }}
 
       // Extract metrics
       let acc = fallback?.acc || 0, flu = fallback?.flu || 0, comp = fallback?.comp || 0;
@@ -509,29 +638,43 @@ def generate_flashcard_html(set_name, data):
       return {{ acc:0, flu:0, comp:0 }};
     }}
 
-    async function assessCapture(referenceText, targetEl){{
+        async function assessCapture(referenceText, targetEl) {{
       const ref = (referenceText || "").trim();
-      if (!window.SpeechSDK) {{ targetEl.textContent = "⚠️ SDK not loaded."; return 0; }}
-      if (!ref) {{ targetEl.textContent = "⚠️ No reference text."; return 0; }}
+      const empty = {{ score: 0, acc: 0, flu: 0, comp: 0, lexicalMatch: false }};
+
+      if (!window.SpeechSDK) {{
+        targetEl.textContent = "⚠️ SDK not loaded.";
+        return empty;
+      }}
+      if (!ref) {{
+        targetEl.textContent = "⚠️ No reference text.";
+        return empty;
+      }}
 
       // Offline → no scoring, but user can still listen & repeat
       if (!navigator.onLine) {{
         targetEl.textContent = "📴 Offline: scoring needs internet, but you can still listen and repeat.";
-        return 0;
+        return empty;
       }}
 
       targetEl.textContent = "🎤 Recording…";
-      const rec = await recordBlobVAD(1400); // faster upper bound (or your new dynMax)
+      const dynMax = computeCaptureWindowMs(ref);
+      const rec = await recordBlobVAD(dynMax);
       const {{ token, region }} = await fetchToken();
       if (!token || !region) {{
         targetEl.textContent = "⚠️ Speech service unavailable. Try again later.";
-        return 0;
+        return empty;
       }}
 
       // Prepare PCM (and WAV in debug)
       const pcm = await blobToPCM16Mono(rec.blob, 16000);
-      if (DEBUG){{
-        try {{ const wav = pcmToWavBlob(pcm, 16000); const url = URL.createObjectURL(wav); dlWav.href = url; dlWav.style.display='inline-flex'; }} catch(_){{
+      if (DEBUG) {{
+        try {{
+          const wav = pcmToWavBlob(pcm, 16000);
+          const url = URL.createObjectURL(wav);
+          dlWav.href = url;
+          dlWav.style.display = "inline-flex";
+        }} catch(_){{
         }}
       }}
 
@@ -545,14 +688,15 @@ def generate_flashcard_html(set_name, data):
       // Push stream 16k/16-bit/mono
       const format = SDK.AudioStreamFormat.getWaveFormatPCM(16000, 16, 1);
       const push = SDK.AudioInputStream.createPushStream(format);
-      push.write(new Uint8Array(pcm.buffer)); push.close();
+      push.write(new Uint8Array(pcm.buffer));
+      push.close();
       const audioConfig = SDK.AudioConfig.fromStreamInput(push);
 
       const recognizer = new SDK.SpeechRecognizer(speechConfig, audioConfig);
       const pa = new SDK.PronunciationAssessmentConfig(
         ref,
         SDK.PronunciationAssessmentGradingSystem.HundredMark,
-        // Use PHONEME granularity for higher sensitivity:
+        // PHONEME granularity for sensitivity
         SDK.PronunciationAssessmentGranularity.Phoneme,
         true // enable miscue (insertions/deletions)
       );
@@ -572,7 +716,10 @@ def generate_flashcard_html(set_name, data):
       try {{ recognizer.close(); }} catch(_){{
       }}
 
-      if (!result) {{ targetEl.textContent = "⚠️ Speech error"; return 0; }}
+      if (!result) {{
+        targetEl.textContent = "⚠️ Speech error";
+        return empty;
+      }}
 
       // Debug dump
       try {{
@@ -596,9 +743,101 @@ def generate_flashcard_html(set_name, data):
 
       const base = extractMetrics(result, SDK);
       const paJson = extractPAJson(result, SDK);
-      const {{ strict }} = computeStrictScore(paJson, base, ref, rec.voicedMs);
-      targetEl.textContent = strict ? `✅ ${{strict}}%` : "⚠️ No score";
-      return strict || 0;
+      const {{ strict, acc, flu, comp, lexicalOk }} = computeStrictScore(paJson, base, ref, rec.voicedMs);
+
+      if (strict) {{
+        targetEl.textContent = `✅ ${{strict}}%  (Acc ${{acc}} · Flu ${{flu}} · Comp ${{comp}})`;
+      }} else {{
+        targetEl.textContent = "⚠️ No score";
+      }}
+      return {{ score: strict || 0, acc, flu, comp, lexicalMatch: !!lexicalOk }};
+    }}
+
+    async function assessLive(referenceText, targetEl) {{
+      const ref = (referenceText || "").trim();
+      const empty = {{ score: 0, acc: 0, flu: 0, comp: 0, lexicalMatch: false }};
+
+      if (!window.SpeechSDK) {{
+        targetEl.textContent = "⚠️ SDK not loaded.";
+        return empty;
+      }}
+      if (!ref) {{
+        targetEl.textContent = "⚠️ No reference text.";
+        return empty;
+      }}
+
+      if (!navigator.onLine) {{
+        targetEl.textContent = "📴 Offline: scoring needs internet.";
+        return empty;
+      }}
+      
+      targetEl.textContent = "🎤 Preparing…";
+      // Tiny warmup for Safari
+      try {{
+        const s = await navigator.mediaDevices.getUserMedia({{ audio:true }});
+        s.getTracks().forEach(t => t.stop());
+      }} catch(_){{
+      }}
+
+      const {{ token, region }} = await fetchToken();
+      if (!token || !region) {{
+        targetEl.textContent = "⚠️ Token/region issue";
+        return empty;
+      }}
+
+      const SDK = window.SpeechSDK;
+      const speechConfig = SDK.SpeechConfig.fromAuthorizationToken(token, region);
+      speechConfig.speechRecognitionLanguage = "pl-PL";
+      speechConfig.outputFormat = SDK.OutputFormat.Detailed;
+      speechConfig.setProperty(SDK.PropertyId.SpeechServiceResponse_RequestDetailedResultTrueFalse, "true");
+      speechConfig.setProperty(SDK.PropertyId.SpeechServiceResponse_RequestWordLevelTimestamps, "false");
+      // More forgiving timeouts so users can think + finish
+      speechConfig.setProperty(SDK.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, "2600");
+      speechConfig.setProperty(SDK.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "800");
+
+      const audioConfig = SDK.AudioConfig.fromDefaultMicrophoneInput();
+      const recognizer = new SDK.SpeechRecognizer(speechConfig, audioConfig);
+
+      const pa = new SDK.PronunciationAssessmentConfig(
+        ref,
+        SDK.PronunciationAssessmentGradingSystem.HundredMark,
+        SDK.PronunciationAssessmentGranularity.Phoneme,
+        true
+      );
+      pa.applyTo(recognizer);
+      try {{
+        const pl = SDK.PhraseListGrammar.fromRecognizer(recognizer);
+        if (pl) pl.add(ref);
+      }} catch(_){{
+      }}
+
+      targetEl.textContent = "🎙 Listening…";
+
+      const result = await new Promise((resolve, reject) => {{
+        try {{ recognizer.recognizeOnceAsync(resolve, reject); }} catch(e) {{ reject(e); }}
+      }}).catch(e => {{ logDbg('recognizeOnce(live) error', e?.message || e); return null; }});
+
+      try {{ recognizer.close(); }} catch(_){{
+      }}
+
+      if (!result) {{
+        targetEl.textContent = "⚠️ Speech error";
+        return empty;
+      }}
+
+      const base = extractMetrics(result, SDK);
+      const paJson = extractPAJson(result, SDK);
+      // Live path: we don't know voicedMs; approximate with expected for the phrase (lighter penalty)
+      const syll = estimateSyllablesPL(ref);
+      const approxVoiced = Math.max(320, Math.min(1600, 280 + 110 * syll)) * 0.7;
+      const {{ strict, acc, flu, comp, lexicalOk }} = computeStrictScore(paJson, base, ref, approxVoiced);
+
+      if (strict) {{
+        targetEl.textContent = `✅ ${{strict}}%  (Acc ${{acc}} · Flu ${{flu}} · Comp ${{comp}})`;
+      }} else {{
+        targetEl.textContent = "⚠️ No score";
+      }}
+      return {{ score: strict || 0, acc, flu, comp, lexicalMatch: !!lexicalOk }};
     }}
 
     async function assessLive(referenceText, targetEl){{
@@ -660,12 +899,18 @@ def generate_flashcard_html(set_name, data):
 
       const base = extractMetrics(result, SDK);
       const paJson = extractPAJson(result, SDK);
-      // Live path: we don't know voicedMs; approximate with expected for the phrase (lighter penalty)
+      // Live path: approximate voiced duration
       const syll = estimateSyllablesPL(ref);
       const approxVoiced = Math.max(320, Math.min(1600, 280 + 110*syll)) * 0.7;
-      const {{ strict }} = computeStrictScore(paJson, base, ref, approxVoiced);
-      targetEl.textContent = strict ? `✅ ${{strict}}%` : "⚠️ No score";
+      const {{ strict, acc, flu, comp }} = computeStrictScore(paJson, base, ref, approxVoiced);
+
+      if (strict) {{
+        targetEl.textContent = `✅ ${{strict}}%  (Acc ${{acc}} · Flu ${{flu}} · Comp ${{comp}})`;
+      }} else {{
+        targetEl.textContent = "⚠️ No score";
+      }}
       return strict || 0;
+
     }}
 
     // ---------- UI wiring ----------
@@ -675,10 +920,62 @@ def generate_flashcard_html(set_name, data):
       try {{ if (window.AudioPaths) r2Manifest = await AudioPaths.fetchManifest(setName); }} catch(_){{
         r2Manifest = null;
       }}
+      primeAudio(0); primeAudio(1);
+            // Offline audio controls (Flashcards)
+      const offlineBtn = document.getElementById('offlineBtn');
+      const offlineRemoveBtn = document.getElementById('offlineRemoveBtn');
+      const offlineStatus = document.getElementById('offlineStatus');
+
+      let swReg = null;
+      if (offlineBtn && offlineStatus) {{
+        // Only try SW where it's allowed: https or localhost
+        if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {{
+          swReg = await ensureSW();
+        }}
+
+        if (!swReg) {{
+          offlineBtn.style.display = 'none';
+          offlineRemoveBtn.style.display = 'none';
+          offlineStatus.textContent = 'Offline download is not available here, but you can still listen while online.';
+        }} else {{
+          offlineStatus.textContent = 'Tap Download to make this set available offline.';
+        }}
+
+        navigator.serviceWorker?.addEventListener('message', (ev) => {{
+          const d = ev.data || {{}};
+          if (d.type === 'CACHE_PROGRESS') {{
+            offlineStatus.textContent = `⬇️ ${{d.done}} / ${{d.total}} files cached…`;
+          }} else if (d.type === 'CACHE_DONE') {{
+            offlineStatus.textContent = '✅ Available offline';
+            offlineRemoveBtn.style.display = 'inline-flex';
+          }} else if (d.type === 'UNCACHE_DONE') {{
+            offlineStatus.textContent = '🗑 Removed offline copy';
+            offlineRemoveBtn.style.display = 'none';
+          }} else if (d.type === 'CACHE_ERROR') {{
+            offlineStatus.textContent = '❌ Offline failed';
+          }}
+        }});
+
+        offlineBtn.addEventListener('click', async () => {{
+          if (!swReg || !swReg.active) {{
+            offlineStatus.textContent = '❌ Offline not available.';
+            return;
+          }}
+          offlineStatus.textContent = '⬇️ Downloading…';
+          swReg.active.postMessage({{ type: 'CACHE_SET', cache: `flashcards-${{setName}}`, urls: allAudioUrls() }});
+        }});
+
+        offlineRemoveBtn.addEventListener('click', async () => {{
+          if (!swReg || !swReg.active) return;
+          swReg.active.postMessage({{ type: 'UNCACHE_SET', cache: `flashcards-${{setName}}` }});
+        }});
+      }}
 
       // Debug SDK version
       try {{ logDbg('SDK version?', window.SpeechSDK?.Version || 'unknown'); }} catch(_){{
       }}
+
+      wireDifficulty();
 
       renderCard();
 
@@ -699,17 +996,28 @@ def generate_flashcard_html(set_name, data):
         const ref = getRef();
         if (!ref.trim()) {{ frontRes.textContent = "⚠️ No reference text."; return; }}
         sayBtn.disabled = true;
-        const s = CAPTURE_MODE ? await assessCapture(ref, frontRes) : await assessLive(ref, frontRes);
+
+        const res = CAPTURE_MODE ? await assessCapture(ref, frontRes) : await assessLive(ref, frontRes);
+        const s = res && Number.isFinite(res.score) ? res.score : 0;
+        const lexical = !!(res && res.lexicalMatch);
+
         tracker.attempts++;
-        if (!tracker.per[currentIndex]) tracker.per[currentIndex] = {{ tries: 0, best: 0, got100BeforeFlip: false }};
+        if (!tracker.per[currentIndex]) tracker.per[currentIndex] = {{ tries: 0, best: 0, lexicalCorrect: false, got100BeforeFlip: false }};
         const r = tracker.per[currentIndex];
         r.tries++;
         if (Number.isFinite(s)) {{
           r.best = Math.max(r.best || 0, s);
+          // “Perfect pronunciation before flip” tracker
           if (!hasFlippedCurrent && s === 100 && !r.got100BeforeFlip) {{
-            r.got100BeforeFlip = true; tracker.perfectNoFlipCount++;
+            r.got100BeforeFlip = true;
+            tracker.perfectNoFlipCount++;
           }}
         }}
+        // Main flashcard correctness: said the right word before seeing the back
+        if (!hasFlippedCurrent && lexical) {{
+          r.lexicalCorrect = true;
+        }}
+
         sayBtn.disabled = false;
       }});
 
@@ -744,8 +1052,10 @@ def generate_flashcard_html(set_name, data):
 
           let n100 = 0, n70_99 = 0, nBelow = 0;
           let sumBest = 0, countBest = 0;
+          let lexicalCorrectCount = 0;
 
           for (const r of perStats) {{
+            if (r && r.lexicalCorrect) lexicalCorrectCount++;
             const best = Number((r && r.best) || 0);
             if (!Number.isFinite(best)) continue;
             sumBest += best;
@@ -758,8 +1068,8 @@ def generate_flashcard_html(set_name, data):
 
           const avgCardScore = countBest > 0 ? (sumBest / countBest) : 0;
 
-          // "Correct" = ≥ PASS for the in-game pass threshold
-          const correct  = perStats.filter(r => Number((r && r.best) || 0) >= PASS).length;
+          // For flashcards, main score = lexical recall before flipping the card
+          const correct  = lexicalCorrectCount;
           const scorePct = Math.round((correct / totalCards) * 100);
 
           // Cache per-set last result (useful for older per-set summaries)
@@ -831,7 +1141,9 @@ def generate_flashcard_html(set_name, data):
                   n70_99,
                   nBelow,
                   avg_card_score: avgCardScore,
-                  perfect_before_flip: tracker.perfectNoFlipCount
+                  perfect_before_flip: tracker.perfectNoFlipCount,
+                  difficulty,
+                  pass_threshold: currentPassThreshold()
                 }}
               }})
             }});
@@ -1008,5 +1320,62 @@ def generate_flashcard_html(set_name, data):
 """
     summary_path.write_text(summary_html, encoding="utf-8")
 
+    # --- Service worker for offline flashcard audio ---
+    sw_js = """/* flashcards SW */
+self.addEventListener('install', (e) => { self.skipWaiting(); });
+self.addEventListener('activate', (e) => { self.clients.claim(); });
+
+function toAbs(u){
+  try { return new URL(u, self.registration.scope || self.location.href).href; }
+  catch(_) { return null; }
+}
+
+self.addEventListener('message', async (e) => {
+  const data = e.data || {};
+  const client = await self.clients.get(e.source && e.source.id);
+  if (data.type === 'CACHE_SET') {
+    const cacheName = data.cache || 'flashcards-cache';
+    const urls = Array.isArray(data.urls) ? data.urls.map(toAbs).filter(Boolean) : [];
+    try {
+      const cache = await caches.open(cacheName);
+      let done = 0, total = urls.length;
+      for (const u of urls) {
+        try {
+          const res = await fetch(u, { mode: 'cors' });
+          if (res.ok || res.type === 'opaque') {
+            await cache.put(u, res.clone());
+          }
+        } catch (_) { /* skip failed */ }
+        done++;
+        client && client.postMessage({ type: 'CACHE_PROGRESS', done, total });
+      }
+      client && client.postMessage({ type: 'CACHE_DONE', cache: cacheName });
+    } catch (err) {
+      client && client.postMessage({ type: 'CACHE_ERROR', error: String(err) });
+    }
+  } else if (data.type === 'UNCACHE_SET') {
+    const cacheName = data.cache || 'flashcards-cache';
+    await caches.delete(cacheName);
+    client && client.postMessage({ type: 'UNCACHE_DONE', cache: cacheName });
+  }
+});
+
+// Cache-first for anything we have; otherwise fall through to network
+self.addEventListener('fetch', (event) => {
+  event.respondWith((async () => {
+    const reqUrl = event.request.url;
+    const names = await caches.keys();
+    for (const name of names) {
+      const cache = await caches.open(name);
+      const hit = await cache.match(reqUrl, { ignoreSearch: true });
+      if (hit) return hit;
+    }
+    try { return await fetch(event.request); } catch (_) { return new Response('', { status: 504 }); }
+  })());
+});
+"""
+    (output_dir / "sw.js").write_text(sw_js, encoding="utf-8")
+
     print(f"✅ flashcards pages generated: {out_path} and {summary_path}")
     return out_path
+

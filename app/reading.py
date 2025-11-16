@@ -116,12 +116,12 @@ def generate_reading_html(set_name, data=None):
         <button id="btnStart" class="btn btn-primary">🎤 Start Reading</button>
         <button id="btnStop" class="btn" disabled>⏹ Stop</button>
         <button id="btnListen" class="btn">🔊 Listen (Polish)</button>
+        <button id="btnSpeed" class="btn">🐢 0.8×</button>
         <button id="btnReplay" class="btn" disabled>🎧 Replay Me</button>
         <button id="btnToggleEN" class="btn">🇬🇧 Show Translation</button>
         <button id="btnOffline" class="btn">⬇️ Offline</button>
         <button id="btnOfflineRm" class="btn" style="display:none;">🗑 Remove</button>
         <button id="btnFinish" class="btn">✅ Finish</button>
-
       </div>
 
       <div id="title" class="meta"></div>
@@ -181,16 +181,19 @@ def generate_reading_html(set_name, data=None):
     const dbgEl = document.getElementById('dbg');
     if (DEBUG) dbgEl.style.display = 'block';
     function dbg(...a){{ if (!DEBUG) return; const d=document.createElement('div'); d.textContent=a.map(x=>typeof x==='string'?x:JSON.stringify(x)).join(' '); dbgEl.appendChild(d); dbgEl.scrollTop=dbgEl.scrollHeight; }}
-
+    
     let currentIndex = 0;
-    let recognizer = null;
+        let recognizer = null;
     let recording = null; // MediaRecorder
     let chunks = [];
     let replayUrl = null;
     let startTime = 0;
+    let isReading = false;
     let wordsSpans = [];
     let wordsMeta  = []; // {{ text, idx, score }}
     let r2Manifest = null;
+    let playbackRate = 0.8; // default slow playback for Polish audio
+
 
     // ----- Helpers -----
     function byId(id){{ return document.getElementById(id); }}
@@ -250,6 +253,14 @@ def generate_reading_html(set_name, data=None):
     function highlightWord(idx){{
       wordsSpans.forEach(s=>s.classList.remove('active'));
       if (idx>=0 && idx<wordsSpans.length) wordsSpans[idx].classList.add('active');
+    }}
+
+    function syncTtsProgress(){{
+      const a = byId('ttsAudio');
+      if (!a || !a.duration || !wordsMeta.length) return;
+      const frac = a.currentTime / a.duration;
+      const idx = Math.min(wordsMeta.length - 1, Math.floor(frac * wordsMeta.length));
+      highlightWord(idx);
     }}
 
     function computeWPM(ms, words){{
@@ -322,6 +333,7 @@ def generate_reading_html(set_name, data=None):
       let nextPtr = 0; const LOOKAHEAD = 4;
 
       function applyFromJson(j){{
+        if (!isReading) return;
         const nb = j?.NBest?.[0];
         const words = nb?.Words || [];
         if (!words.length) return;
@@ -364,9 +376,18 @@ def generate_reading_html(set_name, data=None):
       startTime = Date.now();
       rec.recognizing = (s,e)=>{{ byId('status').textContent='🎙 Listening…'; const j=parseAny(e); if (j) applyFromJson(j); }};
       rec.recognized  = (s,e)=>{{ const j=parseAny(e); if (j) applyFromJson(j); }};
-      rec.canceled    = ()=>{{ byId('status').textContent='⚠️ Canceled'; }};
-      rec.sessionStarted = ()=>{{ byId('status').textContent='🎙 Session started'; }};
-      rec.sessionStopped = ()=>{{ byId('status').textContent='🛑 Session stopped'; updateStats(true); }};
+      rec.canceled = () => {{
+        byId('status').textContent = '⚠️ Canceled';
+      }};
+      rec.sessionStarted = () => {{
+        if (!startTime) startTime = Date.now();
+        byId('status').textContent = '🎙 Session started';
+      }};
+      rec.sessionStopped = () => {{
+        isReading = false;
+        byId('status').textContent = '🛑 Session stopped';
+        updateStats(true);
+      }};
     }}
 
     // ----- Optional local recording (for replay) -----
@@ -398,40 +419,113 @@ def generate_reading_html(set_name, data=None):
     async function startReading(){{
       const p = passages[currentIndex] || {{}};
       const reference = String(p.polish||'');
-      if (!reference.trim()) return;
-      wordsMeta.forEach((w,i)=>{{ w.score=null; wordsSpans[i].className='word'; }});
+      if (!reference.trim()) {{
+        byId('status').textContent = '⚠️ No passage text found.';
+        return;
+      }}
+
+      // Require internet for assessment (similar to flashcards/practice)
+      if (!navigator.onLine) {{
+        byId('status').textContent = '📴 Offline: reading assessment needs internet. You can still use "Listen (Polish)" if audio is cached.';
+        return;
+      }}
+
+      if (!window.SpeechSDK) {{
+        byId('status').textContent = '⚠️ Speech SDK not loaded. Check your connection and try again.';
+        return;
+      }}
+
+      if (isReading) {{
+        return; // already running
+      }}
+      isReading = true;
+
+      // Reset per-word scoring
+      wordsMeta.forEach((w,i)=>{{ w.score = null; wordsSpans[i].className = 'word'; }});
       highlightWord(0);
+      startTime = Date.now();
+
       byId('btnStart').disabled = true;
       byId('btnStop').disabled = false;
       byId('btnReplay').disabled = true;
-      byId('status').textContent = '🎙 Preparing…';
+      byId('status').textContent = '🎙 Preparing microphone…';
 
-      await prewarmMic();
-      await fetchToken().catch(()=>{{}});
-      await new Promise(r=>setTimeout(r, 200));
+      try {{
+        await prewarmMic();
+      }} catch(_){{
+      }}
 
-      recognizer = await makeRecognizer(reference);
+      // Pre-fetch token to avoid first-chunk latency
+      try {{
+        await fetchToken();
+      }} catch(e) {{
+        dbg('token error', e?.message || e);
+        byId('status').textContent = '⚠️ Could not reach speech service. Please try again.';
+        byId('btnStart').disabled = false;
+        byId('btnStop').disabled = true;
+        isReading = false;
+        return;
+      }}
+
+      // Tiny warmup delay; helps Safari a bit
+      await new Promise(r => setTimeout(r, 180));
+
+      try {{
+        recognizer = await makeRecognizer(reference);
+      }} catch(e) {{
+        dbg('makeRecognizer error', e?.message || e);
+        byId('status').textContent = '⚠️ Could not start recognition.';
+        byId('btnStart').disabled = false;
+        byId('btnStop').disabled = true;
+        isReading = false;
+        return;
+      }}
+
       attachHandlers(recognizer, reference);
 
-      await new Promise((resolve,reject)=>{{
-        try {{ recognizer.startContinuousRecognitionAsync(resolve, reject); }}
-        catch(e){{ reject(e); }}
-      }}).catch(e=>{{ dbg('start error', e?.message||e); }});
-      startLocalRecord();
+      try {{
+        await new Promise((resolve, reject) => {{
+          try {{ recognizer.startContinuousRecognitionAsync(resolve, reject); }}
+          catch(e) {{ reject(e); }}
+        }});
+        byId('status').textContent = '🎙 Listening…';
+        startLocalRecord();
+      }} catch(e) {{
+        dbg('start error', e?.message || e);
+        byId('status').textContent = '⚠️ Could not start recognition.';
+        byId('btnStart').disabled = false;
+        byId('btnStop').disabled = true;
+        isReading = false;
+      }}
     }}
 
+
     async function stopReading(){{
+      if (!isReading && !recognizer) {{
+        // Nothing to stop; just normalise buttons
+        byId('btnStop').disabled = true;
+        byId('btnStart').disabled = false;
+        return;
+      }}
+
       byId('btnStop').disabled = true;
+      byId('status').textContent = '🛑 Stopping…';
+
       try {{
-        if (recognizer){{
-          await new Promise(res=>{{
-            try{{ recognizer.stopContinuousRecognitionAsync(()=>res(), ()=>res()); }}
-            catch(_e){{ res(); }}
+        if (recognizer) {{
+          await new Promise(res => {{
+            try {{
+              recognizer.stopContinuousRecognitionAsync(() => res(), () => res());
+            }} catch(_e) {{
+              res();
+            }}
           }});
         }}
       }} finally {{
+        isReading = false;
+        recognizer = null;
         const url = await stopLocalRecord();
-        if (url){{
+        if (url) {{
           const a = byId('replayAudio'); a.src = url; a.load();
           byId('btnReplay').disabled = false;
         }}
@@ -440,6 +534,7 @@ def generate_reading_html(set_name, data=None):
         updateStats(true);
       }}
     }}
+
 
     function listenPolish(){{
       const a = byId('ttsAudio');
@@ -450,7 +545,9 @@ def generate_reading_html(set_name, data=None):
       else if (window.AudioPaths) src = AudioPaths.readingPath(setName, currentIndex, r2Manifest);
       else src = `../../static/${{encodeURIComponent(setName)}}/reading/${{encodeURIComponent(currentIndex)}}.mp3`;
       a.onerror = ()=> byId('status').textContent='🔇 Audio not found for this passage.';
-      a.src = src; a.load();
+      a.src = src;
+      a.load();
+      a.playbackRate = playbackRate;
       a.play().catch(()=> byId('status').textContent='🔇 Unable to play audio.');
     }}
 
@@ -464,6 +561,16 @@ def generate_reading_html(set_name, data=None):
       const vis = el.style.display !== 'none';
       el.style.display = vis ? 'none' : 'block';
       byId('btnToggleEN').textContent = vis ? '🇬🇧 Show Translation' : '🇬🇧 Hide Translation';
+    }}
+    function toggleSpeed(){{
+      playbackRate = (playbackRate === 1.0) ? 0.8 : 1.0;
+      const btn = byId('btnSpeed');
+      if (!btn) return;
+      if (playbackRate === 1.0) {{
+        btn.textContent = '🏃 1.0×';
+      }} else {{
+        btn.textContent = '🐢 0.8×';
+      }}
     }}
 
     // ----- Offline SW -----
@@ -490,28 +597,64 @@ def generate_reading_html(set_name, data=None):
       byId('btnStart').addEventListener('click', startReading);
       byId('btnStop').addEventListener('click', stopReading);
       byId('btnListen').addEventListener('click', listenPolish);
+      byId('btnSpeed').addEventListener('click', toggleSpeed);
       byId('btnReplay').addEventListener('click', replayMe);
       byId('btnToggleEN').addEventListener('click', toggleEN);
       byId('btnFinish').addEventListener("click", finishSession);
 
       // Offline handlers
-      byId('btnOffline').addEventListener('click', async ()=>{{
-        const reg = await ensureSW(); const s = byId('offlineStatus');
-        if (!reg || !reg.active) return s.textContent='❌ Offline not available.';
-        s.textContent = '⬇️ Downloading…';
-        reg.active.postMessage({{ type:'CACHE_SET', cache:`reading-{set_name}`, urls: readingAudioUrls() }});
+      const offlineBtn = byId('btnOffline');
+      const offlineRmBtn = byId('btnOfflineRm');
+      const offlineStatus = byId('offlineStatus');
+
+      let swReg = null;
+
+      if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {{
+        (async () => {{
+          swReg = await ensureSW();
+          if (!swReg) {{
+            offlineBtn.style.display = 'none';
+            offlineRmBtn.style.display = 'none';
+            offlineStatus.textContent = 'Offline download is not available here, but you can still read while online.';
+          }} else {{
+            offlineStatus.textContent = 'Tap Offline to download audio for this set.';
+          }}
+        }})();
+      }} else {{
+        offlineBtn.style.display = 'none';
+        offlineRmBtn.style.display = 'none';
+        offlineStatus.textContent = 'Offline download is not available in this browser.';
+      }}
+
+      offlineBtn.addEventListener('click', async () => {{
+        if (!swReg || !swReg.active) {{
+          offlineStatus.textContent = '❌ Offline not available.';
+          return;
+        }}
+        offlineStatus.textContent = '⬇️ Downloading…';
+        swReg.active.postMessage({{ type:'CACHE_SET', cache:`reading-{set_name}`, urls: readingAudioUrls() }});
       }});
-      byId('btnOfflineRm').addEventListener('click', async ()=>{{
-        const reg = await ensureSW(); if (!reg || !reg.active) return;
-        reg.active.postMessage({{ type:'UNCACHE_SET', cache:`reading-{set_name}` }});
+
+      offlineRmBtn.addEventListener('click', async () => {{
+        if (!swReg || !swReg.active) return;
+        swReg.active.postMessage({{ type:'UNCACHE_SET', cache:`reading-{set_name}` }});
       }});
-      navigator.serviceWorker?.addEventListener('message', ev=>{{
-        const d = ev.data || {{}}; const s = byId('offlineStatus');
-        if (d.type==='CACHE_PROGRESS') s.textContent=`⬇️ ${{d.done}} / ${{d.total}} files cached…`;
-        else if (d.type==='CACHE_DONE') {{ s.textContent='✅ Available offline'; byId('btnOfflineRm').style.display='inline-flex'; }}
-        else if (d.type==='UNCACHE_DONE') {{ s.textContent='🗑 Removed offline copy'; byId('btnOfflineRm').style.display='none'; }}
-        else if (d.type==='CACHE_ERROR') s.textContent='❌ Offline failed';
+
+      navigator.serviceWorker?.addEventListener('message', ev => {{
+        const d = ev.data || {{}};
+        if (!offlineStatus) return;
+        if (d.type === 'CACHE_PROGRESS') offlineStatus.textContent = `⬇️ ${{d.done}} / ${{d.total}} files cached…`;
+        else if (d.type === 'CACHE_DONE') {{
+          offlineStatus.textContent = '✅ Available offline';
+          offlineRmBtn.style.display = 'inline-flex';
+        }} else if (d.type === 'UNCACHE_DONE') {{
+          offlineStatus.textContent = '🗑 Removed offline copy';
+          offlineRmBtn.style.display = 'none';
+        }} else if (d.type === 'CACHE_ERROR') {{
+          offlineStatus.textContent = '❌ Offline failed';
+        }}
       }});
+
 
       // Page chrome auth state
       (async () => {{
@@ -539,10 +682,31 @@ def generate_reading_html(set_name, data=None):
       }}
       populateSelect();
       renderPassage(0);
+
+      // Preload first passage audio to reduce initial R2 hit
+      try {{
+        const a = byId('ttsAudio');
+        const p0 = passages[0] || {{}};
+        const direct = p0.audio_url || p0.audio;
+        let src = '';
+        if (direct && /^https?:\/\//i.test(direct)) src = direct;
+        else if (window.AudioPaths) src = AudioPaths.readingPath(setName, 0, r2Manifest);
+        else src = `../../static/${{encodeURIComponent(setName)}}/reading/0.mp3`;
+        if (src) {{
+          a.preload = 'auto';
+          a.src = src;
+          a.load();
+        }}
+        // Keep the active word roughly in sync with the Polish audio
+        a.addEventListener('timeupdate', syncTtsProgress);
+      }} catch(_){{
+      }}
+
       wire();
       // Prefetch token to reduce latency
       fetchToken().catch(()=>{{}});
-    }})();
+
+    }}();
 
     window.addEventListener('beforeunload', ()=>{{
       try {{ recognizer && recognizer.stopContinuousRecognitionAsync(); }} catch(_){{
@@ -564,21 +728,58 @@ def generate_reading_html(set_name, data=None):
     async function finishSession(){{
       const avg = Math.max(0, Math.min(100, Math.round(computeAvgScore())));
       const elapsed = Date.now() - startTime;
-      const wpm = computeWPM(elapsed, wordsMeta.filter(w => typeof w.score === "number").length);
+
+      const wordsDone = wordsMeta.filter(w => typeof w.score === "number");
+      const wpm = computeWPM(elapsed, wordsDone.length);
+
+      const p = passages[currentIndex] || {{}};
+      const totalWords = wordsMeta.length;
+      const recognizedWords = wordsDone.length;
+
+      const rawLabel = p.title || (p.polish || '');
+      let label = rawLabel ? String(rawLabel) : `Passage ${{currentIndex+1}}`;
+      if (label.length > 60) label = label.slice(0, 57) + '…';
+
+      const perKey = 'reading_' + currentIndex;
+      const per = {{}};
+      per[perKey] = {{
+        best: avg,
+        label,
+        text: p.polish || ''
+      }};
+
       const details = {{
         mode: 'reading',
         set: setName,
         passage_index: currentIndex,
         avg_accuracy: avg,
         wpm,
+        total_words: totalWords,
+        recognized_words: recognizedWords,
+        total: 1,
+        n100: avg >= 100 ? 1 : 0,
+        avg_card_score: avg,
+        per,
         words: wordsMeta
       }};
-      try{{
-        await Results.submit({{ set: setName, mode: 'reading', score: avg, details }});
-      }}finally{{
-        Results.goSummary({{ set: setName, mode: 'reading', score: avg }});
+
+      try {{
+        await Results.submit({{
+          set: setName,
+          mode: 'reading',
+          score: avg,
+          details
+        }});
+      }} finally {{
+        Results.goSummary({{
+          set: setName,
+          mode: 'reading',
+          score: avg,
+          details
+        }});
       }}
     }}
+
 
   </script>
 </body>
