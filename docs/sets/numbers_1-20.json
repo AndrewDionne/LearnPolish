@@ -1,0 +1,115 @@
+{
+  "name": "numbers_1-20",
+  "modes": [
+    "learn",
+    "speak"
+  ],
+  "meta": {
+    "modes": [
+      "learn",
+      "speak"
+    ]
+  },
+  "cards": [
+    {
+      "phrase": "Jeden",
+      "meaning": "One",
+      "pronunciation": "YEH-den"
+    },
+    {
+      "phrase": "Dwa",
+      "meaning": "Two",
+      "pronunciation": "dvah"
+    },
+    {
+      "phrase": "Trzy",
+      "meaning": "Three",
+      "pronunciation": "tshih"
+    },
+    {
+      "phrase": "Cztery",
+      "meaning": "Four",
+      "pronunciation": "CHTEH-rih"
+    },
+    {
+      "phrase": "Pięć",
+      "meaning": "Five",
+      "pronunciation": "pyench"
+    },
+    {
+      "phrase": "Sześć",
+      "meaning": "Six",
+      "pronunciation": "sheshch"
+    },
+    {
+      "phrase": "Siedem",
+      "meaning": "Seven",
+      "pronunciation": "SHYEH-dem"
+    },
+    {
+      "phrase": "Osiem",
+      "meaning": "Eight",
+      "pronunciation": "OH-shyem"
+    },
+    {
+      "phrase": "Dziewięć",
+      "meaning": "Nine",
+      "pronunciation": "JYEH-vyench"
+    },
+    {
+      "phrase": "Dziesięć",
+      "meaning": "Ten",
+      "pronunciation": "JYEH-shyench"
+    },
+    {
+      "phrase": "Jedenaście",
+      "meaning": "Eleven",
+      "pronunciation": "yeh-deh-NAH-shchyeh"
+    },
+    {
+      "phrase": "Dwanaście",
+      "meaning": "Twelve",
+      "pronunciation": "dvah-NAH-shchyeh"
+    },
+    {
+      "phrase": "Trzynaście",
+      "meaning": "Thirteen",
+      "pronunciation": "tshih-NAH-shchyeh"
+    },
+    {
+      "phrase": "Czternaście",
+      "meaning": "Fourteen",
+      "pronunciation": "chtehr-NAH-shchyeh"
+    },
+    {
+      "phrase": "Piętnaście",
+      "meaning": "Fifteen",
+      "pronunciation": "pyent-NAH-shchyeh"
+    },
+    {
+      "phrase": "Szesnaście",
+      "meaning": "Sixteen",
+      "pronunciation": "shes-NAH-shchyeh"
+    },
+    {
+      "phrase": "Siedemnaście",
+      "meaning": "Seventeen",
+      "pronunciation": "shyeh-dem-NAH-shchyeh"
+    },
+    {
+      "phrase": "Osiemnaście",
+      "meaning": "Eighteen",
+      "pronunciation": "oh-shyem-NAH-shchyeh"
+    },
+    {
+      "phrase": "Dziewiętnaście",
+      "meaning": "Nineteen",
+      "pronunciation": "jyeh-vyent-NAH-shchyeh"
+    },
+    {
+      "phrase": "Dwadzieścia",
+      "meaning": "Twenty",
+      "pronunciation": "dva-JYESH-chah"
+    }
+  ]
+}

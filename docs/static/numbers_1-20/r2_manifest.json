@@ -1,0 +1,26 @@
+{
+  "set": "numbers_1-20",
+  "assetsBase": "https://cdn.polishpath.com",
+  "files": {
+    "audio/numbers_1-20/0_Jeden.mp3": "https://cdn.polishpath.com/audio/numbers_1-20/0_Jeden.mp3",
+    "audio/numbers_1-20/10_Jedenascie.mp3": "https://cdn.polishpath.com/audio/numbers_1-20/10_Jedenascie.mp3",
+    "audio/numbers_1-20/11_Dwanascie.mp3": "https://cdn.polishpath.com/audio/numbers_1-20/11_Dwanascie.mp3",
+    "audio/numbers_1-20/12_Trzynascie.mp3": "https://cdn.polishpath.com/audio/numbers_1-20/12_Trzynascie.mp3",
+    "audio/numbers_1-20/13_Czternascie.mp3": "https://cdn.polishpath.com/audio/numbers_1-20/13_Czternascie.mp3",
+    "audio/numbers_1-20/14_Pietnascie.mp3": "https://cdn.polishpath.com/audio/numbers_1-20/14_Pietnascie.mp3",
+    "audio/numbers_1-20/15_Szesnascie.mp3": "https://cdn.polishpath.com/audio/numbers_1-20/15_Szesnascie.mp3",
+    "audio/numbers_1-20/16_Siedemnascie.mp3": "https://cdn.polishpath.com/audio/numbers_1-20/16_Siedemnascie.mp3",
+    "audio/numbers_1-20/17_Osiemnascie.mp3": "https://cdn.polishpath.com/audio/numbers_1-20/17_Osiemnascie.mp3",
+    "audio/numbers_1-20/18_Dziewietnascie.mp3": "https://cdn.polishpath.com/audio/numbers_1-20/18_Dziewietnascie.mp3",
+    "audio/numbers_1-20/19_Dwadziescia.mp3": "https://cdn.polishpath.com/audio/numbers_1-20/19_Dwadziescia.mp3",
+    "audio/numbers_1-20/1_Dwa.mp3": "https://cdn.polishpath.com/audio/numbers_1-20/1_Dwa.mp3",
+    "audio/numbers_1-20/2_Trzy.mp3": "https://cdn.polishpath.com/audio/numbers_1-20/2_Trzy.mp3",
+    "audio/numbers_1-20/3_Cztery.mp3": "https://cdn.polishpath.com/audio/numbers_1-20/3_Cztery.mp3",
+    "audio/numbers_1-20/4_Piec.mp3": "https://cdn.polishpath.com/audio/numbers_1-20/4_Piec.mp3",
+    "audio/numbers_1-20/5_Szesc.mp3": "https://cdn.polishpath.com/audio/numbers_1-20/5_Szesc.mp3",
+    "audio/numbers_1-20/6_Siedem.mp3": "https://cdn.polishpath.com/audio/numbers_1-20/6_Siedem.mp3",
+    "audio/numbers_1-20/7_Osiem.mp3": "https://cdn.polishpath.com/audio/numbers_1-20/7_Osiem.mp3",
+    "audio/numbers_1-20/8_Dziewiec.mp3": "https://cdn.polishpath.com/audio/numbers_1-20/8_Dziewiec.mp3",
+    "audio/numbers_1-20/9_Dziesiec.mp3": "https://cdn.polishpath.com/audio/numbers_1-20/9_Dziesiec.mp3"
+  }
+}
