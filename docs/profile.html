@@ -114,8 +114,9 @@
       </div>
     </section>
 
+    <!-- Goals -->
     <section class="card">
-      <h3>Goals & preferences</h3>
+      <h3>Goals</h3>
       <div class="row" style="align-items:flex-end">
         <div style="flex:1; min-width:220px">
           <label for="weeklyGoal">Weekly gold goal</label>
@@ -131,13 +132,6 @@
             <span class="tiny">Used for your weekly progress bar & treasure chest.</span>
           </div>
         </div>
-        <div style="flex:1; min-width:220px">
-          <label for="uiLang">Interface language</label>
-          <select id="uiLang" style="width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:10px; background:var(--card); color:var(--text);">
-            <option value="en">English</option>
-            <option value="pl">Polski (beta)</option>
-          </select>
-        </div>
       </div>
       <div class="row" style="margin-top:10px">
         <button id="saveBtn" class="btn btn-primary">Save changes</button>
@@ -145,51 +139,58 @@
       </div>
     </section>
 
-    <!-- Speech (TTS) settings — separate card -->
+    <!-- Preferences: language + TTS voice -->
     <section class="card">
-      <h3>Speech (TTS) settings</h3>
-      <div class="row" style="align-items:flex-end">
-        <div style="flex:1; min-width:220px">
-          <label for="ttsProvider">Provider</label>
-          <select id="ttsProvider" style="width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:10px; background:var(--card); color:var(--text);">
-            <option value="azure">Azure (neural voices)</option>
-            <option value="gtts">gTTS (simple, free)</option>
+      <h3>Preferences</h3>
+      <div class="col" style="gap:10px">
+
+        <!-- Keep UI language wired but hidden -->
+        <div id="uiLangRow" style="display:none">
+          <label for="uiLang">Interface language</label>
+          <select id="uiLang" style="width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:10px; background:var(--card); color:var(--text);">
+            <option value="en">English</option>
+            <option value="pl">Polski (beta)</option>
           </select>
-          <div class="tiny" style="margin-top:6px">Global fallback is set by server env if not specified here.</div>
         </div>
-        <div style="flex:1; min-width:220px">
-          <label for="ttsVoice">Azure voice (e.g., pl-PL-ZofiaNeural)</label>
-          <input id="ttsVoice" type="text" placeholder="pl-PL-MarekNeural" />
-          <div class="tiny" style="margin-top:6px">Ignored when provider = gTTS.</div>
+
+        <div>
+          <label for="ttsChoice">Polish voice</label>
+          <select id="ttsChoice" style="width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:10px; background:var(--card); color:var(--text);">
+            <option value="azure:pl-PL-ZofiaNeural">Zofia — natural & warm (Azure)</option>
+            <option value="azure:pl-PL-MarekNeural">Marek — neutral (Azure)</option>
+            <option value="gtts:pl">Andrzej — simple & offline (gTTS)</option>
+          </select>
+          <div class="tiny" style="margin-top:6px">
+            Zofia and Marek use Azure neural TTS when available. Andrzej uses the simpler gTTS fallback.
+          </div>
         </div>
+
       </div>
       <div class="row" style="margin-top:10px">
-        <button id="saveTtsBtn" class="btn">Save speech prefs</button>
+        <button id="saveTtsBtn" class="btn">Save preferences</button>
         <span id="saveTtsMsg" class="tiny"></span>
       </div>
     </section>
 
+
+    <!-- Data export -->
     <section class="card">
-      <h3>Account</h3>
+      <h3>Export your data</h3>
       <div class="row">
         <button id="exportBtn" class="btn">Export my data (JSON)</button>
-        <button id="deleteBtn" class="btn btn-danger">Delete my account</button>
       </div>
       <div id="accountMsg" class="tiny" style="margin-top:6px"></div>
     </section>
 
+    <!-- Danger zone -->
     <section class="card">
-      <h3>Your stats</h3>
-      <div class="row" style="margin-bottom:8px">
-        <div class="pill">🔥 <span id="streakNow">0-day streak</span></div>
-        <div class="pill">🏆 <span id="streakBest">Best 0 days</span></div>
-      </div>
-      <div class="row">
-        <b id="weeklyText">0 / 500 gold this week</b>
-        <div style="flex:1; min-width:160px"><div class="bar"><i id="weeklyBar"></i></div></div>
-      </div>
-      <div class="tiny" style="margin-top:6px">Total gold: <b id="totalGold">—</b></div>
+      <h3>Delete account</h3>
+      <p class="tiny">
+        Deleting your account will remove your scores, groups, and collections. This cannot be undone.
+      </p>
+      <button id="deleteBtn" class="btn btn-danger">Delete my account</button>
     </section>
+
   </main>
 
   <!-- Bottom nav -->
@@ -261,40 +262,48 @@
       document.getElementById('email').value = (me?.email || loc.email || '') || '';
       document.getElementById('joinDate').textContent = 'Joined ' + shortDate(me?.created_at || loc.created_at);
 
+      const weeklyGoalInput = document.getElementById('weeklyGoal');
+
       try{
         const r = await api.fetch('/api/my/stats');
-        if(r.ok){
+        if (r.ok) {
           const s = await r.json();
-          const weekly = Number(s.weekly_points || s.weekly_gold || 0);
-          const goal   = Number(s.goal_points || s.goal_gold || loc.weekly_goal || 500) || 500;
-          const pct    = Math.max(0, Math.min(100, Math.round((weekly/goal)*100)));
-          document.getElementById('weeklyText').textContent = `${weekly} / ${goal} gold this week`;
-          document.getElementById('weeklyBar').style.width = pct + '%';
-          document.getElementById('weeklyGoal').value = goal;
+          const goal = Number(s.goal_points || s.goal_gold || loc.weekly_goal || 500) || 500;
+          if (weeklyGoalInput) weeklyGoalInput.value = goal;
           state.weekly_goal = goal;
-          const streak = Number(s.streak_days || 0);
-          const best   = Number(s.longest_streak || s.best_streak || 0);
-          document.getElementById('streakNow').textContent  = `${streak}-day streak`;
-          document.getElementById('streakBest').textContent = `Best ${best} ${best===1?'day':'days'}`;
-          document.getElementById('totalGold').textContent  = (s.total_gold ?? s.total_points ?? '—');
-        }else{
-          document.getElementById('weeklyGoal').value = loc.weekly_goal || 500;
-          state.weekly_goal = Number(document.getElementById('weeklyGoal').value) || 500;
+        } else {
+          if (weeklyGoalInput) weeklyGoalInput.value = loc.weekly_goal || 500;
+          state.weekly_goal = Number(weeklyGoalInput?.value || loc.weekly_goal || 500) || 500;
         }
-      }catch(_){
-        document.getElementById('weeklyGoal').value = loc.weekly_goal || 500;
-        state.weekly_goal = Number(document.getElementById('weeklyGoal').value) || 500;
+      } catch(_){
+        if (weeklyGoalInput) weeklyGoalInput.value = loc.weekly_goal || 500;
+        state.weekly_goal = Number(weeklyGoalInput?.value || loc.weekly_goal || 500) || 500;
       }
 
       const uiLang = (loc.ui_lang || 'en');
-      document.getElementById('uiLang').value = uiLang;
+      const uiLangEl = document.getElementById('uiLang');
+      if (uiLangEl) uiLangEl.value = uiLang;
 
       // TTS prefs from local profile (no DB dependency)
-      const tprov = (loc.tts_provider || '');   // 'azure' | 'gtts' | ''
+      const tprov = (loc.tts_provider || '').toLowerCase();   // 'azure' | 'gtts' | ''
       const tvox  = (loc.tts_voice || '');
-      if (document.getElementById('ttsProvider')) {
-        if (tprov) document.getElementById('ttsProvider').value = tprov;
-        if (tvox)  document.getElementById('ttsVoice').value = tvox;
+      const choiceEl = document.getElementById('ttsChoice');
+
+      if (choiceEl) {
+        let val = '';
+
+        if (tprov === 'azure') {
+          if (/zofia/i.test(tvox)) {
+            val = 'azure:pl-PL-ZofiaNeural';
+          } else if (/marek/i.test(tvox)) {
+            val = 'azure:pl-PL-MarekNeural';
+          }
+        } else if (tprov === 'gtts') {
+          val = 'gtts:pl';
+        }
+
+        // Default if nothing stored yet
+        choiceEl.value = val || 'azure:pl-PL-MarekNeural';
       }
     }
 
@@ -319,10 +328,23 @@
       msg(saveMsg, ok ? 'Saved!' : 'Saved locally (offline)');
     });
 
-    document.getElementById('saveTtsBtn').addEventListener('click', async ()=>{
+    const ttsBtn = document.getElementById('saveTtsBtn');
+    if (ttsBtn) ttsBtn.addEventListener('click', async ()=>{
       const msgEl = document.getElementById('saveTtsMsg');
-      const prov  = document.getElementById('ttsProvider').value;
-      const voice = document.getElementById('ttsVoice').value.trim();
+      const choiceEl = document.getElementById('ttsChoice');
+      if (!choiceEl) return;
+
+      const raw = choiceEl.value || '';
+      let prov = '';
+      let voice = '';
+
+      if (raw.startsWith('azure:')) {
+        prov = 'azure';
+        voice = raw.slice('azure:'.length);
+      } else if (raw.startsWith('gtts:')) {
+        prov = 'gtts';
+        voice = ''; // gTTS has only one Polish voice; ID is implied by provider
+      }
 
       // Save locally (authoritative for client-driven create flow)
       const loc = loadLocalProfile();
@@ -340,8 +362,9 @@
         ok = r.ok;
       }catch(_){}
 
-      msg(msgEl, ok ? 'Speech prefs saved!' : 'Saved locally (server optional)');
+      msg(msgEl, ok ? 'Preferences saved!' : 'Saved locally (server optional)');
     });
+
 
     document.getElementById('uploadBtn').addEventListener('click', async ()=>{
       const fileIn = document.getElementById('avatarFile');

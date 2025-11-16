@@ -3,6 +3,7 @@ import json
 from .sets_utils import sanitize_filename
 from .constants import PAGES_DIR as DOCS_DIR
 
+
 def generate_practice_html(set_name, data):
     """
     Generates:
@@ -10,16 +11,23 @@ def generate_practice_html(set_name, data):
       - docs/practice/<set_name>/sw.js (offline audio cache worker)
 
     Capture-first recognizer with VAD (fast & iOS/Safari-stable):
-      - Plays native audio, then captures user speech (~1.4s max with early-stop)
+      - Plays native audio, then captures user speech (~1.4s+ max with early-stop)
       - Streams 16k/16-bit/mono PCM to Azure for Pronunciation Assessment
       - Strict scoring: 0.55*Accuracy + 0.25*Fluency + 0.20*Completeness,
         then penalize by voiced_ms coverage and Azure word error fraction.
-      - Phoneme granularity + miscue enabled; word timestamps disabled.
+      - For transparency, the final strict score is redistributed back into
+        adjusted Acc/Flu/Comp so that:
+            Total ≈ average(AdjAcc, AdjFlu, AdjComp)
+        without changing the overall strict result.
 
     URL toggles:
       - ?debug=1   → debug overlay + WAV download link
       - ?live=1    → force live-mic path (recognizeOnce on default mic)
       - ?capture=0 → force live mode (default is capture)
+
+    Note:
+      - Offline audio UI is hidden for now; SW generator is still written so we
+        can re-enable offline mode later without changing the builder.
     """
     # Ensure output dir exists
     output_dir = DOCS_DIR / "practice" / set_name
@@ -119,8 +127,8 @@ def generate_practice_html(set_name, data):
           <button id="restartBtn" class="btn" style="display:none;">🔁 Restart</button>
           <a id="dlWav" class="btn" download="capture.wav" style="display:none;">⬇️ Capture</a>
         </div>
-      
       </div>
+
       <div class="row" style="margin-top:8px; gap:6px; flex-wrap:wrap;">
         <span class="muted" style="font-size:13px;">Difficulty:</span>
         <button type="button" class="btn tiny diff-btn" data-diff="easy">Easy</button>
@@ -133,17 +141,9 @@ def generate_practice_html(set_name, data):
       <div id="meaning" class="prompt" style="margin-top:4px; font-size:16px;"></div>
       <div id="meterWrap"><div id="meterBar"></div></div>
       <div id="result" class="result"></div>
-
     </section>
 
-    <section class="card">
-      <div class="title">Offline audio</div>
-      <div class="row" style="margin-top:8px">
-        <button id="offlineBtn" class="btn">⬇️ Download</button>
-        <button id="offlineRemoveBtn" class="btn" style="display:none;">🗑 Remove</button>
-        <span id="offlineStatus" class="result" style="margin:0"></span>
-      </div>
-    </section>
+    <!-- Offline audio card removed from UI for now -->
   </main>
 
   <div id="dbg"></div>
@@ -214,7 +214,6 @@ def generate_practice_html(set_name, data):
       }});
       applyDifficultyUI();
     }}
-
 
     let hasStarted = false, paused = false, isRunning = false;
     let index = 0, attempts = 0;
@@ -355,7 +354,7 @@ def generate_practice_html(set_name, data):
         mediaRec.start();
 
         const t0 = performance.now();
-        const THRESH = 0.032, SIL_HOLD = 900; // match flashcards
+        const THRESH = 0.032, SIL_HOLD = 900; // match flashcards-ish
 
         await new Promise((resolve) => {{
           meterTimer = setInterval(() => {{
@@ -465,6 +464,9 @@ def generate_practice_html(set_name, data):
       }}
       return {{ acc:0, flu:0, comp:0 }};
     }}
+    // Compute strict score (unchanged math) and then redistribute it into
+    // adjusted Acc/Flu/Comp so that:
+    //   strict ≈ average(adjAcc, adjFlu, adjComp)
     function computeStrictScore(paJson, base, refText, voicedMs){{
       let acc = base.acc || 0, flu = base.flu || 0, comp = base.comp || 0, wordErrFrac = 0;
 
@@ -478,7 +480,7 @@ def generate_practice_html(set_name, data):
         }}
 
         const words = top?.Words || paJson.Words || [];
-        const refCount = Math.max(1, String(refText||'').trim().split(/\s+/).length);
+        const refCount = Math.max(1, String(refText||'').trim().split(/\\s+/).length);
         let errs = 0;
         for (const w of words){{
           const et = w?.PronunciationAssessment?.ErrorType;
@@ -501,7 +503,21 @@ def generate_practice_html(set_name, data):
 
       let strict = Math.round(baseScore * energyF * errF);
       strict = Math.max(0, Math.min(100, strict));
-      return {{ strict, acc, flu, comp, wordErrFrac, energyF }};
+
+      // Redistribute strict score uniformly across Acc/Flu/Comp so the
+      // average of adjusted components matches strict (up to rounding).
+      const rawAvg = (acc + flu + comp) / 3;
+      let accAdj = acc, fluAdj = flu, compAdj = comp;
+      if (rawAvg > 0 && strict > 0){{
+        const k = strict / rawAvg;
+        accAdj = Math.max(0, Math.min(100, Math.round(acc * k)));
+        fluAdj = Math.max(0, Math.min(100, Math.round(flu * k)));
+        compAdj = Math.max(0, Math.min(100, Math.round(comp * k)));
+      }} else {{
+        accAdj = fluAdj = compAdj = strict;
+      }}
+
+      return {{ strict, acc, flu, comp, accAdj, fluAdj, compAdj, wordErrFrac, energyF, errF }};
     }}
 
     async function assessCapture(referenceText){{
@@ -581,14 +597,14 @@ def generate_practice_html(set_name, data):
 
       const base = extractBaseMetrics(result, SDK);
       const paJson = extractPAJson(result, SDK);
-      const {{ strict, acc, flu, comp }} = computeStrictScore(paJson, base, ref, rec.voicedMs);
+      const {{ strict, accAdj, fluAdj, compAdj }} = computeStrictScore(paJson, base, ref, rec.voicedMs);
 
       if (strict) {{
-        resultEl.textContent = `✅ ${{strict}}%  (Acc ${{acc}} · Flu ${{flu}} · Comp ${{comp}})`;
+        resultEl.textContent = `Acc ${{accAdj}} · Flu ${{fluAdj}} · Comp ${{compAdj}} → Total ${{strict}}%`;
       }} else {{
         resultEl.textContent = "⚠️ No score";
       }}
-      return {{ score: strict || 0, acc, flu, comp }};
+      return {{ score: strict || 0, acc: accAdj, flu: fluAdj, comp: compAdj }};
     }}
 
     async function assessLive(referenceText){{
@@ -650,18 +666,18 @@ def generate_practice_html(set_name, data):
 
       const base = extractBaseMetrics(result, SDK);
       const paJson = extractPAJson(result, SDK);
-      // Approx voiced time for live path – mirror computeStrictScore timing
+      // Approx voiced time for live path – mirror timing model
       const syll     = estimateSyllablesPL(ref);
       const targetMs = Math.max(400, Math.min(2200, 320 + 130*syll));
       const approxVoiced = targetMs * 0.9;
-      const {{ strict, acc, flu, comp }} = computeStrictScore(paJson, base, ref, approxVoiced);
+      const {{ strict, accAdj, fluAdj, compAdj }} = computeStrictScore(paJson, base, ref, approxVoiced);
 
       if (strict) {{
-        resultEl.textContent = `✅ ${{strict}}%  (Acc ${{acc}} · Flu ${{flu}} · Comp ${{comp}})`;
+        resultEl.textContent = `Acc ${{accAdj}} · Flu ${{fluAdj}} · Comp ${{compAdj}} → Total ${{strict}}%`;
       }} else {{
         resultEl.textContent = "⚠️ No score";
       }}
-      return {{ score: strict || 0, acc, flu, comp }};
+      return {{ score: strict || 0, acc: accAdj, flu: fluAdj, comp: compAdj }};
     }}
 
     // Finish: compute score, send to API, go to summary
@@ -674,7 +690,7 @@ def generate_practice_html(set_name, data):
       let nPass = 0;
       const passNow = currentPassThreshold();
 
-      // For transparency: average Acc / Flu / Comp across cards
+      // For transparency: average *adjusted* Acc / Flu / Comp across cards
       let sumAcc = 0;
       let sumFlu = 0;
       let sumComp = 0;
@@ -791,7 +807,6 @@ def generate_practice_html(set_name, data):
       window.location.href = "summary.html" + q;
     }}
 
-
     // Loop
     async function runPractice() {{
       if (paused || isRunning) return;
@@ -831,7 +846,7 @@ def generate_practice_html(set_name, data):
       const flu   = res && Number.isFinite(res.flu)   ? res.flu   : 0;
       const comp  = res && Number.isFinite(res.comp)  ? res.comp  : 0;
 
-      // Update per-card tracker
+      // Update per-card tracker (store adjusted metrics)
       tracker.attempts++;
       const k = index;
       const prev = tracker.per[k] || {{
@@ -867,7 +882,7 @@ def generate_practice_html(set_name, data):
       if (!paused) setTimeout(runPractice, 600);
     }}
 
-    // Offline SW
+    // Offline SW helpers (kept for future use; UI removed)
     async function ensureSW(){{
       if (!('serviceWorker' in navigator)) return null;
       try {{
@@ -892,55 +907,54 @@ def generate_practice_html(set_name, data):
       }}
       primeAudio(0); primeAudio(1);
 
-      // Offline buttons
+      // Offline buttons (guarded – UI card removed)
       const offlineBtn = document.getElementById('offlineBtn');
       const offlineRemoveBtn = document.getElementById('offlineRemoveBtn');
       const offlineStatus = document.getElementById('offlineStatus');
 
-      // Try to register SW only where it's allowed (https or localhost)
       let swReg = null;
-      if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {{
-        swReg = await ensureSW();
-      }}
+      if (offlineBtn && offlineStatus) {{
+        if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {{
+          swReg = await ensureSW();
+        }}
 
-      if (!swReg) {{
-        // Hide action buttons; leave a calm note instead of a scary error
-        offlineBtn.style.display = "none";
-        offlineRemoveBtn.style.display = "none";
-        offlineStatus.textContent = "Offline download isn't available here, but you can still practice while online.";
-      }} else {{
-        offlineStatus.textContent = "Tap Download to make this set available offline.";
-      }}
-
-      navigator.serviceWorker?.addEventListener('message', (ev) => {{
-        const d = ev.data || {{}};
-        if (d.type === 'CACHE_PROGRESS') {{
-          offlineStatus.textContent = `⬇️ ${{d.done}} / ${{d.total}} files cached…`;
-        }} else if (d.type === 'CACHE_DONE') {{
-          offlineStatus.textContent = "✅ Available offline";
-          offlineRemoveBtn.style.display = "inline-flex";
-        }} else if (d.type === 'UNCACHE_DONE') {{
-          offlineStatus.textContent = "🗑 Removed offline copy";
+        if (!swReg) {{
+          offlineBtn.style.display = "none";
           offlineRemoveBtn.style.display = "none";
-        }} else if (d.type === 'CACHE_ERROR') {{
-          offlineStatus.textContent = "❌ Offline failed";
+          offlineStatus.textContent = "Offline download isn't available here, but you can still practice while online.";
+        }} else {{
+          offlineStatus.textContent = "Tap Download to make this set available offline.";
         }}
-      }});
 
-      offlineBtn.addEventListener('click', async () => {{
-        if (!swReg || !swReg.active) {{
-          offlineStatus.textContent = "❌ Offline not available.";
-          return;
-        }}
-        offlineStatus.textContent = "⬇️ Downloading…";
-        swReg.active.postMessage({{ type:'CACHE_SET', cache:`practice-{set_name}`, urls: allAudioUrls() }});
-      }});
+        navigator.serviceWorker?.addEventListener('message', (ev) => {{
+          const d = ev.data || {{}};
+          if (d.type === 'CACHE_PROGRESS') {{
+            offlineStatus.textContent = `⬇️ ${{d.done}} / ${{d.total}} files cached…`;
+          }} else if (d.type === 'CACHE_DONE') {{
+            offlineStatus.textContent = "✅ Available offline";
+            offlineRemoveBtn.style.display = "inline-flex";
+          }} else if (d.type === 'UNCACHE_DONE') {{
+            offlineStatus.textContent = "🗑 Removed offline copy";
+            offlineRemoveBtn.style.display = "none";
+          }} else if (d.type === 'CACHE_ERROR') {{
+            offlineStatus.textContent = "❌ Offline failed";
+          }}
+        }});
 
-      offlineRemoveBtn.addEventListener('click', async () => {{
-        if (!swReg || !swReg.active) return;
-        swReg.active.postMessage({{ type:'UNCACHE_SET', cache:`practice-{set_name}` }});
-      }});
+        offlineBtn.addEventListener('click', async () => {{
+          if (!swReg || !swReg.active) {{
+            offlineStatus.textContent = "❌ Offline not available.";
+            return;
+          }}
+          offlineStatus.textContent = "⬇️ Downloading…";
+          swReg.active.postMessage({{ type:'CACHE_SET', cache:`practice-{set_name}`, urls: allAudioUrls() }});
+        }});
 
+        offlineRemoveBtn.addEventListener('click', async () => {{
+          if (!swReg || !swReg.active) return;
+          swReg.active.postMessage({{ type:'UNCACHE_SET', cache:`practice-{set_name}` }});
+        }});
+      }}
 
       // Controls
       const startBtn = document.getElementById('startBtn');
@@ -997,7 +1011,7 @@ def generate_practice_html(set_name, data):
 """
     out_path.write_text(html, encoding="utf-8")
 
-    # --- Service worker for offline practice audio (same behavior as before) ---
+    # --- Service worker for offline practice audio (kept for future use) ---
     sw_js = """/* practice SW */
 self.addEventListener('install', (e) => { self.skipWaiting(); });
 self.addEventListener('activate', (e) => { self.clients.claim(); });
