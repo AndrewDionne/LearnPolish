@@ -52,3 +52,51 @@
     }
   } catch (_) {}
 })();
+
+// --- Load user preferences (pronunciation etc.) from localStorage ----------
+(function (g) {
+  if (!g || !g.localStorage) return;
+
+  function readLocalProfile() {
+    try {
+      var raw = g.localStorage.getItem("lp.profile");
+      if (!raw) return {};
+      var obj = JSON.parse(raw);
+      return obj && typeof obj === "object" ? obj : {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  var prof = readLocalProfile();
+  var prefs = (prof.preferences && typeof prof.preferences === "object")
+    ? prof.preferences
+    : {};
+
+  // Back-compat: if no explicit preference, infer from older per-mode keys
+  if (!prefs.pronDifficulty) {
+    try {
+      var dFlash = g.localStorage.getItem("lp.diff_flashcards");
+      var dPractice = g.localStorage.getItem("lp.diff_practice");
+      var candidate = (dFlash || dPractice || "").toLowerCase();
+      if (candidate === "easy" || candidate === "normal" || candidate === "hard") {
+        prefs.pronDifficulty = candidate;
+        prof.preferences = prefs;
+        g.localStorage.setItem("lp.profile", JSON.stringify(prof));
+      }
+    } catch (_e) {}
+  }
+
+  var up = g.userPrefs || {};
+  if (typeof prefs.pronDifficulty === "string") {
+    up.pronDifficulty = prefs.pronDifficulty.toLowerCase();
+  }
+
+  g.userPrefs = up;
+
+  // Mirror onto APP_CONFIG if present (optional, for debugging / future use)
+  if (g.APP_CONFIG) {
+    g.APP_CONFIG.userPrefs = Object.assign({}, g.APP_CONFIG.userPrefs || {}, up);
+  }
+})(window);
+

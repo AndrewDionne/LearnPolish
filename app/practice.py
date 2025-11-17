@@ -186,7 +186,56 @@ def generate_practice_html(set_name, data):
     const cards = {cards_json};
 
     const DIFF_PRESETS = {{ easy: 65, normal: 75, hard: 85 }};
-    let difficulty = (localStorage.getItem("lp.diff_practice") || "normal");
+
+    // Resolve difficulty from global prefs -> local override -> default
+    function resolveDifficulty(storageKey) {{
+      let d = "normal";
+
+      try {{
+        const fromPrefs = (window.userPrefs && typeof window.userPrefs.pronDifficulty === "string")
+          ? window.userPrefs.pronDifficulty.toLowerCase()
+          : null;
+
+        const stored = localStorage.getItem(storageKey);
+
+        // Also allow ?difficulty=easy|normal|hard (optional)
+        const urlParams = new URL(location.href).searchParams;
+        const urlD = urlParams.get("difficulty");
+
+        if (fromPrefs && (fromPrefs === "easy" || fromPrefs === "normal" || fromPrefs === "hard")) {{
+          d = fromPrefs;
+        }} else if (stored) {{
+          d = String(stored).toLowerCase();
+        }} else if (urlD) {{
+          d = String(urlD).toLowerCase();
+        }}
+      }} catch (_e) {{}}
+
+      if (d !== "easy" && d !== "normal" && d !== "hard") {{
+        d = "normal";
+      }}
+
+      // Sync back to global prefs + lp.profile so everything shares the same value
+      try {{
+        window.userPrefs = window.userPrefs || {{}};
+        window.userPrefs.pronDifficulty = d;
+      }} catch (_e) {{}}
+
+      try {{
+        const raw = localStorage.getItem("lp.profile");
+        const prof = raw ? JSON.parse(raw) : {{}};
+        if (!prof.preferences || typeof prof.preferences !== "object") {{
+          prof.preferences = {{}};
+        }}
+        prof.preferences.pronDifficulty = d;
+        localStorage.setItem("lp.profile", JSON.stringify(prof));
+      }} catch (_e) {{}}
+
+      return d;
+    }}
+
+    let difficulty = resolveDifficulty("lp.diff_practice");
+
     function currentPassThreshold() {{
       return DIFF_PRESETS[difficulty] || 75;
     }}
@@ -194,24 +243,49 @@ def generate_practice_html(set_name, data):
     function applyDifficultyUI() {{
       const btns = document.querySelectorAll(".diff-btn");
       btns.forEach(btn => {{
-        const d = btn.dataset.diff;
-        if (d === difficulty) btn.classList.add("btn-primary");
-        else btn.classList.remove("btn-primary");
+        const d = (btn.dataset.diff || "normal").toLowerCase();
+        btn.classList.toggle("btn-primary", d === difficulty);
       }});
     }}
 
     function wireDifficulty() {{
       const btns = document.querySelectorAll(".diff-btn");
       if (!btns.length) return;
+
       btns.forEach(btn => {{
         btn.addEventListener("click", (e) => {{
           e.preventDefault();
-          const d = btn.dataset.diff || "normal";
+          const d = (btn.dataset.diff || "normal").toLowerCase();
+          if (d !== "easy" && d !== "normal" && d !== "hard") return;
+
           difficulty = d;
-          try {{ localStorage.setItem("lp.diff_practice", difficulty); }} catch (_) {{}}
+
+          // Mode-specific override
+          try {{
+            localStorage.setItem("lp.diff_practice", difficulty);
+          }} catch (_e) {{}}
+
+          // Update global prefs
+          try {{
+            window.userPrefs = window.userPrefs || {{}};
+            window.userPrefs.pronDifficulty = difficulty;
+          }} catch (_e) {{}}
+
+          // Persist into lp.profile.preferences
+          try {{
+            const raw = localStorage.getItem("lp.profile");
+            const prof = raw ? JSON.parse(raw) : {{}};
+            if (!prof.preferences || typeof prof.preferences !== "object") {{
+              prof.preferences = {{}};
+            }}
+            prof.preferences.pronDifficulty = difficulty;
+            localStorage.setItem("lp.profile", JSON.stringify(prof));
+          }} catch (_e) {{}}
+
           applyDifficultyUI();
         }});
       }});
+
       applyDifficultyUI();
     }}
 

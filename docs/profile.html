@@ -95,11 +95,13 @@
           </div>
         </div>
       </div>
-      <div class="row" style="margin-top:8px">
+      <div class="row" style="margin-top:8px; flex-wrap:wrap; gap:6px">
         <a class="btn" href="reset.html">Reset password</a>
         <button id="logoutBtn" class="btn">Log out</button>
+        <button id="exportBtn" class="btn">Export my data (JSON)</button>
       </div>
       <div class="tiny" style="margin-top:6px" id="joinDate">Joined —</div>
+      <div id="accountMsg" class="tiny" style="margin-top:4px"></div>
     </section>
 
     <!-- Right column -->
@@ -117,6 +119,19 @@
     <!-- Goals -->
     <section class="card">
       <h3>Goals</h3>
+      <p class="tiny" style="margin-bottom:8px">
+        Choose how you want gold goals to behave.
+      </p>
+
+      <div class="row" style="gap:8px; margin-bottom:10px; flex-wrap:wrap">
+        <button type="button" class="btn goal-mode-btn" data-mode="self" style="flex:1; min-width:160px">
+          Learn at your own pace
+        </button>
+        <button type="button" class="btn goal-mode-btn" data-mode="path" style="flex:1; min-width:160px">
+          Follow the Path to POLISH
+        </button>
+      </div>
+
       <div class="row" style="align-items:flex-end">
         <div style="flex:1; min-width:220px">
           <label for="weeklyGoal">Weekly gold goal</label>
@@ -129,15 +144,19 @@
                 <ellipse cx="46" cy="16" rx="14" ry="8" fill="var(--gold-soft)" stroke="var(--gold)" stroke-width="2"/>
               </svg>
             </span>
-            <span class="tiny">Used for your weekly progress bar & treasure chest.</span>
+            <span id="goalHint" class="tiny">
+              Used for your weekly progress bar & treasure chest.
+            </span>
           </div>
         </div>
       </div>
+
       <div class="row" style="margin-top:10px">
         <button id="saveBtn" class="btn btn-primary">Save changes</button>
         <span id="saveMsg" class="tiny"></span>
       </div>
     </section>
+
 
     <!-- Preferences: language + TTS voice -->
     <section class="card">
@@ -172,14 +191,37 @@
       </div>
     </section>
 
-
-    <!-- Data export -->
+        <!-- Learning preferences -->
     <section class="card">
-      <h3>Export your data</h3>
-      <div class="row">
-        <button id="exportBtn" class="btn">Export my data (JSON)</button>
+      <h3>Learning preferences</h3>
+      <p class="tiny" style="margin-bottom:8px">
+        These settings live on this device and change how strict pronunciation scoring is
+        in Flashcards and Practice.
+      </p>
+
+      <div class="row" style="gap:10px; align-items:flex-end">
+        <div style="flex:1; min-width:220px">
+          <label>Pronunciation difficulty</label>
+          <div id="pronDiffChips"
+               style="display:flex; gap:8px; flex-wrap:wrap; margin-top:6px">
+            <button type="button" class="chip diff-pref" data-diff="easy">
+              Easy
+              <span class="tiny">More lenient</span>
+            </button>
+            <button type="button" class="chip diff-pref" data-diff="normal">
+              Normal
+              <span class="tiny">Balanced</span>
+            </button>
+            <button type="button" class="chip diff-pref" data-diff="hard">
+              Hard
+              <span class="tiny">More strict</span>
+            </button>
+          </div>
+          <div class="tiny" style="margin-top:6px">
+            Applies to pronunciation checks in Flashcards &amp; Practice.
+          </div>
+        </div>
       </div>
-      <div id="accountMsg" class="tiny" style="margin-top:6px"></div>
     </section>
 
     <!-- Danger zone -->
@@ -248,7 +290,67 @@
       try { localStorage.setItem('lp.profile', JSON.stringify(obj||{})); } catch(_){}
     }
 
-    const state = { avatar_id:null, weekly_goal:500 };
+    const state = { avatar_id: null, weekly_goal: 500, study_mode: "path" };
+
+    function resolveStudyModeFromProfile(loc, weeklyGoalValue) {
+      const src = loc || {};
+      const fromProfile = (typeof src.study_mode === "string")
+        ? src.study_mode.toLowerCase()
+        : null;
+
+      if (fromProfile === "self" || fromProfile === "path") {
+        return fromProfile;
+      }
+
+      // Heuristic for older profiles: 500 → path, anything else → self-paced
+      const goal = Number(weeklyGoalValue || src.weekly_goal || 500) || 500;
+      return goal === 500 ? "path" : "self";
+    }
+
+    function applyGoalModeUI(mode) {
+      const normalized = (mode === "self" || mode === "path") ? mode : "path";
+      state.study_mode = normalized;
+
+      const weeklyGoalInput = document.getElementById("weeklyGoal");
+      const goalHint = document.getElementById("goalHint");
+      const buttons = document.querySelectorAll(".goal-mode-btn");
+
+      buttons.forEach(btn => {
+        const m = (btn.dataset.mode || "").toLowerCase();
+        const active = m === normalized;
+        btn.classList.toggle("btn-primary", active);
+      });
+
+      if (!weeklyGoalInput || !goalHint) return;
+
+      if (normalized === "path") {
+        weeklyGoalInput.value = 500;
+        weeklyGoalInput.disabled = true;
+        weeklyGoalInput.readOnly = true;
+        goalHint.textContent = "Admin-set Path to POLISH goal (500 gold/week, game mode bonuses).";
+      } else {
+        weeklyGoalInput.disabled = false;
+        weeklyGoalInput.readOnly = false;
+        goalHint.textContent = "Set your own target. No bonus streaks, just progress.";
+      }
+    }
+
+    function wireGoalMode(loc) {
+      const weeklyGoalInput = document.getElementById("weeklyGoal");
+      const buttons = document.querySelectorAll(".goal-mode-btn");
+      if (!weeklyGoalInput || !buttons.length) return;
+
+      const initialMode = resolveStudyModeFromProfile(loc || {}, weeklyGoalInput.value);
+      applyGoalModeUI(initialMode);
+
+      buttons.forEach(btn => {
+        btn.addEventListener("click", () => {
+          const m = (btn.dataset.mode || "").toLowerCase();
+          if (m !== "self" && m !== "path") return;
+          applyGoalModeUI(m);
+        });
+      });
+    }
 
     async function initProfile(){
       let me=null;
@@ -279,6 +381,8 @@
         if (weeklyGoalInput) weeklyGoalInput.value = loc.weekly_goal || 500;
         state.weekly_goal = Number(weeklyGoalInput?.value || loc.weekly_goal || 500) || 500;
       }
+      // Initialize goal mode selector from profile + weekly goal
+      wireGoalMode(loc);
 
       const uiLang = (loc.ui_lang || 'en');
       const uiLangEl = document.getElementById('uiLang');
@@ -307,22 +411,48 @@
       }
     }
 
-    document.getElementById('saveBtn').addEventListener('click', async ()=>{
+    document.getElementById('saveBtn').addEventListener('click', async () => {
       const saveMsg = document.getElementById('saveMsg');
+      const weeklyInput = document.getElementById('weeklyGoal');
+      const mode = (state.study_mode === 'self' || state.study_mode === 'path')
+        ? state.study_mode
+        : 'path';
+
+      let weeklyGoal = Number(weeklyInput && weeklyInput.value) || 500;
+      if (mode === 'path') {
+        weeklyGoal = 500;
+        if (weeklyInput) weeklyInput.value = 500;
+      }
+
+      const displayName = document.getElementById('displayName').value.trim();
+
       const body = {
-        display_name: document.getElementById('displayName').value.trim(),
-        name: document.getElementById('displayName').value.trim(),
-        weekly_goal: Number(document.getElementById('weeklyGoal').value) || 500,
+        display_name: displayName,
+        name: displayName,
+        weekly_goal: weeklyGoal,
+        study_mode: mode,
         avatar_id: state.avatar_id,
         ui_lang: document.getElementById('uiLang').value
       };
+
       let ok = false;
-      try{
-        const r = await api.fetch('/api/me', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+      try {
+        const r = await api.fetch('/api/me', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
         ok = r.ok;
-      }catch(_){}
+      } catch (_) {}
+
+      state.weekly_goal = weeklyGoal;
+      state.study_mode = mode;
+
       const loc = loadLocalProfile();
-      const merged = Object.assign({}, loc, body, { email: document.getElementById('email').value, created_at: loc.created_at || new Date().toISOString() });
+      const merged = Object.assign({}, loc, body, {
+        email: document.getElementById('email').value,
+        created_at: loc.created_at || new Date().toISOString()
+      });
       saveLocalProfile(merged);
 
       msg(saveMsg, ok ? 'Saved!' : 'Saved locally (offline)');
@@ -365,6 +495,64 @@
       msg(msgEl, ok ? 'Preferences saved!' : 'Saved locally (server optional)');
     });
 
+        // --- Pronunciation difficulty prefs (local only, shared across modes) ---
+    (function () {
+      const root = document.getElementById('pronDiffChips');
+      if (!root) return;
+
+      // Read current profile from localStorage
+      let prof = loadLocalProfile() || {};
+      const prefs = (prof.preferences && typeof prof.preferences === 'object')
+        ? prof.preferences
+        : {};
+
+      // Prefer global userPrefs (from app-config.js), then local preferences
+      let current = (
+        (window.userPrefs && window.userPrefs.pronDifficulty) ||
+        prefs.pronDifficulty ||
+        'normal'
+      ).toLowerCase();
+
+      if (current !== 'easy' && current !== 'normal' && current !== 'hard') {
+        current = 'normal';
+      }
+
+      function syncUI() {
+        root.querySelectorAll('.diff-pref').forEach(btn => {
+          const d = (btn.dataset.diff || 'normal').toLowerCase();
+          btn.classList.toggle('active', d === current);
+        });
+      }
+
+      syncUI();
+
+      root.addEventListener('click', (ev) => {
+        const btn = ev.target.closest('.diff-pref');
+        if (!btn) return;
+
+        const d = (btn.dataset.diff || '').toLowerCase();
+        if (d !== 'easy' && d !== 'normal' && d !== 'hard') return;
+
+        current = d;
+        syncUI();
+
+        // Reload + update profile
+        try {
+          prof = loadLocalProfile() || {};
+          if (!prof.preferences || typeof prof.preferences !== 'object') {
+            prof.preferences = {};
+          }
+          prof.preferences.pronDifficulty = current;
+          saveLocalProfile(prof);
+        } catch (_e) {}
+
+        // Update global userPrefs for this page
+        try {
+          window.userPrefs = window.userPrefs || {};
+          window.userPrefs.pronDifficulty = current;
+        } catch (_e) {}
+      });
+    })();
 
     document.getElementById('uploadBtn').addEventListener('click', async ()=>{
       const fileIn = document.getElementById('avatarFile');
