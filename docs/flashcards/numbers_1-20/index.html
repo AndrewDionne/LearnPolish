@@ -111,21 +111,14 @@
         </div>
       </div>
 
-      <div class="row" style="margin-top:8px; gap:6px; flex-wrap:wrap;">
-        <span class="muted" style="font-size:13px;">Difficulty:</span>
-        <button type="button" class="btn tiny diff-btn" data-diff="easy">Easy</button>
-        <button type="button" class="btn tiny diff-btn" data-diff="normal">Normal</button>
-        <button type="button" class="btn tiny diff-btn" data-diff="hard">Hard</button>
-      </div>
-
       <div class="row">
         <button id="prevBtn" class="btn">Previous</button>
         <button id="nextBtn" class="btn btn-primary">Next</button>
       </div>
     </section>
 
-    <!-- RIGHT: Offline audio helper -->
-    <aside class="stack">
+    <!-- RIGHT: Offline audio helper (temporarily hidden) -->
+    <aside class="stack" style="display:none;">
       <section class="card">
         <div class="title" style="font-size:16px; font-weight:600; margin-bottom:4px;">Offline audio</div>
         <div class="act-row" style="margin-top:8px;">
@@ -209,7 +202,22 @@
 
     // Scoring + points
     const DIFF_PRESETS = { easy: 65, normal: 75, hard: 85 };
-    let difficulty = (localStorage.getItem("lp.diff_flashcards") || "normal");
+
+    function resolveDifficulty(storageKey) {
+      let d = "normal";
+      try {
+        if (window.userPrefs && window.userPrefs.pronDifficulty) {
+          d = String(window.userPrefs.pronDifficulty || "").toLowerCase();
+        } else {
+          const stored = localStorage.getItem(storageKey);
+          if (stored) d = String(stored).toLowerCase();
+        }
+      } catch (_e) {}
+      if (d !== "easy" && d !== "normal" && d !== "hard") d = "normal";
+      return d;
+    }
+
+    let difficulty = resolveDifficulty("lp.diff_flashcards");
     function currentPassThreshold() {
       return DIFF_PRESETS[difficulty] || 75;
     }
@@ -217,51 +225,53 @@
     const tracker = { attempts: 0, per: {}, perfectNoFlipCount: 0 };
     let hasFlippedCurrent = false;
 
-
     // Audio preload
     const audioCache = new Map();
-    function sanitizeFilename(text){
+    function sanitizeFilename(text) {
       return (text || "")
         .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
         .replace(/[^a-zA-Z0-9_-]+/g, "_").replace(/^_+|_+$/g, "");
     }
-    function localAudioPath(index){
+    function localAudioPath(index) {
       const e = cards[index] || {};
       const fn = String(index) + "_" + sanitizeFilename(e.phrase || "") + ".mp3";
       const setEnc = encodeURIComponent(setName);
       const fnEnc  = encodeURIComponent(fn);
       const explicit = e.audio_url || e.audio;
       if (explicit && /^https?:\/\//i.test(explicit)) return explicit;
-      return `static/${setEnc}/audio/${fnEnc}`; // base href handles nesting
+      return "static/" + setEnc + "/audio/" + fnEnc; // base href handles nesting
     }
-    function buildAudioSrc(index){
+    function buildAudioSrc(index) {
       let src = localAudioPath(index);
-      try { if (window.AudioPaths) src = AudioPaths.buildAudioPath(setName, index, cards[index], r2Manifest); } catch(_){
-      }
+      try {
+        if (window.AudioPaths) src = AudioPaths.buildAudioPath(setName, index, cards[index], r2Manifest);
+      } catch(_e) {}
       return src;
     }
-    function primeAudio(index){
+    function primeAudio(index) {
       if (index < 0 || index >= cards.length) return;
       if (audioCache.has(index)) return;
-      const a = new Audio(); a.preload="auto"; a.src = buildAudioSrc(index);
-      try{ a.load(); }catch(_){
-      } audioCache.set(index, a);
+      const a = new Audio();
+      a.preload = "auto";
+      a.src = buildAudioSrc(index);
+      try { a.load(); } catch(_e) {}
+      audioCache.set(index, a);
     }
 
     // ----- Offline audio helpers (Flashcards) -----
-    async function ensureSW(){
+    async function ensureSW() {
       if (!('serviceWorker' in navigator)) return null;
       try {
         const reg = await navigator.serviceWorker.register('./sw.js', { scope: './' });
         await navigator.serviceWorker.ready;
         return reg;
       } catch(e) {
-        logDbg('SW register failed', e?.message || e);
+        logDbg('SW register failed', e && e.message ? e.message : e);
         return null;
       }
     }
 
-    function allAudioUrls(){
+    function allAudioUrls() {
       const urls = [];
       for (let i = 0; i < cards.length; i++) {
         urls.push(buildAudioSrc(i));
@@ -269,39 +279,19 @@
       return Array.from(new Set(urls));
     }
 
-    function resetAndPrimeAround(index){
-      audioCache.clear(); primeAudio(index); primeAudio(index+1);
+    function resetAndPrimeAround(index) {
+      audioCache.clear();
+      primeAudio(index);
+      primeAudio(index + 1);
     }
 
-    function setNavUI(){
+    function setNavUI() {
       document.getElementById("prevBtn").disabled = (currentIndex === 0);
-      document.getElementById("nextBtn").textContent = (currentIndex < cards.length - 1) ? "Next" : "Finish";
-    }
-    function applyDifficultyUI() {
-      const btns = document.querySelectorAll(".diff-btn");
-      btns.forEach(btn => {
-        const d = btn.dataset.diff;
-        if (d === difficulty) btn.classList.add("btn-primary");
-        else btn.classList.remove("btn-primary");
-      });
+      document.getElementById("nextBtn").textContent =
+        (currentIndex < cards.length - 1) ? "Next" : "Finish";
     }
 
-    function wireDifficulty() {
-      const btns = document.querySelectorAll(".diff-btn");
-      if (!btns.length) return;
-      btns.forEach(btn => {
-        btn.addEventListener("click", (e) => {
-          e.preventDefault();
-          const d = btn.dataset.diff || "normal";
-          difficulty = d;
-          try { localStorage.setItem("lp.diff_flashcards", difficulty); } catch (_) {}
-          applyDifficultyUI();
-        });
-      });
-      applyDifficultyUI();
-    }
-
-    function renderCard(){
+    function renderCard() {
       const e = cards[currentIndex] || {};
       document.getElementById("frontCue").textContent   = e.meaning || "";
       document.getElementById("frontResult").textContent= "";
@@ -316,8 +306,8 @@
     }
 
     // ---------- Token cache ----------
-    const tokenCache = { token:null, region:null, exp:0 };
-    async function fetchToken(){
+    const tokenCache = { token: null, region: null, exp: 0 };
+    async function fetchToken() {
       const now = Date.now();
       if (tokenCache.token && tokenCache.region && now < tokenCache.exp) return tokenCache;
       try {
@@ -327,16 +317,16 @@
         if (!token || !region) throw new Error('no_token_or_region');
         tokenCache.token  = token;
         tokenCache.region = region;
-        tokenCache.exp    = now + 9*60*1000;
+        tokenCache.exp    = now + 9 * 60 * 1000;
         logDbg('SDK?', !!window.SpeechSDK, 'region', region, 'tok', !!token);
         return tokenCache;
-      } catch(e){
-        logDbg('token fetch error', e?.message || e); return { token:null, region:null, exp:0 };
+      } catch(e) {
+        logDbg('token fetch error', e && e.message ? e.message : e);
+        return { token: null, region: null, exp: 0 };
       }
     }
-    async function prefetchToken(){
-      try { await fetchToken(); } catch(_){
-      }
+    async function prefetchToken() {
+      try { await fetchToken(); } catch(_e) {}
     }
 
     // ---------- Early-stop capture with voiced-ms tracking ----------
@@ -344,50 +334,62 @@
     const meterBar  = document.getElementById('meterBar');
     const dlWav     = document.getElementById('dlWav');
 
-    async function recordBlobVAD(maxMs=2200){
+    async function recordBlobVAD(maxMs = 2200) {
       meterWrap.style.display = CAPTURE_MODE ? 'block' : 'none';
 
-      let mediaStream=null, mediaRec=null, chunks=[];
-      let analyser=null, data=null, ctx=null, src=null;
-      let meterTimer=null, started=false, silentMs=0, voicedMs=0, startedAt=0;
+      let mediaStream = null, mediaRec = null, chunks = [];
+      let analyser = null, data = null, ctx = null, src = null;
+      let meterTimer = null, started = false, silentMs = 0, voicedMs = 0, startedAt = 0;
 
       try {
         mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
         // VAD
         try {
           const ACtx = window.AudioContext || window.webkitAudioContext;
-          if (ACtx){
-            ctx = new ACtx(); src = ctx.createMediaStreamSource(mediaStream);
-            analyser = ctx.createAnalyser(); analyser.fftSize = 2048; src.connect(analyser);
+          if (ACtx) {
+            ctx = new ACtx();
+            src = ctx.createMediaStreamSource(mediaStream);
+            analyser = ctx.createAnalyser();
+            analyser.fftSize = 2048;
+            src.connect(analyser);
             data = new Uint8Array(analyser.fftSize);
           }
-        } catch(_){
-        }
+        } catch(_e) {}
 
         mediaRec = new MediaRecorder(mediaStream, { mimeType: 'audio/webm' });
-        mediaRec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
-        const stopNow = () => { try { if (mediaRec && mediaRec.state !== 'inactive') mediaRec.stop(); } catch(_){
-        } };
+        mediaRec.ondataavailable = function(e) {
+          if (e.data && e.data.size) chunks.push(e.data);
+        };
+        const stopNow = function() {
+          try {
+            if (mediaRec && mediaRec.state !== 'inactive') mediaRec.stop();
+          } catch(_e) {}
+        };
         mediaRec.start();
 
         const t0 = performance.now();
         const THRESH = 0.038;      // speech trigger (RMS)
         const SIL_HOLD = 420;      // ms of silence to stop after speech
 
-        await new Promise((resolve) => {
-          meterTimer = setInterval(() => {
+        await new Promise(function(resolve) {
+          meterTimer = setInterval(function() {
             const t = performance.now();
-            if (analyser && data){
+            if (analyser && data) {
               analyser.getByteTimeDomainData(data);
-              let sum=0; for(let i=0;i<data.length;i++){ const v=(data[i]-128)/128; sum+=v*v; }
-              const rms = Math.sqrt(sum/data.length);
-              meterBar.style.width = Math.min(100, Math.round(rms*180)) + '%';
+              let sum = 0;
+              for (let i = 0; i < data.length; i++) {
+                const v = (data[i] - 128) / 128;
+                sum += v * v;
+              }
+              const rms = Math.sqrt(sum / data.length);
+              meterBar.style.width = Math.min(100, Math.round(rms * 180)) + '%';
 
               if (!started && rms > THRESH) {
-                started = true; startedAt = t;
+                started = true;
+                startedAt = t;
               } else if (started) {
-                if (rms > THRESH*0.75) voicedMs += 40;           // voiced frame
-                if (rms < THRESH*0.6) silentMs += 40; else silentMs = 0;
+                if (rms > THRESH * 0.75) voicedMs += 40;           // voiced frame
+                if (rms < THRESH * 0.6) silentMs += 40; else silentMs = 0;
                 if (silentMs >= SIL_HOLD && (t - startedAt) > 260) stopNow();
               }
             }
@@ -397,21 +399,19 @@
           mediaRec.onstop = resolve;
         });
 
-        return { blob: new Blob(chunks, { type: 'audio/webm' }), voicedMs };
+        return { blob: new Blob(chunks, { type: 'audio/webm' }), voicedMs: voicedMs };
       } finally {
-        try { if (meterTimer) clearInterval(meterTimer); } catch(_){
-        }
-        try { meterBar.style.width = '0%'; } catch(_){
-        }
-        try { mediaStream && mediaStream.getTracks().forEach(t => t.stop()); } catch(_){
-        }
-        try { ctx && ctx.close(); } catch(_){
-        }
+        try { if (meterTimer) clearInterval(meterTimer); } catch(_e) {}
+        try { meterBar.style.width = '0%'; } catch(_e) {}
+        try {
+          if (mediaStream) mediaStream.getTracks().forEach(function(t) { t.stop(); });
+        } catch(_e) {}
+        try { if (ctx) ctx.close(); } catch(_e) {}
         meterWrap.style.display = 'none';
       }
     }
 
-    async function blobToPCM16Mono(blob, targetRate=16000){
+    async function blobToPCM16Mono(blob, targetRate = 16000) {
       const arr = await blob.arrayBuffer();
       const ACtx = window.AudioContext || window.webkitAudioContext;
       if (!ACtx) throw new Error('no_audiocontext');
@@ -419,65 +419,74 @@
       const buf = await ctx.decodeAudioData(arr.slice(0));
       const chL = buf.getChannelData(0);
       let mono;
-      if (buf.numberOfChannels > 1){
+      if (buf.numberOfChannels > 1) {
         const chR = buf.getChannelData(1);
         mono = new Float32Array(buf.length);
-        for (let i=0;i<buf.length;i++) mono[i] = 0.5*(chL[i] + chR[i]);
+        for (let i = 0; i < buf.length; i++) mono[i] = 0.5 * (chL[i] + chR[i]);
       } else {
         mono = chL;
       }
       const ratio = buf.sampleRate / targetRate;
       const outLen = Math.round(mono.length / ratio);
       const out = new Float32Array(outLen);
-      for (let i=0;i<outLen;i++) {
+      for (let i = 0; i < outLen; i++) {
         const idx = i * ratio;
         const i0 = Math.floor(idx);
-        const i1 = Math.min(i0+1, mono.length-1);
+        const i1 = Math.min(i0 + 1, mono.length - 1);
         const frac = idx - i0;
-        out[i] = mono[i0]*(1-frac) + mono[i1]*frac;
+        out[i] = mono[i0] * (1 - frac) + mono[i1] * frac;
       }
       const pcm = new Int16Array(outLen);
-      for (let i=0;i<outLen;i++) {
-        let v = Math.max(-1, Math.min(1, out[i]));
-        pcm[i] = v < 0 ? v * 0x8000 : v * 0x7FFF;
+      for (let j = 0; j < outLen; j++) {
+        let v = Math.max(-1, Math.min(1, out[j]));
+        pcm[j] = v < 0 ? v * 0x8000 : v * 0x7FFF;
       }
-      try { ctx.close(); } catch(_){
-      }
+      try { ctx.close(); } catch(_e) {}
       return pcm;
     }
-    function pcmToWavBlob(pcm, sampleRate=16000){
-      const numFrames = pcm.length, bytesPerSample=2, blockAlign=bytesPerSample, byteRate=sampleRate*blockAlign;
+
+    function pcmToWavBlob(pcm, sampleRate = 16000) {
+      const numFrames = pcm.length;
+      const bytesPerSample = 2;
+      const blockAlign = bytesPerSample;
+      const byteRate = sampleRate * blockAlign;
       const dataSize = numFrames * bytesPerSample;
-      const buf = new ArrayBuffer(44 + dataSize), v = new DataView(buf);
-      let o = 0; function wstr(s){ for(let i=0;i<s.length;i++) v.setUint8(o++, s.charCodeAt(i)); }
-      function wu16(x){ v.setUint16(o, x, true); o+=2; } function wu32(x){ v.setUint32(o, x, true); o+=4; }
+      const buf = new ArrayBuffer(44 + dataSize);
+      const v = new DataView(buf);
+      let o = 0;
+      function wstr(s) { for (let i = 0; i < s.length; i++) v.setUint8(o++, s.charCodeAt(i)); }
+      function wu16(x) { v.setUint16(o, x, true); o += 2; }
+      function wu32(x) { v.setUint32(o, x, true); o += 4; }
       wstr('RIFF'); wu32(36 + dataSize); wstr('WAVE'); wstr('fmt '); wu32(16); wu16(1); wu16(1);
       wu32(sampleRate); wu32(byteRate); wu16(blockAlign); wu16(16); wstr('data'); wu32(dataSize);
-      for (let i=0;i<pcm.length;i++) v.setInt16(o + i*2, pcm[i], true);
+      for (let i = 0; i < pcm.length; i++) v.setInt16(o + i * 2, pcm[i], true);
       return new Blob([v], { type: 'audio/wav' });
     }
 
     // ---- Stricter scoring helpers ----
-    function extractPAJson(result, SDK){
+    function extractPAJson(result, SDK) {
       try {
-        const raw = result?.properties?.getProperty(SDK.PropertyId.SpeechServiceResponse_JsonResult)
-                   || result?.privPronunciationAssessmentJson || result?.privJson;
-        if (!raw) return null;
-        try { return JSON.parse(raw); } catch(_){
+        const raw = (result && result.properties && result.properties.getProperty)
+          ? result.properties.getProperty(SDK.PropertyId.SpeechServiceResponse_JsonResult)
+          : null;
+        const v = raw || result.privPronunciationAssessmentJson || result.privJson;
+        if (!v) return null;
+        try { return JSON.parse(v); } catch(_e) {
           return null;
         }
-      } catch(_){
+      } catch(_e) {
         return null;
       }
     }
 
-    function estimateSyllablesPL(text){
-      const t = String(text||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+    function estimateSyllablesPL(text) {
+      const t = String(text || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
       const vowels = /[aąeęiouyó]/g; // rough
       const m = t.match(vowels);
       return Math.max(1, (m ? m.length : 0));
     }
-    function computeCaptureWindowMs(text){
+
+    function computeCaptureWindowMs(text) {
       const syll = estimateSyllablesPL(text);
       const base = 900;
       const per  = 220;
@@ -490,66 +499,113 @@
     function normLexicalPL(text) {
       return String(text || "")
         .toLowerCase()
-        .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
-        .replace(/[^a-ząćęłńóśźż0-9]+/g,"");
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-ząćęłńóśźż0-9]+/g, "");
     }
 
-    function computeStrictScore(paJson, base, refText, voicedMs){
-      // Extract metrics (fallback to base from SDK)
-      let acc = base?.acc || 0;
-      let flu = base?.flu || 0;
-      let comp = base?.comp || 0;
+    function computeStrictScore(paJson, base, refText, voicedMs, diff) {
+      // Base metrics from SDK
+      let acc = (base && typeof base.acc === "number") ? base.acc : 0;
+      let flu = (base && typeof base.flu === "number") ? base.flu : 0;
+      let comp = (base && typeof base.comp === "number") ? base.comp : 0;
       let wordErrFrac = 0;
+      let lexicalOk = false;
 
       if (paJson) {
         const top = (paJson.NBest && paJson.NBest[0]) ? paJson.NBest[0] : null;
-        const pa  = top?.PronunciationAssessment || paJson.PronunciationAssessment;
+        const pa  = (top && top.PronunciationAssessment) ? top.PronunciationAssessment : paJson.PronunciationAssessment;
         if (pa) {
           acc  = Math.round(Number(pa.AccuracyScore)     || acc);
           flu  = Math.round(Number(pa.FluencyScore)      || flu);
           comp = Math.round(Number(pa.CompletenessScore) || comp);
         }
 
-        // Word error fraction from Azure (insertions/deletions/miscues)
-        const words = top?.Words || paJson.Words || [];
+        const words = (top && top.Words) ? top.Words : (paJson.Words || []);
         const refCount = Math.max(1, String(refText || "").trim().split(/\s+/).length);
         let errs = 0;
-        for (const w of words) {
-          const et = w?.PronunciationAssessment?.ErrorType;
+        for (let i = 0; i < words.length; i++) {
+          const w = words[i];
+          const et = (w && w.PronunciationAssessment) ? w.PronunciationAssessment.ErrorType : null;
           if (et && et !== "None") errs++;
         }
         wordErrFrac = Math.max(0, Math.min(1, errs / refCount));
+
+        // Lexical correctness from NBest
+        try {
+          const hypRaw  = (top && (top.Lexical || top.Display)) || paJson.Lexical || paJson.Display || "";
+          const refNorm = normLexicalPL(refText);
+          const hypNorm = normLexicalPL(hypRaw);
+          if (refNorm && hypNorm && refNorm === hypNorm) lexicalOk = true;
+        } catch (_e) {}
       }
 
-      // Base blend
-      let baseScore = Math.round(0.55 * acc + 0.25 * flu + 0.20 * comp);
-
-      // Energy/coverage penalty based on voiced duration vs expected
+      // Timing expectations
       const syll = estimateSyllablesPL(refText);
-      const targetMs = Math.max(320, Math.min(1600, 280 + 110 * syll));      // heuristic
-      const needed   = 0.85 * targetMs;                                      // stricter than before
-      const energyF  = Math.max(0.4, Math.min(1, (voicedMs || 0) / needed)); // floor so quiet users aren't zeroed
+      const targetMs = Math.max(320, Math.min(1600, 280 + 110 * syll));
+      const needed   = 0.85 * targetMs;
+      const baseEnergyF = Math.max(0.4, Math.min(1, (voicedMs || 0) / needed));
+      const baseErrF    = 1 - 0.65 * wordErrFrac;
 
-      // Word error penalty (strong)
-      const errF = 1 - 0.65 * wordErrFrac;
+      // Difficulty-dependent penalties
+      let energyF = baseEnergyF;
+      let errF    = baseErrF;
+      const d = diff || "normal";
 
-      let strict = Math.round(baseScore * energyF * errF);
+      if (d === "easy") {
+        // No penalties in "easy" mode
+        energyF = 1;
+        errF    = 1;
+      } else if (d === "hard") {
+        // Slightly harsher than original
+        energyF = baseEnergyF;
+        errF    = 1 - 0.80 * wordErrFrac;
+      } else {
+        // "normal": softer than original, still penalises
+        energyF = 0.75 + 0.25 * baseEnergyF;   // in [0.75, 1]
+        errF    = 1 - 0.35 * wordErrFrac;      // gentler than 0.65
+      }
+
+      const factor = energyF * errF;
+
+      // Penalise each component so breakdown matches final score
+      let accAdj = Math.round(acc * factor);
+      let fluAdj = Math.round(flu * factor);
+      let compAdj = Math.round(comp * factor);
+
+      accAdj  = Math.max(0, Math.min(100, accAdj));
+      fluAdj  = Math.max(0, Math.min(100, fluAdj));
+      compAdj = Math.max(0, Math.min(100, compAdj));
+
+      // Weighted blend
+      let strict = Math.round(0.55 * accAdj + 0.25 * fluAdj + 0.20 * compAdj);
       strict = Math.max(0, Math.min(100, strict));
-      return { strict, acc, flu, comp, wordErrFrac, energyF };
+
+      return {
+        strict: strict,
+        acc: accAdj,
+        flu: fluAdj,
+        comp: compAdj,
+        wordErrFrac: wordErrFrac,
+        energyF: energyF,
+        lexicalOk: lexicalOk
+      };
     }
 
-    function extractMetrics(result, SDK){
+    function extractMetrics(result, SDK) {
       // Try official PA result object first
       try {
         const pa = SDK.PronunciationAssessmentResult.fromResult(result);
-        if (pa) return { acc: Math.round(pa.accuracyScore||0), flu: Math.round(pa.fluencyScore||0), comp: Math.round(pa.completenessScore||0) };
-      } catch(_){
-      }
+        if (pa) return {
+          acc: Math.round(pa.accuracyScore || 0),
+          flu: Math.round(pa.fluencyScore || 0),
+          comp: Math.round(pa.completenessScore || 0)
+        };
+      } catch(_e) {}
       // Fallback rough zeros; JSON path will fill
-      return { acc:0, flu:0, comp:0 };
+      return { acc: 0, flu: 0, comp: 0 };
     }
 
-        async function assessCapture(referenceText, targetEl) {
+    async function assessCapture(referenceText, targetEl) {
       const ref = (referenceText || "").trim();
       const empty = { score: 0, acc: 0, flu: 0, comp: 0, lexicalMatch: false };
 
@@ -571,7 +627,9 @@
       targetEl.textContent = "🎤 Recording…";
       const dynMax = computeCaptureWindowMs(ref);
       const rec = await recordBlobVAD(dynMax);
-      const { token, region } = await fetchToken();
+      const tok = await fetchToken();
+      const token = tok.token;
+      const region = tok.region;
       if (!token || !region) {
         targetEl.textContent = "⚠️ Speech service unavailable. Try again later.";
         return empty;
@@ -585,8 +643,7 @@
           const url = URL.createObjectURL(wav);
           dlWav.href = url;
           dlWav.style.display = "inline-flex";
-        } catch(_){
-        }
+        } catch(_e) {}
       }
 
       const SDK = window.SpeechSDK;
@@ -604,28 +661,28 @@
       const audioConfig = SDK.AudioConfig.fromStreamInput(push);
 
       const recognizer = new SDK.SpeechRecognizer(speechConfig, audioConfig);
-      const pa = new SDK.PronunciationAssessmentConfig(
+      const paCfg = new SDK.PronunciationAssessmentConfig(
         ref,
         SDK.PronunciationAssessmentGradingSystem.HundredMark,
-        // PHONEME granularity for sensitivity
         SDK.PronunciationAssessmentGranularity.Phoneme,
         true // enable miscue (insertions/deletions)
       );
-      pa.applyTo(recognizer);
+      paCfg.applyTo(recognizer);
       try {
         const pl = SDK.PhraseListGrammar.fromRecognizer(recognizer);
         if (pl) pl.add(ref);
-      } catch(_){
-      }
+      } catch(_e) {}
 
       targetEl.textContent = "🧠 Scoring…";
 
-      const result = await new Promise((resolve, reject) => {
+      const result = await new Promise(function(resolve, reject) {
         try { recognizer.recognizeOnceAsync(resolve, reject); } catch(e) { reject(e); }
-      }).catch(e => { logDbg('recognizeOnce(push) error', e?.message || e); return null; });
+      }).catch(function(e) {
+        logDbg('recognizeOnce(push) error', e && e.message ? e.message : e);
+        return null;
+      });
 
-      try { recognizer.close(); } catch(_){
-      }
+      try { recognizer.close(); } catch(_e) {}
 
       if (!result) {
         targetEl.textContent = "⚠️ Speech error";
@@ -634,34 +691,36 @@
 
       // Debug dump
       try {
-        logDbg('reason', result?.reason);
+        logDbg('reason', result.reason);
         const SDKR = window.SpeechSDK;
-        if (result?.reason === SDKR.ResultReason.Canceled) {
+        if (result.reason === SDKR.ResultReason.Canceled) {
           const c = SDKR.CancellationDetails.fromResult(result);
-          logDbg('canceled', c?.reason, c?.errorCode, c?.errorDetails);
+          logDbg('canceled', c && c.reason, c && c.errorCode, c && c.errorDetails);
         }
-        if (result?.reason === SDKR.ResultReason.NoMatch) {
+        if (result.reason === SDKR.ResultReason.NoMatch) {
           const d = SDKR.NoMatchDetails.fromResult(result);
-          logDbg('noMatch', d?.reason);
+          logDbg('noMatch', d && d.reason);
         }
-        const raw = result?.properties?.getProperty(SDK.PropertyId.SpeechServiceResponse_JsonResult)
-                 || result?.privPronunciationAssessmentJson || result?.privJson;
-        if (raw) try { logRaw(JSON.parse(raw)); } catch(_){
-          logRaw(raw);
+        const raw = (result.properties && result.properties.getProperty)
+          ? result.properties.getProperty(SDK.PropertyId.SpeechServiceResponse_JsonResult)
+          : null;
+        const rawJson = raw || result.privPronunciationAssessmentJson || result.privJson;
+        if (rawJson) {
+          try { logRaw(JSON.parse(rawJson)); } catch(_e) { logRaw(rawJson); }
         }
-      } catch(_){
-      }
+      } catch(_e) {}
 
       const base = extractMetrics(result, SDK);
       const paJson = extractPAJson(result, SDK);
-      const { strict, acc, flu, comp, lexicalOk } = computeStrictScore(paJson, base, ref, rec.voicedMs);
+      const metrics = computeStrictScore(paJson, base, ref, rec.voicedMs, difficulty);
 
-      if (strict) {
-        targetEl.textContent = `✅ ${strict}%  (Acc ${acc} · Flu ${flu} · Comp ${comp})`;
-      } else {
-        targetEl.textContent = "⚠️ No score";
-      }
-      return { score: strict || 0, acc, flu, comp, lexicalMatch: !!lexicalOk };
+      return {
+        score: metrics.strict || 0,
+        acc: metrics.acc,
+        flu: metrics.flu,
+        comp: metrics.comp,
+        lexicalMatch: !!metrics.lexicalOk
+      };
     }
 
     async function assessLive(referenceText, targetEl) {
@@ -681,16 +740,17 @@
         targetEl.textContent = "📴 Offline: scoring needs internet.";
         return empty;
       }
-      
+
       targetEl.textContent = "🎤 Preparing…";
       // Tiny warmup for Safari
       try {
-        const s = await navigator.mediaDevices.getUserMedia({ audio:true });
-        s.getTracks().forEach(t => t.stop());
-      } catch(_){
-      }
+        const s = await navigator.mediaDevices.getUserMedia({ audio: true });
+        s.getTracks().forEach(function(t) { t.stop(); });
+      } catch(_e) {}
 
-      const { token, region } = await fetchToken();
+      const tok = await fetchToken();
+      const token = tok.token;
+      const region = tok.region;
       if (!token || !region) {
         targetEl.textContent = "⚠️ Token/region issue";
         return empty;
@@ -709,27 +769,28 @@
       const audioConfig = SDK.AudioConfig.fromDefaultMicrophoneInput();
       const recognizer = new SDK.SpeechRecognizer(speechConfig, audioConfig);
 
-      const pa = new SDK.PronunciationAssessmentConfig(
+      const paCfg = new SDK.PronunciationAssessmentConfig(
         ref,
         SDK.PronunciationAssessmentGradingSystem.HundredMark,
         SDK.PronunciationAssessmentGranularity.Phoneme,
         true
       );
-      pa.applyTo(recognizer);
+      paCfg.applyTo(recognizer);
       try {
         const pl = SDK.PhraseListGrammar.fromRecognizer(recognizer);
         if (pl) pl.add(ref);
-      } catch(_){
-      }
+      } catch(_e) {}
 
       targetEl.textContent = "🎙 Listening…";
 
-      const result = await new Promise((resolve, reject) => {
+      const result = await new Promise(function(resolve, reject) {
         try { recognizer.recognizeOnceAsync(resolve, reject); } catch(e) { reject(e); }
-      }).catch(e => { logDbg('recognizeOnce(live) error', e?.message || e); return null; });
+      }).catch(function(e) {
+        logDbg('recognizeOnce(live) error', e && e.message ? e.message : e);
+        return null;
+      });
 
-      try { recognizer.close(); } catch(_){
-      }
+      try { recognizer.close(); } catch(_e) {}
 
       if (!result) {
         targetEl.textContent = "⚠️ Speech error";
@@ -738,101 +799,33 @@
 
       const base = extractMetrics(result, SDK);
       const paJson = extractPAJson(result, SDK);
-      // Live path: we don't know voicedMs; approximate with expected for the phrase (lighter penalty)
-      const syll = estimateSyllablesPL(ref);
-      const approxVoiced = Math.max(320, Math.min(1600, 280 + 110 * syll)) * 0.7;
-      const { strict, acc, flu, comp, lexicalOk } = computeStrictScore(paJson, base, ref, approxVoiced);
-
-      if (strict) {
-        targetEl.textContent = `✅ ${strict}%  (Acc ${acc} · Flu ${flu} · Comp ${comp})`;
-      } else {
-        targetEl.textContent = "⚠️ No score";
-      }
-      return { score: strict || 0, acc, flu, comp, lexicalMatch: !!lexicalOk };
-    }
-
-    async function assessLive(referenceText, targetEl){
-      const ref = (referenceText || "").trim();
-      if (!window.SpeechSDK) { targetEl.textContent = "⚠️ SDK not loaded."; return 0; }
-      if (!ref) { targetEl.textContent = "⚠️ No reference text."; return 0; }
-
-      if (!navigator.onLine) {
-        targetEl.textContent = "📴 Offline: scoring needs internet.";
-        return 0;
-      }
-      
-      targetEl.textContent = "🎤 Preparing…";
-      // (Keep a tiny warmup for Safari)
-      try {
-        const s = await navigator.mediaDevices.getUserMedia({ audio:true }); s.getTracks().forEach(t=>t.stop());
-      } catch(_){
-      }
-
-      const { token, region } = await fetchToken();
-      if (!token || !region) { targetEl.textContent = "⚠️ Token/region issue"; return 0; }
-
-      const SDK = window.SpeechSDK;
-      const speechConfig = SDK.SpeechConfig.fromAuthorizationToken(token, region);
-      speechConfig.speechRecognitionLanguage = "pl-PL";
-      speechConfig.outputFormat = SDK.OutputFormat.Detailed;
-      speechConfig.setProperty(SDK.PropertyId.SpeechServiceResponse_RequestDetailedResultTrueFalse, "true");
-      speechConfig.setProperty(SDK.PropertyId.SpeechServiceResponse_RequestWordLevelTimestamps, "false");
-      // More forgiving timeouts so users can think + finish
-      speechConfig.setProperty(SDK.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, "2600");
-      speechConfig.setProperty(SDK.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, "800");
-
-      const audioConfig = SDK.AudioConfig.fromDefaultMicrophoneInput();
-      const recognizer = new SDK.SpeechRecognizer(speechConfig, audioConfig);
-
-      const pa = new SDK.PronunciationAssessmentConfig(
-        ref,
-        SDK.PronunciationAssessmentGradingSystem.HundredMark,
-        SDK.PronunciationAssessmentGranularity.Phoneme,
-        true
-      );
-      pa.applyTo(recognizer);
-      try {
-        const pl = SDK.PhraseListGrammar.fromRecognizer(recognizer);
-        if (pl) pl.add(ref);
-      } catch(_){
-      }
-
-      targetEl.textContent = "🎙 Listening…";
-
-      const result = await new Promise((resolve, reject) => {
-        try { recognizer.recognizeOnceAsync(resolve, reject); } catch(e) { reject(e); }
-      }).catch(e => { logDbg('recognizeOnce(live) error', e?.message || e); return null; });
-
-      try { recognizer.close(); } catch(_){
-      }
-
-      if (!result) { targetEl.textContent = "⚠️ Speech error"; return 0; }
-
-      const base = extractMetrics(result, SDK);
-      const paJson = extractPAJson(result, SDK);
       // Live path: approximate voiced duration
       const syll = estimateSyllablesPL(ref);
-      const approxVoiced = Math.max(320, Math.min(1600, 280 + 110*syll)) * 0.7;
-      const { strict, acc, flu, comp } = computeStrictScore(paJson, base, ref, approxVoiced);
+      const approxVoiced = Math.max(320, Math.min(1600, 280 + 110 * syll)) * 0.7;
+      const metrics = computeStrictScore(paJson, base, ref, approxVoiced, difficulty);
 
-      if (strict) {
-        targetEl.textContent = `✅ ${strict}%  (Acc ${acc} · Flu ${flu} · Comp ${comp})`;
-      } else {
-        targetEl.textContent = "⚠️ No score";
-      }
-      return strict || 0;
-
+      return {
+        score: metrics.strict || 0,
+        acc: metrics.acc,
+        flu: metrics.flu,
+        comp: metrics.comp,
+        lexicalMatch: !!metrics.lexicalOk
+      };
     }
 
     // ---------- UI wiring ----------
-    window.addEventListener("DOMContentLoaded", async function(){
+    window.addEventListener("DOMContentLoaded", async function() {
       // Prefetch token & manifest
-      prefetchToken().catch(()=>{});
-      try { if (window.AudioPaths) r2Manifest = await AudioPaths.fetchManifest(setName); } catch(_){
+      prefetchToken().catch(function(){});
+      try {
+        if (window.AudioPaths) r2Manifest = await AudioPaths.fetchManifest(setName);
+      } catch(_e) {
         r2Manifest = null;
       }
-      primeAudio(0); primeAudio(1);
-            // Offline audio controls (Flashcards)
+      primeAudio(0);
+      primeAudio(1);
+
+      // Offline audio controls (Flashcards)
       const offlineBtn = document.getElementById('offlineBtn');
       const offlineRemoveBtn = document.getElementById('offlineRemoveBtn');
       const offlineStatus = document.getElementById('offlineStatus');
@@ -840,7 +833,10 @@
       let swReg = null;
       if (offlineBtn && offlineStatus) {
         // Only try SW where it's allowed: https or localhost
-        if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+        if ('serviceWorker' in navigator &&
+            (location.protocol === 'https:' ||
+             location.hostname === 'localhost' ||
+             location.hostname === '127.0.0.1')) {
           swReg = await ensureSW();
         }
 
@@ -852,10 +848,10 @@
           offlineStatus.textContent = 'Tap Download to make this set available offline.';
         }
 
-        navigator.serviceWorker?.addEventListener('message', (ev) => {
+        navigator.serviceWorker && navigator.serviceWorker.addEventListener('message', function(ev) {
           const d = ev.data || {};
           if (d.type === 'CACHE_PROGRESS') {
-            offlineStatus.textContent = `⬇️ ${d.done} / ${d.total} files cached…`;
+            offlineStatus.textContent = '⬇️ ' + d.done + ' / ' + d.total + ' files cached…';
           } else if (d.type === 'CACHE_DONE') {
             offlineStatus.textContent = '✅ Available offline';
             offlineRemoveBtn.style.display = 'inline-flex';
@@ -867,31 +863,28 @@
           }
         });
 
-        offlineBtn.addEventListener('click', async () => {
+        offlineBtn.addEventListener('click', async function() {
           if (!swReg || !swReg.active) {
             offlineStatus.textContent = '❌ Offline not available.';
             return;
           }
           offlineStatus.textContent = '⬇️ Downloading…';
-          swReg.active.postMessage({ type: 'CACHE_SET', cache: `flashcards-${setName}`, urls: allAudioUrls() });
+          swReg.active.postMessage({ type: 'CACHE_SET', cache: 'flashcards-' + setName, urls: allAudioUrls() });
         });
 
-        offlineRemoveBtn.addEventListener('click', async () => {
+        offlineRemoveBtn.addEventListener('click', async function() {
           if (!swReg || !swReg.active) return;
-          swReg.active.postMessage({ type: 'UNCACHE_SET', cache: `flashcards-${setName}` });
+          swReg.active.postMessage({ type: 'UNCACHE_SET', cache: 'flashcards-' + setName });
         });
       }
 
       // Debug SDK version
-      try { logDbg('SDK version?', window.SpeechSDK?.Version || 'unknown'); } catch(_){
-      }
-
-      wireDifficulty();
+      try { logDbg('SDK version?', window.SpeechSDK && window.SpeechSDK.Version ? window.SpeechSDK.Version : 'unknown'); } catch(_e) {}
 
       renderCard();
 
       // Flip on tap (ignore buttons/result)
-      document.getElementById("cardContainer").addEventListener("click", (e) => {
+      document.getElementById("cardContainer").addEventListener("click", function(e) {
         if (e.target.closest("button") || e.target.classList.contains("result")) return;
         document.getElementById("cardContainer").classList.toggle("flipped");
         hasFlippedCurrent = true;
@@ -900,26 +893,52 @@
       // Front: Say it (capture-first by default)
       const sayBtn = document.getElementById("btnSayFront");
       const frontRes = document.getElementById("frontResult");
-      const getRef = () => (cards[currentIndex] && cards[currentIndex].phrase) || "";
+      const getRef = function() {
+        return (cards[currentIndex] && cards[currentIndex].phrase) || "";
+      };
 
-      sayBtn.addEventListener("click", async (e) => {
+      sayBtn.addEventListener("click", async function(e) {
         e.stopPropagation();
         const ref = getRef();
-        if (!ref.trim()) { frontRes.textContent = "⚠️ No reference text."; return; }
+        if (!ref.trim()) {
+          frontRes.textContent = "⚠️ No reference text.";
+          return;
+        }
         sayBtn.disabled = true;
 
         const res = CAPTURE_MODE ? await assessCapture(ref, frontRes) : await assessLive(ref, frontRes);
-        const s = res && Number.isFinite(res.score) ? res.score : 0;
+        const score = (res && typeof res.score === "number" && isFinite(res.score)) ? res.score : 0;
         const lexical = !!(res && res.lexicalMatch);
 
+        // --- Lexical recall UI ---
+        if (lexical) {
+          const phrase = (cards[currentIndex] && cards[currentIndex].phrase) || ref;
+          frontRes.innerHTML =
+            "✅ " + phrase +
+            "<br><span class=\"muted\">Pronunciation rating: " + score + "%</span>";
+        } else if (score > 0) {
+          frontRes.textContent = "Pronunciation rating: " + score + "% — try again.";
+        } else {
+          // keep whatever message assessCapture/assessLive wrote (offline / error)
+        }
+
+        // --- Tracker bookkeeping ---
         tracker.attempts++;
-        if (!tracker.per[currentIndex]) tracker.per[currentIndex] = { tries: 0, best: 0, lexicalCorrect: false, got100BeforeFlip: false };
+        if (!tracker.per[currentIndex]) {
+          tracker.per[currentIndex] = {
+            tries: 0,
+            best: 0,
+            lexicalCorrect: false,
+            got100BeforeFlip: false
+          };
+        }
         const r = tracker.per[currentIndex];
         r.tries++;
-        if (Number.isFinite(s)) {
-          r.best = Math.max(r.best || 0, s);
+
+        if (isFinite(score)) {
+          r.best = Math.max(r.best || 0, score);
           // “Perfect pronunciation before flip” tracker
-          if (!hasFlippedCurrent && s === 100 && !r.got100BeforeFlip) {
+          if (!hasFlippedCurrent && score === 100 && !r.got100BeforeFlip) {
             r.got100BeforeFlip = true;
             tracker.perfectNoFlipCount++;
           }
@@ -933,30 +952,35 @@
       });
 
       // Back: Play (preloaded)
-      document.getElementById("btnPlay").addEventListener("click", async (e) => {
+      document.getElementById("btnPlay").addEventListener("click", function(e) {
         e.stopPropagation();
         let a = audioCache.get(currentIndex);
-        if (!a) { primeAudio(currentIndex); a = audioCache.get(currentIndex); }
+        if (!a) {
+          primeAudio(currentIndex);
+          a = audioCache.get(currentIndex);
+        }
         if (a) {
-          try { a.currentTime = 0; } catch(_){}
-          a.play().catch(err => logDbg('audio play err', err?.message || err));
+          try { a.currentTime = 0; } catch(_e) {}
+          a.play().catch(function(err) {
+            logDbg('audio play err', err && err.message ? err.message : err);
+          });
         }
       });
 
       // Prev / Next / Finish
-      document.getElementById("prevBtn").addEventListener("click", () => {
+      document.getElementById("prevBtn").addEventListener("click", function() {
         if (currentIndex > 0) {
           currentIndex--;
           renderCard(); // ensures flipped -> front
         }
       });
 
-      document.getElementById("nextBtn").addEventListener("click", async () => {
+      document.getElementById("nextBtn").addEventListener("click", async function() {
         if (currentIndex < cards.length - 1) {
           currentIndex++;
           renderCard(); // ensures flipped -> front
         } else {
-        
+
           // FINISH
           const totalCards = Math.max(1, cards.length);
           const perStats   = Object.values(tracker.per || {});
@@ -965,10 +989,12 @@
           let sumBest = 0, countBest = 0;
           let lexicalCorrectCount = 0;
 
-          for (const r of perStats) {
-            if (r && r.lexicalCorrect) lexicalCorrectCount++;
-            const best = Number((r && r.best) || 0);
-            if (!Number.isFinite(best)) continue;
+          for (let i = 0; i < perStats.length; i++) {
+            const r = perStats[i];
+            if (!r) continue;
+            if (r.lexicalCorrect) lexicalCorrectCount++;
+            const best = Number(r.best || 0);
+            if (!isFinite(best)) continue;
             sumBest += best;
             countBest += 1;
 
@@ -993,9 +1019,9 @@
                 score: scorePct,
                 attempts: tracker.attempts,
                 total: totalCards,
-                n100,
-                n70_99,
-                nBelow,
+                n100: n100,
+                n70_99: n70_99,
+                nBelow: nBelow,
                 avg_card_score: avgCardScore,
                 perfect_before_flip: tracker.perfectNoFlipCount
               })
@@ -1013,9 +1039,9 @@
                 attempts: tracker.attempts,
                 details: {
                   total: totalCards,
-                  n100,
-                  n70_99,
-                  nBelow,
+                  n100: n100,
+                  n70_99: n70_99,
+                  nBelow: nBelow,
                   avg_card_score: avgCardScore,
                   per: tracker.per,
                   perfect_before_flip: tracker.perfectNoFlipCount
@@ -1048,12 +1074,12 @@
                 details: {
                   per: tracker.per,
                   total: totalCards,
-                  n100,
-                  n70_99,
-                  nBelow,
+                  n100: n100,
+                  n70_99: n70_99,
+                  nBelow: nBelow,
                   avg_card_score: avgCardScore,
                   perfect_before_flip: tracker.perfectNoFlipCount,
-                  difficulty,
+                  difficulty: difficulty,
                   pass_threshold: currentPassThreshold()
                 }
               })

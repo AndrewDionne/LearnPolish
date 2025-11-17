@@ -86,7 +86,7 @@
 
     function apply(score, attempts, total, pointsTotal, awarded) {
       document.getElementById('resultLine').textContent = score + '%';
-      let tail = (attempts||0) + ' attempts • ' + (total||'?') + ' cards';
+      let tail = (attempts || 0) + ' attempts • ' + (total || '?') + ' cards';
       if (pointsTotal != null) tail += ' • ' + pointsTotal + ' pts';
       if (awarded != null)     tail += ' (+' + awarded + ')';
       document.getElementById('detailLine').textContent = tail;
@@ -105,11 +105,19 @@
         if (!r.ok) r = await api.fetch('/api/get_scores?set_name=' + encodeURIComponent(setName) + '&limit=1');
         if (r.ok) {
           const payload = await r.json();
-          const last = Array.isArray(payload) ? payload[0] : (payload && Array.isArray(payload.scores) ? payload.scores[0] : null);
+          const last = Array.isArray(payload)
+            ? payload[0]
+            : (payload && Array.isArray(payload.scores) ? payload.scores[0] : null);
           if (last && (last.set_name === setName || !last.set_name)) {
             const d = last.details || {};
             if (awarded == null && d.points_awarded != null) awarded = Number(d.points_awarded);
-            apply(Math.round(Number(last.score) || 0), Number(last.attempts) || 0, Number(d.total) || undefined, Number(d.points_total) || undefined, awarded);
+            apply(
+              Math.round(Number(last.score) || 0),
+              Number(last.attempts) || 0,
+              Number(d.total) || undefined,
+              Number(d.points_total) || undefined,
+              awarded
+            );
             done = true;
           }
         }
@@ -120,7 +128,13 @@
           const raw = localStorage.getItem('lp_last_result_' + setName);
           if (raw) {
             const j = JSON.parse(raw);
-            apply(Math.round(Number(j.score)||0), Number(j.attempts)||0, Number(j.total)||undefined, Number(j.points_total)||undefined, awarded);
+            apply(
+              Math.round(Number(j.score) || 0),
+              Number(j.attempts) || 0,
+              Number(j.total) || undefined,
+              Number(j.points_total) || undefined,
+              awarded
+            );
             done = true;
           }
         } catch(_ignore) { }
