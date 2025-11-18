@@ -52,6 +52,7 @@
       width:88px; height:88px; border-radius:18px; border:1px solid var(--border);
       background:linear-gradient(135deg,#e6edff,#fff5db); display:flex; align-items:center; justify-content:center; font-size:46px;
     }
+
     .avatars{ display:grid; grid-template-columns:repeat(6,1fr); gap:10px }
     @media (max-width:520px){ .avatars{ grid-template-columns:repeat(4,1fr); } }
     .ava{
@@ -68,7 +69,32 @@
     .coinstack svg{ width:100%; height:100% }
 
     .tiny{ font-size:12px; color:var(--muted) }
-    
+
+    .chip{
+      border-radius:999px;
+      border:1px solid var(--border);
+      padding:6px 10px;
+      background:var(--card);
+      display:inline-flex;
+      flex-direction:column;
+      align-items:flex-start;
+      gap:2px;
+      cursor:pointer;
+      font-size:13px;
+      transition:background .12s ease, color .12s ease, border-color .12s ease;
+    }
+    .chip .tiny{
+      font-size:11px;
+    }
+    .chip.active{
+      background:var(--brand);
+      color:#fff;
+      border-color:transparent;
+    }
+    .chip.active .tiny{
+      color:rgba(255,255,255,.9);
+    }
+
     /* Avatar modal */
     .modal-overlay{
       position:fixed;
@@ -153,7 +179,7 @@
         </div>
       </div>
 
-      <!-- NEW: Avatar button -->
+      <!-- Avatar button -->
       <div class="row" style="margin-top:8px">
         <button id="chooseAvatarBtn" class="btn">Choose avatar</button>
       </div>
@@ -200,12 +226,13 @@
         </div>
       </div>
 
-      <div class="row" style="margin-top:10px">
-        <button id="saveBtn" class="btn btn-primary">Save changes</button>
-        <span id="saveMsg" class="tiny"></span>
+      <!-- Unified Save & exit / Cancel -->
+      <div class="row" style="margin-top:10px; justify-content:flex-end; gap:8px">
+        <span id="saveMsg" class="tiny" style="margin-right:auto;"></span>
+        <button id="cancelBtn" class="btn">Cancel</button>
+        <button id="saveBtn" class="btn btn-primary">Save &amp; exit</button>
       </div>
     </section>
-
 
     <!-- Preferences: language + TTS voice -->
     <section class="card">
@@ -234,13 +261,9 @@
         </div>
 
       </div>
-      <div class="row" style="margin-top:10px">
-        <button id="saveTtsBtn" class="btn">Save preferences</button>
-        <span id="saveTtsMsg" class="tiny"></span>
-      </div>
     </section>
 
-        <!-- Learning preferences -->
+    <!-- Learning preferences -->
     <section class="card">
       <h3>Learning preferences</h3>
       <p class="tiny" style="margin-bottom:8px">
@@ -282,7 +305,7 @@
       <button id="deleteBtn" class="btn btn-danger">Delete my account</button>
     </section>
 
-      <!-- Avatar picker modal -->
+    <!-- Avatar picker modal -->
     <div id="avatarModal" class="modal-overlay" aria-hidden="true">
       <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="avatarModalTitle">
         <div class="modal-header">
@@ -317,7 +340,7 @@
   <script src="static/js/api.js"></script>
   <script src="static/js/avatar.js"></script>
 
-    <script>
+  <script>
     // Require sign-in (redirects to login.html on 401)
     (async () => { await api.requireAuth('login.html'); })();
 
@@ -506,7 +529,7 @@
       }
     }
 
-    // -------- Save profile (name, goals, study_mode, avatar, ui_lang) --------
+    // -------- Unified Save & exit (whole profile) --------
     document.getElementById('saveBtn').addEventListener('click', async () => {
       const saveMsg = document.getElementById('saveMsg');
       const weeklyInput = document.getElementById('weeklyGoal');
@@ -521,8 +544,39 @@
       }
 
       const displayName = (document.getElementById('displayName').value || '').trim();
+      const emailVal = (document.getElementById('email') && document.getElementById('email').value) || '';
       const uiLangEl = document.getElementById('uiLang');
+      const choiceEl = document.getElementById('ttsChoice');
 
+      // Derive TTS provider/voice from current dropdown
+      let ttsProvider = '';
+      let ttsVoice = '';
+      if (choiceEl) {
+        const raw = choiceEl.value || '';
+        if (raw.startsWith('azure:')) {
+          ttsProvider = 'azure';
+          ttsVoice = raw.slice('azure:'.length); // e.g. pl-PL-MarekNeural
+        } else if (raw.startsWith('gtts:')) {
+          ttsProvider = 'gtts';
+          ttsVoice = ''; // implied single Polish voice
+        }
+      }
+
+      // Pronunciation difficulty – prefer global userPrefs, then local profile
+      const loc = loadLocalProfile() || {};
+      let pronDifficulty = 'normal';
+      try {
+        pronDifficulty =
+          (window.userPrefs && window.userPrefs.pronDifficulty) ||
+          (loc.preferences && loc.preferences.pronDifficulty) ||
+          'normal';
+      } catch (_) {}
+      pronDifficulty = String(pronDifficulty || 'normal').toLowerCase();
+      if (pronDifficulty !== 'easy' && pronDifficulty !== 'normal' && pronDifficulty !== 'hard') {
+        pronDifficulty = 'normal';
+      }
+
+      // Build server payload (only fields we know it accepts)
       const body = {
         display_name: displayName,
         name: displayName,
@@ -530,6 +584,7 @@
         study_mode: mode,
         avatar_id: state.avatar_id,
         ui_lang: uiLangEl ? uiLangEl.value : 'en'
+        // tts_* and preferences are kept local; server may ignore or reject them
       };
 
       let ok = false;
@@ -545,52 +600,40 @@
       state.weekly_goal = weeklyGoal;
       state.study_mode = mode;
 
-      const loc = loadLocalProfile();
+      // Merge + persist full local profile snapshot
+      const prefs = (loc.preferences && typeof loc.preferences === 'object')
+        ? Object.assign({}, loc.preferences)
+        : {};
+      prefs.pronDifficulty = pronDifficulty;
+
       const merged = Object.assign({}, loc, body, {
-        email: document.getElementById('email').value,
-        created_at: loc.created_at || new Date().toISOString()
+        email: emailVal,
+        created_at: loc.created_at || new Date().toISOString(),
+        tts_provider: ttsProvider,
+        tts_voice: ttsVoice,
+        preferences: prefs
       });
+
       saveLocalProfile(merged);
+
+      // Keep global userPrefs in sync
+      try {
+        window.userPrefs = window.userPrefs || {};
+        window.userPrefs.pronDifficulty = pronDifficulty;
+      } catch (_) {}
 
       msg(saveMsg, ok ? 'Saved!' : 'Saved locally (offline)');
+      // Exit after a short delay so the user sees the toast
+      setTimeout(() => {
+        window.location.href = 'dashboard.html';
+      }, 350);
     });
 
-    // -------- Save TTS preferences --------
-    const ttsBtn = document.getElementById('saveTtsBtn');
-    if (ttsBtn) ttsBtn.addEventListener('click', async ()=>{
-      const msgEl = document.getElementById('saveTtsMsg');
-      const choiceEl = document.getElementById('ttsChoice');
-      if (!choiceEl) return;
-
-      const raw = choiceEl.value || '';
-      let prov = '';
-      let voice = '';
-
-      if (raw.startsWith('azure:')) {
-        prov = 'azure';
-        voice = raw.slice('azure:'.length);
-      } else if (raw.startsWith('gtts:')) {
-        prov = 'gtts';
-        voice = ''; // gTTS has only one Polish voice; ID is implied by provider
-      }
-
-      // Save locally (authoritative for client-driven create flow)
-      const loc = loadLocalProfile();
-      const merged = Object.assign({}, loc, { tts_provider: prov, tts_voice: voice });
-      saveLocalProfile(merged);
-
-      // Best-effort: send to server profile if it accepts extra fields (safe to ignore failures)
-      let ok = false;
-      try{
-        const r = await api.fetch('/api/me', {
-          method:'PATCH',
-          headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ tts_provider: prov, tts_voice: voice })
-        });
-        ok = r.ok;
-      }catch(_){}
-
-      msg(msgEl, ok ? 'Preferences saved!' : 'Saved locally (server optional)');
+    // -------- Cancel (exit without extra writes) --------
+    document.getElementById('cancelBtn').addEventListener('click', () => {
+      // Just leave the page; local pron-diff may already be updated by chips,
+      // but we don't touch lp.profile or call the API here.
+      window.location.href = 'dashboard.html';
     });
 
     // --- Pronunciation difficulty prefs (local only, shared across modes) ---
@@ -622,6 +665,11 @@
         });
       }
 
+      // Initialize UI + global userPrefs
+      try {
+        window.userPrefs = window.userPrefs || {};
+        window.userPrefs.pronDifficulty = current;
+      } catch (_) {}
       syncUI();
 
       root.addEventListener('click', (ev) => {
@@ -634,7 +682,7 @@
         current = d;
         syncUI();
 
-        // Reload + update profile
+        // Update local profile immediately so other pages can read it
         try {
           prof = loadLocalProfile() || {};
           if (!prof.preferences || typeof prof.preferences !== 'object') {
@@ -659,7 +707,7 @@
       location.href = 'login.html';
     });
 
-    // -------- Delete account (no accountMsg now) --------
+    // -------- Delete account --------
     document.getElementById('deleteBtn').addEventListener('click', async ()=>{
       if(!confirm('Delete your account? This cannot be undone.')) return;
       try{
