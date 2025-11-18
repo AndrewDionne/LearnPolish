@@ -1,0 +1,5 @@
+    <symbol id="bg-soft" viewBox="0 0 512 512">
+      <circle cx="256" cy="256" r="240" fill="#0f172a"/>
+      <circle cx="220" cy="200" r="220" fill="#1d283a"/>
+      <circle cx="340" cy="340" r="160" fill="#111827" opacity="0.75"/>
+    </symbol>

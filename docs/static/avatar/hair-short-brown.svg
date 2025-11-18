@@ -1,0 +1,11 @@
+<symbol id="hair-short-brown" viewBox="0 0 512 512">
+      <path
+        d="M148 190C148 140 195 100 256 100C317 100 364 140 364 190V210H148Z"
+        fill="#3f2a1c"/>
+      <path
+        d="M160 170C185 150 215 145 245 147"
+        fill="none" stroke="#654433" stroke-width="7" stroke-linecap="round" opacity="0.7"/>
+      <path
+        d="M270 143C300 144 326 152 348 168"
+        fill="none" stroke="#654433" stroke-width="7" stroke-linecap="round" opacity="0.7"/>
+    </symbol>

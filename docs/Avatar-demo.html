@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Avatar Demo</title>
+  <style>
+    body {
+      background:#020617;
+      color:#e5e7eb;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      min-height:100vh;
+      gap:20px;
+    }
+    .avatar {
+      width:220px;
+      height:220px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 1) Paste the sprite defs here (from avatar-parts.svg) -->
+  <!-- (You can keep only one copy of <svg><defs>...</defs></svg> per page) -->
+  <!-- BEGIN AVATAR PARTS -->
+  <!-- ... paste the <svg> from avatar-parts.svg here ... -->
+  <!-- END AVATAR PARTS -->
+
+  <!-- 2) Build an avatar by layering <use> elements -->
+  <svg class="avatar" viewBox="0 0 512 512">
+    <!-- Background -->
+    <use href="#bg-map-pl"></use>
+
+    <!-- Face + hair -->
+    <use href="#face-skin-medium"></use>
+    <use href="#face-shadow"></use>
+    <use href="#hair-short-brown"></use>
+
+    <!-- Eyes + mouth -->
+    <use href="#eyes-focus"></use>
+    <use href="#mouth-smile"></use>
+
+    <!-- Outfit + badge -->
+    <use href="#outfit-hoodie-blue"></use>
+    <use href="#badge-book"></use>
+  </svg>
+
+  <p>Engineer on the Path to Polish 🚀</p>
+
+</body>
+</html>

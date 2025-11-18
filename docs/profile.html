@@ -68,6 +68,63 @@
     .coinstack svg{ width:100%; height:100% }
 
     .tiny{ font-size:12px; color:var(--muted) }
+    
+    /* Avatar modal */
+    .modal-overlay{
+      position:fixed;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      background:rgba(15,23,42,.72);
+      z-index:1000;
+    }
+    .modal-overlay.show{
+      display:flex;
+    }
+    body.modal-open{
+      overflow:hidden;
+    }
+    .modal-dialog{
+      background:var(--card);
+      border-radius:var(--radius);
+      border:1px solid var(--border);
+      box-shadow:var(--shadow);
+      padding:16px;
+      max-width:420px;
+      width:calc(100% - 32px);
+    }
+    .modal-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:8px;
+    }
+    .modal-body{
+      max-height:60vh;
+      overflow:auto;
+      padding-top:4px;
+    }
+    .modal-footer{
+      margin-top:10px;
+      display:flex;
+      justify-content:flex-end;
+      gap:8px;
+    }
+    .icon-btn{
+      border:none;
+      background:transparent;
+      cursor:pointer;
+      font-size:20px;
+      line-height:1;
+      padding:4px;
+      border-radius:999px;
+      color:var(--muted);
+    }
+    .icon-btn:focus{
+      outline:none;
+      box-shadow:var(--focus);
+    }
 
     nav.bottom{ position:fixed; left:0; right:0; bottom:0; background:var(--card); border-top:1px solid var(--border); display:flex; justify-content:space-around; padding:6px 8px; gap:8px; }
     nav.bottom a{ flex:1; text-align:center; padding:8px; text-decoration:none; color:var(--text); border-radius:10px; display:flex; flex-direction:column; align-items:center; gap:4px; font-size:12px }
@@ -95,25 +152,17 @@
           </div>
         </div>
       </div>
-      <div class="row" style="margin-top:8px; flex-wrap:wrap; gap:6px">
+
+      <!-- NEW: Avatar button -->
+      <div class="row" style="margin-top:8px">
+        <button id="chooseAvatarBtn" class="btn">Choose avatar</button>
+      </div>
+
+      <div class="row" style="margin-top:8px">
         <a class="btn" href="reset.html">Reset password</a>
         <button id="logoutBtn" class="btn">Log out</button>
-        <button id="exportBtn" class="btn">Export my data (JSON)</button>
       </div>
       <div class="tiny" style="margin-top:6px" id="joinDate">Joined —</div>
-      <div id="accountMsg" class="tiny" style="margin-top:4px"></div>
-    </section>
-
-    <!-- Right column -->
-    <section class="card">
-      <h3>Avatar</h3>
-      <div class="tiny" style="margin-bottom:8px">Pick a character. We’ll use this across groups and leaderboards.</div>
-      <div id="avatars" class="avatars" role="listbox" aria-label="Choose avatar"></div>
-      <div class="row" style="margin-top:10px">
-        <input id="avatarFile" type="file" accept="image/*" />
-        <button id="uploadBtn" class="btn">Upload image</button>
-        <span class="tiny">(optional — requires server support)</span>
-      </div>
     </section>
 
     <!-- Goals -->
@@ -233,6 +282,25 @@
       <button id="deleteBtn" class="btn btn-danger">Delete my account</button>
     </section>
 
+      <!-- Avatar picker modal -->
+    <div id="avatarModal" class="modal-overlay" aria-hidden="true">
+      <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="avatarModalTitle">
+        <div class="modal-header">
+          <h3 id="avatarModalTitle">Choose avatar</h3>
+          <button type="button" id="avatarModalClose" class="icon-btn" aria-label="Close">×</button>
+        </div>
+        <div class="modal-body">
+          <p class="tiny" style="margin-bottom:8px">
+            Pick a character. We’ll use this across groups and leaderboards.
+          </p>
+          <div id="avatarGrid" class="avatars" role="listbox" aria-label="Choose avatar"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="avatarModalDone" class="btn btn-primary">Done</button>
+        </div>
+      </div>
+    </div>
+
   </main>
 
   <!-- Bottom nav -->
@@ -247,40 +315,21 @@
   <!-- Load runtime config first, then API helpers -->
   <script src="static/js/app-config.js"></script>
   <script src="static/js/api.js"></script>
+  <script src="static/js/avatar.js"></script>
 
-  <script>
+    <script>
     // Require sign-in (redirects to login.html on 401)
     (async () => { await api.requireAuth('login.html'); })();
 
-    function shortDate(iso){ if(!iso) return '—'; const d=new Date(iso); return d.toLocaleDateString(); }
-    function msg(el, t){ el.textContent=t; setTimeout(()=>{ el.textContent=''; }, 1800); }
-
-    const AVATARS = [
-      {id:'scout',glyph:'🧭'},{id:'fox',glyph:'🦊'},{id:'owl',glyph:'🦉'},
-      {id:'bear',glyph:'🐻'},{id:'koala',glyph:'🐨'},{id:'dragon',glyph:'🐉'},
-      {id:'mage',glyph:'🧙‍♂️'},{id:'ninja',glyph:'🥷'},{id:'robot',glyph:'🤖'},
-      {id:'books',glyph:'📚'},{id:'rocket',glyph:'🚀'},{id:'clover',glyph:'🍀'}
-    ];
-    function renderAvatarGrid(selected){
-      const wrap = document.getElementById('avatars');
-      wrap.innerHTML = '';
-      AVATARS.forEach(a=>{
-        const d = document.createElement('button');
-        d.type = 'button';
-        d.className = 'ava' + (a.id===selected ? ' active' : '');
-        d.setAttribute('role','option');
-        d.setAttribute('aria-label', a.id);
-        d.textContent = a.glyph;
-        d.onclick = ()=> selectAvatar(a.id);
-        wrap.appendChild(d);
-      });
+    function shortDate(iso){
+      if(!iso) return '—';
+      const d = new Date(iso);
+      return d.toLocaleDateString();
     }
-    function selectAvatar(id){
-      state.avatar_id = id;
-      document.getElementById('avatarBig').textContent = (AVATARS.find(a=>a.id===id)?.glyph) || '🙂';
-      [...document.querySelectorAll('.ava')].forEach(el=>{
-        if (el.getAttribute('aria-label') === id) el.classList.add('active'); else el.classList.remove('active');
-      });
+    function msg(el, t){
+      if (!el) return;
+      el.textContent = t;
+      setTimeout(()=>{ el.textContent=''; }, 1800);
     }
 
     function loadLocalProfile(){
@@ -290,8 +339,14 @@
       try { localStorage.setItem('lp.profile', JSON.stringify(obj||{})); } catch(_){}
     }
 
-    const state = { avatar_id: null, weekly_goal: 500, study_mode: "path" };
+    // Global state for this page
+    const state = {
+      avatar_id: null,
+      weekly_goal: 500,
+      study_mode: "path" // "path" | "self"
+    };
 
+    // -------- Goals: study mode & weekly goal --------
     function resolveStudyModeFromProfile(loc, weeklyGoalValue) {
       const src = loc || {};
       const fromProfile = (typeof src.study_mode === "string")
@@ -352,21 +407,59 @@
       });
     }
 
+    // -------- Init profile (server + local) --------
     async function initProfile(){
-      let me=null;
-      try{ const r=await api.fetch('/api/me'); if(r.ok) me=await r.json(); }catch(_){}
+      let me = null;
+      try {
+        const r = await api.fetch('/api/me');
+        if (r.ok) me = await r.json();
+      } catch (_) {}
+
       const loc = loadLocalProfile();
 
-      renderAvatarGrid(me?.avatar_id || loc.avatar_id || 'scout');
-      selectAvatar(me?.avatar_id || loc.avatar_id || 'scout');
+      // Decide initial avatar (server → local → default)
+      const initialAvatar = (me && me.avatar_id) || loc.avatar_id || 'scout';
+      state.avatar_id = initialAvatar;
 
-      document.getElementById('displayName').value = (me?.display_name || me?.name || loc.display_name || '') || '';
-      document.getElementById('email').value = (me?.email || loc.email || '') || '';
-      document.getElementById('joinDate').textContent = 'Joined ' + shortDate(me?.created_at || loc.created_at);
+      // Wire avatar chooser modal (from avatar.js)
+      if (window.AvatarChooser && typeof AvatarChooser.initProfileAvatar === 'function') {
+        AvatarChooser.initProfileAvatar({
+          initialId: initialAvatar,
+          onChange: (id) => {
+            state.avatar_id = id;
+            // keep local profile in sync so other pages can read it
+            try {
+              const prof = loadLocalProfile() || {};
+              prof.avatar_id = id;
+              saveLocalProfile(prof);
+            } catch (_) {}
+          }
+        });
+      } else {
+        // Fallback: just show the emoji
+        const big = document.getElementById('avatarBig');
+        if (big) big.textContent = '🙂';
+      }
 
+      // Basic profile fields
+      const nameVal =
+        (me && (me.display_name || me.name)) ||
+        loc.display_name ||
+        "";
+      const emailVal = (me && me.email) || loc.email || "";
+
+      const nameInput = document.getElementById('displayName');
+      const emailInput = document.getElementById('email');
+      const joinEl = document.getElementById('joinDate');
+
+      if (nameInput) nameInput.value = nameVal;
+      if (emailInput) emailInput.value = emailVal;
+      if (joinEl) joinEl.textContent = 'Joined ' + shortDate((me && me.created_at) || loc.created_at);
+
+      // Weekly goal from stats (if available), else local
       const weeklyGoalInput = document.getElementById('weeklyGoal');
 
-      try{
+      try {
         const r = await api.fetch('/api/my/stats');
         if (r.ok) {
           const s = await r.json();
@@ -375,15 +468,17 @@
           state.weekly_goal = goal;
         } else {
           if (weeklyGoalInput) weeklyGoalInput.value = loc.weekly_goal || 500;
-          state.weekly_goal = Number(weeklyGoalInput?.value || loc.weekly_goal || 500) || 500;
+          state.weekly_goal = Number((weeklyGoalInput && weeklyGoalInput.value) || loc.weekly_goal || 500) || 500;
         }
-      } catch(_){
+      } catch(_) {
         if (weeklyGoalInput) weeklyGoalInput.value = loc.weekly_goal || 500;
-        state.weekly_goal = Number(weeklyGoalInput?.value || loc.weekly_goal || 500) || 500;
+        state.weekly_goal = Number((weeklyGoalInput && weeklyGoalInput.value) || loc.weekly_goal || 500) || 500;
       }
+
       // Initialize goal mode selector from profile + weekly goal
       wireGoalMode(loc);
 
+      // UI language
       const uiLang = (loc.ui_lang || 'en');
       const uiLangEl = document.getElementById('uiLang');
       if (uiLangEl) uiLangEl.value = uiLang;
@@ -411,6 +506,7 @@
       }
     }
 
+    // -------- Save profile (name, goals, study_mode, avatar, ui_lang) --------
     document.getElementById('saveBtn').addEventListener('click', async () => {
       const saveMsg = document.getElementById('saveMsg');
       const weeklyInput = document.getElementById('weeklyGoal');
@@ -424,7 +520,8 @@
         if (weeklyInput) weeklyInput.value = 500;
       }
 
-      const displayName = document.getElementById('displayName').value.trim();
+      const displayName = (document.getElementById('displayName').value || '').trim();
+      const uiLangEl = document.getElementById('uiLang');
 
       const body = {
         display_name: displayName,
@@ -432,7 +529,7 @@
         weekly_goal: weeklyGoal,
         study_mode: mode,
         avatar_id: state.avatar_id,
-        ui_lang: document.getElementById('uiLang').value
+        ui_lang: uiLangEl ? uiLangEl.value : 'en'
       };
 
       let ok = false;
@@ -458,6 +555,7 @@
       msg(saveMsg, ok ? 'Saved!' : 'Saved locally (offline)');
     });
 
+    // -------- Save TTS preferences --------
     const ttsBtn = document.getElementById('saveTtsBtn');
     if (ttsBtn) ttsBtn.addEventListener('click', async ()=>{
       const msgEl = document.getElementById('saveTtsMsg');
@@ -495,7 +593,7 @@
       msg(msgEl, ok ? 'Preferences saved!' : 'Saved locally (server optional)');
     });
 
-        // --- Pronunciation difficulty prefs (local only, shared across modes) ---
+    // --- Pronunciation difficulty prefs (local only, shared across modes) ---
     (function () {
       const root = document.getElementById('pronDiffChips');
       if (!root) return;
@@ -554,65 +652,33 @@
       });
     })();
 
-    document.getElementById('uploadBtn').addEventListener('click', async ()=>{
-      const fileIn = document.getElementById('avatarFile');
-      const msgEl  = document.getElementById('saveMsg');
-      const f = fileIn.files?.[0];
-      if(!f){ msg(msgEl, 'Choose a file first'); return; }
-      try{
-        const fd = new FormData(); fd.append('file', f);
-        const r = await api.fetch('/api/me/avatar_upload', { method:'POST', body: fd });
-        if(r.ok){
-          const j = await r.json();
-          if (j.avatar_id){ selectAvatar(j.avatar_id); }
-          msg(msgEl, 'Avatar uploaded!');
-        }else{
-          msg(msgEl, 'Upload not supported on server');
-        }
-      }catch(_){
-        msg(msgEl, 'Upload failed or not supported');
-      }
-    });
-
+    // -------- Logout --------
     document.getElementById('logoutBtn').addEventListener('click', async ()=>{
       try{ await api.fetch('/api/logout', {method:'POST'});}catch(_){}
       api.clearToken();
       location.href = 'login.html';
     });
 
-    document.getElementById('exportBtn').addEventListener('click', async ()=>{
-      const msgEl = document.getElementById('accountMsg');
-      try{
-        const r = await api.fetch('/api/my/export');
-        if(r.ok){
-          const j = await r.json();
-          const blob = new Blob([JSON.stringify(j,null,2)], {type:'application/json'});
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a'); a.href = url; a.download = 'learnpolish_export.json'; a.click();
-          URL.revokeObjectURL(url);
-          msg(msgEl, 'Exported!');
-        }else{
-          const j = loadLocalProfile();
-          const blob = new Blob([JSON.stringify(j,null,2)], {type:'application/json'});
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a'); a.href = url; a.download = 'learnpolish_local_profile.json'; a.click();
-          URL.revokeObjectURL(url);
-          msg(msgEl, 'Exported local profile (server export unavailable)');
-        }
-      }catch(_){ msg(msgEl, 'Export failed'); }
-    });
-
+    // -------- Delete account (no accountMsg now) --------
     document.getElementById('deleteBtn').addEventListener('click', async ()=>{
-      const msgEl = document.getElementById('accountMsg');
       if(!confirm('Delete your account? This cannot be undone.')) return;
       try{
         const r = await api.fetch('/api/me', { method:'DELETE' });
-        if(r.ok){ alert('Account deleted'); localStorage.clear(); location.href='register.html'; }
-        else{ msg(msgEl, 'Server refused deletion'); }
-      }catch(_){ msg(msgEl, 'Deletion failed'); }
+        if(r.ok){
+          alert('Account deleted');
+          localStorage.clear();
+          location.href='register.html';
+        } else {
+          alert('Server refused deletion');
+        }
+      }catch(_){
+        alert('Deletion failed');
+      }
     });
 
+    // Kick things off
     initProfile();
   </script>
+
 </body>
 </html>

@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg">
+  <!--
+    Avatar sprite sheet for Path to Polish
+    Each <symbol> is one layer: backgrounds, faces, eyes, mouths, accessories.
+    ViewBox is always 0 0 512 512 so they stack cleanly.
+  -->
+
+  <!-- ========= BACKGROUNDS ========= -->
+  <symbol id="bg-soft" viewBox="0 0 512 512">
+    <defs>
+      <radialGradient id="bg-soft-grad" cx="30%" cy="25%" r="80%">
+        <stop offset="0%"  stop-color="#1f2937"/>
+        <stop offset="55%" stop-color="#020617"/>
+        <stop offset="100%" stop-color="#020617"/>
+      </radialGradient>
+    </defs>
+    <rect x="0" y="0" width="512" height="512" fill="#020617"/>
+    <circle cx="250" cy="200" r="220" fill="url(#bg-soft-grad)" opacity="0.95"/>
+    <circle cx="360" cy="350" r="160" fill="#0b1120" opacity="0.85"/>
+    <circle cx="120" cy="360" r="120" fill="#111827" opacity="0.9"/>
+  </symbol>
+
+  <symbol id="bg-gold" viewBox="0 0 512 512">
+    <defs>
+      <linearGradient id="bg-gold-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%"  stop-color="#facc15"/>
+        <stop offset="40%" stop-color="#f97316"/>
+        <stop offset="100%" stop-color="#b91c1c"/>
+      </linearGradient>
+    </defs>
+    <rect x="0" y="0" width="512" height="512" fill="#020617"/>
+    <circle cx="256" cy="256" r="230" fill="url(#bg-gold-grad)" />
+    <circle cx="150" cy="170" r="70" fill="#fef9c3" opacity="0.35"/>
+    <circle cx="360" cy="340" r="90" fill="#fef3c7" opacity="0.25"/>
+  </symbol>
+
+  <symbol id="bg-ocean" viewBox="0 0 512 512">
+    <defs>
+      <linearGradient id="bg-ocean-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%"  stop-color="#38bdf8"/>
+        <stop offset="50%" stop-color="#0ea5e9"/>
+        <stop offset="100%" stop-color="#022c55"/>
+      </linearGradient>
+    </defs>
+    <rect x="0" y="0" width="512" height="512" fill="#020617"/>
+    <rect x="16" y="16" width="480" height="480" rx="120" fill="url(#bg-ocean-grad)" />
+    <path d="M0 340 Q128 310 256 340 T512 340 L512 512 L0 512 Z" fill="#0f172a" opacity="0.9"/>
+    <path d="M0 360 Q128 335 256 360 T512 360 L512 512 L0 512 Z" fill="#020617" opacity="0.8"/>
+  </symbol>
+
+  <!-- ========= FACES ========= -->
+  <symbol id="face-round" viewBox="0 0 512 512">
+    <defs>
+      <linearGradient id="skin-warm" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%"  stop-color="#fed7aa"/>
+        <stop offset="100%" stop-color="#fdba74"/>
+      </linearGradient>
+    </defs>
+    <circle cx="256" cy="260" r="150" fill="url(#skin-warm)"/>
+    <ellipse cx="256" cy="330" rx="110" ry="80" fill="#000" opacity="0.05"/>
+  </symbol>
+
+  <symbol id="face-oval" viewBox="0 0 512 512">
+    <defs>
+      <linearGradient id="skin-neutral" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%"  stop-color="#fef3c7"/>
+        <stop offset="100%" stop-color="#facc15"/>
+      </linearGradient>
+    </defs>
+    <ellipse cx="256" cy="260" rx="140" ry="165" fill="url(#skin-neutral)"/>
+    <ellipse cx="256" cy="335" rx="110" ry="75" fill="#000" opacity="0.04"/>
+  </symbol>
+
+  <symbol id="face-deep" viewBox="0 0 512 512">
+    <defs>
+      <linearGradient id="skin-deep" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%"  stop-color="#854d0e"/>
+        <stop offset="100%" stop-color="#451a03"/>
+      </linearGradient>
+    </defs>
+    <ellipse cx="256" cy="260" rx="140" ry="165" fill="url(#skin-deep)"/>
+    <ellipse cx="256" cy="335" rx="112" ry="78" fill="#000" opacity="0.08"/>
+  </symbol>
+
+  <!-- ========= HAIR ========= -->
+  <symbol id="hair-short" viewBox="0 0 512 512">
+    <path
+      d="M136 210 Q150 110 256 110 T376 210 Q360 180 336 176 320 174 298 180 270 188 256 188 230 188 204 180 178 172 160 176 144 180 136 210 Z"
+      fill="#020617"/>
+  </symbol>
+
+  <symbol id="hair-long" viewBox="0 0 512 512">
+    <path
+      d="M126 210 Q136 100 256 90 T386 210 L386 360 Q356 380 320 390 288 398 256 398 224 398 192 390 156 380 126 360 Z"
+      fill="#1e293b"/>
+  </symbol>
+
+  <symbol id="hair-curly" viewBox="0 0 512 512">
+    <path
+      d="M120 220 Q128 130 180 110 Q190 80 226 70 Q256 60 292 70 Q322 80 332 110 Q384 130 392 220 Q366 198 340 198 Q320 198 298 205 Q278 212 256 215 Q234 212 214 205 Q192 198 172 198 Q146 198 120 220 Z"
+      fill="#111827"/>
+    <circle cx="186" cy="126" r="20" fill="#0f172a"/>
+    <circle cx="322" cy="126" r="20" fill="#0f172a"/>
+  </symbol>
+
+  <!-- ========= EYES ========= -->
+  <symbol id="eyes-smile" viewBox="0 0 512 512">
+    <g transform="translate(0,20)">
+      <path d="M196 250 q18 -20 36 0" fill="none" stroke="#111827" stroke-width="10" stroke-linecap="round"/>
+      <path d="M280 250 q18 -20 36 0" fill="none" stroke="#111827" stroke-width="10" stroke-linecap="round"/>
+      <circle cx="208" cy="250" r="4" fill="#111827"/>
+      <circle cx="304" cy="250" r="4" fill="#111827"/>
+    </g>
+  </symbol>
+
+  <symbol id="eyes-focused" viewBox="0 0 512 512">
+    <g transform="translate(0,18)">
+      <ellipse cx="204" cy="248" rx="26" ry="16" fill="#fefefe"/>
+      <ellipse cx="308" cy="248" rx="26" ry="16" fill="#fefefe"/>
+      <circle cx="204" cy="248" r="7" fill="#0f172a"/>
+      <circle cx="308" cy="248" r="7" fill="#0f172a"/>
+    </g>
+  </symbol>
+
+  <symbol id="eyes-sleepy" viewBox="0 0 512 512">
+    <g transform="translate(0,22)">
+      <path d="M184 244 h40" stroke="#111827" stroke-width="8" stroke-linecap="round"/>
+      <path d="M288 244 h40" stroke="#111827" stroke-width="8" stroke-linecap="round"/>
+    </g>
+  </symbol>
+
+  <!-- ========= MOUTHS ========= -->
+  <symbol id="mouth-soft-smile" viewBox="0 0 512 512">
+    <path
+      d="M210 310 Q256 338 302 310"
+      fill="none"
+      stroke="#7c2d12"
+      stroke-width="8"
+      stroke-linecap="round"/>
+  </symbol>
+
+  <symbol id="mouth-big-smile" viewBox="0 0 512 512">
+    <path
+      d="M210 306 Q256 350 302 306 Q292 330 256 338 Q220 330 210 306 Z"
+      fill="#b91c1c"
+      stroke="#7c2d12"
+      stroke-width="6"
+      stroke-linejoin="round"/>
+  </symbol>
+
+  <symbol id="mouth-think" viewBox="0 0 512 512">
+    <path
+      d="M220 314 h72"
+      fill="none"
+      stroke="#7c2d12"
+      stroke-width="8"
+      stroke-linecap="round"/>
+  </symbol>
+
+  <!-- ========= ACCESSORIES ========= -->
+  <symbol id="acc-glasses" viewBox="0 0 512 512">
+    <g transform="translate(0,16)" stroke="#0f172a" stroke-width="8" stroke-linecap="round">
+      <rect x="170" y="234" width="60" height="36" rx="10" fill="none"/>
+      <rect x="282" y="234" width="60" height="36" rx="10" fill="none"/>
+      <line x1="230" y1="252" x2="282" y2="252"/>
+      <line x1="170" y1="242" x2="154" y2="242"/>
+      <line x1="342" y1="242" x2="358" y2="242"/>
+    </g>
+  </symbol>
+
+  <symbol id="acc-headphones" viewBox="0 0 512 512">
+    <g fill="#020617" stroke="#020617" stroke-width="8">
+      <path d="M190 220 Q190 160 256 150 Q322 160 322 220" fill="none" stroke-linecap="round"/>
+      <rect x="160" y="222" width="28" height="70" rx="12"/>
+      <rect x="324" y="222" width="28" height="70" rx="12"/>
+    </g>
+  </symbol>
+
+  <symbol id="acc-book" viewBox="0 0 512 512">
+    <g transform="translate(180,320)">
+      <rect x="0" y="0" width="70" height="60" rx="8" fill="#0f172a"/>
+      <rect x="6" y="6" width="58" height="48" rx="6" fill="#e5e7eb"/>
+      <path d="M10 18 h42 M10 30 h38 M10 42 h30" stroke="#9ca3af" stroke-width="3" stroke-linecap="round"/>
+    </g>
+  </symbol>
+</svg>
