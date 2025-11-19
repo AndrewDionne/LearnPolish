@@ -1,135 +1,234 @@
-// docs/static/js/avatar.js
-// Pierogi avatar chooser used on profile.html
+// static/js/avatar.js
+// Pierogi avatar library + chooser + builder helpers.
+// Assumes SVG files live under: docs/static/avatar/
+//   hero-neutral-1.svg, hero-win-1.svg, hero-milestone-1.svg, hero-tired-1.svg, hero-embarrassed-1.svg, hero-inactive-1.svg
+//   chonky-*.svg, tall-*.svg, junior-*.svg in the same pattern.
 
-const AvatarChooser = (() => {
-  const SPRITE_PATH = "static/avatar/pierogi.svg";   // bodies
-  const FACE_PATH   = "static/avatar/";              // individual face SVGs
-  const DEFAULT_FACE = "neutral-1";
+(function (global) {
+  const DOC_BASE = ''; // paths are relative to docs/ root; <base> in HTML handles GitHub vs Flask.
 
-  const AVATARS = [
-    { id: "hero",   label: "Pierogi Hero" },
-    { id: "chonky", label: "Pierogi Chonky" },
-    { id: "tall",   label: "Pierogi Tall" },
-    { id: "junior", label: "Pierogi Junior" }
-  ];
-
-  const SVG_NS   = "http://www.w3.org/2000/svg";
-  const XLINK_NS = "http://www.w3.org/1999/xlink";
-
-  function buildSvgAvatar(id, sizePx) {
-    const svg = document.createElementNS(SVG_NS, "svg");
-    svg.setAttribute("viewBox", "0 0 200 200");
-    if (sizePx) {
-      svg.setAttribute("width", String(sizePx));
-      svg.setAttribute("height", String(sizePx));
+  const CHAR_DEFS = {
+    hero: {
+      id: 'pierogi-hero',
+      label: 'Pierogi Hero',
+      moods: {
+        neutral: 'hero-neutral-1.svg',
+        win: 'hero-win-1.svg',
+        milestone: 'hero-milestone-1.svg',
+        tired: 'hero-tired-1.svg',
+        embarrassed: 'hero-embarrassed-1.svg',
+        inactive: 'hero-inactive-1.svg'
+      }
+    },
+    chonky: {
+      id: 'pierogi-chonky',
+      label: 'Pierogi Chonky',
+      moods: {
+        neutral: 'chonky-neutral-1.svg',
+        win: 'chonky-win-1.svg',
+        milestone: 'chonky-milestone-1.svg',
+        tired: 'chonky-tired-1.svg',
+        embarrassed: 'chonky-embarrassed-1.svg',
+        inactive: 'chonky-inactive-1.svg'
+      }
+    },
+    tall: {
+      id: 'pierogi-tall',
+      label: 'Pierogi Tall',
+      moods: {
+        neutral: 'tall-neutral-1.svg',
+        win: 'tall-win-1.svg',
+        milestone: 'tall-milestone-1.svg',
+        tired: 'tall-tired-1.svg',
+        embarrassed: 'tall-embarrassed-1.svg',
+        inactive: 'tall-inactive-1.svg'
+      }
+    },
+    junior: {
+      id: 'pierogi-junior',
+      label: 'Pierogi Junior',
+      moods: {
+        neutral: 'junior-neutral-1.svg',
+        win: 'junior-win-1.svg',
+        milestone: 'junior-milestone-1.svg',
+        tired: 'junior-tired-1.svg',
+        embarrassed: 'junior-embarrassed-1.svg',
+        inactive: 'junior-inactive-1.svg'
+      }
     }
+  };
 
-    // Body (from pierogi.svg symbol)
-    const bodySymbolId = `pierogi-${id}`;
-    const use = document.createElementNS(SVG_NS, "use");
-    const bodyHref = `${SPRITE_PATH}#${bodySymbolId}`;
-    use.setAttributeNS(XLINK_NS, "xlink:href", bodyHref);
-    use.setAttribute("href", bodyHref);
-    svg.appendChild(use);
+  const DEFAULT_CHAR = 'hero';
+  const DEFAULT_MOOD = 'neutral';
 
-    // Face (separate SVG, same 200x200 viewBox)
-    const img = document.createElementNS(SVG_NS, "image");
-    const faceHref = `${FACE_PATH}${id}-${DEFAULT_FACE}.svg`;
-    img.setAttributeNS(XLINK_NS, "xlink:href", faceHref);
-    img.setAttribute("href", faceHref);
-    img.setAttribute("x", "0");
-    img.setAttribute("y", "0");
-    img.setAttribute("width", "200");
-    img.setAttribute("height", "200");
-    svg.appendChild(img);
-
-    return svg;
+  function pathFor(charId, mood) {
+    const cid = (charId || DEFAULT_CHAR);
+    const m = (mood || DEFAULT_MOOD);
+    const def = CHAR_DEFS[cid] || CHAR_DEFS[DEFAULT_CHAR];
+    const file = (def.moods[m] || def.moods[DEFAULT_MOOD]);
+    return DOC_BASE + 'static/avatar/' + file;
   }
 
-  function initProfileAvatar(options) {
-    const initialId = (options && options.initialId) || "hero";
-    const onChange  = (options && options.onChange) || (() => {});
+  // Flat list for profile avatar grid (always neutral pose).
+  const AVATAR_LIST = Object.keys(CHAR_DEFS).map(charId => {
+    const def = CHAR_DEFS[charId];
+    return {
+      id: def.id,                // stored in profile.avatar_id
+      char: charId,              // 'hero' | 'chonky' | 'tall' | 'junior'
+      mood: 'neutral',
+      label: def.label,
+      src: pathFor(charId, 'neutral')
+    };
+  });
 
-    const bigEl    = document.getElementById("avatarBig");
-    const openBtn  = document.getElementById("chooseAvatarBtn");
-    const modal    = document.getElementById("avatarModal");
-    const grid     = document.getElementById("avatarGrid");
-    const closeBtn = document.getElementById("avatarModalClose");
-    const doneBtn  = document.getElementById("avatarModalDone");
+  function findByAvatarId(id) {
+    if (!id) return null;
 
-    if (!bigEl || !openBtn || !modal || !grid) {
-      return;
+    // Exact match (pierogi-hero, etc.)
+    const direct = AVATAR_LIST.find(a => a.id === id);
+    if (direct) return direct;
+
+    // Legacy ids (hero, chonky, tall, junior) → map to new ids
+    if (CHAR_DEFS[id]) {
+      const def = CHAR_DEFS[id];
+      return {
+        id: def.id,
+        char: id,
+        mood: 'neutral',
+        label: def.label,
+        src: pathFor(id, 'neutral')
+      };
     }
 
-    let currentId = AVATARS.some(a => a.id === initialId) ? initialId : "hero";
+    return null;
+  }
 
-    function renderBig() {
-      bigEl.innerHTML = "";
-      bigEl.appendChild(buildSvgAvatar(currentId, 88));
+  function renderAvatar(target, charId, mood) {
+    const el = (typeof target === 'string')
+      ? document.getElementById(target)
+      : target;
+    if (!el) return;
+
+    const cid = (charId && CHAR_DEFS[charId]) ? charId : DEFAULT_CHAR;
+    const m = mood || DEFAULT_MOOD;
+    const def = CHAR_DEFS[cid] || CHAR_DEFS[DEFAULT_CHAR];
+    const src = pathFor(cid, m);
+
+    // Clear & inject <img>. The container (avatar-big, previewBox, etc.)
+    // provides rounded corners / background.
+    while (el.firstChild) el.removeChild(el.firstChild);
+
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = def.label + ' (' + m + ')';
+    img.style.display = 'block';
+    img.style.maxWidth = '100%';
+    img.style.maxHeight = '100%';
+    img.style.margin = '0 auto';
+
+    el.appendChild(img);
+  }
+
+  // ----- Profile page integration -----
+  function initProfileAvatar(opts) {
+    const doc = document;
+    const big = doc.getElementById('avatarBig');
+    const openBtn = doc.getElementById('chooseAvatarBtn');
+    const modal = doc.getElementById('avatarModal');
+    const grid = doc.getElementById('avatarGrid');
+    const closeBtn = doc.getElementById('avatarModalClose');
+    const doneBtn = doc.getElementById('avatarModalDone');
+
+    if (!big || !openBtn || !modal || !grid) return;
+
+    let current = null;
+
+    // Initial selection from stored avatar_id (server/local) if present
+    if (opts && opts.initialId) {
+      current = findByAvatarId(opts.initialId);
+    }
+    if (!current) {
+      current = AVATAR_LIST[0];
     }
 
-    function renderGrid() {
-      grid.innerHTML = "";
-      AVATARS.forEach(av => {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "ava" + (av.id === currentId ? " active" : "");
-        btn.setAttribute("data-id", av.id);
-        btn.setAttribute("role", "option");
-        btn.setAttribute("aria-label", av.label);
+    // Render big avatar
+    renderAvatar(big, current.char, current.mood);
 
-        const svg = buildSvgAvatar(av.id, 56);
-        btn.appendChild(svg);
+    function syncGrid() {
+      const nodes = grid.querySelectorAll('[data-avatar-id]');
+      nodes.forEach(node => {
+        const id = node.getAttribute('data-avatar-id');
+        node.classList.toggle('active', id === current.id);
+      });
+    }
 
-        const label = document.createElement("span");
-        label.className = "tiny";
-        label.textContent = av.label;
-        btn.appendChild(label);
+    function buildGridOnce() {
+      if (grid.dataset.wired === '1') return;
+      grid.dataset.wired = '1';
+      grid.innerHTML = '';
 
-        btn.addEventListener("click", () => {
-          currentId = av.id;
-          renderBig();
-          renderGrid();
+      AVATAR_LIST.forEach(a => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'ava';
+        btn.setAttribute('data-avatar-id', a.id);
+        btn.setAttribute('aria-label', a.label);
+
+        const thumb = document.createElement('img');
+        thumb.src = a.src;
+        thumb.alt = a.label;
+        thumb.style.maxWidth = '100%';
+        thumb.style.maxHeight = '100%';
+        thumb.style.display = 'block';
+
+        btn.appendChild(thumb);
+
+        btn.addEventListener('click', () => {
+          current = a;
+          renderAvatar(big, current.char, current.mood);
+          syncGrid();
         });
 
         grid.appendChild(btn);
       });
+
+      syncGrid();
     }
 
     function openModal() {
-      modal.classList.add("show");
-      modal.setAttribute("aria-hidden", "false");
-      document.body.classList.add("modal-open");
+      buildGridOnce();
+      modal.classList.add('show');
+      document.body.classList.add('modal-open');
+      syncGrid();
     }
-
     function closeModal() {
-      modal.classList.remove("show");
-      modal.setAttribute("aria-hidden", "true");
-      document.body.classList.remove("modal-open");
+      modal.classList.remove('show');
+      document.body.classList.remove('modal-open');
     }
 
-    openBtn.addEventListener("click", openModal);
-    if (closeBtn) {
-      closeBtn.addEventListener("click", closeModal);
-    }
-    if (doneBtn) {
-      doneBtn.addEventListener("click", () => {
-        onChange(currentId);
-        closeModal();
-      });
-    }
-
-    // Click on dark overlay to close
-    modal.addEventListener("click", (ev) => {
-      if (ev.target === modal) {
-        closeModal();
+    openBtn.addEventListener('click', openModal);
+    if (closeBtn) closeBtn.addEventListener('click', closeModal);
+    if (doneBtn) doneBtn.addEventListener('click', () => {
+      closeModal();
+      if (opts && typeof opts.onChange === 'function') {
+        opts.onChange(current.id);
       }
     });
 
-    // Initial render
-    renderBig();
-    renderGrid();
+    // Optional helper if you ever need current selection in other scripts
+    AvatarChooser.current = function () {
+      return Object.assign({}, current);
+    };
   }
 
-  return { initProfileAvatar };
-})();
+  const AvatarChooser = {
+    list: AVATAR_LIST,
+    renderAvatar,
+    initProfileAvatar,
+    pathFor
+  };
+
+  global.AvatarChooser = AvatarChooser;
+  // Simple library handle for any other pages that just want the list.
+  global.AvatarLib = { list: AVATAR_LIST };
+})(window);
