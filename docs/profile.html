@@ -25,45 +25,89 @@
       --focus:0 0 0 3px rgba(45,108,223,.35);
     }
     @media (prefers-color-scheme: dark){
-      :root{ --bg:#0b0c10; --card:#121418; --text:#e7e9ee; --muted:#a7b0bf; --border:#1e2230; --shadow:0 6px 22px rgba(0,0,0,.35); --gold:#ffd35a; --gold-soft:#5a4700; }
+      :root{
+        --bg:#0b0c10; --card:#121418; --text:#e7e9ee; --muted:#a7b0bf; --border:#1e2230;
+        --shadow:0 6px 22px rgba(0,0,0,.35); --gold:#ffd35a; --gold-soft:#5a4700;
+      }
     }
     *{ box-sizing:border-box }
-    body{ font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Ubuntu,Helvetica,Arial; background:var(--bg); color:var(--text); margin:0; }
+    body{
+      font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Ubuntu,Helvetica,Arial;
+      background:var(--bg); color:var(--text); margin:0;
+    }
 
-    main{ max-width:1100px; margin:16px auto 90px; padding:0 16px; display:grid; gap:16px; grid-template-columns:1fr 1fr; }
-    @media (max-width:960px){ main{ grid-template-columns:1fr; } }
+    main{
+      max-width:1100px; margin:16px auto 90px; padding:0 16px;
+      display:grid; gap:16px; grid-template-columns:1fr 1fr;
+    }
+    @media (max-width:960px){
+      main{ grid-template-columns:1fr; }
+    }
 
-    .card{ background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:var(--pad); box-shadow:var(--shadow) }
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:var(--pad);
+      box-shadow:var(--shadow);
+    }
     h2{ margin:0 0 8px; font-size:clamp(20px,4.8vw,28px) }
     h3{ margin:0 0 8px; font-size:clamp(16px,2.6vw,18px) }
     .muted{ color:var(--muted) }
-    .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap }
+    .row{
+      display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+    }
+    .row-between{
+      display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+    }
     .col{ display:flex; flex-direction:column; gap:8px }
     label{ font-size:13px; color:var(--muted) }
-    input[type="text"], input[type="email"], input[type="number"], input[type="file"]{
-      width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:10px; background:var(--card); color:var(--text);
+    input[type="text"], input[type="email"], input[type="number"]{
+      width:100%; padding:10px 12px; border:1px solid var(--border);
+      border-radius:10px; background:var(--card); color:var(--text);
     }
-    .btn{ display:inline-flex; align-items:center; justify-content:center; height:var(--tap); padding:0 14px; border-radius:10px; border:1px solid var(--border); background:var(--card); color:var(--text); font-weight:600; text-decoration:none; cursor:pointer }
+    .btn{
+      display:inline-flex; align-items:center; justify-content:center;
+      height:var(--tap); padding:0 14px;
+      border-radius:10px; border:1px solid var(--border);
+      background:var(--card); color:var(--text);
+      font-weight:600; text-decoration:none; cursor:pointer;
+    }
     .btn-primary{ background:var(--brand); color:#fff; border-color:transparent }
     .btn-danger{ border-color:#e7b0b0; color:#8d1e1e; background:rgba(255,0,0,.06) }
+    .btn-ghost{
+      background:transparent;
+      border-color:transparent;
+      color:var(--muted);
+    }
     .btn:focus{ outline:none; box-shadow:var(--focus) }
 
     .avatar-big{
       width:88px; height:88px; border-radius:18px; border:1px solid var(--border);
-      background:linear-gradient(135deg,#e6edff,#fff5db); display:flex; align-items:center; justify-content:center; font-size:46px;
+      background:linear-gradient(135deg,#e6edff,#fff5db);
+      display:flex; align-items:center; justify-content:center;
+      font-size:46px;
     }
-
-    .avatars{ display:grid; grid-template-columns:repeat(6,1fr); gap:10px }
-    @media (max-width:520px){ .avatars{ grid-template-columns:repeat(4,1fr); } }
+    .avatars{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px }
+    @media (max-width:520px){ .avatars{ grid-template-columns:repeat(3,1fr); } }
     .ava{
-      border:1px solid var(--border); border-radius:12px; background:var(--card); height:56px; display:flex; align-items:center; justify-content:center;
-      cursor:pointer; font-size:28px; transition:transform .05s ease;
+      border:1px solid var(--border); border-radius:12px;
+      background:var(--card); padding:6px 4px;
+      height:70px; display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      cursor:pointer; font-size:26px;
+      transition:transform .05s ease, box-shadow .08s ease, border-color .08s ease;
     }
-    .ava:hover{ transform: translateY(-1px); }
-    .ava.active{ outline:2px solid rgba(45,108,223,.35) }
-
-    .bar{ height:10px; background:#e9ecf6; border-radius:999px; overflow:hidden; border:1px solid var(--border) }
-    .bar > i{ display:block; height:100%; width:0%; background:var(--brand); }
+    .ava span.label{
+      font-size:11px;
+      margin-top:2px;
+      color:var(--muted);
+    }
+    .ava:hover{ transform:translateY(-1px); box-shadow:var(--shadow); }
+    .ava.active{
+      outline:2px solid rgba(45,108,223,.4);
+      border-color:rgba(45,108,223,.6);
+    }
 
     .coinstack{ width:24px; height:20px; display:inline-block; vertical-align:middle }
     .coinstack svg{ width:100%; height:100% }
@@ -152,11 +196,24 @@
       box-shadow:var(--focus);
     }
 
-    nav.bottom{ position:fixed; left:0; right:0; bottom:0; background:var(--card); border-top:1px solid var(--border); display:flex; justify-content:space-around; padding:6px 8px; gap:8px; }
-    nav.bottom a{ flex:1; text-align:center; padding:8px; text-decoration:none; color:var(--text); border-radius:10px; display:flex; flex-direction:column; align-items:center; gap:4px; font-size:12px }
+    nav.bottom{
+      position:fixed; left:0; right:0; bottom:0;
+      background:var(--card);
+      border-top:1px solid var(--border);
+      display:flex; justify-content:space-around;
+      padding:6px 8px; gap:8px;
+    }
+    nav.bottom a{
+      flex:1; text-align:center; padding:8px; text-decoration:none;
+      color:var(--text); border-radius:10px;
+      display:flex; flex-direction:column; align-items:center; gap:4px;
+      font-size:12px;
+    }
     nav.bottom a svg{ width:20px; height:20px }
     nav.bottom a.active{ background:rgba(45,108,223,.12); color:var(--brand) }
-    @supports(padding: max(0px)){ nav.bottom{ padding-bottom: max(6px, env(safe-area-inset-bottom)) } }
+    @supports(padding: max(0px)){
+      nav.bottom{ padding-bottom: max(6px, env(safe-area-inset-bottom)) }
+    }
   </style>
 </head>
 <body>
@@ -164,7 +221,15 @@
   <main>
     <!-- Left column -->
     <section class="card">
-      <h2>Profile</h2>
+      <!-- Header row with Profile + Cancel / Save & exit -->
+      <div class="row-between" style="margin-bottom:8px">
+        <h2 style="margin:0">Profile</h2>
+        <div class="row" style="gap:8px; justify-content:flex-end">
+          <button id="cancelBtn" class="btn btn-ghost">Cancel</button>
+          <button id="saveExitBtn" class="btn btn-primary">Save &amp; exit</button>
+        </div>
+      </div>
+
       <div class="row" style="margin-top:6px">
         <div id="avatarBig" class="avatar-big" aria-label="Your avatar">🙂</div>
         <div class="col" style="flex:1; min-width:220px">
@@ -188,7 +253,9 @@
         <a class="btn" href="reset.html">Reset password</a>
         <button id="logoutBtn" class="btn">Log out</button>
       </div>
+
       <div class="tiny" style="margin-top:6px" id="joinDate">Joined —</div>
+      <div class="tiny" id="saveMsg" style="margin-top:4px; text-align:right;"></div>
     </section>
 
     <!-- Goals -->
@@ -220,17 +287,10 @@
               </svg>
             </span>
             <span id="goalHint" class="tiny">
-              Used for your weekly progress bar & treasure chest.
+              Used for your weekly progress bar &amp; treasure chest.
             </span>
           </div>
         </div>
-      </div>
-
-      <!-- Unified Save & exit / Cancel -->
-      <div class="row" style="margin-top:10px; justify-content:flex-end; gap:8px">
-        <span id="saveMsg" class="tiny" style="margin-right:auto;"></span>
-        <button id="cancelBtn" class="btn">Cancel</button>
-        <button id="saveBtn" class="btn btn-primary">Save &amp; exit</button>
       </div>
     </section>
 
@@ -251,9 +311,9 @@
         <div>
           <label for="ttsChoice">Polish voice</label>
           <select id="ttsChoice" style="width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:10px; background:var(--card); color:var(--text);">
-            <option value="azure:pl-PL-ZofiaNeural">Zofia — natural & warm (Azure)</option>
+            <option value="azure:pl-PL-ZofiaNeural">Zofia — natural &amp; warm (Azure)</option>
             <option value="azure:pl-PL-MarekNeural">Marek — neutral (Azure)</option>
-            <option value="gtts:pl">Andrzej — simple & offline (gTTS)</option>
+            <option value="gtts:pl">Andrzej — simple &amp; offline (gTTS)</option>
           </select>
           <div class="tiny" style="margin-top:6px">
             Zofia and Marek use Azure neural TTS when available. Andrzej uses the simpler gTTS fallback.
@@ -335,13 +395,13 @@
     <a href="groups.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="8" cy="8" r="3" stroke-width="1.5"/><path d="M2 20v-1c0-3 3-5 6-5" stroke-width="1.5" stroke-linecap="round"/><circle cx="16" cy="10" r="3" stroke-width="1.5"/><path d="M11 20v-1c0-2.5 2.5-4.5 5-5" stroke-width="1.5" stroke-linecap="round"/></svg><span>Groups</span></a>
   </nav>
 
-  <!-- Load runtime config first, then API helpers -->
+  <!-- Load runtime config first, then API helpers (avatar.js is optional) -->
   <script src="static/js/app-config.js"></script>
   <script src="static/js/api.js"></script>
   <script src="static/js/avatar.js"></script>
 
   <script>
-    // Require sign-in (redirects to login.html on 401)
+    // ---------- Helpers ----------
     (async () => { await api.requireAuth('login.html'); })();
 
     function shortDate(iso){
@@ -352,9 +412,9 @@
     function msg(el, t){
       if (!el) return;
       el.textContent = t;
+      if (!t) return;
       setTimeout(()=>{ el.textContent=''; }, 1800);
     }
-
     function loadLocalProfile(){
       try { return JSON.parse(localStorage.getItem('lp.profile') || '{}'); } catch(_){ return {}; }
     }
@@ -369,6 +429,82 @@
       study_mode: "path" // "path" | "self"
     };
 
+    // -------- Avatar list (pierogi-first, fallback to AvatarLib, then old set) --------
+    const BUILTIN_AVATARS = [
+      { id: 'pierogi-hero',   glyph: '🥟', label: 'Pierogi hero' },
+      { id: 'pierogi-chonky', glyph: '🥟', label: 'Chonky pierogi' },
+      { id: 'pierogi-tall',   glyph: '🥟', label: 'Tall pierogi' },
+      { id: 'pierogi-junior', glyph: '🥟', label: 'Junior pierogi' },
+      { id: 'scout', glyph:'🧭', label:'Scout' },
+      { id: 'fox',   glyph:'🦊', label:'Fox' },
+      { id: 'owl',   glyph:'🦉', label:'Owl' },
+      { id: 'dragon',glyph:'🐉', label:'Dragon' }
+    ];
+
+    const AVATARS = (window.AvatarLib && Array.isArray(window.AvatarLib.list) && window.AvatarLib.list.length)
+      ? window.AvatarLib.list
+      : BUILTIN_AVATARS;
+
+    function findAvatar(id){
+      return AVATARS.find(a => a.id === id) || AVATARS[0];
+    }
+
+    function updateAvatarBig(id){
+      const a = findAvatar(id);
+      const big = document.getElementById('avatarBig');
+      if (!big) return;
+      big.textContent = a.glyph || '🙂';
+      big.setAttribute('data-avatar-id', a.id);
+    }
+
+    function renderAvatarGrid(selectedId){
+      const grid = document.getElementById('avatarGrid');
+      if (!grid) return;
+      grid.innerHTML = '';
+      AVATARS.forEach(a => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'ava' + (a.id === selectedId ? ' active' : '');
+        btn.setAttribute('role','option');
+        btn.setAttribute('aria-label', a.label || a.id);
+        btn.dataset.avatarId = a.id;
+
+        const emojiSpan = document.createElement('span');
+        emojiSpan.textContent = a.glyph || '🙂';
+        const labelSpan = document.createElement('span');
+        labelSpan.className = 'label';
+        labelSpan.textContent = a.label || a.id;
+
+        btn.appendChild(emojiSpan);
+        btn.appendChild(labelSpan);
+
+        btn.addEventListener('click', () => {
+          state.avatar_id = a.id;
+          updateAvatarBig(a.id);
+          // mark active
+          document.querySelectorAll('.ava').forEach(el => {
+            el.classList.toggle('active', el.dataset.avatarId === a.id);
+          });
+        });
+
+        grid.appendChild(btn);
+      });
+    }
+
+    function openAvatarModal(){
+      const overlay = document.getElementById('avatarModal');
+      if (!overlay) return;
+      renderAvatarGrid(state.avatar_id || (AVATARS[0] && AVATARS[0].id) || 'pierogi-hero');
+      overlay.classList.add('show');
+      document.body.classList.add('modal-open');
+    }
+    function closeAvatarModal(){
+      const overlay = document.getElementById('avatarModal');
+      if (!overlay) return;
+      overlay.classList.remove('show');
+      document.body.classList.remove('modal-open');
+    }
+
     // -------- Goals: study mode & weekly goal --------
     function resolveStudyModeFromProfile(loc, weeklyGoalValue) {
       const src = loc || {};
@@ -380,7 +516,6 @@
         return fromProfile;
       }
 
-      // Heuristic for older profiles: 500 → path, anything else → self-paced
       const goal = Number(weeklyGoalValue || src.weekly_goal || 500) || 500;
       return goal === 500 ? "path" : "self";
     }
@@ -440,29 +575,10 @@
 
       const loc = loadLocalProfile();
 
-      // Decide initial avatar (server → local → default)
-      const initialAvatar = (me && me.avatar_id) || loc.avatar_id || 'scout';
+      // Avatar
+      const initialAvatar = (me && me.avatar_id) || loc.avatar_id || (AVATARS[0] && AVATARS[0].id) || 'pierogi-hero';
       state.avatar_id = initialAvatar;
-
-      // Wire avatar chooser modal (from avatar.js)
-      if (window.AvatarChooser && typeof AvatarChooser.initProfileAvatar === 'function') {
-        AvatarChooser.initProfileAvatar({
-          initialId: initialAvatar,
-          onChange: (id) => {
-            state.avatar_id = id;
-            // keep local profile in sync so other pages can read it
-            try {
-              const prof = loadLocalProfile() || {};
-              prof.avatar_id = id;
-              saveLocalProfile(prof);
-            } catch (_) {}
-          }
-        });
-      } else {
-        // Fallback: just show the emoji
-        const big = document.getElementById('avatarBig');
-        if (big) big.textContent = '🙂';
-      }
+      updateAvatarBig(initialAvatar);
 
       // Basic profile fields
       const nameVal =
@@ -506,7 +622,7 @@
       const uiLangEl = document.getElementById('uiLang');
       if (uiLangEl) uiLangEl.value = uiLang;
 
-      // TTS prefs from local profile (no DB dependency)
+      // TTS prefs from local profile
       const tprov = (loc.tts_provider || '').toLowerCase();   // 'azure' | 'gtts' | ''
       const tvox  = (loc.tts_voice || '');
       const choiceEl = document.getElementById('ttsChoice');
@@ -524,14 +640,19 @@
           val = 'gtts:pl';
         }
 
-        // Default if nothing stored yet
         choiceEl.value = val || 'azure:pl-PL-MarekNeural';
       }
     }
 
-    // -------- Unified Save & exit (whole profile) --------
-    document.getElementById('saveBtn').addEventListener('click', async () => {
+    // -------- Save everything --------
+    async function saveProfileAndMaybeExit(exitAfter){
+      const saveBtn = document.getElementById('saveExitBtn');
       const saveMsg = document.getElementById('saveMsg');
+      if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving…';
+      }
+
       const weeklyInput = document.getElementById('weeklyGoal');
       const mode = (state.study_mode === 'self' || state.study_mode === 'path')
         ? state.study_mode
@@ -544,39 +665,23 @@
       }
 
       const displayName = (document.getElementById('displayName').value || '').trim();
-      const emailVal = (document.getElementById('email') && document.getElementById('email').value) || '';
       const uiLangEl = document.getElementById('uiLang');
       const choiceEl = document.getElementById('ttsChoice');
 
       // Derive TTS provider/voice from current dropdown
-      let ttsProvider = '';
-      let ttsVoice = '';
+      let ttsProvider = null;
+      let ttsVoice = null;
       if (choiceEl) {
         const raw = choiceEl.value || '';
         if (raw.startsWith('azure:')) {
           ttsProvider = 'azure';
-          ttsVoice = raw.slice('azure:'.length); // e.g. pl-PL-MarekNeural
+          ttsVoice = raw.slice('azure:'.length);
         } else if (raw.startsWith('gtts:')) {
           ttsProvider = 'gtts';
-          ttsVoice = ''; // implied single Polish voice
+          ttsVoice = '';
         }
       }
 
-      // Pronunciation difficulty – prefer global userPrefs, then local profile
-      const loc = loadLocalProfile() || {};
-      let pronDifficulty = 'normal';
-      try {
-        pronDifficulty =
-          (window.userPrefs && window.userPrefs.pronDifficulty) ||
-          (loc.preferences && loc.preferences.pronDifficulty) ||
-          'normal';
-      } catch (_) {}
-      pronDifficulty = String(pronDifficulty || 'normal').toLowerCase();
-      if (pronDifficulty !== 'easy' && pronDifficulty !== 'normal' && pronDifficulty !== 'hard') {
-        pronDifficulty = 'normal';
-      }
-
-      // Build server payload (only fields we know it accepts)
       const body = {
         display_name: displayName,
         name: displayName,
@@ -584,8 +689,11 @@
         study_mode: mode,
         avatar_id: state.avatar_id,
         ui_lang: uiLangEl ? uiLangEl.value : 'en'
-        // tts_* and preferences are kept local; server may ignore or reject them
       };
+      if (ttsProvider) {
+        body.tts_provider = ttsProvider;
+        body.tts_voice = ttsVoice || '';
+      }
 
       let ok = false;
       try {
@@ -600,54 +708,36 @@
       state.weekly_goal = weeklyGoal;
       state.study_mode = mode;
 
-      // Merge + persist full local profile snapshot
-      const prefs = (loc.preferences && typeof loc.preferences === 'object')
-        ? Object.assign({}, loc.preferences)
-        : {};
-      prefs.pronDifficulty = pronDifficulty;
-
+      const loc = loadLocalProfile();
       const merged = Object.assign({}, loc, body, {
-        email: emailVal,
-        created_at: loc.created_at || new Date().toISOString(),
-        tts_provider: ttsProvider,
-        tts_voice: ttsVoice,
-        preferences: prefs
+        email: document.getElementById('email').value,
+        created_at: loc.created_at || new Date().toISOString()
       });
 
       saveLocalProfile(merged);
 
-      // Keep global userPrefs in sync
-      try {
-        window.userPrefs = window.userPrefs || {};
-        window.userPrefs.pronDifficulty = pronDifficulty;
-      } catch (_) {}
-
       msg(saveMsg, ok ? 'Saved!' : 'Saved locally (offline)');
-      // Exit after a short delay so the user sees the toast
-      setTimeout(() => {
-        window.location.href = 'dashboard.html';
-      }, 350);
-    });
 
-    // -------- Cancel (exit without extra writes) --------
-    document.getElementById('cancelBtn').addEventListener('click', () => {
-      // Just leave the page; local pron-diff may already be updated by chips,
-      // but we don't touch lp.profile or call the API here.
-      window.location.href = 'dashboard.html';
-    });
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save & exit';
+      }
 
-    // --- Pronunciation difficulty prefs (local only, shared across modes) ---
+      if (exitAfter) {
+        window.location.href = 'index.html';
+      }
+    }
+
+    // -------- Pronunciation difficulty (local only) --------
     (function () {
       const root = document.getElementById('pronDiffChips');
       if (!root) return;
 
-      // Read current profile from localStorage
       let prof = loadLocalProfile() || {};
       const prefs = (prof.preferences && typeof prof.preferences === 'object')
         ? prof.preferences
         : {};
 
-      // Prefer global userPrefs (from app-config.js), then local preferences
       let current = (
         (window.userPrefs && window.userPrefs.pronDifficulty) ||
         prefs.pronDifficulty ||
@@ -665,11 +755,6 @@
         });
       }
 
-      // Initialize UI + global userPrefs
-      try {
-        window.userPrefs = window.userPrefs || {};
-        window.userPrefs.pronDifficulty = current;
-      } catch (_) {}
       syncUI();
 
       root.addEventListener('click', (ev) => {
@@ -682,7 +767,6 @@
         current = d;
         syncUI();
 
-        // Update local profile immediately so other pages can read it
         try {
           prof = loadLocalProfile() || {};
           if (!prof.preferences || typeof prof.preferences !== 'object') {
@@ -692,7 +776,6 @@
           saveLocalProfile(prof);
         } catch (_e) {}
 
-        // Update global userPrefs for this page
         try {
           window.userPrefs = window.userPrefs || {};
           window.userPrefs.pronDifficulty = current;
@@ -700,14 +783,44 @@
       });
     })();
 
-    // -------- Logout --------
+    // -------- Wire controls & start --------
+    document.getElementById('saveExitBtn').addEventListener('click', (e) => {
+      e.preventDefault();
+      saveProfileAndMaybeExit(true);
+    });
+
+    document.getElementById('cancelBtn').addEventListener('click', (e) => {
+      e.preventDefault();
+      window.location.href = 'index.html';
+    });
+
+    document.getElementById('chooseAvatarBtn').addEventListener('click', (e) => {
+      e.preventDefault();
+      openAvatarModal();
+    });
+
+    document.getElementById('avatarModalClose').addEventListener('click', (e) => {
+      e.preventDefault();
+      closeAvatarModal();
+    });
+    document.getElementById('avatarModalDone').addEventListener('click', (e) => {
+      e.preventDefault();
+      closeAvatarModal();
+    });
+    document.getElementById('avatarModal').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) {
+        closeAvatarModal();
+      }
+    });
+
+    // Logout
     document.getElementById('logoutBtn').addEventListener('click', async ()=>{
       try{ await api.fetch('/api/logout', {method:'POST'});}catch(_){}
       api.clearToken();
       location.href = 'login.html';
     });
 
-    // -------- Delete account --------
+    // Delete account
     document.getElementById('deleteBtn').addEventListener('click', async ()=>{
       if(!confirm('Delete your account? This cannot be undone.')) return;
       try{
