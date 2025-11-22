@@ -421,16 +421,32 @@
 
       // Build learning snapshot
       try{
+        // Fetch user's library so snapshot only shows sets still in their library
+        let allowedNames = null;
+        try{
+          const libRes = await api.fetch('/api/my/sets');
+          if (libRes.ok){
+            const lib = await libRes.json();
+            if (Array.isArray(lib)){
+              allowedNames = new Set(
+                lib.map(s => (s.name || '').trim()).filter(Boolean)
+              );
+            }
+          }
+        }catch(_){}
+
         const sr = await api.fetch('/api/my/scores?limit=200');
         const raw = sr.ok ? await sr.json() : [];
         const groups = new Map();
         for (const r of raw){
           if (!r.set_name) continue;
+          if (allowedNames && !allowedNames.has(r.set_name)) continue;
           const mode = (r.mode || 'flashcards').toLowerCase();
           const key  = `${r.set_name}│${mode}`;
           if (!groups.has(key)) groups.set(key, []);
           groups.get(key).push(r);
         }
+
         const srMap = loadSR();
         const rows=[], seenKey=new Set();
         for (const [key, evts] of groups){
@@ -463,15 +479,19 @@
         }
         if(resume){
           const k = `${resume.set_name}│${resume.mode}`;
-          if(!seenKey.has(k)){
+          const inLib = !allowedNames || allowedNames.has(resume.set_name);
+          if(inLib && !seenKey.has(k)){
             const setName=resume.set_name, mode=resume.mode, href=pathFor(mode, setName);
             let ratingCell = `<div class="nowrap" title="Unrated">${stars(null)}</div>`;
             if(!myRatings[setName]) ratingCell += `<div class="tiny"><a href="javascript:void(0)" onclick="goRate(${JSON.stringify(setName)})">add your rating</a></div>`;
             rows.unshift({ setName, mode, trials:0, top:0, href,
-                           statusHtml:`<a class="badge blue" href="${resume.href}">▶ Resume</a>`,
-                           ratingCell, latest: Date.now() });
+                          statusHtml:`<a class="badge blue" href="${resume.href}">▶ Resume</a>`,
+                          ratingCell,
+                          latest: Date.now()
+            });
           }
         }
+
         saveSR(srMap);
 
         const urgencyRank = (html)=>{
