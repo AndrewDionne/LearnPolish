@@ -2,148 +2,317 @@
 <svg
   xmlns="http://www.w3.org/2000/svg"
   xmlns:xlink="http://www.w3.org/1999/xlink"
-  viewBox="0 0 200 200">
-
+  viewBox="0 0 500 500">
+  
   <defs>
     <style>
+      /* Main dough body */
       .pg-shell {
-        fill: #f9d7a3;
-        stroke: #d29b54;
-        stroke-width: 4;
+        fill: #f6d19b;          /* warm dough */
+        stroke: #251208;        /* dark outline */
+        stroke-width: 4.5;
         stroke-linejoin: round;
         stroke-linecap: round;
       }
+      /* Crimped top edge */
       .pg-ridge {
-        fill: #f4c88c;
-        stroke: #d29b54;
-        stroke-width: 4;
+        fill: #f0b872;
+        stroke: #251208;
+        stroke-width: 4.5;
         stroke-linejoin: round;
         stroke-linecap: round;
       }
+      /* Drop shadow under the pierogi */
       .pg-shadow {
         fill: #000000;
-        opacity: 0.12;
+        opacity: 0.16;
       }
+      /* Arms / legs */
       .pg-limb {
-        stroke: #4b3422;
+        stroke: #251208;
         stroke-width: 6;
         stroke-linecap: round;
       }
+      /* Extra shading highlights for a more 3D look */
+      .pg-shell-shade {
+        fill: #e0a562;
+        opacity: 0.55;
+      }
+      .pg-shell-highlight {
+        fill: #ffe4b2;
+        opacity: 0.9;
+      }
+      .pg-crease {
+        fill: none;
+        stroke: #251208;
+        stroke-width: 2;
+        stroke-linecap: round;
+        opacity: 0.45;
+      }
+      .pg-speck {
+        fill: #e0a562;
+        opacity: 0.85;
+      }
     </style>
 
-    <!-- HERO: balanced -->
+    <!-- HERO: primary character (use this as template for others if needed) -->
     <symbol id="pierogi-hero" viewBox="0 0 200 200">
-      <!-- shadow -->
-      <ellipse class="pg-shadow" cx="100" cy="158" rx="46" ry="10"/>
+      <!-- Soft ground shadow -->
+      <ellipse class="pg-shadow" cx="104" cy="158" rx="54" ry="12"/>
 
-      <!-- shell (half-moon) -->
+      <!-- Main shell (half-moon dumpling) -->
       <path class="pg-shell"
         d="
-          M 40 96
-          Q 100 35 160 96
-          Q 152 138 100 152
-          Q 48 138 40 96 Z" />
+          M 38 118
+          Q 54 96 72 86
+          Q 90 76 110 75
+          Q 135 75 155 88
+          Q 168 96 176 110
+          Q 161 144 122 156
+          Q 104 162 86 158
+          Q 55 150 38 118 Z" />
 
-      <!-- crimped ridge (top hair) -->
+      <!-- Crimped ridge along the top -->
       <path class="pg-ridge"
         d="
-          M 48 88
-          Q 60 60 72 88
-          Q 82 60 94 88
-          Q 106 60 118 88
-          Q 130 60 142 88
-          Q 148 76 158 92
-          Q 100 40 42 92 Z" />
+          M 45 112
+          Q 48 100 58 95
+          Q 61 88 70 86
+          Q 76 81 86 80
+          Q 93 76 103 77
+          Q 112 75 121 78
+          Q 130 79 136 84
+          Q 145 86 150 94
+          Q 158 98 163 108
+          Q 140 90 120 86
+          Q 104 82 88 84
+          Q 68 86 45 112 Z" />
 
-      <!-- legs -->
-      <path class="pg-limb" d="M 82 148 L 78 164" />
-      <path class="pg-limb" d="M 118 148 L 122 164" />
+      <!-- Inner shadow band (gives volume) -->
+      <path class="pg-shell-shade"
+        d="
+          M 48 124
+          Q 70 114 90 111
+          Q 112 108 132 112
+          Q 149 116 162 124
+          Q 147 140 124 148
+          Q 106 154 88 150
+          Q 64 144 48 124 Z" />
 
-      <!-- arms -->
-      <path class="pg-limb" d="M 54 120 L 40 132" />
-      <path class="pg-limb" d="M 146 120 L 160 132" />
+      <!-- Highlight near upper-left belly -->
+      <path class="pg-shell-highlight"
+        d="
+          M 64 106
+          Q 78 96 94 94
+          Q 100 93 104 94
+          Q 94 102 84 106
+          Q 74 110 66 112
+          Q 62 110 64 106 Z" />
+
+      <!-- Small creases for extra detail -->
+      <path class="pg-crease" d="M 72 132 Q 92 140 114 138" />
+      <path class="pg-crease" d="M 62 126 Q 76 132 90 134" />
+      <path class="pg-crease" d="M 120 132 Q 136 130 150 124" />
+
+      <!-- Tiny specks / baked spots -->
+      <circle class="pg-speck" cx="86" cy="118" r="1.8" />
+      <circle class="pg-speck" cx="100" cy="124" r="1.8" />
+      <circle class="pg-speck" cx="114" cy="118" r="1.6" />
+      <circle class="pg-speck" cx="128" cy="126" r="1.6" />
+      <circle class="pg-speck" cx="76" cy="124" r="1.4" />
+
+      <!-- Legs -->
+      <path class="pg-limb" d="M 88 150 L 84 166" />
+      <path class="pg-limb" d="M 124 150 L 128 166" />
+
+      <!-- Arms -->
+      <path class="pg-limb" d="M 58 130 L 46 142" />
+      <path class="pg-limb" d="M 152 128 L 166 140" />
     </symbol>
 
-    <!-- CHONKY: wider & lower -->
+    <!-- CHONKY: wider dumpling, reusing same style -->
     <symbol id="pierogi-chonky" viewBox="0 0 200 200">
-      <ellipse class="pg-shadow" cx="100" cy="162" rx="56" ry="11"/>
+      <ellipse class="pg-shadow" cx="104" cy="162" rx="60" ry="13"/>
 
       <path class="pg-shell"
         d="
-          M 30 100
-          Q 100 38 170 100
-          Q 160 146 100 162
-          Q 40 146 30 100 Z" />
+          M 26 120
+          Q 46 92 76 80
+          Q 100 70 128 74
+          Q 152 78 174 92
+          Q 182 98 188 110
+          Q 170 146 132 160
+          Q 104 170 78 162
+          Q 46 152 26 120 Z" />
 
       <path class="pg-ridge"
         d="
-          M 38 92
-          Q 52 62 66 92
-          Q 78 62 92 92
-          Q 104 62 118 92
-          Q 130 62 144 92
-          Q 154 80 166 98
-          Q 100 44 34 98 Z" />
+          M 32 116
+          Q 40 98 52 92
+          Q 60 84 74 80
+          Q 90 76 106 76
+          Q 126 76 140 82
+          Q 152 86 162 96
+          Q 172 102 180 114
+          Q 150 92 124 86
+          Q 100 80 78 84
+          Q 54 88 32 116 Z" />
 
-      <path class="pg-limb" d="M 80 158 L 74 176" />
-      <path class="pg-limb" d="M 120 158 L 126 176" />
+      <path class="pg-shell-shade"
+        d="
+          M 40 128
+          Q 68 116 96 112
+          Q 120 110 142 114
+          Q 158 118 174 126
+          Q 156 146 130 154
+          Q 106 162 82 156
+          Q 58 150 40 128 Z" />
 
-      <path class="pg-limb" d="M 46 126 L 30 140" />
-      <path class="pg-limb" d="M 154 126 L 170 140" />
+      <path class="pg-shell-highlight"
+        d="
+          M 62 110
+          Q 84 98 104 96
+          Q 110 96 116 98
+          Q 100 106 88 110
+          Q 76 114 66 116
+          Q 60 114 62 110 Z" />
+
+      <path class="pg-crease" d="M 70 136 Q 100 144 132 140" />
+      <path class="pg-crease" d="M 56 128 Q 76 136 96 138" />
+      <path class="pg-crease" d="M 132 134 Q 152 132 170 126" />
+
+      <circle class="pg-speck" cx="84" cy="120" r="1.8" />
+      <circle class="pg-speck" cx="102" cy="126" r="1.8" />
+      <circle class="pg-speck" cx="122" cy="122" r="1.8" />
+      <circle class="pg-speck" cx="136" cy="130" r="1.6" />
+      <circle class="pg-speck" cx="70" cy="126" r="1.6" />
+
+      <path class="pg-limb" d="M 86 154 L 80 172" />
+      <path class="pg-limb" d="M 126 154 L 132 172" />
+
+      <path class="pg-limb" d="M 52 132 L 36 146" />
+      <path class="pg-limb" d="M 156 132 L 176 146" />
     </symbol>
 
-    <!-- TALL: narrower & taller -->
+    <!-- TALL: slimmer, slightly more upright -->
     <symbol id="pierogi-tall" viewBox="0 0 200 200">
-      <ellipse class="pg-shadow" cx="100" cy="156" rx="40" ry="9"/>
+      <ellipse class="pg-shadow" cx="104" cy="156" rx="46" ry="11"/>
 
       <path class="pg-shell"
         d="
-          M 58 88
-          Q 100 32 142 88
-          Q 136 136 100 150
-          Q 64 136 58 88 Z" />
+          M 48 116
+          Q 62 92 80 82
+          Q 96 72 112 72
+          Q 132 74 148 84
+          Q 162 92 172 108
+          Q 158 140 126 152
+          Q 104 160 84 154
+          Q 60 146 48 116 Z" />
 
       <path class="pg-ridge"
         d="
-          M 64 80
-          Q 74 52 84 80
-          Q 92 52 102 80
-          Q 110 52 120 80
-          Q 126 68 136 86
-          Q 100 38 64 86 Z" />
+          M 54 112
+          Q 62 96 72 90
+          Q 82 82 96 80
+          Q 110 78 124 82
+          Q 136 86 146 94
+          Q 154 100 162 110
+          Q 140 92 120 86
+          Q 102 82 86 84
+          Q 70 86 54 112 Z" />
 
-      <path class="pg-limb" d="M 86 146 L 84 162" />
-      <path class="pg-limb" d="M 114 146 L 116 162" />
+      <path class="pg-shell-shade"
+        d="
+          M 56 122
+          Q 76 112 96 108
+          Q 116 106 132 110
+          Q 146 114 158 120
+          Q 144 138 124 144
+          Q 106 150 88 146
+          Q 70 140 56 122 Z" />
 
-      <path class="pg-limb" d="M 64 118 L 52 132" />
-      <path class="pg-limb" d="M 136 118 L 148 132" />
+      <path class="pg-shell-highlight"
+        d="
+          M 66 108
+          Q 82 98 98 96
+          Q 104 96 110 98
+          Q 96 104 86 108
+          Q 76 112 70 114
+          Q 64 112 66 108 Z" />
+
+      <path class="pg-crease" d="M 72 132 Q 96 138 120 136" />
+      <path class="pg-crease" d="M 64 126 Q 80 132 94 134" />
+      <path class="pg-crease" d="M 120 132 Q 136 128 150 122" />
+
+      <circle class="pg-speck" cx="86" cy="118" r="1.7" />
+      <circle class="pg-speck" cx="100" cy="124" r="1.8" />
+      <circle class="pg-speck" cx="116" cy="120" r="1.6" />
+      <circle class="pg-speck" cx="78" cy="124" r="1.4" />
+
+      <path class="pg-limb" d="M 90 148 L 86 164" />
+      <path class="pg-limb" d="M 120 148 L 124 164" />
+
+      <path class="pg-limb" d="M 64 128 L 52 140" />
+      <path class="pg-limb" d="M 144 126 L 156 140" />
     </symbol>
 
-    <!-- JUNIOR: smaller, slightly lower -->
+    <!-- JUNIOR: smaller + rounder -->
     <symbol id="pierogi-junior" viewBox="0 0 200 200">
-      <ellipse class="pg-shadow" cx="100" cy="150" rx="34" ry="8"/>
+      <ellipse class="pg-shadow" cx="104" cy="150" rx="38" ry="9.5"/>
 
       <path class="pg-shell"
         d="
-          M 68 94
-          Q 100 52 132 94
-          Q 126 130 100 142
-          Q 74 130 68 94 Z" />
+          M 60 116
+          Q 74 94 88 86
+          Q 102 80 118 82
+          Q 134 84 148 94
+          Q 158 100 164 110
+          Q 150 136 122 144
+          Q 104 150 88 146
+          Q 70 140 60 116 Z" />
 
       <path class="pg-ridge"
         d="
-          M 74 88
-          Q 82 66 90 88
-          Q 96 66 104 88
-          Q 110 66 118 88
-          Q 122 78 130 92
-          Q 100 54 70 92 Z" />
+          M 64 112
+          Q 70 98 80 92
+          Q 90 88 100 86
+          Q 112 86 122 90
+          Q 134 94 144 104
+          Q 132 96 120 92
+          Q 106 88 94 90
+          Q 78 92 64 112 Z" />
 
-      <path class="pg-limb" d="M 90 140 L 88 152" />
-      <path class="pg-limb" d="M 110 140 L 112 152" />
+      <path class="pg-shell-shade"
+        d="
+          M 66 122
+          Q 82 114 98 112
+          Q 112 112 126 116
+          Q 136 120 146 124
+          Q 134 136 118 140
+          Q 104 144 90 140
+          Q 76 136 66 122 Z" />
 
-      <path class="pg-limb" d="M 78 118 L 70 128" />
-      <path class="pg-limb" d="M 122 118 L 130 128" />
+      <path class="pg-shell-highlight"
+        d="
+          M 74 110
+          Q 88 102 100 100
+          Q 106 100 110 102
+          Q 98 108 88 112
+          Q 80 114 76 116
+          Q 72 114 74 110 Z" />
+
+      <path class="pg-crease" d="M 78 132 Q 96 136 114 134" />
+      <path class="pg-crease" d="M 72 126 Q 84 130 96 132" />
+
+      <circle class="pg-speck" cx="90" cy="118" r="1.6" />
+      <circle class="pg-speck" cx="104" cy="122" r="1.6" />
+      <circle class="pg-speck" cx="116" cy="120" r="1.4" />
+
+      <path class="pg-limb" d="M 92 144 L 90 156" />
+      <path class="pg-limb" d="M 114 144 L 116 156" />
+
+      <path class="pg-limb" d="M 80 128 L 72 138" />
+      <path class="pg-limb" d="M 128 128 L 136 138" />
     </symbol>
   </defs>
 </svg>

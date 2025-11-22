@@ -369,6 +369,52 @@
     body.innerHTML = rows.map(r => trFor(r, statsMap.get(r.name), ratingsMap[r.name], myRatedSet.has(r.name))).join('');
   }
 
+  // Sort by review urgency (SRS + recency) so the most important sets float to the top.
+  function urgencyKeyFor(row, statsMap){
+    const stats = statsMap.get(row.name);
+    const nameKey = (row.name || '').toLowerCase();
+
+    // Brand-new: no attempts, no timestamps
+    if (!stats || (!stats.trials && !stats.last_ts)) {
+      // Bucket 2 → after “Due soon / Tried”, before “Great / Complete”
+      return [2, Number.POSITIVE_INFINITY, nameKey];
+    }
+
+    // Tried but never perfect: keep fairly high
+    if (!stats.perfect_dates || stats.perfect_dates.length === 0) {
+      const tsVal = stats.last_ts ? new Date(stats.last_ts).getTime() : Number.POSITIVE_INFINITY;
+      // Bucket 1 → similar priority to “Due soon”
+      return [1, tsVal, nameKey];
+    }
+
+    // Has perfect runs → use SRS label
+    const srs = srsStatus(stats.perfect_dates);
+    let bucket;
+    switch ((srs && srs.label) || '') {
+      case 'Repetition due': bucket = 0; break; // top
+      case 'Due soon':       bucket = 1; break;
+      case 'Great':          bucket = 3; break;
+      case 'Complete':       bucket = 4; break; // bottom
+      default:               bucket = 3; break;
+    }
+
+    // Within each bucket, older “last_ts” comes first
+    const tsVal = stats.last_ts ? new Date(stats.last_ts).getTime() : Number.POSITIVE_INFINITY;
+    return [bucket, tsVal, nameKey];
+  }
+
+  function sortRowsByUrgency(rows, statsMap){
+    return [...rows].sort((a, b) => {
+      const ka = urgencyKeyFor(a, statsMap);
+      const kb = urgencyKeyFor(b, statsMap);
+      if (ka[0] !== kb[0]) return ka[0] - kb[0];     // bucket
+      if (ka[1] !== kb[1]) return ka[1] - kb[1];     // timestamp
+      if (ka[2] < kb[2]) return -1;                  // name tiebreaker
+      if (ka[2] > kb[2]) return 1;
+      return 0;
+    });
+  }
+
   function applyFilters(list, filterMode, q){
     const QQ = (q||'').trim().toLowerCase();
     return list.filter(m => {
@@ -379,6 +425,7 @@
       return modes.includes(filterMode);
     });
   }
+
 
   // ---------- Main ----------
   (async function init(){
@@ -429,17 +476,23 @@
       return ['learn','speak'];
     };
 
-    const mine = mineRaw.map(x => {
+        const mine = mineRaw.map(x => {
       const n = nameOf(x);
       const m = Array.isArray(x.modes) && x.modes.length ? x.modes : (combinedModeMap[n] || null);
       return { name: n, modes: m, type: x.type || null };
     });
 
     const currentNames = mine.map(r => r.name).slice(0, 400);
-    const [ratingsMapLocal, myRatedSetLocal] = await Promise.all([
-      fetchRatingsBatch(currentNames),
-      fetchMyRatings(),
-    ]);
+
+    // Ratings are only relevant for authenticated users with at least one set.
+    let ratingsMapLocal = {};
+    let myRatedSetLocal = new Set();
+    if (!unauth && currentNames.length) {
+      [ratingsMapLocal, myRatedSetLocal] = await Promise.all([
+        fetchRatingsBatch(currentNames),
+        fetchMyRatings(),
+      ]);
+    }
 
     if (unauth){ const el = document.getElementById('emptyMine'); if (el) el.style.display='block'; }
 
@@ -476,11 +529,15 @@
     Object.entries(filterBtns).forEach(([k,b])=> b && b.addEventListener('click', ()=> setFilter(k)));
     qEl?.addEventListener('input', rerender);
 
-    function baseRows(){ return applyFilters(mine, filterMode, qEl ? qEl.value : ''); }
+    function baseRows(){
+      const filtered = applyFilters(mine, filterMode, qEl ? qEl.value : '');
+      return sortRowsByUrgency(filtered, statsMapLocal);
+    }
     function rerender(){ renderTable(baseRows(), statsMapLocal, ratingsMapLocal, myRatedSetLocal); }
 
     rerender();
   })();
+
   </script>
 </body>
 </html>

@@ -763,21 +763,66 @@ def generate_reading_html(set_name, data=None):
         words: wordsMeta
       }};
 
+      // Cache last result so summary.html has rich details
       try {{
-        await Results.submit({{
-          set: setName,
-          mode: 'reading',
-          score: avg,
-          details
-        }});
-      }} finally {{
-        Results.goSummary({{
-          set: setName,
-          mode: 'reading',
-          score: avg,
-          details
-        }});
+        sessionStorage.setItem(
+          'lp.lastResult',
+          JSON.stringify({{
+            set: setName,
+            mode: 'reading',
+            score: avg,
+            attempts: 1,
+            details
+          }})
+        );
+      }} catch(_){{
       }}
+
+      // Submit to backend (other-modes path in /api/submit_score handles gold & caps)
+      let awarded = null;
+      try {{
+        await api.requireAuth('login.html');
+        const resp = await api.fetch('/api/submit_score', {{
+          method: 'POST',
+          headers: {{ 'Content-Type': 'application/json' }},
+          body: JSON.stringify({{
+            set_name: setName,
+            mode: 'reading',
+            score: avg,
+            attempts: 1,
+            details
+          }})
+        }});
+        if (resp.ok) {{
+          const js = await resp.json();
+          if (js && js.details && js.details.points_awarded != null) {{
+            awarded = Number(js.details.points_awarded);
+          }}
+        }}
+      }} catch(_){{
+      }}
+
+      // Build summary URL
+      const base = (window.Results && typeof Results.repoBase === 'function')
+        ? Results.repoBase()
+        : (function(){{
+            if (/\.github\.io$/i.test(location.hostname)) {{
+              const parts = location.pathname.split('/').filter(Boolean);
+              return '/' + (parts[0] || 'LearnPolish');
+            }}
+            return '';
+          }})();
+
+      const params = new URLSearchParams({{
+        set: setName,
+        mode: 'reading',
+        score: String(avg)
+      }});
+      if (awarded != null && !Number.isNaN(awarded)) {{
+        params.set('awarded', String(awarded));
+      }}
+
+      window.location.href = base + '/summary.html?' + params.toString();
     }}
 
 

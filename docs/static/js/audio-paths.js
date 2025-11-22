@@ -12,6 +12,9 @@
 (function (w) {
   const APP = w.APP_CONFIG || {};
 
+  // Simple in-tab cache so we don't re-fetch r2_manifest.json
+  const manifestCache = new Map();
+
   function sanitize(t) {
     return (t || "")
       .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
@@ -21,19 +24,37 @@
   function isAbs(u) { return !!u && /^(https?:)?\/\//i.test(String(u)); }
 
   async function fetchManifest(setName) {
-    const base = `../../static/${encodeURIComponent(setName)}`;
+    const key = String(setName || "");
+    if (!key) return null;
+
+    // In-memory cache per tab
+    if (manifestCache.has(key)) {
+      return manifestCache.get(key);
+    }
+
+    const base = `../../static/${encodeURIComponent(key)}`;
     const probes = [
-      `${base}/r2_manifest.json`,   // per-set
+      `${base}/r2_manifest.json`,    // per-set
       `../../static/r2_manifest.json` // legacy/global
     ];
+
+    let out = null;
     for (const u of probes) {
       try {
         const r = await fetch(u, { cache: "no-cache" });
-        if (r.ok) return await r.json();
-      } catch (_) {}
+        if (r.ok) {
+          out = await r.json();
+          break;
+        }
+      } catch (_) {
+        // best-effort
+      }
     }
-    return null;
+
+    manifestCache.set(key, out);
+    return out;
   }
+
 
   // Core resolver used by helpers below
   function resolveSetAsset(setName, relOrFile, folder, manifest) {
