@@ -1,0 +1,140 @@
+{
+  "name": "Food_and_Dinning",
+  "modes": [
+    "learn",
+    "speak"
+  ],
+  "meta": {
+    "modes": [
+      "learn",
+      "speak"
+    ]
+  },
+  "cards": [
+    {
+      "phrase": "Poproszę stolik dla jednej osoby",
+      "meaning": "A table for one, please",
+      "pronunciation": "poh-PROH-sheh STOH-leek dlah YED-ney oh-SOH-bih"
+    },
+    {
+      "phrase": "Poproszę stolik dla dwóch osób",
+      "meaning": "A table for two, please",
+      "pronunciation": "poh-PROH-sheh STOH-leek dlah dvookh OH-soob"
+    },
+    {
+      "phrase": "Czy ma pan/pani menu po angielsku?",
+      "meaning": "Do you have a menu in English?",
+      "pronunciation": "chih mah pahn/pah-nee MEH-noo poh an-GYEL-skoo"
+    },
+    {
+      "phrase": "Poproszę menu",
+      "meaning": "The menu, please",
+      "pronunciation": "poh-PROH-sheh MEH-noo"
+    },
+    {
+      "phrase": "Co pan/pani poleca?",
+      "meaning": "What do you recommend?",
+      "pronunciation": "tsoh pahn/pah-nee poh-LEH-tsah"
+    },
+    {
+      "phrase": "Poproszę zupę dnia",
+      "meaning": "I’ll have the soup of the day",
+      "pronunciation": "poh-PROH-sheh ZOO-peh DNIA"
+    },
+    {
+      "phrase": "Poproszę pierogi",
+      "meaning": "I’ll have pierogi",
+      "pronunciation": "poh-PROH-sheh pyeh-ROH-gee"
+    },
+    {
+      "phrase": "Poproszę schabowego",
+      "meaning": "I’ll have a pork cutlet",
+      "pronunciation": "poh-PROH-sheh skhah-boh-VEH-go"
+    },
+    {
+      "phrase": "Poproszę sałatkę",
+      "meaning": "I’ll have a salad",
+      "pronunciation": "poh-PROH-sheh sah-WAHT-keh"
+    },
+    {
+      "phrase": "Poproszę kawę",
+      "meaning": "A coffee, please",
+      "pronunciation": "poh-PROH-sheh KAH-veh"
+    },
+    {
+      "phrase": "Poproszę herbatę",
+      "meaning": "A tea, please",
+      "pronunciation": "poh-PROH-sheh her-BAH-teh"
+    },
+    {
+      "phrase": "Poproszę piwo",
+      "meaning": "A beer, please",
+      "pronunciation": "poh-PROH-sheh PEE-voh"
+    },
+    {
+      "phrase": "Poproszę kieliszek wina",
+      "meaning": "A glass of wine, please",
+      "pronunciation": "poh-PROH-sheh kyeh-LEE-shek VEE-nah"
+    },
+    {
+      "phrase": "Poproszę wodę niegazowaną",
+      "meaning": "Still water, please",
+      "pronunciation": "poh-PROH-sheh VOH-deh nyeh-gah-zoh-VAH-nohn"
+    },
+    {
+      "phrase": "Poproszę wodę gazowaną",
+      "meaning": "Sparkling water, please",
+      "pronunciation": "poh-PROH-sheh VOH-deh gah-zoh-VAH-nohn"
+    },
+    {
+      "phrase": "Smacznego",
+      "meaning": "Enjoy your meal / Bon appétit",
+      "pronunciation": "smach-NEH-goh"
+    },
+    {
+      "phrase": "To jest bardzo dobre",
+      "meaning": "This is very good",
+      "pronunciation": "toh yehst BAR-dzoh DOH-breh"
+    },
+    {
+      "phrase": "Rachunek, proszę",
+      "meaning": "The bill, please",
+      "pronunciation": "rah-HOO-nek PROH-sheh"
+    },
+    {
+      "phrase": "Czy mogę zapłacić kartą?",
+      "meaning": "Can I pay by card?",
+      "pronunciation": "chih MOH-geh zah-PWAH-cheech KAR-tohn"
+    },
+    {
+      "phrase": "Czy mogę zapłacić gotówką?",
+      "meaning": "Can I pay in cash?",
+      "pronunciation": "chih MOH-geh zah-PWAH-cheech goh-TOOF-kohn"
+    },
+    {
+      "phrase": "Czy macie coś wegetariańskiego?",
+      "meaning": "Do you have something vegetarian?",
+      "pronunciation": "chih MAH-chyeh tsohsh veh-geh-tah-RYAHN-skeh-go"
+    },
+    {
+      "phrase": "Czy macie coś wegańskiego?",
+      "meaning": "Do you have something vegan?",
+      "pronunciation": "chih MAH-chyeh tsohsh veh-GAHN-skeh-go"
+    },
+    {
+      "phrase": "Nie jem mięsa",
+      "meaning": "I don’t eat meat",
+      "pronunciation": "nyeh yem MYEN-sah"
+    },
+    {
+      "phrase": "Nie piję alkoholu",
+      "meaning": "I don’t drink alcohol",
+      "pronunciation": "nyeh PEE-yeh ahl-koh-HOH-loo"
+    },
+    {
+      "phrase": "Było pyszne",
+      "meaning": "It was delicious",
+      "pronunciation": "BIH-woh PISH-neh"
+    }
+  ]
+}
