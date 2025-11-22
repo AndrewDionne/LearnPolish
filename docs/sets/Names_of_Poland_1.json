@@ -1,0 +1,175 @@
+{
+  "name": "Names_of_Poland_1",
+  "modes": [
+    "learn",
+    "speak"
+  ],
+  "meta": {
+    "modes": [
+      "learn",
+      "speak"
+    ]
+  },
+  "cards": [
+    {
+      "phrase": "Jan Nowak",
+      "meaning": "Jan Nowak",
+      "pronunciation": "Yan NOH-vak"
+    },
+    {
+      "phrase": "Piotr Kowalski",
+      "meaning": "Piotr Kowalski",
+      "pronunciation": "Pee-otr koh-VAL-skee"
+    },
+    {
+      "phrase": "Krzysztof Wiśniewski",
+      "meaning": "Krzysztof Wisniewski",
+      "pronunciation": "KRISH-tof VEE-shnyev-skee"
+    },
+    {
+      "phrase": "Tomasz Wójcik",
+      "meaning": "Tomasz Wójcik",
+      "pronunciation": "TOH-mash VOY-chik"
+    },
+    {
+      "phrase": "Paweł Kamiński",
+      "meaning": "Paweł Kaminski",
+      "pronunciation": "PAH-vel kah-MEEN-skee"
+    },
+    {
+      "phrase": "Andrzej Lewandowski",
+      "meaning": "Andrzej Lewandowski",
+      "pronunciation": "AHN-jay le-van-DOV-skee"
+    },
+    {
+      "phrase": "Marek Zieliński",
+      "meaning": "Marek Zielinski",
+      "pronunciation": "MAH-rek zyeh-LEEN-skee"
+    },
+    {
+      "phrase": "Łukasz Szymański",
+      "meaning": "Łukasz Szymanski",
+      "pronunciation": "WOO-kash shih-MAHN-skee"
+    },
+    {
+      "phrase": "Mateusz Woźniak",
+      "meaning": "Mateusz Wozniak",
+      "pronunciation": "MAH-teh-oosh VOZH-nyak"
+    },
+    {
+      "phrase": "Jakub Dąbrowski",
+      "meaning": "Jakub Dabrowski",
+      "pronunciation": "YAH-koob DOM-brov-skee"
+    },
+    {
+      "phrase": "Anna Nowak",
+      "meaning": "Anna Nowak",
+      "pronunciation": "AH-nah NOH-vak"
+    },
+    {
+      "phrase": "Katarzyna Kowalska",
+      "meaning": "Katarzyna Kowalska",
+      "pronunciation": "kah-tah-ZHI-nah koh-VAL-skah"
+    },
+    {
+      "phrase": "Małgorzata Wiśniewska",
+      "meaning": "Małgorzata Wisniewska",
+      "pronunciation": "mahw-gor-ZAH-tah VEE-shnyev-skah"
+    },
+    {
+      "phrase": "Agnieszka Wójcik",
+      "meaning": "Agnieszka Wójcik",
+      "pronunciation": "ahg-NYESH-kah VOY-chik"
+    },
+    {
+      "phrase": "Joanna Kamińska",
+      "meaning": "Joanna Kaminska",
+      "pronunciation": "yo-AH-nah kah-MEEN-skah"
+    },
+    {
+      "phrase": "Zofia Lewandowska",
+      "meaning": "Zofia Lewandowska",
+      "pronunciation": "ZOH-fyah le-van-DOV-skah"
+    },
+    {
+      "phrase": "Maria Zielińska",
+      "meaning": "Maria Zielinska",
+      "pronunciation": "MAH-ryah zyeh-LEEN-skah"
+    },
+    {
+      "phrase": "Ewa Szymańska",
+      "meaning": "Ewa Szymanska",
+      "pronunciation": "EH-vah shih-MAHN-skah"
+    },
+    {
+      "phrase": "Magdalena Woźniak",
+      "meaning": "Magdalena Wozniak",
+      "pronunciation": "mag-dah-LEH-nah VOZH-nyak"
+    },
+    {
+      "phrase": "Barbara Dąbrowska",
+      "meaning": "Barbara Dabrowska",
+      "pronunciation": "BAR-bar-ah DOM-brov-skah"
+    },
+    {
+      "phrase": "Piotr Nowak",
+      "meaning": "Piotr Nowak",
+      "pronunciation": "Pee-otr NOH-vak"
+    },
+    {
+      "phrase": "Jan Kowalski",
+      "meaning": "Jan Kowalski",
+      "pronunciation": "Yan koh-VAL-skee"
+    },
+    {
+      "phrase": "Łukasz Wiśniewski",
+      "meaning": "Łukasz Wisniewski",
+      "pronunciation": "WOO-kash VEE-shnyev-skee"
+    },
+    {
+      "phrase": "Anna Wójcik",
+      "meaning": "Anna Wójcik",
+      "pronunciation": "AH-nah VOY-chik"
+    },
+    {
+      "phrase": "Katarzyna Lewandowska",
+      "meaning": "Katarzyna Lewandowska",
+      "pronunciation": "kah-tah-ZHI-nah le-van-DOV-skah"
+    },
+    {
+      "phrase": "Mateusz Nowak",
+      "meaning": "Mateusz Nowak",
+      "pronunciation": "MAH-teh-oosh NOH-vak"
+    },
+    {
+      "phrase": "Małgorzata Kowalska",
+      "meaning": "Małgorzata Kowalska",
+      "pronunciation": "mahw-gor-ZAH-tah koh-VAL-skah"
+    },
+    {
+      "phrase": "Jakub Wiśniewski",
+      "meaning": "Jakub Wisniewski",
+      "pronunciation": "YAH-koob VEE-shnyev-skee"
+    },
+    {
+      "phrase": "Ewa Kamińska",
+      "meaning": "Ewa Kaminska",
+      "pronunciation": "EH-vah kah-MEEN-skah"
+    },
+    {
+      "phrase": "Joanna Woźniak",
+      "meaning": "Joanna Wozniak",
+      "pronunciation": "yo-AH-nah VOZH-nyak"
+    },
+    {
+      "phrase": "Tomasz Dąbrowski",
+      "meaning": "Tomasz Dabrowski",
+      "pronunciation": "TOH-mash DOM-brov-skee"
+    },
+    {
+      "phrase": "Paweł Szymański",
+      "meaning": "Paweł Szymanski",
+      "pronunciation": "PAH-vel shih-MAHN-skee"
+    }
+  ]
+}
