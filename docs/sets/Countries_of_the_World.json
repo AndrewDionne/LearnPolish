@@ -1,0 +1,355 @@
+{
+  "name": "Countries_of_the_World",
+  "modes": [
+    "learn",
+    "speak"
+  ],
+  "meta": {
+    "modes": [
+      "learn",
+      "speak"
+    ]
+  },
+  "cards": [
+    {
+      "phrase": "Polska",
+      "meaning": "Poland",
+      "pronunciation": "POL-skah"
+    },
+    {
+      "phrase": "Niemcy",
+      "meaning": "Germany",
+      "pronunciation": "NYEM-tsih"
+    },
+    {
+      "phrase": "Francja",
+      "meaning": "France",
+      "pronunciation": "FRAN-tsyah"
+    },
+    {
+      "phrase": "Włochy",
+      "meaning": "Italy",
+      "pronunciation": "VWAW-khy"
+    },
+    {
+      "phrase": "Hiszpania",
+      "meaning": "Spain",
+      "pronunciation": "heesh-PAH-nya"
+    },
+    {
+      "phrase": "Stany Zjednoczone",
+      "meaning": "United States",
+      "pronunciation": "STAH-ny zyehd-NOT-soh-neh"
+    },
+    {
+      "phrase": "Kanada",
+      "meaning": "Canada",
+      "pronunciation": "kah-NAH-dah"
+    },
+    {
+      "phrase": "Wielka Brytania",
+      "meaning": "United Kingdom",
+      "pronunciation": "VYEL-kah brih-TAH-nya"
+    },
+    {
+      "phrase": "Rosja",
+      "meaning": "Russia",
+      "pronunciation": "ROH-syah"
+    },
+    {
+      "phrase": "Chiny",
+      "meaning": "China",
+      "pronunciation": "KHEE-nih"
+    },
+    {
+      "phrase": "Japonia",
+      "meaning": "Japan",
+      "pronunciation": "yah-POH-nya"
+    },
+    {
+      "phrase": "Australia",
+      "meaning": "Australia",
+      "pronunciation": "ow-STRAW-lyah"
+    },
+    {
+      "phrase": "Brazylia",
+      "meaning": "Brazil",
+      "pronunciation": "BRAH-zih-lya"
+    },
+    {
+      "phrase": "Meksyk",
+      "meaning": "Mexico",
+      "pronunciation": "MEH-ksyk"
+    },
+    {
+      "phrase": "Indie",
+      "meaning": "India",
+      "pronunciation": "IN-dyeh"
+    },
+    {
+      "phrase": "Egipt",
+      "meaning": "Egypt",
+      "pronunciation": "EH-gipt"
+    },
+    {
+      "phrase": "Szwecja",
+      "meaning": "Sweden",
+      "pronunciation": "SHVEH-tsyah"
+    },
+    {
+      "phrase": "Norwegia",
+      "meaning": "Norway",
+      "pronunciation": "NOR-veh-gya"
+    },
+    {
+      "phrase": "Finlandia",
+      "meaning": "Finland",
+      "pronunciation": "fin-LAHN-dya"
+    },
+    {
+      "phrase": "Grecja",
+      "meaning": "Greece",
+      "pronunciation": "GREH-tsyah"
+    },
+    {
+      "phrase": "Portugalia",
+      "meaning": "Portugal",
+      "pronunciation": "por-too-GAH-lya"
+    },
+    {
+      "phrase": "Holandia",
+      "meaning": "Netherlands",
+      "pronunciation": "HOH-lahn-dya"
+    },
+    {
+      "phrase": "Belgia",
+      "meaning": "Belgium",
+      "pronunciation": "BEL-gya"
+    },
+    {
+      "phrase": "Szwajcaria",
+      "meaning": "Switzerland",
+      "pronunciation": "shvay-KAH-ryah"
+    },
+    {
+      "phrase": "Austria",
+      "meaning": "Austria",
+      "pronunciation": "ow-STRY-ah"
+    },
+    {
+      "phrase": "Czechy",
+      "meaning": "Czechia / Czech Republic",
+      "pronunciation": "CHEH-khy"
+    },
+    {
+      "phrase": "Słowacja",
+      "meaning": "Slovakia",
+      "pronunciation": "swov-AH-tsyah"
+    },
+    {
+      "phrase": "Ukraina",
+      "meaning": "Ukraine",
+      "pronunciation": "oo-KRAH-ee-nah"
+    },
+    {
+      "phrase": "Białoruś",
+      "meaning": "Belarus",
+      "pronunciation": "BYAH-lo-roosh"
+    },
+    {
+      "phrase": "Łotwa",
+      "meaning": "Latvia",
+      "pronunciation": "WOT-vah"
+    },
+    {
+      "phrase": "Estonia",
+      "meaning": "Estonia",
+      "pronunciation": "es-TOH-nyah"
+    },
+    {
+      "phrase": "Węgry",
+      "meaning": "Hungary",
+      "pronunciation": "VEN-ghry"
+    },
+    {
+      "phrase": "Rumunia",
+      "meaning": "Romania",
+      "pronunciation": "roo-MOO-nyah"
+    },
+    {
+      "phrase": "Bułgaria",
+      "meaning": "Bulgaria",
+      "pronunciation": "boo-WGAR-yah"
+    },
+    {
+      "phrase": "Chorwacja",
+      "meaning": "Croatia",
+      "pronunciation": "khor-VAH-tsyah"
+    },
+    {
+      "phrase": "Serbia",
+      "meaning": "Serbia",
+      "pronunciation": "SER-byah"
+    },
+    {
+      "phrase": "Słowenia",
+      "meaning": "Slovenia",
+      "pronunciation": "slo-VEH-nyah"
+    },
+    {
+      "phrase": "Albania",
+      "meaning": "Albania",
+      "pronunciation": "al-BAH-nyah"
+    },
+    {
+      "phrase": "Macedonia Północna",
+      "meaning": "North Macedonia",
+      "pronunciation": "mah-tseh-DOH-nyah poo-WNOTS-nah"
+    },
+    {
+      "phrase": "Turcja",
+      "meaning": "Turkey",
+      "pronunciation": "TOOR-tsyah"
+    },
+    {
+      "phrase": "Izrael",
+      "meaning": "Isreal",
+      "pronunciation": "eez-RAH-el"
+    },
+    {
+      "phrase": "Arabia Saudyjska",
+      "meaning": "Saudi Arabia",
+      "pronunciation": "ah-RAH-byah sow-DY-skah"
+    },
+    {
+      "phrase": "Zjednoczone Emiraty Arabskie",
+      "meaning": "United Arab Emirates",
+      "pronunciation": "zyehd-NOT-soh-neh eh-mee-RAH-ty ah-RAHB-skeh"
+    },
+    {
+      "phrase": "Iran",
+      "meaning": "Iran",
+      "pronunciation": "ee-RAHN"
+    },
+    {
+      "phrase": "Irak",
+      "meaning": "Iraq",
+      "pronunciation": "ee-RAHK"
+    },
+    {
+      "phrase": "Afganistan",
+      "meaning": "Afghanistan",
+      "pronunciation": "af-gah-nee-STAHN"
+    },
+    {
+      "phrase": "Pakistan",
+      "meaning": "Pakistan",
+      "pronunciation": "pahk-ee-STAHN"
+    },
+    {
+      "phrase": "Bangladesz",
+      "meaning": "Bangladesh",
+      "pronunciation": "ban-glah-DESH"
+    },
+    {
+      "phrase": "Indonezja",
+      "meaning": "Indonesia",
+      "pronunciation": "in-doh-NEH-zya"
+    },
+    {
+      "phrase": "Malezja",
+      "meaning": "Malaysia",
+      "pronunciation": "mah-LEH-zya"
+    },
+    {
+      "phrase": "Filipiny",
+      "meaning": "Philippines",
+      "pronunciation": "fee-LEE-pih-nih"
+    },
+    {
+      "phrase": "Tajlandia",
+      "meaning": "Thailand",
+      "pronunciation": "tie-LAHN-dya"
+    },
+    {
+      "phrase": "Wietnam",
+      "meaning": "Vietnam",
+      "pronunciation": "vyeht-NAM"
+    },
+    {
+      "phrase": "Korea Południowa",
+      "meaning": "South Korea",
+      "pronunciation": "koh-REH-ah poh-WOODN-yoh-vah"
+    },
+    {
+      "phrase": "Korea Północna",
+      "meaning": "North Korea",
+      "pronunciation": "koh-REH-ah poo-WNOTS-nah"
+    },
+    {
+      "phrase": "Nowa Zelandia",
+      "meaning": "New Zealand",
+      "pronunciation": "NOH-vah zeh-LAHN-dya"
+    },
+    {
+      "phrase": "RPA",
+      "meaning": "South Africa",
+      "pronunciation": "er-peh-AH"
+    },
+    {
+      "phrase": "Nigeria",
+      "meaning": "Nigeria",
+      "pronunciation": "nee-JEH-ryah"
+    },
+    {
+      "phrase": "Kenia",
+      "meaning": "Kenya",
+      "pronunciation": "KEH-nyah"
+    },
+    {
+      "phrase": "Ghana",
+      "meaning": "Ghana",
+      "pronunciation": "GAH-nah"
+    },
+    {
+      "phrase": "Maroko",
+      "meaning": "Morocco",
+      "pronunciation": "mah-ROH-koh"
+    },
+    {
+      "phrase": "Algieria",
+      "meaning": "Algeria",
+      "pronunciation": "al-GYEH-ryah"
+    },
+    {
+      "phrase": "Tunezja",
+      "meaning": "Tunisia",
+      "pronunciation": "too-NEH-zya"
+    },
+    {
+      "phrase": "Liban",
+      "meaning": "Lebanon",
+      "pronunciation": "LEE-bahn"
+    },
+    {
+      "phrase": "Jordania",
+      "meaning": "Jordan",
+      "pronunciation": "yor-DAH-nyah"
+    },
+    {
+      "phrase": "Kuwejt",
+      "meaning": "Kuwait",
+      "pronunciation": "koo-WEYT"
+    },
+    {
+      "phrase": "Bahrajn",
+      "meaning": "Bahrain",
+      "pronunciation": "bah-RAIN"
+    },
+    {
+      "phrase": "Katar",
+      "meaning": "Qatar",
+      "pronunciation": "kah-TAR"
+    }
+  ]
+}
