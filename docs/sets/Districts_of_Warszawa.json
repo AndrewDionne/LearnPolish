@@ -1,0 +1,115 @@
+{
+  "name": "Districts_of_Warszawa",
+  "modes": [
+    "learn",
+    "speak"
+  ],
+  "meta": {
+    "modes": [
+      "learn",
+      "speak"
+    ]
+  },
+  "cards": [
+    {
+      "phrase": "Śródmieście",
+      "meaning": "City Center / Downtown",
+      "pronunciation": "shrood-MYEN-shcheh"
+    },
+    {
+      "phrase": "Mokotów",
+      "meaning": "Mokotów district",
+      "pronunciation": "moh-KOH-toof"
+    },
+    {
+      "phrase": "Wola",
+      "meaning": "Wola district",
+      "pronunciation": "VOH-lah"
+    },
+    {
+      "phrase": "Praga-Północ",
+      "meaning": "Praga North district",
+      "pronunciation": "PRAH-gah POOL-notz"
+    },
+    {
+      "phrase": "Praga-Południe",
+      "meaning": "Praga South district",
+      "pronunciation": "PRAH-gah poh-LOOD-nyeh"
+    },
+    {
+      "phrase": "Żoliborz",
+      "meaning": "Żoliborz district",
+      "pronunciation": "ZHOH-lee-borz"
+    },
+    {
+      "phrase": "Ochota",
+      "meaning": "Ochota district",
+      "pronunciation": "OH-hoh-tah"
+    },
+    {
+      "phrase": "Wilanów",
+      "meaning": "Wilanów district",
+      "pronunciation": "vee-lah-NOOF"
+    },
+    {
+      "phrase": "Ursynów",
+      "meaning": "Ursynów district",
+      "pronunciation": "oor-SIH-noof"
+    },
+    {
+      "phrase": "Bemowo",
+      "meaning": "Bemowo district",
+      "pronunciation": "BEH-moh-voh"
+    },
+    {
+      "phrase": "Targówek",
+      "meaning": "Targówek district",
+      "pronunciation": "tar-GOO-vek"
+    },
+    {
+      "phrase": "Praga",
+      "meaning": "General Praga area",
+      "pronunciation": "PRAH-gah"
+    },
+    {
+      "phrase": "Wawer",
+      "meaning": "Wawer district",
+      "pronunciation": "VAH-ver"
+    },
+    {
+      "phrase": "Białołęka",
+      "meaning": "Białołęka district",
+      "pronunciation": "bya-woh-WEH-kah"
+    },
+    {
+      "phrase": "Rembertów",
+      "meaning": "Rembertów district",
+      "pronunciation": "rem-BER-toof"
+    },
+    {
+      "phrase": "Wesoła",
+      "meaning": "Wesoła district",
+      "pronunciation": "veh-SOH-wah"
+    },
+    {
+      "phrase": "Praga Centrum",
+      "meaning": "Praga Central area",
+      "pronunciation": "PRAH-gah TSEHN-troom"
+    },
+    {
+      "phrase": "Stare Miasto",
+      "meaning": "Old Town",
+      "pronunciation": "STAH-reh MEE-ah-stoh"
+    },
+    {
+      "phrase": "Nowe Miasto",
+      "meaning": "New Town",
+      "pronunciation": "NOH-veh MEE-ah-stoh"
+    },
+    {
+      "phrase": "Politechnika Warszawska",
+      "meaning": "Warsaw University of Technology area",
+      "pronunciation": "poh-lee-tekh-NEE-kah var-SHAHF-skah"
+    }
+  ]
+}

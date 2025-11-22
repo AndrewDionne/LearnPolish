@@ -1,0 +1,26 @@
+{
+  "set": "Districts_of_Warszawa",
+  "assetsBase": "https://cdn.polishpath.com",
+  "files": {
+    "audio/Districts_of_Warszawa/0_Srodmiescie.mp3": "https://cdn.polishpath.com/audio/Districts_of_Warszawa/0_Srodmiescie.mp3",
+    "audio/Districts_of_Warszawa/10_Targowek.mp3": "https://cdn.polishpath.com/audio/Districts_of_Warszawa/10_Targowek.mp3",
+    "audio/Districts_of_Warszawa/11_Praga.mp3": "https://cdn.polishpath.com/audio/Districts_of_Warszawa/11_Praga.mp3",
+    "audio/Districts_of_Warszawa/12_Wawer.mp3": "https://cdn.polishpath.com/audio/Districts_of_Warszawa/12_Wawer.mp3",
+    "audio/Districts_of_Warszawa/13_Bia_o_eka.mp3": "https://cdn.polishpath.com/audio/Districts_of_Warszawa/13_Bia_o_eka.mp3",
+    "audio/Districts_of_Warszawa/14_Rembertow.mp3": "https://cdn.polishpath.com/audio/Districts_of_Warszawa/14_Rembertow.mp3",
+    "audio/Districts_of_Warszawa/15_Weso_a.mp3": "https://cdn.polishpath.com/audio/Districts_of_Warszawa/15_Weso_a.mp3",
+    "audio/Districts_of_Warszawa/16_Praga_Centrum.mp3": "https://cdn.polishpath.com/audio/Districts_of_Warszawa/16_Praga_Centrum.mp3",
+    "audio/Districts_of_Warszawa/17_Stare_Miasto.mp3": "https://cdn.polishpath.com/audio/Districts_of_Warszawa/17_Stare_Miasto.mp3",
+    "audio/Districts_of_Warszawa/18_Nowe_Miasto.mp3": "https://cdn.polishpath.com/audio/Districts_of_Warszawa/18_Nowe_Miasto.mp3",
+    "audio/Districts_of_Warszawa/19_Politechnika_Warszawska.mp3": "https://cdn.polishpath.com/audio/Districts_of_Warszawa/19_Politechnika_Warszawska.mp3",
+    "audio/Districts_of_Warszawa/1_Mokotow.mp3": "https://cdn.polishpath.com/audio/Districts_of_Warszawa/1_Mokotow.mp3",
+    "audio/Districts_of_Warszawa/2_Wola.mp3": "https://cdn.polishpath.com/audio/Districts_of_Warszawa/2_Wola.mp3",
+    "audio/Districts_of_Warszawa/3_Praga-Po_noc.mp3": "https://cdn.polishpath.com/audio/Districts_of_Warszawa/3_Praga-Po_noc.mp3",
+    "audio/Districts_of_Warszawa/4_Praga-Po_udnie.mp3": "https://cdn.polishpath.com/audio/Districts_of_Warszawa/4_Praga-Po_udnie.mp3",
+    "audio/Districts_of_Warszawa/5_Zoliborz.mp3": "https://cdn.polishpath.com/audio/Districts_of_Warszawa/5_Zoliborz.mp3",
+    "audio/Districts_of_Warszawa/6_Ochota.mp3": "https://cdn.polishpath.com/audio/Districts_of_Warszawa/6_Ochota.mp3",
+    "audio/Districts_of_Warszawa/7_Wilanow.mp3": "https://cdn.polishpath.com/audio/Districts_of_Warszawa/7_Wilanow.mp3",
+    "audio/Districts_of_Warszawa/8_Ursynow.mp3": "https://cdn.polishpath.com/audio/Districts_of_Warszawa/8_Ursynow.mp3",
+    "audio/Districts_of_Warszawa/9_Bemowo.mp3": "https://cdn.polishpath.com/audio/Districts_of_Warszawa/9_Bemowo.mp3"
+  }
+}
