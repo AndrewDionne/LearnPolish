@@ -1,0 +1,145 @@
+{
+  "name": "Getting_Around_1",
+  "modes": [
+    "learn",
+    "speak"
+  ],
+  "meta": {
+    "modes": [
+      "learn",
+      "speak"
+    ]
+  },
+  "cards": [
+    {
+      "phrase": "Gdzie jest przystanek?",
+      "meaning": "Where is the bus/tram stop?",
+      "pronunciation": "gdjyeh yehst pshee-STAH-nek"
+    },
+    {
+      "phrase": "Którędy do centrum?",
+      "meaning": "Which way to the city center?",
+      "pronunciation": "ktoo-REN-dih doh TSEN-troom"
+    },
+    {
+      "phrase": "Gdzie jest metro?",
+      "meaning": "Where is the metro?",
+      "pronunciation": "gdjyeh yehst MEH-troh"
+    },
+    {
+      "phrase": "Na którą linię?",
+      "meaning": "For which line?",
+      "pronunciation": "nah KTOO-rohn LEEN-yeh"
+    },
+    {
+      "phrase": "Który to peron?",
+      "meaning": "Which platform is this?",
+      "pronunciation": "KTOO-rih toh PEH-ron"
+    },
+    {
+      "phrase": "Czy to pociąg do Warszawy?",
+      "meaning": "Is this the train to Warsaw?",
+      "pronunciation": "chih toh POH-chyonk doh var-SHAH-vih"
+    },
+    {
+      "phrase": "Jeden bilet, proszę",
+      "meaning": "One ticket, please",
+      "pronunciation": "YEH-den BEE-let PROH-sheh"
+    },
+    {
+      "phrase": "Dwa bilety, proszę",
+      "meaning": "Two tickets, please",
+      "pronunciation": "dvah bee-LEH-tih PROH-sheh"
+    },
+    {
+      "phrase": "Bilet normalny",
+      "meaning": "Regular ticket",
+      "pronunciation": "BEE-let nor-MAHL-nih"
+    },
+    {
+      "phrase": "Bilet ulgowy",
+      "meaning": "Discounted ticket",
+      "pronunciation": "BEE-let ool-GOH-vih"
+    },
+    {
+      "phrase": "Bilet dobowy",
+      "meaning": "24-hour ticket",
+      "pronunciation": "BEE-let doh-BOH-vih"
+    },
+    {
+      "phrase": "Jak dojechać do lotniska?",
+      "meaning": "How do I get to the airport?",
+      "pronunciation": "yahk doh-YE-hahch doh lot-NEES-kah"
+    },
+    {
+      "phrase": "Potrzebuję taksówki",
+      "meaning": "I need a taxi",
+      "pronunciation": "poh-tshreh-BOO-yeh tahk-SOOF-kee"
+    },
+    {
+      "phrase": "Poproszę na ulicę Marszałkowską",
+      "meaning": "To Marszałkowska Street, please",
+      "pronunciation": "poh-PROH-sheh nah oo-LEET-seh mar-shaow-KOF-skohn"
+    },
+    {
+      "phrase": "Ile kosztuje bilet?",
+      "meaning": "How much is the ticket?",
+      "pronunciation": "EE-leh kohs-TOO-yeh BEE-let"
+    },
+    {
+      "phrase": "Czy mogę zapłacić kartą?",
+      "meaning": "Can I pay by card?",
+      "pronunciation": "chih MOH-geh zah-PWAH-cheech KAR-tohn"
+    },
+    {
+      "phrase": "Czy mogę kupić bilet u kierowcy?",
+      "meaning": "Can I buy a ticket from the driver?",
+      "pronunciation": "chih MOH-geh KOO-pich BEE-let oo kyeh-ROHV-tsih"
+    },
+    {
+      "phrase": "Gdzie mogę kupić bilet?",
+      "meaning": "Where can I buy a ticket?",
+      "pronunciation": "gdjyeh MOH-geh KOO-pich BEE-let"
+    },
+    {
+      "phrase": "Jak długo jedzie autobus?",
+      "meaning": "How long does the bus take?",
+      "pronunciation": "yahk DWOO-goh YEH-jyeh ow-TOH-boos"
+    },
+    {
+      "phrase": "Kiedy odjeżdża pociąg?",
+      "meaning": "When does the train leave?",
+      "pronunciation": "KYEH-dih od-YEZH-djah POH-chyonk"
+    },
+    {
+      "phrase": "Czy ten tramwaj jedzie do centrum?",
+      "meaning": "Does this tram go to the center?",
+      "pronunciation": "chih tehn TRAM-vai YEH-jyeh doh TSEN-troom"
+    },
+    {
+      "phrase": "Proszę zatrzymać się tutaj",
+      "meaning": "Please stop here",
+      "pronunciation": "PROH-sheh zah-TSHEE-maht shyeh TOO-tai"
+    },
+    {
+      "phrase": "Czy to daleko stąd?",
+      "meaning": "Is it far from here?",
+      "pronunciation": "chih toh dah-LEH-koh stohnt"
+    },
+    {
+      "phrase": "Idzie pan/pani w dobrą stronę",
+      "meaning": "You are going the right way",
+      "pronunciation": "EE-jyeh pahn/pah-nee v DOH-brohn STROH-neh"
+    },
+    {
+      "phrase": "Zgubiłem się",
+      "meaning": "I’m lost (male)",
+      "pronunciation": "zguh-BEE-wem shyeh"
+    },
+    {
+      "phrase": "Zgubiłam się",
+      "meaning": "I’m lost (female)",
+      "pronunciation": "zguh-BEE-wahm shyeh"
+    }
+  ]
+}
