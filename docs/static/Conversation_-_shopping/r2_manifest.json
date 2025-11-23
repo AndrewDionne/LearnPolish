@@ -1,0 +1,31 @@
+{
+  "set": "Conversation_-_shopping",
+  "assetsBase": "https://cdn.polishpath.com",
+  "files": {
+    "audio/Conversation_-_shopping/0_Ile_to_kosztuje.mp3": "https://cdn.polishpath.com/audio/Conversation_-_shopping/0_Ile_to_kosztuje.mp3",
+    "audio/Conversation_-_shopping/10_Czy_macie_inne_kolory.mp3": "https://cdn.polishpath.com/audio/Conversation_-_shopping/10_Czy_macie_inne_kolory.mp3",
+    "audio/Conversation_-_shopping/11_Czy_macie_inny_rozmiar.mp3": "https://cdn.polishpath.com/audio/Conversation_-_shopping/11_Czy_macie_inny_rozmiar.mp3",
+    "audio/Conversation_-_shopping/12_Za_duze.mp3": "https://cdn.polishpath.com/audio/Conversation_-_shopping/12_Za_duze.mp3",
+    "audio/Conversation_-_shopping/13_Za_ma_e.mp3": "https://cdn.polishpath.com/audio/Conversation_-_shopping/13_Za_ma_e.mp3",
+    "audio/Conversation_-_shopping/14_Pasuje_dobrze.mp3": "https://cdn.polishpath.com/audio/Conversation_-_shopping/14_Pasuje_dobrze.mp3",
+    "audio/Conversation_-_shopping/15_Czy_moge_to_przymierzyc.mp3": "https://cdn.polishpath.com/audio/Conversation_-_shopping/15_Czy_moge_to_przymierzyc.mp3",
+    "audio/Conversation_-_shopping/16_Szukam_koszuli.mp3": "https://cdn.polishpath.com/audio/Conversation_-_shopping/16_Szukam_koszuli.mp3",
+    "audio/Conversation_-_shopping/17_Szukam_spodni.mp3": "https://cdn.polishpath.com/audio/Conversation_-_shopping/17_Szukam_spodni.mp3",
+    "audio/Conversation_-_shopping/18_Szukam_butow.mp3": "https://cdn.polishpath.com/audio/Conversation_-_shopping/18_Szukam_butow.mp3",
+    "audio/Conversation_-_shopping/19_Czy_to_jest_na_promocji.mp3": "https://cdn.polishpath.com/audio/Conversation_-_shopping/19_Czy_to_jest_na_promocji.mp3",
+    "audio/Conversation_-_shopping/1_Ile_to_razem.mp3": "https://cdn.polishpath.com/audio/Conversation_-_shopping/1_Ile_to_razem.mp3",
+    "audio/Conversation_-_shopping/20_Poprosze_siatke.mp3": "https://cdn.polishpath.com/audio/Conversation_-_shopping/20_Poprosze_siatke.mp3",
+    "audio/Conversation_-_shopping/21_Nie_mam_drobnych.mp3": "https://cdn.polishpath.com/audio/Conversation_-_shopping/21_Nie_mam_drobnych.mp3",
+    "audio/Conversation_-_shopping/22_Czy_moge_zap_acic_pozniej.mp3": "https://cdn.polishpath.com/audio/Conversation_-_shopping/22_Czy_moge_zap_acic_pozniej.mp3",
+    "audio/Conversation_-_shopping/23_Tylko_ogladam.mp3": "https://cdn.polishpath.com/audio/Conversation_-_shopping/23_Tylko_ogladam.mp3",
+    "audio/Conversation_-_shopping/24_Wezme_to.mp3": "https://cdn.polishpath.com/audio/Conversation_-_shopping/24_Wezme_to.mp3",
+    "audio/Conversation_-_shopping/2_Czy_moge_zap_acic_karta.mp3": "https://cdn.polishpath.com/audio/Conversation_-_shopping/2_Czy_moge_zap_acic_karta.mp3",
+    "audio/Conversation_-_shopping/3_Czy_moge_zap_acic_gotowka.mp3": "https://cdn.polishpath.com/audio/Conversation_-_shopping/3_Czy_moge_zap_acic_gotowka.mp3",
+    "audio/Conversation_-_shopping/4_Przyjmujecie_karty_kredytowe.mp3": "https://cdn.polishpath.com/audio/Conversation_-_shopping/4_Przyjmujecie_karty_kredytowe.mp3",
+    "audio/Conversation_-_shopping/5_Gdzie_jest_kasa.mp3": "https://cdn.polishpath.com/audio/Conversation_-_shopping/5_Gdzie_jest_kasa.mp3",
+    "audio/Conversation_-_shopping/6_Chcia_bym_zap_acic.mp3": "https://cdn.polishpath.com/audio/Conversation_-_shopping/6_Chcia_bym_zap_acic.mp3",
+    "audio/Conversation_-_shopping/7_Chcia_abym_zap_acic.mp3": "https://cdn.polishpath.com/audio/Conversation_-_shopping/7_Chcia_abym_zap_acic.mp3",
+    "audio/Conversation_-_shopping/8_Poprosze_paragon.mp3": "https://cdn.polishpath.com/audio/Conversation_-_shopping/8_Poprosze_paragon.mp3",
+    "audio/Conversation_-_shopping/9_Czy_macie_cos_tanszego.mp3": "https://cdn.polishpath.com/audio/Conversation_-_shopping/9_Czy_macie_cos_tanszego.mp3"
+  }
+}
