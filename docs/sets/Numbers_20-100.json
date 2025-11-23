@@ -1,0 +1,195 @@
+{
+  "name": "Numbers_20-100",
+  "modes": [
+    "learn",
+    "speak"
+  ],
+  "meta": {
+    "modes": [
+      "learn",
+      "speak"
+    ]
+  },
+  "cards": [
+    {
+      "phrase": "Dwadzieścia",
+      "meaning": "Twenty",
+      "pronunciation": "dva-JYESH-chah"
+    },
+    {
+      "phrase": "Dwadzieścia siedem",
+      "meaning": "Twenty-seven",
+      "pronunciation": "dva-JYESH-chah SHYEH-dem"
+    },
+    {
+      "phrase": "Trzydzieści",
+      "meaning": "Thirty",
+      "pronunciation": "tshi-JYESH-chee"
+    },
+    {
+      "phrase": "Trzydzieści jeden",
+      "meaning": "Thirty-one",
+      "pronunciation": "tshi-JYESH-chee YEH-den"
+    },
+    {
+      "phrase": "Czterdzieści",
+      "meaning": "Forty",
+      "pronunciation": "chter-JYESH-chee"
+    },
+    {
+      "phrase": "Czterdzieści dwa",
+      "meaning": "Forty-two",
+      "pronunciation": "chter-JYESH-chee dvah"
+    },
+    {
+      "phrase": "Pięćdziesiąt",
+      "meaning": "Fifty",
+      "pronunciation": "pyench-JYEH-shont"
+    },
+    {
+      "phrase": "Pięćdziesiąt trzy",
+      "meaning": "Fifty-three",
+      "pronunciation": "pyench-JYEH-shont tshih"
+    },
+    {
+      "phrase": "Sześćdziesiąt",
+      "meaning": "Sixty",
+      "pronunciation": "sheshch-JYEH-shont"
+    },
+    {
+      "phrase": "Sześćdziesiąt cztery",
+      "meaning": "Sixty-four",
+      "pronunciation": "sheshch-JYEH-shont CHTEH-rih"
+    },
+    {
+      "phrase": "Siedemdziesiąt",
+      "meaning": "Seventy",
+      "pronunciation": "shyeh-dem-JYEH-shont"
+    },
+    {
+      "phrase": "Siedemdziesiąt pięć",
+      "meaning": "Seventy-five",
+      "pronunciation": "shyeh-dem-JYEH-shont pyench"
+    },
+    {
+      "phrase": "Osiemdziesiąt",
+      "meaning": "Eighty",
+      "pronunciation": "oh-shyem-JYEH-shont"
+    },
+    {
+      "phrase": "Osiemdziesiąt sześć",
+      "meaning": "Eighty-six",
+      "pronunciation": "oh-shyem-JYEH-shont sheshch"
+    },
+    {
+      "phrase": "Dziewięćdziesiąt",
+      "meaning": "Ninety",
+      "pronunciation": "jyeh-vyench-JYEH-shont"
+    },
+    {
+      "phrase": "Dziewięćdziesiąt dziewięć",
+      "meaning": "Ninety-nine",
+      "pronunciation": "jyeh-vyench-JYEH-shont jyeh-vyench"
+    },
+    {
+      "phrase": "Sto",
+      "meaning": "One hundred",
+      "pronunciation": "stoh"
+    },
+    {
+      "phrase": "Sto pięć",
+      "meaning": "One hundred five",
+      "pronunciation": "stoh pyench"
+    },
+    {
+      "phrase": "Dwieście",
+      "meaning": "Two hundred",
+      "pronunciation": "d-vyeh-sh-cheh"
+    },
+    {
+      "phrase": "Dwieście dziesięć",
+      "meaning": "Two hundred ten",
+      "pronunciation": "d-vyeh-sh-cheh jyeh-shyench"
+    },
+    {
+      "phrase": "Trzysta",
+      "meaning": "Three hundred",
+      "pronunciation": "tshih-stah"
+    },
+    {
+      "phrase": "Trzysta dwadzieścia",
+      "meaning": "Three hundred twenty",
+      "pronunciation": "tshih-stah dva-JYESH-chah"
+    },
+    {
+      "phrase": "Czterysta",
+      "meaning": "Four hundred",
+      "pronunciation": "chter-ih-stah"
+    },
+    {
+      "phrase": "Czterysta trzydzieści",
+      "meaning": "Four hundred thirty",
+      "pronunciation": "chter-ih-stah tshi-JYESH-chee"
+    },
+    {
+      "phrase": "Pięćset",
+      "meaning": "Five hundred",
+      "pronunciation": "pyench-set"
+    },
+    {
+      "phrase": "Pięćset czterdzieści",
+      "meaning": "Five hundred forty",
+      "pronunciation": "pyench-set chter-JYESH-chee"
+    },
+    {
+      "phrase": "Sześćset",
+      "meaning": "Six hundred",
+      "pronunciation": "sheshch-set"
+    },
+    {
+      "phrase": "Sześćset pięćdziesiąt",
+      "meaning": "Six hundred fifty",
+      "pronunciation": "sheshch-set pyench-JYEH-shont"
+    },
+    {
+      "phrase": "Siedemset",
+      "meaning": "Seven hundred",
+      "pronunciation": "shyeh-dem-set"
+    },
+    {
+      "phrase": "Siedemset sześćdziesiąt",
+      "meaning": "Seven hundred sixty",
+      "pronunciation": "shyeh-dem-set sheshch-JYEH-shont"
+    },
+    {
+      "phrase": "Osiemset",
+      "meaning": "Eight hundred",
+      "pronunciation": "oh-shyem-set"
+    },
+    {
+      "phrase": "Osiemset siedemdziesiąt",
+      "meaning": "Eight hundred seventy",
+      "pronunciation": "oh-shyem-set shyeh-dem-JYEH-shont"
+    },
+    {
+      "phrase": "Dziewięćset",
+      "meaning": "Nine hundred",
+      "pronunciation": "jyeh-vyench-set"
+    },
+    {
+      "phrase": "Dziewięćset osiemdziesiąt",
+      "meaning": "Nine hundred eighty",
+      "pronunciation": "jyeh-vyench-set oh-shyem-JYEH-shont"
+    },
+    {
+      "phrase": "Tysiąc",
+      "meaning": "One thousand",
+      "pronunciation": "TISH-yon-ts"
+    },
+    {
+      "phrase": "Tysiąc dwadzieścia",
+      "meaning": "One thousand twenty",
+      "pronunciation": "TISH-yon-ts dva-JYESH-chah"
+    }
+  ]
+}
