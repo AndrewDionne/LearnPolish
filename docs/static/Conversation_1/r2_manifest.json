@@ -1,0 +1,31 @@
+{
+  "assetsBase": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev",
+  "files": {
+    "audio/Conversation_1/0_Dzien_dobry.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Conversation_1/0_Dzien_dobry.mp3",
+    "audio/Conversation_1/10_Prosze.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Conversation_1/10_Prosze.mp3",
+    "audio/Conversation_1/11_Nie_ma_za_co.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Conversation_1/11_Nie_ma_za_co.mp3",
+    "audio/Conversation_1/12_Przepraszam.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Conversation_1/12_Przepraszam.mp3",
+    "audio/Conversation_1/13_Sorki.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Conversation_1/13_Sorki.mp3",
+    "audio/Conversation_1/14_Tak.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Conversation_1/14_Tak.mp3",
+    "audio/Conversation_1/15_Nie.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Conversation_1/15_Nie.mp3",
+    "audio/Conversation_1/16_Moze.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Conversation_1/16_Moze.mp3",
+    "audio/Conversation_1/17_Jasne.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Conversation_1/17_Jasne.mp3",
+    "audio/Conversation_1/18_Oczywiscie.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Conversation_1/18_Oczywiscie.mp3",
+    "audio/Conversation_1/19_Mam_pytanie.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Conversation_1/19_Mam_pytanie.mp3",
+    "audio/Conversation_1/1_Dobry_wieczor.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Conversation_1/1_Dobry_wieczor.mp3",
+    "audio/Conversation_1/20_Nie_rozumiem.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Conversation_1/20_Nie_rozumiem.mp3",
+    "audio/Conversation_1/21_Mowi_pan_po_angielsku.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Conversation_1/21_Mowi_pan_po_angielsku.mp3",
+    "audio/Conversation_1/22_Mowi_pani_po_angielsku.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Conversation_1/22_Mowi_pani_po_angielsku.mp3",
+    "audio/Conversation_1/23_Jak_masz_na_imie.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Conversation_1/23_Jak_masz_na_imie.mp3",
+    "audio/Conversation_1/24_Jak_ma_pan_pani_na_imie.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Conversation_1/24_Jak_ma_pan_pani_na_imie.mp3",
+    "audio/Conversation_1/25_Mam_na_imie.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Conversation_1/25_Mam_na_imie.mp3",
+    "audio/Conversation_1/2_Czesc.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Conversation_1/2_Czesc.mp3",
+    "audio/Conversation_1/3_Hej.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Conversation_1/3_Hej.mp3",
+    "audio/Conversation_1/4_Do_widzenia.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Conversation_1/4_Do_widzenia.mp3",
+    "audio/Conversation_1/5_Na_razie.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Conversation_1/5_Na_razie.mp3",
+    "audio/Conversation_1/6_Pa.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Conversation_1/6_Pa.mp3",
+    "audio/Conversation_1/7_Mi_ego_dnia.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Conversation_1/7_Mi_ego_dnia.mp3",
+    "audio/Conversation_1/8_Dziekuje.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Conversation_1/8_Dziekuje.mp3",
+    "audio/Conversation_1/9_Dzieki.mp3": "https://pub-260a9d18379c46e094e4e27b2663495c.r2.dev/audio/Conversation_1/9_Dzieki.mp3"
+  }
+}

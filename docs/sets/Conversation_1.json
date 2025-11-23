@@ -1,0 +1,145 @@
+{
+  "name": "Conversation_1",
+  "modes": [
+    "learn",
+    "speak"
+  ],
+  "meta": {
+    "modes": [
+      "learn",
+      "speak"
+    ]
+  },
+  "cards": [
+    {
+      "phrase": "Dzień dobry",
+      "meaning": "Good morning / Good day",
+      "pronunciation": "jen DOH-brih"
+    },
+    {
+      "phrase": "Dobry wieczór",
+      "meaning": "Good evening",
+      "pronunciation": "DOH-brih VYEH-choor"
+    },
+    {
+      "phrase": "Cześć",
+      "meaning": "Hi / Hello",
+      "pronunciation": "cheshch"
+    },
+    {
+      "phrase": "Hej",
+      "meaning": "Hey",
+      "pronunciation": "hey"
+    },
+    {
+      "phrase": "Do widzenia",
+      "meaning": "Goodbye",
+      "pronunciation": "doh veed-ZEN-ya"
+    },
+    {
+      "phrase": "Na razie",
+      "meaning": "See you (soon)",
+      "pronunciation": "nah RAH-zhyeh"
+    },
+    {
+      "phrase": "Pa",
+      "meaning": "Bye (informal)",
+      "pronunciation": "pah"
+    },
+    {
+      "phrase": "Miłego dnia",
+      "meaning": "Have a nice day",
+      "pronunciation": "mee-WEH-goh DNIA"
+    },
+    {
+      "phrase": "Dziękuję",
+      "meaning": "Thank you",
+      "pronunciation": "jen-KOO-yeh"
+    },
+    {
+      "phrase": "Dzięki",
+      "meaning": "Thanks (informal)",
+      "pronunciation": "JEN-kee"
+    },
+    {
+      "phrase": "Proszę",
+      "meaning": "Please / Here you go",
+      "pronunciation": "PROH-sheh"
+    },
+    {
+      "phrase": "Nie ma za co",
+      "meaning": "You’re welcome",
+      "pronunciation": "NYEH mah ZAH tsoh"
+    },
+    {
+      "phrase": "Przepraszam",
+      "meaning": "Excuse me / I’m sorry",
+      "pronunciation": "psheh-PRAH-shahm"
+    },
+    {
+      "phrase": "Sorki",
+      "meaning": "Sorry (informal)",
+      "pronunciation": "SOR-kee"
+    },
+    {
+      "phrase": "Tak",
+      "meaning": "Yes",
+      "pronunciation": "tahk"
+    },
+    {
+      "phrase": "Nie",
+      "meaning": "No",
+      "pronunciation": "nyeh"
+    },
+    {
+      "phrase": "Może",
+      "meaning": "Maybe",
+      "pronunciation": "MOH-zheh"
+    },
+    {
+      "phrase": "Jasne",
+      "meaning": "Sure / Of course",
+      "pronunciation": "YAS-neh"
+    },
+    {
+      "phrase": "Oczywiście",
+      "meaning": "Of course",
+      "pronunciation": "oh-chih-VEE-shcheh"
+    },
+    {
+      "phrase": "Mam pytanie",
+      "meaning": "I have a question",
+      "pronunciation": "mahm pih-TAH-nyeh"
+    },
+    {
+      "phrase": "Nie rozumiem",
+      "meaning": "I don’t understand",
+      "pronunciation": "nyeh roh-ZOO-myem"
+    },
+    {
+      "phrase": "Mówi pan po angielsku?",
+      "meaning": "Do you (sir) speak English?",
+      "pronunciation": "MOO-vee pahn poh an-GYEL-skoo"
+    },
+    {
+      "phrase": "Mówi pani po angielsku?",
+      "meaning": "Do you (ma’am) speak English?",
+      "pronunciation": "MOO-vee pah-nee poh an-GYEL-skoo"
+    },
+    {
+      "phrase": "Jak masz na imię?",
+      "meaning": "What’s your name? (informal)",
+      "pronunciation": "yahk mahsh nah EE-myeh"
+    },
+    {
+      "phrase": "Jak ma pan/pani na imię?",
+      "meaning": "What’s your name? (formal)",
+      "pronunciation": "yahk mah pahn/pah-nee nah EE-myeh"
+    },
+    {
+      "phrase": "Mam na imię…",
+      "meaning": "My name is…",
+      "pronunciation": "mahm nah EE-myeh…"
+    }
+  ]
+}

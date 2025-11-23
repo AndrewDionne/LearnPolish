@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Dual-host <base>: GitHub Pages vs Flask -->
+  <script>
+    (function () {
+      var isGH = /\.github\.io$/i.test(location.hostname);
+      var baseHref = isGH ? '/LearnPolish/' : '/';
+      document.write('<base href="' + baseHref + '">');
+    })();
+  </script>
+
+  <title>Conversation_1 • Results • Path to POLISH</title>
+
+  <link rel="stylesheet" href="static/app.css?v=5">
+  <style>.wrap{ max-width:860px; margin:0 auto; padding:16px; }</style>
+</head>
+<body
+  data-header="Path to Polish"
+  data-note-lead="Results"
+  data-note-tail="Conversation_1">
+
+  <header class="topbar no-nav">
+    <div class="row container">
+      <div class="header-left">
+        <a class="brand" href="index.html" aria-label="Path to Polish — Home">
+          <svg class="brand-mark" aria-hidden="true" focusable="false">
+            <use href="static/brand.svg#ptp-mark"></use>
+          </svg>
+          <span id="headerBanner" class="header-banner"></span>
+        </a>
+      </div>
+      <nav class="head-actions">
+        <a href="profile.html"  id="profileBtn">Profile</a>
+        <a href="login.html"    id="loginLink">Sign In</a>
+        <a href="register.html" id="registerLink">Register</a>
+        <button id="logoutBtn" style="display:none;">Logout</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="card">
+      <h2 style="margin:0 0 8px">See how you did</h2>
+      <div id="resultLine" class="big">Loading…</div>
+      <div id="detailLine" class="muted" style="margin-top:6px;"></div>
+
+      <div class="row" style="margin-top:16px;">
+        <a id="retryBtn" class="btn btn-primary" href="./">Try again</a>
+        <a class="btn" href="learn.html">Back to Learn</a>
+        <a class="btn" href="index.html">Home</a>
+      </div>
+    </div>
+  </main>
+
+  <nav class="bottom" aria-label="Primary">
+    <a href="index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1v-10.5Z" stroke-width="1.5"/></svg>
+      <span>Home</span>
+    </a>
+    <a href="learn.html" class="active" aria-current="page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 12h16M4 18h9" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <span>Learn</span>
+    </a>
+    <a href="manage_sets/index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="16" rx="2" ry="2" stroke-width="1.5"/><path d="M7 8h10M7 12h10M7 16h7" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <span>Library</span>
+    </a>
+    <a href="dashboard.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 14h6V4H4v10Zm10 6h6V4h-6v16Z" stroke-width="1.5"/></svg>
+      <span>Dashboard</span>
+    </a>
+    <a href="groups.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm-9 9a9 9 0 0 1 18 0" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <span>Groups</span>
+    </a>
+  </nav>
+
+  <script src="static/js/api.js"></script>
+  <script src="static/js/page-chrome.js" defer></script>
+  <script>
+    const setName = "Conversation_1";
+
+    function apply(score, attempts, total, pointsTotal, awarded) {
+      document.getElementById('resultLine').textContent = score + '%';
+      let tail = (attempts || 0) + ' attempts • ' + (total || '?') + ' cards';
+      if (pointsTotal != null) tail += ' • ' + pointsTotal + ' pts';
+      if (awarded != null)     tail += ' (+' + awarded + ')';
+      document.getElementById('detailLine').textContent = tail;
+    }
+
+    (async () => {
+      const urlAwarded = (() => {
+        const v = new URL(location.href).searchParams.get('awarded');
+        return (v != null) ? Number(v) : null;
+      })();
+
+      let done = false, awarded = urlAwarded;
+
+      try {
+        let r = await api.fetch('/api/my/scores?limit=1&set_name=' + encodeURIComponent(setName));
+        if (!r.ok) r = await api.fetch('/api/get_scores?set_name=' + encodeURIComponent(setName) + '&limit=1');
+        if (r.ok) {
+          const payload = await r.json();
+          const last = Array.isArray(payload)
+            ? payload[0]
+            : (payload && Array.isArray(payload.scores) ? payload.scores[0] : null);
+          if (last && (last.set_name === setName || !last.set_name)) {
+            const d = last.details || {};
+            if (awarded == null && d.points_awarded != null) awarded = Number(d.points_awarded);
+            apply(
+              Math.round(Number(last.score) || 0),
+              Number(last.attempts) || 0,
+              Number(d.total) || undefined,
+              Number(d.points_total) || undefined,
+              awarded
+            );
+            done = true;
+          }
+        }
+      } catch (_ignore) { }
+
+      if (!done) {
+        try {
+          const raw = localStorage.getItem('lp_last_result_' + setName);
+          if (raw) {
+            const j = JSON.parse(raw);
+            apply(
+              Math.round(Number(j.score) || 0),
+              Number(j.attempts) || 0,
+              Number(j.total) || undefined,
+              Number(j.points_total) || undefined,
+              awarded
+            );
+            done = true;
+          }
+        } catch(_ignore) { }
+      }
+
+      if (!done) {
+        document.getElementById('resultLine').textContent = '—';
+        document.getElementById('detailLine').textContent = 'No recent result found.';
+      }
+    })();
+  </script>
+</body>
+</html>
