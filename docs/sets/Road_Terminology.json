@@ -1,0 +1,150 @@
+{
+  "name": "Road_Terminology",
+  "modes": [
+    "learn",
+    "speak"
+  ],
+  "meta": {
+    "modes": [
+      "learn",
+      "speak"
+    ]
+  },
+  "cards": [
+    {
+      "phrase": "ulica",
+      "meaning": "Street",
+      "pronunciation": "oo-LEE-tsah"
+    },
+    {
+      "phrase": "aleja",
+      "meaning": "Avenue / Boulevard",
+      "pronunciation": "ah-LEH-yah"
+    },
+    {
+      "phrase": "plac",
+      "meaning": "Square / Plaza",
+      "pronunciation": "plahts"
+    },
+    {
+      "phrase": "droga",
+      "meaning": "Road",
+      "pronunciation": "DROH-gah"
+    },
+    {
+      "phrase": "bulwar",
+      "meaning": "Embankment / Boulevard along river",
+      "pronunciation": "BOOL-vahr"
+    },
+    {
+      "phrase": "osiedle",
+      "meaning": "Housing estate / Residential area",
+      "pronunciation": "oh-SHED-leh"
+    },
+    {
+      "phrase": "ścieżka",
+      "meaning": "Path / Trail / Footpath",
+      "pronunciation": "SHCHYEZH-kah"
+    },
+    {
+      "phrase": "wiadukt",
+      "meaning": "Viaduct / Overpass",
+      "pronunciation": "VYAH-dookt"
+    },
+    {
+      "phrase": "most",
+      "meaning": "Bridge",
+      "pronunciation": "most"
+    },
+    {
+      "phrase": "rondo",
+      "meaning": "Roundabout",
+      "pronunciation": "RON-doh"
+    },
+    {
+      "phrase": "Jak dojść do …?",
+      "meaning": "How do I get to …?",
+      "pronunciation": "yahk doyshch doh …?"
+    },
+    {
+      "phrase": "Czy to jest daleko?",
+      "meaning": "Is it far?",
+      "pronunciation": "chih toh yehst dah-LEH-koh?"
+    },
+    {
+      "phrase": "ulica Marszałkowska",
+      "meaning": "Marszałkowska Street",
+      "pronunciation": "oo-LEE-tsah mar-shaow-KOF-skah"
+    },
+    {
+      "phrase": "ulica Nowy Świat",
+      "meaning": "Nowy Świat Street",
+      "pronunciation": "oo-LEE-tsah NOH-vih SHFYAT"
+    },
+    {
+      "phrase": "aleja Jerozolimskie",
+      "meaning": "Jerozolimskie Avenue",
+      "pronunciation": "ah-LEH-yah yeh-roh-zoh-LEE-m-skeh"
+    },
+    {
+      "phrase": "plac Zamkowy",
+      "meaning": "Castle Square",
+      "pronunciation": "plahts zahm-KOH-vih"
+    },
+    {
+      "phrase": "bulwar Wiślany",
+      "meaning": "Vistula Boulevard",
+      "pronunciation": "BOOL-vahr VEE-shlah-nih"
+    },
+    {
+      "phrase": "ulica Krucza",
+      "meaning": "Krucza Street",
+      "pronunciation": "oo-LEE-tsah KROO-chah"
+    },
+    {
+      "phrase": "aleja Niepodległości",
+      "meaning": "Niepodległości Avenue",
+      "pronunciation": "ah-LEH-yah nyeh-pod-leh-GWOSH-chee"
+    },
+    {
+      "phrase": "ulica Świętokrzyska",
+      "meaning": "Świętokrzyska Street",
+      "pronunciation": "oo-LEE-tsah shfyen-toh-KZHYS-kah"
+    },
+    {
+      "phrase": "plac Grzybowski",
+      "meaning": "Grzybowski Square",
+      "pronunciation": "plahts gzhih-BOHF-skee"
+    },
+    {
+      "phrase": "droga wojewódzka 634",
+      "meaning": "Voivodeship Road 634",
+      "pronunciation": "DROH-gah voy-eh-VOOT-skah szehss-trzy-czter"
+    },
+    {
+      "phrase": "ulica Tamka",
+      "meaning": "Tamka Street",
+      "pronunciation": "oo-LEE-tsah TAM-kah"
+    },
+    {
+      "phrase": "most Poniatowskiego",
+      "meaning": "Poniatowski Bridge",
+      "pronunciation": "most poh-nyah-TOHV-skeh-go"
+    },
+    {
+      "phrase": "rondo ONZ",
+      "meaning": "ONZ Roundabout",
+      "pronunciation": "RON-doh oh-EN-zet"
+    },
+    {
+      "phrase": "ścieżka rowerowa nad Wisłą",
+      "meaning": "Bike path along the Vistula",
+      "pronunciation": "SHCHYEZH-kah roh-veh-ROH-vah nahd VEE-swah"
+    },
+    {
+      "phrase": "wiadukt kolejowy",
+      "meaning": "Railway overpass",
+      "pronunciation": "VYAH-dookt koh-leh-YOH-vih"
+    }
+  ]
+}
