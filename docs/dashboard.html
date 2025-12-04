@@ -277,31 +277,30 @@
   <script src="static/js/api.js"></script>
   <script src="static/js/page-chrome.js" defer></script>
 
+  <!-- Auth gate -->
   <script>
-  // Require sign-in (redirect to login if 401)
-  (async () => {
-    await api.requireAuth('login.html');
-    const logoutBtn   = document.getElementById('logoutBtn');
-    const loginLink   = document.getElementById('loginLink');
-    const registerLink= document.getElementById('registerLink');
+    (async () => {
+      await api.requireAuth('login.html');
+      const logoutBtn   = document.getElementById('logoutBtn');
+      const loginLink   = document.getElementById('loginLink');
+      const registerLink= document.getElementById('registerLink');
 
-    try {
-      const r = await api.fetch('/api/me');
-      if (r.ok) {
-        loginLink.style.display='none';
-        registerLink.style.display='none';
-        logoutBtn.style.display='inline-flex';
-      }
-    } catch(_) {}
+      try {
+        const r = await api.fetch('/api/me');
+        if (r.ok) {
+          loginLink.style.display='none';
+          registerLink.style.display='none';
+          logoutBtn.style.display='inline-flex';
+        }
+      } catch(_) {}
 
-    logoutBtn?.addEventListener('click', async ()=>{
-      try { await api.fetch('/api/logout',{method:'POST'}); } catch(_){}
-      api.clearToken();        // ← clears lp_token + future storage
-      location.href='login.html';
-    });
-  })();
-</script>
-
+      logoutBtn?.addEventListener('click', async ()=>{
+        try { await api.fetch('/api/logout',{method:'POST'}); } catch(_){}
+        api.clearToken();
+        location.href='login.html';
+      });
+    })();
+  </script>
 
   <script>
     /* ---------- Dashboard logic (robust, GH+Flask) ---------- */
@@ -322,15 +321,27 @@
       if (mode === 'practice'  || mode === 'speak')  return 'practice/'  + enc + '/';
       return 'flashcards/' + enc + '/';
     }
-    function stars(n){ if (typeof n !== 'number' || isNaN(n)) return '☆☆☆☆☆'; const full=Math.max(0,Math.min(5,Math.round(n))); return '★'.repeat(full)+'☆'.repeat(5-full); }
+    function stars(n){
+      if (typeof n !== 'number' || isNaN(n)) return '☆☆☆☆☆';
+      const full=Math.max(0,Math.min(5,Math.round(n)));
+      return '★'.repeat(full)+'☆'.repeat(5-full);
+    }
 
     // Local ratings cache
-    function loadLocalRatings(){ try{ return JSON.parse(localStorage.getItem('lp.setRatings') || '{}'); }catch(_){ return {}; } }
+    function loadLocalRatings(){
+      try{ return JSON.parse(localStorage.getItem('lp.setRatings') || '{}'); }
+      catch(_){ return {}; }
+    }
     const myRatings = loadLocalRatings();
 
     // Spaced repetition (1–2–3–7–30)
     const PASS_SCORE = 100, SR_STEPS = [1,2,3,7,30];
-    function nextDueDate(lastPass, stage){ if (stage >= SR_STEPS.length) return null; const d=new Date(lastPass); d.setDate(d.getDate()+SR_STEPS[stage]); return d; }
+    function nextDueDate(lastPass, stage){
+      if (stage >= SR_STEPS.length) return null;
+      const d=new Date(lastPass);
+      d.setDate(d.getDate()+SR_STEPS[stage]);
+      return d;
+    }
     function computeSRFromScores(events){
       let stage=0, lastPass=null;
       const byTime=[...events].sort((a,b)=> new Date(a.timestamp)-new Date(b.timestamp));
@@ -367,22 +378,34 @@
           const best   = Number(s.longest_streak || s.best_streak || 0);
           const weekly = Number(s.weekly_points || s.weekly_gold || 0);
           const goal   = Number(s.goal_points || s.goal_gold || 500) || 500;
-          const pct = Math.max(0, Math.min(100, Math.round((weekly/goal)*100)));
+          const pct    = Math.max(0, Math.min(100, Math.round((weekly/goal)*100)));
 
-          if (streak >= 0){ document.getElementById('streakText').textContent = `Streak: ${streak} ${streak===1?'day':'days'}`; document.getElementById('streakPill').style.display='inline-flex'; }
-          if (best > 0)   { document.getElementById('bestText').textContent   = `Best: ${best} ${best===1?'day':'days'}`;     document.getElementById('bestPill').style.display='inline-flex'; }
+          if (streak >= 0){
+            document.getElementById('streakText').textContent =
+              `Streak: ${streak} ${streak===1?'day':'days'}`;
+            document.getElementById('streakPill').style.display='inline-flex';
+          }
+          if (best > 0){
+            document.getElementById('bestText').textContent =
+              `Best: ${best} ${best===1?'day':'days'}`;
+            document.getElementById('bestPill').style.display='inline-flex';
+          }
 
-          document.getElementById('weeklyText').textContent = `${weekly} / ${goal} gold this week`;
+          document.getElementById('weeklyText').textContent =
+            `${weekly} / ${goal} gold this week`;
           document.getElementById('weeklyBar').style.width = pct + '%';
+
           const chest = document.getElementById('chest');
-          if (weekly >= goal) chest.classList.add('achieved'); else chest.classList.remove('achieved');
+          if (weekly >= goal) chest.classList.add('achieved');
+          else chest.classList.remove('achieved');
 
           const total = (s.total_gold ?? s.total_points ?? null);
           document.getElementById('goldTotal').textContent = 'Total gold: ' + (total!=null ? total : '—');
           document.getElementById('goldBank').textContent  = total!=null ? total : '—';
           document.getElementById('playerName').textContent   = s.display_name || s.name || 'Traveler';
           document.getElementById('regionsCount').textContent = s.regions_unlocked ?? 0;
-          document.getElementById('titlesMini').textContent   = (s.titles || []).slice(0,2).join(', ') || '—';
+          document.getElementById('titlesMini').textContent   =
+            (s.titles || []).slice(0,2).join(', ') || '—';
         }
       }catch(_){}
 
@@ -392,11 +415,12 @@
           const r = await api.fetch('/api/my/challenges');
           if (r.ok) return await r.json();
         }catch(_){}
+        // Fallback demo data
         return [
-          {id:'d1',scope:'daily',   title:'Complete 1 Learn session', reward:10, progress:0, goal:1,   done:false, cta_href:'learn.html'},
-          {id:'d2',scope:'daily',   title:'Score 100 in any activity',reward:15, progress:0, goal:1,   done:false, cta_href:'flashcards/'},
-          {id:'w1',scope:'weekly',  title:'Earn 300 gold this week',   reward:60, progress:0, goal:300, done:false, cta_href:'index.html'},
-          {id:'m1',scope:'monthly', title:'Master 3 collections',      reward:200,progress:0, goal:3,   done:false, cta_href:'manage_sets/'},
+          {id:'d1',scope:'daily',   title:'Complete 1 Learn session', reward:10,  progress:0, goal:1,   done:false, cta_href:'learn.html'},
+          {id:'d2',scope:'daily',   title:'Score 100 in any activity',reward:15,  progress:0, goal:1,   done:false, cta_href:'flashcards/'},
+          {id:'w1',scope:'weekly',  title:'Earn 300 gold this week',   reward:60,  progress:0, goal:300, done:false, cta_href:'index.html'},
+          {id:'m1',scope:'monthly', title:'Master 3 collections',      reward:200, progress:0, goal:3,   done:false, cta_href:'manage_sets/'},
           {id:'s1',scope:'special', title:'Event: Polish Proverbs Pack',reward:100,progress:0, goal:1,  done:false, cta_href:'manage_sets/'},
         ];
       }
@@ -428,7 +452,9 @@
         ['daily','weekly','monthly','special'].forEach(scope=>{
           const arr = chall.filter(x=>x.scope===scope);
           zones[scope].innerHTML = '';
-          if (!arr.length){ zones[scope].innerHTML = `<div class="muted tiny">No ${scope} challenges right now.</div>`; }
+          if (!arr.length){
+            zones[scope].innerHTML = `<div class="muted tiny">No ${scope} challenges right now.</div>`;
+          }
           arr.forEach(c=> renderChallenge(c, zones[scope]));
         });
         document.addEventListener('click', async (e)=>{
@@ -437,91 +463,24 @@
           const id = btn.getAttribute('data-complete');
           btn.disabled = true;
           try{
-            await api.fetch('/api/my/challenges/complete', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id})});
+            await api.fetch('/api/my/challenges/complete', {
+              method:'POST',
+              headers:{'Content-Type':'application/json'},
+              body:JSON.stringify({id})
+            });
             btn.textContent = 'Claimed';
-          }catch(_){ btn.textContent='Claimed'; }
+          }catch(_){
+            btn.textContent='Claimed';
+          }
         });
       }catch(_){}
 
       // ===== Learning statistics =====
+      // Global ratings cache (shared with other pages)
       var globalRatings = window.globalRatings || {};
       window.globalRatings = globalRatings;
-      try{
-        let rr = await api.fetch('/api/sets/ratings/averages');
-        if (!rr.ok) rr = await api.fetch('/api/sets/ratings');
-        if (rr.ok){
-          const arr = await rr.json();
-          (arr||[]).forEach(x=>{
-            const avg = typeof x.avg === 'number' ? x.avg
-                    : typeof x.rating === 'number' ? x.rating
-                    : (typeof x.average === 'number' ? x.average : null);
-            if (avg!=null) globalRatings[x.set_name] = avg;
-          });
-        }
-      }catch(_){}
 
-      try{
-        const sr = await api.fetch('/api/my/scores?limit=2000');
-        const raw = sr.ok ? await sr.json() : [];
-        // Group by (set_name, mode)
-        const groups = new Map();
-        for (const e of raw){
-          if (!e.set_name) continue;
-          const mode = (e.mode || 'flashcards').toLowerCase();
-          const key  = `${e.set_name}│${mode}`;
-          if (!groups.has(key)) groups.set(key, []);
-          groups.get(key).push(e);
-        }
-
-        const rows = [];
-        for (const [key, evts] of groups){
-          const setName = evts[0].set_name;
-          const mode    = (evts[0].mode || 'flashcards').toLowerCase();
-          const trials  = evts.length;
-          const top     = evts.reduce((m,e)=> Math.max(m, Number(e.score||0)), 0);
-          const last    = evts.reduce((m,e)=> Math.max(m, +new Date(e.timestamp||0)), 0);
-          const href    = pathFor(mode, setName);
-
-          const srState = computeSRFromScores(evts);
-          const lastPass = srState.last_pass_ts ? new Date(srState.last_pass_ts) : null;
-
-          const gAvg = globalRatings[setName];
-          const mine = myRatings[setName];
-          let ratingCell = gAvg != null ? `<div class="nowrap" title="Global rating">${stars(gAvg)}</div>` : `<div class="tiny">no ratings</div>`;
-          if (!mine){ ratingCell += `<div class="tiny"><a href="manage_sets/">add your rating</a></div>`; }
-
-          rows.push({
-            setName, mode, trials, top, last,
-            statusHtml: statusBadge(srState.stage, lastPass, href),
-            ratingCell, href
-          });
-        }
-
-        // Sort: urgency (repetition due first) then recency
-        const urgency = (h)=> h.includes('Repetition') || h.includes('🧪') ? 0 : h.includes('Complete') ? 2 : h.includes('Mastered') ? 3 : 1;
-        rows.sort((a,b)=> (urgency(a.statusHtml) - urgency(b.statusHtml)) || (b.last - a.last));
-
-        const tb = document.querySelector('#statsTable tbody');
-        const empty = document.getElementById('statsEmpty');
-        if (!rows.length){ empty.style.display='block'; }
-        else{
-          empty.style.display='none';
-          tb.innerHTML = rows.map(r => `
-            <tr>
-              <td>${r.ratingCell}</td>
-              <td><a href="${r.href}">${r.setName}</a></td>
-              <td>${modeLabel(r.mode)}</td>
-              <td>${r.top}</td>
-              <td>${r.trials}</td>
-              <td>${r.statusHtml}</td>
-              <td class="nowrap">${new Date(r.last).toLocaleString()}</td>
-            </tr>
-          `).join('');
-        }
-      }catch(_){}
-
-      // ===== Learning statistics =====
-      const globalRatings = {};
+      // Fetch global ratings (averages)
       try{
         let rr = await api.fetch('/api/sets/ratings/averages');
         if (!rr.ok) rr = await api.fetch('/api/sets/ratings');
@@ -537,12 +496,28 @@
       }catch(_){}
 
       try{
+        // Restrict stats to sets that are still in the user's library
+        let allowedNames = null;
+        try{
+          const libRes = await api.fetch('/api/my/sets');
+          if (libRes.ok){
+            const lib = await libRes.json();
+            if (Array.isArray(lib)){
+              allowedNames = new Set(
+                lib.map(s => (s.name || '').trim()).filter(Boolean)
+              );
+            }
+          }
+        }catch(_){}
+
         const sr = await api.fetch('/api/my/scores?limit=2000');
         const raw = sr.ok ? await sr.json() : [];
+
         // Group by (set_name, mode)
         const groups = new Map();
         for (const e of raw){
           if (!e.set_name) continue;
+          if (allowedNames && !allowedNames.has(e.set_name)) continue; // filter out removed collections
           const mode = (e.mode || 'flashcards').toLowerCase();
           const key  = `${e.set_name}│${mode}`;
           if (!groups.has(key)) groups.set(key, []);
@@ -558,13 +533,17 @@
           const last    = evts.reduce((m,e)=> Math.max(m, +new Date(e.timestamp||0)), 0);
           const href    = pathFor(mode, setName);
 
-          const srState = computeSRFromScores(evts);
+          const srState  = computeSRFromScores(evts);
           const lastPass = srState.last_pass_ts ? new Date(srState.last_pass_ts) : null;
 
           const gAvg = globalRatings[setName];
           const mine = myRatings[setName];
-          let ratingCell = gAvg != null ? `<div class="nowrap" title="Global rating">${stars(gAvg)}</div>` : `<div class="tiny">no ratings</div>`;
-          if (!mine){ ratingCell += `<div class="tiny"><a href="manage_sets/">add your rating</a></div>`; }
+          let ratingCell = gAvg != null
+            ? `<div class="nowrap" title="Global rating">${stars(gAvg)}</div>`
+            : `<div class="tiny">no ratings</div>`;
+          if (!mine){
+            ratingCell += `<div class="tiny"><a href="manage_sets/">add your rating</a></div>`;
+          }
 
           rows.push({
             setName, mode, trials, top, last,
@@ -574,13 +553,17 @@
         }
 
         // Sort: urgency (repetition due first) then recency
-        const urgency = (h)=> h.includes('Repetition') || h.includes('🧪') ? 0 : h.includes('Complete') ? 2 : h.includes('Mastered') ? 3 : 1;
+        const urgency = (h)=> h.includes('Repetition') || h.includes('🧪') ? 0
+                         : h.includes('Complete') ? 2
+                         : h.includes('Mastered') ? 3
+                         : 1;
         rows.sort((a,b)=> (urgency(a.statusHtml) - urgency(b.statusHtml)) || (b.last - a.last));
 
-        const tb = document.querySelector('#statsTable tbody');
+        const tb    = document.querySelector('#statsTable tbody');
         const empty = document.getElementById('statsEmpty');
-        if (!rows.length){ empty.style.display='block'; }
-        else{
+        if (!rows.length){
+          empty.style.display='block';
+        } else {
           empty.style.display='none';
           tb.innerHTML = rows.map(r => `
             <tr>
@@ -595,6 +578,7 @@
           `).join('');
         }
       }catch(_){}
+
     })();
   </script>
 </body>
