@@ -1,0 +1,85 @@
+{
+  "name": "letter_recognition_2",
+  "modes": [
+    "learn",
+    "speak"
+  ],
+  "meta": {
+    "modes": [
+      "learn",
+      "speak"
+    ]
+  },
+  "cards": [
+    {
+      "phrase": "cena, cukier, cichy",
+      "meaning": "c – usually 'ts' (like 'cats'). Listen: cena, cukier, cichy.",
+      "pronunciation": "TSEH-nah, TSOO-kyer, CHEE-khih"
+    },
+    {
+      "phrase": "czeka, czas, czarny",
+      "meaning": "cz – hard 'ch' as in 'church'. Listen: czeka, czas, czarny.",
+      "pronunciation": "CHEH-kah, CHASS, CHAR-nih"
+    },
+    {
+      "phrase": "ciasto, ćma, ćwiczyć",
+      "meaning": "ci / ć – soft 'ch'. Compare with c and cz. Listen: ciasto, ćma, ćwiczyć.",
+      "pronunciation": "CHAS-to, CHMAH, CHVEE-chich"
+    },
+    {
+      "phrase": "sok, basen, proszę",
+      "meaning": "s – plain 's' as in 'see'. Listen: sok, basen, proszę.",
+      "pronunciation": "sok, BAH-sen, PRO-sheh"
+    },
+    {
+      "phrase": "szkoła, szafa, proszę",
+      "meaning": "sz – 'sh' as in 'shoe'. Listen: szkoła, szafa, proszę.",
+      "pronunciation": "SHKO-wah, SHAH-fah, PRO-sheh"
+    },
+    {
+      "phrase": "środa, śnieg, prosić",
+      "meaning": "ś – soft 'sh' sound. Compare s / sz / ś. Listen: środa, śnieg, prosić.",
+      "pronunciation": "SHRO-dah, SHNYEG, PRO-shich"
+    },
+    {
+      "phrase": "zamek, wazon, razem",
+      "meaning": "z – 'z' as in 'zoo'. Listen: zamek, wazon, razem.",
+      "pronunciation": "ZAH-mek, VA-zon, RAH-zem"
+    },
+    {
+      "phrase": "żaba, morze, dużo",
+      "meaning": "ż – 'zh' as in 'vision'. Listen: żaba, morze, dużo.",
+      "pronunciation": "ZHAH-bah, MOR-zheh, DOO-zho"
+    },
+    {
+      "phrase": "rzeka, drzewo, morze",
+      "meaning": "rz – sounds the same as ż. Listen: rzeka, drzewo, morze.",
+      "pronunciation": "ZHEH-kah, ZHEH-vo, MOR-zheh"
+    },
+    {
+      "phrase": "źle, źródło, bliźniak",
+      "meaning": "ź – soft 'zh'. Compare z / ż / rz / ź. Listen: źle, źródło, bliźniak.",
+      "pronunciation": "ZH-leh, ZHROOD-wo, BLEEZ-nyak"
+    },
+    {
+      "phrase": "dom, jeden, rada",
+      "meaning": "d – plain 'd'. Baseline to compare with dz / dż / dź.",
+      "pronunciation": "dom, YEH-den, RAH-dah"
+    },
+    {
+      "phrase": "dzisiaj, dziecko, jeździć",
+      "meaning": "dzi / dz – sounds like 'j' in 'jeans' or soft 'dzh'. Listen: dzisiaj, dziecko, jeździć.",
+      "pronunciation": "JEE-shai, JYETS-ko, YEZH-jich"
+    },
+    {
+      "phrase": "dżem, dżungla, dżinsy",
+      "meaning": "dż – 'j' as in 'jam'. Listen: dżem, dżungla, dżinsy.",
+      "pronunciation": "JEM, JOONG-lah, JEEN-sih"
+    },
+    {
+      "phrase": "dźwięk, młodzież, niedźwiedź",
+      "meaning": "dź – soft 'j' sound. Compare dz / dż / dź. Listen: dźwięk, młodzież, niedźwiedź.",
+      "pronunciation": "JVENK, MWO-dzesh, NYEDJ-vyech"
+    }
+  ]
+}
