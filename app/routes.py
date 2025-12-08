@@ -9,6 +9,10 @@ routes_bp = Blueprint("routes", __name__)
 # Path to the docs directory that we serve as the static site
 DOCS_DIR = Path(__file__).resolve().parent.parent / "docs"
 
+# Offline mini-app root (docs/offline)
+OFFLINE_DIR = DOCS_DIR / "offline"
+
+
 # ----------------------------
 # Local static (dev) for audio, etc.
 #   e.g. /custom_static/<set>/audio/<file>.mp3
@@ -102,3 +106,54 @@ def test_set(set_name):
 @routes_bp.route("/sets/<path:set_name>.json")
 def set_json(set_name):
     return _serve_set_json(set_name)
+
+# ----------------------------
+# Offline mini-app: static HTML, JS, and Service Worker
+# ----------------------------
+
+@routes_bp.route("/offline")
+def offline_index():
+    """
+    Offline hub page: docs/offline/index.html
+    """
+    return send_from_directory(OFFLINE_DIR, "index.html")
+
+
+@routes_bp.route("/offline/vocab")
+def offline_vocab():
+    """
+    Offline vocab & speak page: docs/offline/vocab.html
+    """
+    return send_from_directory(OFFLINE_DIR, "vocab.html")
+
+
+@routes_bp.route("/offline/reading")
+def offline_reading():
+    """
+    Offline reading page: docs/offline/reading.html
+    """
+    return send_from_directory(OFFLINE_DIR, "reading.html")
+
+
+@routes_bp.route("/offline/vocab.js")
+def offline_vocab_js():
+    return send_from_directory(OFFLINE_DIR, "vocab.js")
+
+
+@routes_bp.route("/offline/reading.js")
+def offline_reading_js():
+    return send_from_directory(OFFLINE_DIR, "reading.js")
+
+
+@routes_bp.route("/offline/sw.js")
+def offline_sw():
+    """
+    Shared Service Worker for all offline pages.
+    Scope: /offline/*
+    """
+    resp = send_from_directory(OFFLINE_DIR, "sw.js")
+    # While iterating on SW, avoid aggressive caching
+    resp.cache_control.max_age = 0
+    resp.cache_control.no_cache = True
+    resp.cache_control.must_revalidate = True
+    return resp
