@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Path to POLISH • Offline Vocab & Speak</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link rel="stylesheet" href="../static/app.css">
+  <style>
+    body {
+      background: var(--bg, #f7f7fb);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+      margin: 0;
+      color: var(--text, #0c0f14);
+    }
+    .wrap {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 16px 16px 32px;
+    }
+    header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    header h1 {
+      font-size: 1.3rem;
+      margin: 0;
+    }
+    header small {
+      font-size: .8rem;
+      color: var(--muted, #5a6472);
+    }
+    .set-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .set-row select {
+      min-width: 200px;
+      padding: 6px 8px;
+      border-radius: 10px;
+      border: 1px solid var(--border, #e6e6ef);
+      font-size: .9rem;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border, #e6e6ef);
+      background: var(--card, #fff);
+      font-size: .8rem;
+      cursor: pointer;
+      gap: 6px;
+    }
+    .btn-primary {
+      background: var(--brand, #2d6cdf);
+      color: #fff;
+      border-color: transparent;
+    }
+    .btn[disabled] {
+      opacity: .5;
+      cursor: default;
+    }
+    .btn-pill {
+      border-radius: 999px;
+    }
+    .pill {
+      font-size: .7rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(45,108,223,.08);
+      color: var(--brand, #2d6cdf);
+      margin-left: 4px;
+    }
+    .status {
+      font-size: .75rem;
+      color: var(--muted, #5a6472);
+      margin-top: 4px;
+      min-height: 1.2em;
+    }
+
+    .card-shell {
+      margin-top: 16px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 16px;
+    }
+    .card {
+      background: var(--card, #fff);
+      border-radius: 16px;
+      box-shadow: var(--shadow, 0 8px 24px rgba(0,0,0,.08));
+      padding: 18px 16px 16px;
+      border: 1px solid var(--border, #e6e6ef);
+      min-height: 180px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .card-front-label,
+    .card-back-label {
+      font-size: .7rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--muted, #5a6472);
+      margin-bottom: 6px;
+    }
+    .card-front-main {
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+    .card-back-main {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .card-pron {
+      font-size: .9rem;
+      color: var(--muted,#5a6472);
+      margin-bottom: 6px;
+    }
+    .card-meaning {
+      font-size: .9rem;
+      color: var(--muted,#5a6472);
+    }
+    .card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 16px;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .nav-buttons {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .meta {
+      font-size: .8rem;
+      color: var(--muted,#5a6472);
+    }
+    .meta strong {
+      font-weight: 600;
+      color: var(--text,#0c0f14);
+    }
+    .btn-autoplay.active {
+      background: #0f9f6e;
+      color: #fff;
+      border-color: transparent;
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header>
+      <div>
+        <h1>Offline Vocab &amp; Speak</h1>
+        <small>English → Polish → audio. No scores, just practice.</small>
+      </div>
+      <button type="button" class="btn" onclick="location.href='index.html'">
+        ⬅︎ Offline home
+      </button>
+    </header>
+
+    <section>
+      <div class="set-row">
+        <label for="setSelect" style="font-size:.85rem;">Set:</label>
+        <select id="setSelect"></select>
+        <button id="downloadBtn" type="button" class="btn btn-primary">
+          ⬇︎ Download for offline
+        </button>
+      </div>
+      <div id="setStatus" class="status"></div>
+    </section>
+
+    <section class="card-shell">
+      <article class="card" id="card">
+        <div>
+          <div id="sideLabel" class="card-front-label">Front • English</div>
+          <div id="frontText" class="card-front-main">Choose a set to begin.</div>
+
+          <div id="backContent" style="display:none; margin-top:4px;">
+            <div id="polishText" class="card-back-main"></div>
+            <div id="pronText" class="card-pron"></div>
+            <div id="meaningText" class="card-meaning"></div>
+          </div>
+        </div>
+
+        <div class="card-footer">
+          <div class="nav-buttons">
+            <button id="flipBtn" type="button" class="btn btn-pill">Flip</button>
+            <button id="prevBtn" type="button" class="btn btn-pill">Previous</button>
+            <button id="nextBtn" type="button" class="btn btn-pill">Next</button>
+            <button id="playBtn" type="button" class="btn btn-pill">Play</button>
+            <button id="autoplayBtn" type="button" class="btn btn-pill btn-autoplay">
+              Auto-Play
+            </button>
+          </div>
+          <div class="meta" id="metaInfo">
+            Card <strong>0</strong> of <strong>0</strong>
+          </div>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <!-- Config + audio helpers -->
+  <script src="../static/js/app-config.js"></script>
+  <script src="../static/js/audio-paths.js"></script>
+  <script src="vocab.js"></script>
+</body>
+</html>

@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Path to POLISH • Offline</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Shared styles -->
+  <link rel="stylesheet" href="../static/app.css">
+  <style>
+    body {
+      background: var(--bg, #f7f7fb);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+      margin: 0;
+      color: var(--text, #0c0f14);
+    }
+    .offline-wrap {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 16px 16px 32px;
+    }
+    .offline-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .offline-header h1 {
+      font-size: 1.4rem;
+      margin: 0;
+    }
+    .offline-header small {
+      color: var(--muted, #5a6472);
+    }
+    .offline-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 16px;
+      margin-top: 16px;
+    }
+    @media (min-width: 720px) {
+      .offline-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    .offline-card {
+      background: var(--card, #fff);
+      border-radius: 16px;
+      box-shadow: var(--shadow, 0 8px 24px rgba(0,0,0,.08));
+      padding: 16px 18px;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      border: 1px solid var(--border, #e6e6ef);
+    }
+    .offline-card h2 {
+      font-size: 1.1rem;
+      margin: 0;
+    }
+    .offline-card p {
+      margin: 0;
+      font-size: .9rem;
+      color: var(--muted, #5a6472);
+    }
+    .offline-tag {
+      font-size: .75rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--brand, #2d6cdf);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <main class="offline-wrap">
+    <header class="offline-header">
+      <div>
+        <h1>Path to POLISH • Offline</h1>
+        <small>No login, no scores – just practice.</small>
+      </div>
+    </header>
+
+    <section class="offline-grid">
+      <a class="offline-card" href="vocab.html">
+        <span class="offline-tag">Vocabulary &amp; Speaking</span>
+        <h2>Offline Vocab &amp; Speak</h2>
+        <p>
+          Flashcards with English → Polish → audio. Hands-free Auto-Play to cycle
+          through cards, plus per-set download for offline audio.
+        </p>
+      </a>
+
+      <a class="offline-card" href="reading.html">
+        <span class="offline-tag">Reading</span>
+        <h2>Offline Reading</h2>
+        <p>
+          Short passages with Polish text, optional English, audio playback,
+          slow 0.8× mode, and per-word highlighting to read along.
+        </p>
+      </a>
+    </section>
+
+    <p style="margin-top:24px; font-size:.8rem; color:var(--muted,#5a6472);">
+      Tip: open one of the offline pages while online, tap “Download for offline”
+      for a set, then you can use it later in airplane mode.
+    </p>
+  </main>
+</body>
+</html>

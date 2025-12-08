@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Path to POLISH • Offline Reading</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link rel="stylesheet" href="../static/app.css">
+  <style>
+    body {
+      background: var(--bg, #f7f7fb);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+      margin: 0;
+      color: var(--text, #0c0f14);
+    }
+    .wrap {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 16px 16px 32px;
+    }
+    header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    header h1 {
+      font-size: 1.3rem;
+      margin: 0;
+    }
+    header small {
+      font-size: .8rem;
+      color: var(--muted, #5a6472);
+    }
+    .set-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .set-row select {
+      min-width: 220px;
+      padding: 6px 8px;
+      border-radius: 10px;
+      border: 1px solid var(--border, #e6e6ef);
+      font-size: .9rem;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border, #e6e6ef);
+      background: var(--card, #fff);
+      font-size: .8rem;
+      cursor: pointer;
+      gap: 6px;
+    }
+    .btn-primary {
+      background: var(--brand, #2d6cdf);
+      color: #fff;
+      border-color: transparent;
+    }
+    .btn[disabled] {
+      opacity: .5;
+      cursor: default;
+    }
+    .status {
+      font-size: .75rem;
+      color: var(--muted, #5a6472);
+      margin-top: 4px;
+      min-height: 1.2em;
+    }
+
+    .controls-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 12px 0 8px;
+    }
+    .controls-row .grow {
+      flex: 1 1 auto;
+    }
+
+    .passages {
+      margin-top: 12px;
+      background: var(--card,#fff);
+      border-radius: 16px;
+      box-shadow: var(--shadow,0 8px 24px rgba(0,0,0,.08));
+      padding: 16px 16px 10px;
+      border: 1px solid var(--border,#e6e6ef);
+    }
+    .passage-block {
+      margin-bottom: 10px;
+    }
+    .passage-title {
+      font-size: .8rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--muted,#5a6472);
+      margin: 0 0 2px;
+    }
+    .passage-pl {
+      margin: 0;
+      line-height: 1.6;
+      cursor: pointer;
+    }
+    .passage-en {
+      margin: 2px 0 0;
+      color: var(--muted,#5a6472);
+      display: none;
+    }
+    .passages.show-en .passage-en {
+      display: block;
+    }
+
+    .pl-word {
+      padding: 0 1px;
+      border-radius: 4px;
+      transition: background .15s;
+    }
+    .pl-word.active {
+      background: rgba(45,108,223,.18);
+    }
+    .pl-word:hover {
+      background: rgba(45,108,223,.12);
+    }
+
+    .pron-panel {
+      margin-top: 10px;
+      font-size: .8rem;
+      color: var(--muted,#5a6472);
+      border-top: 1px dashed var(--border,#e6e6ef);
+      padding-top: 6px;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: baseline;
+    }
+    .pron-word {
+      font-weight: 600;
+      color: var(--text,#0c0f14);
+    }
+    .pron-phon {
+      font-family: "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header>
+      <div>
+        <h1>Offline Reading</h1>
+        <small>Read along with audio, English toggle, and slow mode.</small>
+      </div>
+      <button type="button" class="btn" onclick="location.href='index.html'">
+        ⬅︎ Offline home
+      </button>
+    </header>
+
+    <section>
+      <div class="set-row">
+        <label for="readSetSelect" style="font-size:.85rem;">Reading set:</label>
+        <select id="readSetSelect"></select>
+        <button id="readDownloadBtn" type="button" class="btn btn-primary">
+          ⬇︎ Download for offline
+        </button>
+      </div>
+      <div id="readStatus" class="status"></div>
+    </section>
+
+    <section class="controls-row">
+      <div class="grow">
+        <button id="btnPlayAll" type="button" class="btn">▶︎ Play</button>
+        <button id="btnPause" type="button" class="btn">⏸ Pause</button>
+        <button id="btnReplay" type="button" class="btn">↺ Replay</button>
+      </div>
+      <button id="btnSlow" type="button" class="btn">0.8× Slow</button>
+      <button id="btnToggleEnglish" type="button" class="btn">Show English</button>
+    </section>
+
+    <section id="passages" class="passages">
+      <p style="font-size:.9rem; color:var(--muted,#5a6472); margin:0;">
+        Choose a reading set to see the Polish text and play the audio.
+        Tap a sentence to play it, or tap a word to see an approximate pronunciation.
+      </p>
+    </section>
+
+    <div class="pron-panel" id="pronPanel" style="display:none;">
+      <div>
+        <span class="pron-word" id="pronWord"></span>
+        <span>→</span>
+        <span class="pron-phon" id="pronPhon"></span>
+      </div>
+      <button id="pronClearBtn" type="button" class="btn">Clear</button>
+    </div>
+  </main>
+
+  <script src="../static/js/app-config.js"></script>
+  <script src="../static/js/audio-paths.js"></script>
+  <script src="reading.js"></script>
+</body>
+</html>
