@@ -1,0 +1,43 @@
+{
+  "name": "Basic_01R",
+  "modes": [
+    "read"
+  ],
+  "meta": {
+    "modes": [
+      "read"
+    ]
+  },
+  "passages": [
+    {
+      "polish": "Cześć! Jak się masz?",
+      "english": "Hi! How are you?",
+      "title": "Powitanie"
+    },
+    {
+      "polish": "Dziękuję, mam się dobrze.",
+      "english": "Thank you, I am well.",
+      "title": "Mam się dobrze"
+    },
+    {
+      "polish": "Cześć, jak masz na imię?",
+      "english": "Hi, what is your name?",
+      "title": "Jak masz na imię?"
+    },
+    {
+      "polish": "Mam na imię Andrew.",
+      "english": "My name is Andrew.",
+      "title": "Nazywam się"
+    },
+    {
+      "polish": "Proszę i dziękuję są bardzo ważne.",
+      "english": "Please and thank you are very important.",
+      "title": "Proszę i dziękuję"
+    },
+    {
+      "polish": "Przepraszam, nie rozumiem.",
+      "english": "I’m sorry, I don’t understand.",
+      "title": "Przepraszam"
+    }
+  ]
+}

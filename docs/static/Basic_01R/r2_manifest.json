@@ -1,0 +1,12 @@
+{
+  "set": "Basic_01R",
+  "assetsBase": "https://cdn.polishpath.com",
+  "files": {
+    "reading/Basic_01R/0.mp3": "https://cdn.polishpath.com/reading/Basic_01R/0.mp3",
+    "reading/Basic_01R/1.mp3": "https://cdn.polishpath.com/reading/Basic_01R/1.mp3",
+    "reading/Basic_01R/2.mp3": "https://cdn.polishpath.com/reading/Basic_01R/2.mp3",
+    "reading/Basic_01R/3.mp3": "https://cdn.polishpath.com/reading/Basic_01R/3.mp3",
+    "reading/Basic_01R/4.mp3": "https://cdn.polishpath.com/reading/Basic_01R/4.mp3",
+    "reading/Basic_01R/5.mp3": "https://cdn.polishpath.com/reading/Basic_01R/5.mp3"
+  }
+}
