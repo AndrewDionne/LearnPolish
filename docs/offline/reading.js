@@ -1,16 +1,29 @@
 // docs/offline/reading.js
 (function () {
+  const OFFLINE_READ_KEY = "ptp_offline_read_sets";
+
   const $ = (id) => document.getElementById(id);
 
   const elSelect = $("readSetSelect");
   const elDownload = $("readDownloadBtn");
   const elStatus = $("readStatus");
-  const elPassages = $("passages");
-  const btnPlayAll = $("btnPlayAll");
+  const elOfflineBadge = $("offlineBadgeRead");
+
+  const readingCard = $("readingCard");
+  const titlePl = $("titlePl");
+  const titleEn = $("titleEn");
+  const polishBlock = $("polishBlock");
+  const englishBlock = $("englishBlock");
+  const metaDialog = $("metaDialog");
+
+  const btnPlay = $("btnPlay");
   const btnPause = $("btnPause");
   const btnReplay = $("btnReplay");
   const btnSlow = $("btnSlow");
   const btnToggleEnglish = $("btnToggleEnglish");
+  const btnPrevDialog = $("btnPrevDialog");
+  const btnNextDialog = $("btnNextDialog");
+
   const pronPanel = $("pronPanel");
   const pronWord = $("pronWord");
   const pronPhon = $("pronPhon");
@@ -18,15 +31,15 @@
 
   const S = {
     sets: [],
+    offlineSets: new Set(),
     currentSet: null,
-    passages: [], // [{polish,english,title}]
+    passages: [],          // [{title/title_pl/title_en, polish, english}]
+    currentIndex: 0,
     audio: null,
     playbackRate: 1.0,
-    seqIndex: 0,
-    playingSequence: false,
     wordTimer: null,
-    wordSpans: {}, // segIndex -> [span,...]
-    activeSeg: null
+    wordSpans: [],
+    _swReadyNotified: false
   };
 
   function niceName(name) {
@@ -36,23 +49,106 @@
       .trim();
   }
 
-  function ensureAudio() {
-    if (!S.audio) {
-      S.audio = new Audio();
-      S.audio.preload = "auto";
-      S.audio.addEventListener("ended", onAudioEnded);
+  // ---------- Offline-set tracking ----------
+  function loadOfflineSetNames() {
+    try {
+      const raw = localStorage.getItem(OFFLINE_READ_KEY);
+      if (!raw) return new Set();
+      const arr = JSON.parse(raw);
+      if (!Array.isArray(arr)) return new Set();
+      return new Set(arr);
+    } catch {
+      return new Set();
     }
-    return S.audio;
+  }
+
+  function saveOfflineSetNames(setNames) {
+    try {
+      const arr = Array.from(setNames);
+      localStorage.setItem(OFFLINE_READ_KEY, JSON.stringify(arr));
+    } catch {
+      // ignore
+    }
+  }
+
+  function updateOfflineBadge() {
+    if (!S.currentSet || !elOfflineBadge) {
+      if (elOfflineBadge) elOfflineBadge.style.display = "none";
+      return;
+    }
+    if (S.offlineSets.has(S.currentSet)) {
+      elOfflineBadge.style.display = "inline-flex";
+    } else {
+      elOfflineBadge.style.display = "none";
+    }
+  }
+
+  function updateSelectOptionLabels() {
+    if (!elSelect || !elSelect.options) return;
+    for (const opt of elSelect.options) {
+      const val = opt.value;
+      const baseText = opt.dataset.baseText || opt.textContent;
+      if (!val) {
+        opt.textContent = baseText;
+        opt.dataset.baseText = baseText;
+        continue;
+      }
+      const cleanBase = baseText.replace(/\s+• offline$/, "");
+      opt.dataset.baseText = cleanBase;
+      opt.textContent =
+        cleanBase + (S.offlineSets.has(val) ? " • offline" : "");
+    }
   }
 
   // ---------- Service worker ----------
   function initServiceWorker() {
-    if (!("serviceWorker" in navigator)) return;
-    navigator.serviceWorker.register("sw.js").catch(() => {});
+    if (!("serviceWorker" in navigator)) {
+      if (elStatus) {
+        elStatus.textContent = "Offline caching not supported in this browser.";
+      }
+      return;
+    }
+
+    navigator.serviceWorker
+      .register("sw.js")
+      .then((reg) => {
+        console.log("Offline SW registered:", reg.scope);
+      })
+      .catch((err) => {
+        console.error("SW registration failed", err);
+        if (elStatus) {
+          elStatus.textContent =
+            "Service Worker registration failed. Check /offline/sw.js.";
+        }
+      });
+
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (!S._swReadyNotified) {
+        S._swReadyNotified = true;
+        if (!elStatus.textContent) {
+          elStatus.textContent =
+            "Offline caching ready. You can now download sets for offline use.";
+        }
+      }
+    });
+  }
+
+  // ---------- Audio ----------
+  function ensureAudio() {
+    if (!S.audio) {
+      S.audio = new Audio();
+      S.audio.preload = "auto";
+      S.audio.addEventListener("ended", () => {
+        clearWordHighlight();
+      });
+    }
+    return S.audio;
   }
 
   // ---------- Load available reading sets ----------
   async function loadReadingSetList() {
+    S.offlineSets = loadOfflineSetNames();
+
     try {
       const resp = await fetch("../set_modes.json", { cache: "no-cache" });
       if (!resp.ok) throw new Error("set_modes fetch failed");
@@ -72,6 +168,7 @@
         const opt = document.createElement("option");
         opt.value = "";
         opt.textContent = "No reading sets available";
+        opt.dataset.baseText = opt.textContent;
         elSelect.appendChild(opt);
         elSelect.disabled = true;
         elDownload.disabled = true;
@@ -83,12 +180,18 @@
       placeholder.textContent = "Choose a reading set…";
       placeholder.disabled = true;
       placeholder.selected = true;
+      placeholder.dataset.baseText = placeholder.textContent;
       elSelect.appendChild(placeholder);
 
       for (const name of names) {
         const opt = document.createElement("option");
         opt.value = name;
-        opt.textContent = niceName(name);
+        const base = niceName(name);
+        opt.textContent = base;
+        opt.dataset.baseText = base;
+        if (S.offlineSets.has(name)) {
+          opt.textContent = base + " • offline";
+        }
         elSelect.appendChild(opt);
       }
     } catch (err) {
@@ -97,6 +200,7 @@
       const opt = document.createElement("option");
       opt.value = "";
       opt.textContent = "Error loading reading sets";
+      opt.dataset.baseText = opt.textContent;
       elSelect.appendChild(opt);
       elSelect.disabled = true;
       elDownload.disabled = true;
@@ -107,15 +211,25 @@
   // ---------- Load a specific reading set ----------
   async function loadReadingSet(name) {
     if (!name) return;
-    stopSequence();
+
+    // 🔧 HARD STOP playback + highlight when switching sets
+    stopPlayback();
     clearWordHighlight();
+    clearPronPanel();
+    if (S.audio) {
+      try {
+        S.audio.pause();
+        S.audio.currentTime = 0;
+        S.audio.src = "";
+      } catch (_) {}
+    }
+
     S.currentSet = name;
     S.passages = [];
-    S.wordSpans = {};
-    S.activeSeg = null;
-    renderPassagesPlaceholder("Loading passage…");
+    S.currentIndex = 0;
     elStatus.textContent = "Loading reading set…";
     elDownload.disabled = true;
+    updateOfflineBadge();
 
     try {
       const url = "../sets/" + encodeURIComponent(name) + ".json";
@@ -123,165 +237,96 @@
       if (!resp.ok) throw new Error("fetch failed");
       const data = await resp.json();
       const passages = (data && data.passages) || [];
+
       S.passages = passages;
-      S.wordSpans = {};
-      S.activeSeg = null;
-      renderPassages();
+      S.currentIndex = 0;
+      renderCurrentPassage();
+
       elStatus.textContent =
-        "Loaded “" + niceName(name) + "” – " + passages.length + " lines.";
+        "Loaded “" + niceName(name) + "” – " + passages.length + " dialogues.";
       elDownload.disabled = !passages.length;
+      updateOfflineBadge();
     } catch (err) {
       console.error(err);
       S.passages = [];
-      S.wordSpans = {};
-      S.activeSeg = null;
-      renderPassagesPlaceholder("Error loading reading set. Check connection.");
+      S.currentIndex = 0;
+      renderEmpty();
       elStatus.textContent = "Error loading reading set.";
       elDownload.disabled = true;
+      updateOfflineBadge();
     }
   }
 
   // ---------- Rendering ----------
-  function renderPassagesPlaceholder(message) {
-    elPassages.classList.remove("show-en");
-    elPassages.innerHTML =
-      '<p style="font-size:.9rem; color:var(--muted,#5a6472); margin:0;">' +
-      message +
-      "</p>";
+  function renderEmpty(message) {
+    titlePl.textContent = message || "Choose a reading set to begin.";
+    titleEn.textContent = "";
+    polishBlock.textContent = "";
+    englishBlock.textContent = "";
+    readingCard.classList.remove("show-en");
+    metaDialog.innerHTML = 'Dialogue <strong>0</strong> of <strong>0</strong>';
   }
 
-  function renderPassages() {
-    elPassages.innerHTML = "";
-    elPassages.classList.remove("show-en");
-    S.wordSpans = {};
+  function renderCurrentPassage() {
+    clearWordHighlight();
+    clearPronPanel();
 
     if (!S.passages.length) {
-      renderPassagesPlaceholder(
+      renderEmpty(
         "No passages found in this set. Choose a different one."
       );
       return;
     }
 
-    S.passages.forEach((p, segIndex) => {
-      const block = document.createElement("div");
-      block.className = "passage-block";
+    const idx = Math.max(
+      0,
+      Math.min(S.currentIndex, S.passages.length - 1)
+    );
+    S.currentIndex = idx;
+    const p = S.passages[idx];
 
-      if (p.title) {
-        const h = document.createElement("p");
-        h.className = "passage-title";
-        h.textContent = p.title;
-        block.appendChild(h);
-      }
+    const title_pl = p.title_pl || p.title || "";
+    const title_en =
+      p.title_en || p.titleEnglish || p.title_english || "";
 
-      const pl = document.createElement("p");
-      pl.className = "passage-pl";
-      pl.dataset.segIndex = String(segIndex);
+    titlePl.textContent = title_pl || "(no title)";
+    titleEn.textContent = title_en || "";
 
-      const words = String(p.polish || "").split(/\s+/).filter(Boolean);
-      const spans = [];
-      words.forEach((w, i) => {
-        const span = document.createElement("span");
-        span.className = "pl-word";
-        span.dataset.segIndex = String(segIndex);
-        span.dataset.wordIndex = String(i);
-        span.textContent = (i === words.length - 1 ? w : w + " ");
-        pl.appendChild(span);
-        spans.push(span);
-      });
-      S.wordSpans[segIndex] = spans;
-
-      const en = document.createElement("p");
-      en.className = "passage-en";
-      en.dataset.segIndex = String(segIndex);
-      en.textContent = p.english || "";
-
-      block.appendChild(pl);
-      block.appendChild(en);
-      elPassages.appendChild(block);
+    // Polish block with span words
+    polishBlock.innerHTML = "";
+    const words = String(p.polish || "").split(/\s+/).filter(Boolean);
+    S.wordSpans = [];
+    words.forEach((w, i) => {
+      const span = document.createElement("span");
+      span.className = "pl-word";
+      span.dataset.wordIndex = String(i);
+      span.textContent = i === words.length - 1 ? w : w + " ";
+      polishBlock.appendChild(span);
+      S.wordSpans.push(span);
     });
+
+    englishBlock.textContent = p.english || "";
+    readingCard.classList.remove("show-en");
+
+    metaDialog.innerHTML =
+      "Dialogue <strong>" +
+      (idx + 1) +
+      "</strong> of <strong>" +
+      S.passages.length +
+      "</strong>";
+
+    wireWordClicks();
   }
 
-  // ---------- Playback sequence ----------
-  function playSequenceFromStart() {
-    if (!S.passages.length || !S.currentSet) return;
-    stopSequence();
-    S.seqIndex = 0;
-    S.playingSequence = true;
-    playSegment(S.seqIndex);
-  }
-
-  function playSegment(segIndex) {
-    if (!S.currentSet || !S.passages.length) return;
-    if (segIndex < 0 || segIndex >= S.passages.length) {
-      stopSequence();
-      return;
-    }
-
-    clearWordHighlight();
-    S.activeSeg = segIndex;
-
-    const audio = ensureAudio();
-    audio.pause();
-    audio.currentTime = 0;
-    audio.playbackRate = S.playbackRate;
-
-    const url = window.AudioPaths
-      ? AudioPaths.readingPath(S.currentSet, segIndex, null)
-      : null;
-    if (!url) return;
-
-    audio.src = url;
-
-    const spans = S.wordSpans[segIndex] || [];
-    const fallbackWordMs = spans.length ? 400 : 0;
-
-    // Start highlighting once metadata is known; fall back if metadata is slow.
-    audio.onloadedmetadata = () => {
-      const dur = audio.duration || (spans.length * 0.4);
-      startWordHighlight(segIndex, dur);
-      audio.play().catch(() => {});
-    };
-
-    // Fallback in case metadata never loads
-    setTimeout(() => {
-      if (!audio.paused && !S.wordTimer && spans.length) {
-        startWordHighlight(segIndex, (fallbackWordMs * spans.length) / 1000);
-      }
-    }, 1000);
-
-    audio.play().catch(() => {});
-  }
-
-  function onAudioEnded() {
-    clearWordHighlight();
-    if (!S.playingSequence) return;
-
-    S.seqIndex += 1;
-    if (S.seqIndex >= S.passages.length) {
-      // End of sequence
-      stopSequence();
-    } else {
-      playSegment(S.seqIndex);
-    }
-  }
-
-  function stopSequence() {
-    const audio = ensureAudio();
-    audio.pause();
-    S.playingSequence = false;
-    S.seqIndex = 0;
-    clearWordHighlight();
-  }
-
-  function pausePlayback() {
-    const audio = ensureAudio();
-    audio.pause();
-    S.playingSequence = false;
-    clearWordHighlight();
-  }
-
-  function replaySequence() {
-    playSequenceFromStart();
+  function wireWordClicks() {
+    S.wordSpans.forEach((span) => {
+      span.addEventListener("click", (evt) => {
+        evt.stopPropagation();
+        const text = span.textContent.replace(/\s+$/, "");
+        showPronForWord(text);
+        playCurrentPassage(true); // replay from start for that sentence/dialogue
+      });
+    });
   }
 
   // ---------- Word highlighting ----------
@@ -290,19 +335,17 @@
       clearInterval(S.wordTimer);
       S.wordTimer = null;
     }
-    Object.values(S.wordSpans).forEach((spans) => {
-      spans.forEach((el) => el.classList.remove("active"));
-    });
-    S.activeSeg = null;
+    (S.wordSpans || []).forEach((el) => el.classList.remove("active"));
   }
 
-  function startWordHighlight(segIndex, durationSeconds) {
+  function startWordHighlight(durationSeconds) {
     clearWordHighlight();
-    const spans = S.wordSpans[segIndex] || [];
+    const spans = S.wordSpans || [];
     if (!spans.length) return;
 
-    const totalMs = Math.max(durationSeconds * 1000, spans.length * 150);
-    const stepMs = Math.max(120, totalMs / spans.length);
+    // Spread highlights evenly across the audio duration
+    const totalMs = Math.max(durationSeconds * 1000, spans.length * 120);
+    const stepMs = totalMs / spans.length;
 
     let i = 0;
     S.wordTimer = setInterval(() => {
@@ -317,11 +360,64 @@
     }, stepMs);
   }
 
-  // ---------- Approximate pronunciation helper ----------
+  // ---------- Playback ----------
+  function playCurrentPassage(resetToStart = false) {
+    if (!S.currentSet || !S.passages.length) return;
+    const idx = S.currentIndex;
+    const audio = ensureAudio();
+
+    clearWordHighlight();
+
+    let url = null;
+    try {
+      if (window.AudioPaths) {
+        url = AudioPaths.readingPath(S.currentSet, idx, null);
+      }
+    } catch (_) {}
+    if (!url) return;
+
+    // Attach handlers before setting src
+    audio.onloadedmetadata = () => {
+      // Adjust highlight duration by playback rate
+      const dur = audio.duration || (S.wordSpans.length * 0.4);
+      const effectiveDur = dur / (audio.playbackRate || 1.0);
+      startWordHighlight(effectiveDur);
+    };
+
+    audio.pause();
+    audio.src = url;
+    if (resetToStart) {
+      audio.currentTime = 0;
+    }
+    audio.playbackRate = S.playbackRate;
+    audio
+      .play()
+      .catch((err) => {
+        console.error("play passage failed", err);
+      });
+  }
+
+  function pausePlayback() {
+    const audio = ensureAudio();
+    audio.pause();
+    clearWordHighlight();
+  }
+
+  function stopPlayback() {
+    const audio = ensureAudio();
+    audio.pause();
+    audio.currentTime = 0;
+    clearWordHighlight();
+  }
+
+  function replayCurrentPassage() {
+    playCurrentPassage(true);
+  }
+
+  // ---------- Approximate pronunciation ----------
   function approxPron(word) {
     let w = String(word || "").toLowerCase();
 
-    // Multi-character patterns first
     const rules = [
       [/ch/g, "h"],
       [/cz/g, "ch"],
@@ -401,7 +497,7 @@
     const jsonUrl = "../sets/" + encodeURIComponent(curSet) + ".json";
     urls.add(new URL(jsonUrl, location.href).toString());
 
-    // Audio per passage index
+    // All dialogue audio
     S.passages.forEach((p, idx) => {
       try {
         if (!window.AudioPaths) return;
@@ -418,40 +514,18 @@
 
     navigator.serviceWorker.controller.postMessage(message);
     elStatus.textContent =
-      "Downloading audio and passage for “" +
+      "Downloading audio and dialogues for “" +
       niceName(curSet) +
       "” in the background…";
+
+    // Track as offline
+    S.offlineSets.add(curSet);
+    saveOfflineSetNames(S.offlineSets);
+    updateOfflineBadge();
+    updateSelectOptionLabels();
   }
 
-  // ---------- Click handlers ----------
-  function onPassagesClick(evt) {
-    const target = evt.target;
-    if (!target) return;
-
-    // If a word span: show pronunciation + play its sentence
-    if (target.classList.contains("pl-word")) {
-      const word = target.textContent.replace(/\s+$/, "");
-      showPronForWord(word);
-
-      const segIndex = Number(target.dataset.segIndex || "0");
-      S.playingSequence = false;
-      S.seqIndex = segIndex;
-      playSegment(segIndex);
-      return;
-    }
-
-    // If click somewhere in a Polish line: play that line
-    const pl = target.closest(".passage-pl");
-    if (pl && typeof pl.dataset.segIndex !== "undefined") {
-      const segIndex = Number(pl.dataset.segIndex || "0");
-      clearPronPanel();
-      S.playingSequence = false;
-      S.seqIndex = segIndex;
-      playSegment(segIndex);
-    }
-  }
-
-  // ---------- Event wiring ----------
+  // ---------- Buttons / Events ----------
   function initEvents() {
     elSelect.addEventListener("change", (e) => {
       const name = e.target.value || "";
@@ -459,8 +533,8 @@
       loadReadingSet(name);
     });
 
-    btnPlayAll.addEventListener("click", () => {
-      playSequenceFromStart();
+    btnPlay.addEventListener("click", () => {
+      playCurrentPassage(false);
     });
 
     btnPause.addEventListener("click", () => {
@@ -468,21 +542,47 @@
     });
 
     btnReplay.addEventListener("click", () => {
-      replaySequence();
+      replayCurrentPassage();
     });
 
     btnSlow.addEventListener("click", () => {
       S.playbackRate = S.playbackRate === 1.0 ? 0.8 : 1.0;
-      btnSlow.textContent = S.playbackRate === 1.0 ? "0.8× Slow" : "1.0× Normal";
+      btnSlow.textContent =
+        S.playbackRate === 1.0 ? "0.8× Slow" : "1.0× Normal";
+
+      // Apply immediately to current audio if playing
+      if (S.audio) {
+        S.audio.playbackRate = S.playbackRate;
+      }
     });
 
     btnToggleEnglish.addEventListener("click", () => {
-      const show = !elPassages.classList.contains("show-en");
-      elPassages.classList.toggle("show-en", show);
+      const show = !readingCard.classList.contains("show-en");
+      readingCard.classList.toggle("show-en", show);
       btnToggleEnglish.textContent = show ? "Hide English" : "Show English";
     });
 
-    elPassages.addEventListener("click", onPassagesClick);
+    btnPrevDialog.addEventListener("click", () => {
+      if (!S.passages.length) return;
+      if (S.currentIndex <= 0) {
+        S.currentIndex = S.passages.length - 1;
+      } else {
+        S.currentIndex -= 1;
+      }
+      stopPlayback();
+      clearWordHighlight();
+      clearPronPanel();
+      renderCurrentPassage();
+    });
+
+    btnNextDialog.addEventListener("click", () => {
+      if (!S.passages.length) return;
+      S.currentIndex = (S.currentIndex + 1) % S.passages.length;
+      stopPlayback();
+      clearWordHighlight();
+      clearPronPanel();
+      renderCurrentPassage();
+    });
 
     elDownload.addEventListener("click", downloadReadingSetOffline);
     pronClearBtn.addEventListener("click", clearPronPanel);
@@ -493,8 +593,9 @@
     initServiceWorker();
     initEvents();
     loadReadingSetList();
-    renderPassagesPlaceholder(
-      "Choose a reading set to see the Polish text and play the audio."
+    renderEmpty(
+      "Choose a reading set to see the dialogue and play the audio."
     );
+    updateOfflineBadge();
   });
 })();

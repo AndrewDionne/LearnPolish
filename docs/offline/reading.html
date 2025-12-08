@@ -147,9 +147,77 @@
     .pron-phon {
       font-family: "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     }
+    /* --- Path to POLISH header/footer shell for offline --- */
+    .ptp-shell {
+      background: #ffffff;
+      border-bottom: 1px solid var(--border, #e6e6ef);
+      box-shadow: 0 4px 16px rgba(0,0,0,.03);
+    }
+    .ptp-shell-inner {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .ptp-brand {
+      font-weight: 700;
+      font-size: 1rem;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .ptp-nav-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: .85rem;
+    }
+    .ptp-link {
+      text-decoration: none;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      color: var(--muted,#5a6472);
+    }
+    .ptp-link:hover {
+      background: rgba(45,108,223,.06);
+    }
+    .ptp-link-active {
+      border-color: var(--brand,#2d6cdf);
+      color: var(--brand,#2d6cdf);
+      background: rgba(45,108,223,.05);
+    }
+
+    .ptp-footer {
+      margin-top: 24px;
+      padding: 12px 16px 0;
+      border-top: 1px solid var(--border,#e6e6ef);
+      font-size: .75rem;
+      color: var(--muted,#5a6472);
+      max-width: 960px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
   </style>
 </head>
 <body>
+  <header class="ptp-shell">
+    <div class="ptp-shell-inner">
+      <div class="ptp-brand" onclick="location.href='../learn.html'">
+        Path to POLISH
+      </div>
+      <nav class="ptp-nav-links">
+        <a href="../learn.html" class="ptp-link">Main app</a>
+        <a href="index.html" class="ptp-link">Offline</a>
+        <a href="vocab.html" class="ptp-link">Offline Vocab</a>
+        <a href="reading.html" class="ptp-link ptp-link-active">Offline Reading</a>
+      </nav>
+    </div>
+  </header>
   <main class="wrap">
     <header>
       <div>
@@ -197,6 +265,297 @@
       </div>
       <button id="pronClearBtn" type="button" class="btn">Clear</button>
     </div>
+  </main>
+  <footer class="ptp-footer">
+    Offline Reading • One dialogue at a time with audio, slow mode, and
+    read-along. Download this set above to use without an internet connection.
+  </footer>
+  <script src="../static/js/app-config.js"></script>
+  <script src="../static/js/audio-paths.js"></script>
+  <script src="reading.js"></script>
+</body>
+</html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Path to POLISH • Offline Reading</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link rel="stylesheet" href="../static/app.css">
+  <style>
+    body {
+      background: var(--bg, #f7f7fb);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+      margin: 0;
+      color: var(--text, #0c0f14);
+    }
+    .wrap {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 16px 16px 32px;
+    }
+    header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    header h1 {
+      font-size: 1.3rem;
+      margin: 0;
+    }
+    header small {
+      font-size: .8rem;
+      color: var(--muted, #5a6472);
+    }
+
+    .set-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .set-row select {
+      min-width: 220px;
+      padding: 6px 8px;
+      border-radius: 10px;
+      border: 1px solid var(--border, #e6e6ef);
+      font-size: .9rem;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border, #e6e6ef);
+      background: var(--card, #fff);
+      font-size: .8rem;
+      cursor: pointer;
+      gap: 6px;
+    }
+    .btn-primary {
+      background: var(--brand, #2d6cdf);
+      color: #fff;
+      border-color: transparent;
+    }
+    .btn[disabled] {
+      opacity: .5;
+      cursor: default;
+    }
+    .pill {
+      font-size: .75rem;
+      padding: 2px 10px;
+      border-radius: 999px;
+      background: rgba(45,108,223,.08);
+      color: var(--brand, #2d6cdf);
+      font-weight: 600;
+    }
+    .pill-offline {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .pill-offline span {
+      font-size: .7rem;
+    }
+
+    .status {
+      font-size: .75rem;
+      color: var(--muted, #5a6472);
+      min-height: 1.2em;
+      margin-bottom: 10px;
+    }
+
+    /* ----- Reading card ----- */
+
+    .reading-zone {
+      margin-top: 12px;
+    }
+
+    .reading-card {
+      background: var(--card,#fff);
+      border-radius: 18px;
+      box-shadow: var(--shadow,0 8px 24px rgba(0,0,0,.08));
+      border: 1px solid var(--border,#e6e6ef);
+      padding: 18px 18px 16px;
+      max-width: 720px;
+      margin: 0 auto 12px;
+    }
+
+    .reading-header {
+      margin-bottom: 8px;
+    }
+    .reading-title-pl {
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 0 0 2px;
+    }
+    .reading-title-en {
+      font-size: .85rem;
+      color: var(--muted,#5a6472);
+      margin: 0;
+    }
+
+    .reading-body {
+      margin-top: 12px;
+    }
+
+    .reading-polish {
+      font-size: 1.05rem;
+      line-height: 1.7;
+      margin: 0;
+    }
+    .reading-english {
+      font-size: .95rem;
+      line-height: 1.6;
+      color: var(--muted,#5a6472);
+      margin: 10px 0 0;
+      display: none;
+    }
+    .reading-card.show-en .reading-english {
+      display: block;
+    }
+
+    .pl-word {
+      padding: 0 1px;
+      border-radius: 4px;
+      transition: background .15s;
+    }
+    .pl-word.active {
+      background: rgba(45,108,223,.18);
+    }
+    .pl-word:hover {
+      background: rgba(45,108,223,.12);
+    }
+
+    .reading-controls {
+      margin-top: 14px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .control-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .meta {
+      font-size: .8rem;
+      color: var(--muted,#5a6472);
+    }
+    .meta strong {
+      color: var(--text,#0c0f14);
+      font-weight: 600;
+    }
+
+    .dialog-nav {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      max-width: 720px;
+      margin: 0 auto;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
+    .pron-panel {
+      margin-top: 12px;
+      font-size: .8rem;
+      color: var(--muted,#5a6472);
+      border-top: 1px dashed var(--border,#e6e6ef);
+      padding-top: 6px;
+      display: none;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: baseline;
+    }
+    .pron-word {
+      font-weight: 600;
+      color: var(--text,#0c0f14);
+    }
+    .pron-phon {
+      font-family: "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header>
+      <div>
+        <h1>Offline Reading</h1>
+        <small>One dialogue at a time, with audio, English toggle, and read-along.</small>
+      </div>
+      <button type="button" class="btn" onclick="location.href='index.html'">
+        ⬅︎ Offline home
+      </button>
+    </header>
+
+    <section>
+      <div class="set-row">
+        <label for="readSetSelect" style="font-size:.85rem;">Reading set:</label>
+        <select id="readSetSelect"></select>
+        <button id="readDownloadBtn" type="button" class="btn btn-primary">
+          ⬇︎ Download for offline
+        </button>
+        <span id="offlineBadgeRead" class="pill pill-offline" style="display:none;">
+          ✓ <span>Downloaded</span>
+        </span>
+      </div>
+      <div id="readStatus" class="status"></div>
+    </section>
+
+    <section class="reading-zone">
+      <article id="readingCard" class="reading-card">
+        <div class="reading-header">
+          <p class="reading-title-pl" id="titlePl">
+            Choose a reading set to begin.
+          </p>
+          <p class="reading-title-en" id="titleEn"></p>
+        </div>
+
+        <div class="reading-body">
+          <p class="reading-polish" id="polishBlock">
+            <!-- Polish text with span words inserted by JS -->
+          </p>
+          <p class="reading-english" id="englishBlock"></p>
+        </div>
+
+        <div class="reading-controls">
+          <div class="control-group">
+            <button id="btnPlay" type="button" class="btn">▶︎ Play</button>
+            <button id="btnPause" type="button" class="btn">⏸ Pause</button>
+            <button id="btnReplay" type="button" class="btn">↺ Replay</button>
+            <button id="btnSlow" type="button" class="btn">0.8× Slow</button>
+            <button id="btnToggleEnglish" type="button" class="btn">Show English</button>
+          </div>
+          <div class="meta" id="metaDialog">
+            Dialogue <strong>0</strong> of <strong>0</strong>
+          </div>
+        </div>
+
+        <div class="pron-panel" id="pronPanel">
+          <div>
+            <span class="pron-word" id="pronWord"></span>
+            <span>→</span>
+            <span class="pron-phon" id="pronPhon"></span>
+          </div>
+          <button id="pronClearBtn" type="button" class="btn">Clear</button>
+        </div>
+      </article>
+
+      <div class="dialog-nav">
+        <button id="btnPrevDialog" type="button" class="btn">Previous dialogue</button>
+        <button id="btnNextDialog" type="button" class="btn">Next dialogue</button>
+      </div>
+    </section>
   </main>
 
   <script src="../static/js/app-config.js"></script>

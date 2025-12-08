@@ -71,9 +71,77 @@
       color: var(--brand, #2d6cdf);
       font-weight: 600;
     }
+    /* --- Path to POLISH header/footer shell for offline --- */
+    .ptp-shell {
+      background: #ffffff;
+      border-bottom: 1px solid var(--border, #e6e6ef);
+      box-shadow: 0 4px 16px rgba(0,0,0,.03);
+    }
+    .ptp-shell-inner {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .ptp-brand {
+      font-weight: 700;
+      font-size: 1rem;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .ptp-nav-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: .85rem;
+    }
+    .ptp-link {
+      text-decoration: none;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      color: var(--muted,#5a6472);
+    }
+    .ptp-link:hover {
+      background: rgba(45,108,223,.06);
+    }
+    .ptp-link-active {
+      border-color: var(--brand,#2d6cdf);
+      color: var(--brand,#2d6cdf);
+      background: rgba(45,108,223,.05);
+    }
+
+    .ptp-footer {
+      margin-top: 24px;
+      padding: 12px 16px 0;
+      border-top: 1px solid var(--border,#e6e6ef);
+      font-size: .75rem;
+      color: var(--muted,#5a6472);
+      max-width: 960px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
   </style>
 </head>
 <body>
+  <header class="ptp-shell">
+    <div class="ptp-shell-inner">
+      <div class="ptp-brand" onclick="location.href='../learn.html'">
+        Path to POLISH
+      </div>
+      <nav class="ptp-nav-links">
+        <a href="../learn.html" class="ptp-link">Main app</a>
+        <a href="index.html" class="ptp-link ptp-link-active">Offline</a>
+        <a href="vocab.html" class="ptp-link">Offline Vocab</a>
+        <a href="reading.html" class="ptp-link">Offline Reading</a>
+      </nav>
+    </div>
+  </header>
   <main class="offline-wrap">
     <header class="offline-header">
       <div>

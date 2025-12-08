@@ -1,34 +1,39 @@
 // docs/offline/vocab.js
 (function () {
+  const OFFLINE_VOCAB_KEY = "ptp_offline_vocab_sets";
+
+  const $ = (id) => document.getElementById(id);
+
+  const elSelect = $("setSelect");
+  const elDownload = $("downloadBtn");
+  const elStatus = $("setStatus");
+  const elOfflineBadge = $("offlineBadge");
+
+  const cardInner = $("cardInner");
+  const elFrontText = $("frontText");
+  const elPolishText = $("polishText");
+  const elPronText = $("pronText");
+  const elMeaningText = $("meaningText");
+  const elMetaInfo = $("metaInfo");
+
+  const btnFlip = $("flipBtn");
+  const btnPrev = $("prevBtn");
+  const btnNext = $("nextBtn");
+  const btnPlay = $("playBtn");
+  const btnAutoplay = $("autoplayBtn");
+
   const S = {
     sets: [],
+    offlineSets: new Set(),
     currentSet: null,
     cards: [],
     index: 0,
     side: "front", // "front" | "back"
     autoplay: false,
     autoplayTimer: null,
-    audio: null
+    audio: null,
+    _swReadyNotified: false
   };
-
-  // ---------- DOM helpers ----------
-  const $ = (id) => document.getElementById(id);
-
-  const elSelect = $("setSelect");
-  const elDownload = $("downloadBtn");
-  const elStatus = $("setStatus");
-  const elSideLabel = $("sideLabel");
-  const elFrontText = $("frontText");
-  const elBackContent = $("backContent");
-  const elPolishText = $("polishText");
-  const elPronText = $("pronText");
-  const elMeaningText = $("meaningText");
-  const elMetaInfo = $("metaInfo");
-  const btnFlip = $("flipBtn");
-  const btnPrev = $("prevBtn");
-  const btnNext = $("nextBtn");
-  const btnPlay = $("playBtn");
-  const btnAutoplay = $("autoplayBtn");
 
   function niceName(name) {
     return String(name || "")
@@ -37,18 +42,85 @@
       .trim();
   }
 
-  // ---------- Service worker registration ----------
+  // ---------- Offline-set tracking (localStorage) ----------
+  function loadOfflineSetNames() {
+    try {
+      const raw = localStorage.getItem(OFFLINE_VOCAB_KEY);
+      if (!raw) return new Set();
+      const arr = JSON.parse(raw);
+      if (!Array.isArray(arr)) return new Set();
+      return new Set(arr);
+    } catch {
+      return new Set();
+    }
+  }
+
+  function saveOfflineSetNames(setNames) {
+    try {
+      const arr = Array.from(setNames);
+      localStorage.setItem(OFFLINE_VOCAB_KEY, JSON.stringify(arr));
+    } catch {
+      // ignore
+    }
+  }
+
+  function updateOfflineBadge() {
+    if (!S.currentSet || !elOfflineBadge) {
+      if (elOfflineBadge) elOfflineBadge.style.display = "none";
+      return;
+    }
+    if (S.offlineSets.has(S.currentSet)) {
+      elOfflineBadge.style.display = "inline-flex";
+    } else {
+      elOfflineBadge.style.display = "none";
+    }
+  }
+
+  function updateSelectOptionLabels() {
+    if (!elSelect || !elSelect.options) return;
+    for (const opt of elSelect.options) {
+      const val = opt.value;
+      const baseText = opt.dataset.baseText || opt.textContent;
+      if (!val) {
+        opt.textContent = baseText;
+        opt.dataset.baseText = baseText;
+        continue;
+      }
+      const cleanBase = baseText.replace(/\s+• offline$/, "");
+      opt.dataset.baseText = cleanBase;
+      opt.textContent =
+        cleanBase + (S.offlineSets.has(val) ? " • offline" : "");
+    }
+  }
+
+  // ---------- Service worker ----------
   function initServiceWorker() {
-    if (!("serviceWorker" in navigator)) return;
+    if (!("serviceWorker" in navigator)) {
+      if (elStatus) {
+        elStatus.textContent = "Offline caching not supported in this browser.";
+      }
+      return;
+    }
 
-    navigator.serviceWorker.register("sw.js").catch(() => {});
+    navigator.serviceWorker
+      .register("sw.js")
+      .then((reg) => {
+        console.log("Offline SW registered:", reg.scope);
+      })
+      .catch((err) => {
+        console.error("SW registration failed", err);
+        if (elStatus) {
+          elStatus.textContent =
+            "Service Worker registration failed. Check /offline/sw.js.";
+        }
+      });
 
-    // optional: show a small note when controller becomes active
     navigator.serviceWorker.addEventListener("controllerchange", () => {
       if (!S._swReadyNotified) {
         S._swReadyNotified = true;
         if (!elStatus.textContent) {
-          elStatus.textContent = "Offline caching ready. You can now download sets for offline use.";
+          elStatus.textContent =
+            "Offline caching ready. You can now download sets for offline use.";
         }
       }
     });
@@ -56,6 +128,8 @@
 
   // ---------- Load set list ----------
   async function loadSetList() {
+    S.offlineSets = loadOfflineSetNames();
+
     try {
       const resp = await fetch("../set_modes.json", { cache: "no-cache" });
       if (!resp.ok) throw new Error("set_modes fetch failed");
@@ -64,7 +138,6 @@
       const names = Object.keys(modes || {})
         .filter((name) => {
           const arr = modes[name] || [];
-          // Include vocab/speaking sets, skip pure reading-only
           return (
             arr.includes("flashcards") ||
             arr.includes("practice") ||
@@ -83,6 +156,7 @@
         opt.textContent = "No vocab/speak sets available";
         elSelect.appendChild(opt);
         elSelect.disabled = true;
+        elDownload.disabled = true;
         return;
       }
 
@@ -91,12 +165,18 @@
       placeholder.textContent = "Choose a set…";
       placeholder.disabled = true;
       placeholder.selected = true;
+      placeholder.dataset.baseText = placeholder.textContent;
       elSelect.appendChild(placeholder);
 
       for (const name of names) {
         const opt = document.createElement("option");
         opt.value = name;
-        opt.textContent = niceName(name);
+        const base = niceName(name);
+        opt.textContent = base;
+        opt.dataset.baseText = base;
+        if (S.offlineSets.has(name)) {
+          opt.textContent = base + " • offline";
+        }
         elSelect.appendChild(opt);
       }
     } catch (err) {
@@ -105,8 +185,10 @@
       const opt = document.createElement("option");
       opt.value = "";
       opt.textContent = "Error loading sets";
+      opt.dataset.baseText = opt.textContent;
       elSelect.appendChild(opt);
       elSelect.disabled = true;
+      elDownload.disabled = true;
       elStatus.textContent = "Unable to load set list. Check connection.";
     }
   }
@@ -114,11 +196,24 @@
   // ---------- Load a specific set ----------
   async function loadSet(name) {
     if (!name) return;
+
+    // 🔧 HARD STOP any in-flight audio / autoplay when switching sets
     stopAutoplay();
+    if (S.audio) {
+      try {
+        S.audio.pause();
+        S.audio.currentTime = 0;
+        S.audio.src = "";
+      } catch (_) {}
+    }
+    clearTimeout(S.autoplayTimer);
+    S.autoplayTimer = null;
+
     S.currentSet = name;
     S.cards = [];
     S.index = 0;
     S.side = "front";
+    updateOfflineBadge();
     updateCard();
 
     elStatus.textContent = "Loading set…";
@@ -138,6 +233,7 @@
 
       elStatus.textContent = `Loaded “${niceName(name)}” – ${cards.length} cards.`;
       elDownload.disabled = !cards.length;
+      updateOfflineBadge();
     } catch (err) {
       console.error(err);
       S.cards = [];
@@ -146,6 +242,7 @@
       updateCard();
       elStatus.textContent = "Error loading set. Check connection or try again.";
       elDownload.disabled = true;
+      updateOfflineBadge();
     }
   }
 
@@ -159,15 +256,15 @@
   function updateCard() {
     const cur = currentCard();
     if (!cur) {
-      elSideLabel.textContent = "Front • English";
       elFrontText.textContent = "Choose a set to begin.";
-      elBackContent.style.display = "none";
-      elMetaInfo.innerHTML = 'Card <strong>0</strong> of <strong>0</strong>';
-      btnPlay.disabled = true;
-      btnFlip.disabled = true;
-      btnPrev.disabled = true;
-      btnNext.disabled = true;
-      btnAutoplay.disabled = true;
+      elFrontText.classList.remove("empty");
+      elPolishText.textContent = "";
+      elPronText.textContent = "";
+      elMeaningText.textContent = "";
+      cardInner.classList.remove("is-flipped");
+      elMetaInfo.innerHTML =
+        'Card <strong>0</strong> of <strong>0</strong>';
+      setButtonsDisabled(true);
       return;
     }
 
@@ -176,17 +273,25 @@
     const phrase = card.phrase || card.polish || "";
     const pron = card.pronunciation || card.pron || "";
 
-    if (S.side === "front") {
-      elSideLabel.textContent = "Front • English";
+    // Front: English
+    if (meaning) {
       elFrontText.textContent = meaning;
-      elBackContent.style.display = "none";
+      elFrontText.classList.remove("empty");
     } else {
-      elSideLabel.textContent = "Back • Polish";
-      elFrontText.textContent = "";
-      elBackContent.style.display = "";
-      elPolishText.textContent = phrase;
-      elPronText.textContent = pron ? `/${pron}/` : "";
-      elMeaningText.textContent = meaning;
+      elFrontText.textContent = "(no English meaning set)";
+      elFrontText.classList.add("empty");
+    }
+
+    // Back: Polish, pronunciation, meaning
+    elPolishText.textContent = phrase || "";
+    elPronText.textContent = pron ? `/${pron}/` : "";
+    elMeaningText.textContent = meaning || "";
+
+    // Flip state
+    if (S.side === "back") {
+      cardInner.classList.add("is-flipped");
+    } else {
+      cardInner.classList.remove("is-flipped");
     }
 
     elMetaInfo.innerHTML =
@@ -196,11 +301,14 @@
       S.cards.length +
       "</strong>";
 
-    const disabled = !S.cards.length;
-    btnPlay.disabled = disabled;
+    setButtonsDisabled(false);
+  }
+
+  function setButtonsDisabled(disabled) {
     btnFlip.disabled = disabled;
     btnPrev.disabled = disabled;
     btnNext.disabled = disabled;
+    btnPlay.disabled = disabled;
     btnAutoplay.disabled = disabled;
   }
 
@@ -293,25 +401,24 @@
       return;
     }
 
-    // Step pattern per card:
+    // Pattern per card:
     // 1) Flip to back
-    // 2) Wait 400 ms
+    // 2) Pause (400 ms)
     // 3) Play audio
-    // 4) Wait ~1600 ms
-    // 5) Move to next card and repeat
+    // 4) Pause (~1600 ms)
+    // 5) Move to next card, briefly show front, repeat
     S.side = "back";
     updateCard();
 
-    const delayBeforeAudio = 400;  // ms
-    const delayAfterAudio = 1600;  // ms
-    const delayBeforeNext = 600;   // front side dwell
+    const delayBeforeAudio = 400;
+    const delayAfterAudio = 1600;
+    const delayBeforeNext = 600;
 
     if (S.autoplayTimer) clearTimeout(S.autoplayTimer);
 
     S.autoplayTimer = setTimeout(() => {
       playCurrentAudio();
       S.autoplayTimer = setTimeout(() => {
-        // Advance to next card (loop around).
         S.index = (S.index + 1) % S.cards.length;
         S.side = "front";
         updateCard();
@@ -357,7 +464,7 @@
     const jsonUrl = "../sets/" + encodeURIComponent(curSet) + ".json";
     urls.add(new URL(jsonUrl, location.href).toString());
 
-    // Audio urls via AudioPaths (will usually be CDN-based)
+    // Audio urls via AudioPaths
     S.cards.forEach((card, idx) => {
       try {
         if (!window.AudioPaths) return;
@@ -377,24 +484,53 @@
       "Downloading audio and cards for “" +
       niceName(curSet) +
       "” in the background…";
+
+    // Mark as offline in our local list (UI indicator)
+    S.offlineSets.add(curSet);
+    saveOfflineSetNames(S.offlineSets);
+    updateOfflineBadge();
+    updateSelectOptionLabels();
   }
 
   // ---------- Event wiring ----------
   function initEvents() {
+    if (cardInner) {
+      // Click anywhere on the card to flip
+      cardInner.addEventListener("click", (e) => {
+        // Don’t flip if clicking on buttons on the back
+        const target = e.target;
+        if (target.closest("button")) return;
+        flipCard();
+      });
+    }
+
     elSelect.addEventListener("change", (e) => {
       const name = e.target.value || "";
       if (!name) return;
       loadSet(name);
     });
 
-    btnFlip.addEventListener("click", flipCard);
-    btnNext.addEventListener("click", nextCard);
-    btnPrev.addEventListener("click", prevCard);
-    btnPlay.addEventListener("click", () => {
+    btnFlip.addEventListener("click", (e) => {
+      e.stopPropagation();
+      flipCard();
+    });
+    btnNext.addEventListener("click", (e) => {
+      e.stopPropagation();
+      nextCard();
+    });
+    btnPrev.addEventListener("click", (e) => {
+      e.stopPropagation();
+      prevCard();
+    });
+    btnPlay.addEventListener("click", (e) => {
+      e.stopPropagation();
       stopAutoplay();
       playCurrentAudio();
     });
-    btnAutoplay.addEventListener("click", toggleAutoplay);
+    btnAutoplay.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleAutoplay();
+    });
     elDownload.addEventListener("click", downloadCurrentSetOffline);
   }
 
@@ -404,5 +540,6 @@
     initEvents();
     loadSetList();
     updateCard();
+    updateOfflineBadge();
   });
 })();
