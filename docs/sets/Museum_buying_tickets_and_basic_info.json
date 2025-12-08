@@ -1,0 +1,58 @@
+{
+  "name": "Museum_buying_tickets_and_basic_info",
+  "modes": [
+    "read"
+  ],
+  "meta": {
+    "modes": [
+      "read"
+    ]
+  },
+  "passages": [
+    {
+      "polish": "Dzień dobry, poproszę dwa bilety do muzeum.",
+      "english": "Good morning, two tickets to the museum, please.",
+      "title": "Przy kasie"
+    },
+    {
+      "polish": "Normalne czy ulgowe?",
+      "english": "Regular or reduced tickets?",
+      "title": "Typ biletu"
+    },
+    {
+      "polish": "Poproszę dwa bilety normalne.",
+      "english": "Two regular tickets, please.",
+      "title": "Odpowiedź"
+    },
+    {
+      "polish": "Do której godziny muzeum jest otwarte?",
+      "english": "Until what time is the museum open?",
+      "title": "Godziny otwarcia"
+    },
+    {
+      "polish": "Dzisiaj jesteśmy otwarci do osiemnastej.",
+      "english": "Today we are open until six p.m.",
+      "title": "Informacja"
+    },
+    {
+      "polish": "Gdzie jest szatnia, proszę?",
+      "english": "Where is the cloakroom, please?",
+      "title": "Szatnia"
+    },
+    {
+      "polish": "Szatnia jest na prawo, za schodami.",
+      "english": "The cloakroom is on the right, past the stairs.",
+      "title": "Droga do szatni"
+    },
+    {
+      "polish": "Pierwsza wystawa jest na pierwszym piętrze.",
+      "english": "The first exhibition is on the first floor.",
+      "title": "Pierwsza wystawa"
+    },
+    {
+      "polish": "Dziękuję za pomoc.",
+      "english": "Thank you for your help.",
+      "title": "Podziękowanie"
+    }
+  ]
+}
