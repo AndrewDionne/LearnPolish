@@ -1,0 +1,65 @@
+{
+  "name": "letter_recognition_3",
+  "modes": [
+    "learn",
+    "speak"
+  ],
+  "meta": {
+    "modes": [
+      "learn",
+      "speak"
+    ]
+  },
+  "cards": [
+    {
+      "phrase": "ciasto, cicho, ciekawy",
+      "meaning": "ci + vowel → soft 'ć'. Listen: ciasto, cicho, ciekawy.",
+      "pronunciation": "CHAS-to, CHEE-kho, CHYE-kah-vih"
+    },
+    {
+      "phrase": "ćma, choćby, pięć",
+      "meaning": "ć before consonant / end. Same sound as 'ci' in ciasto. Listen: ćma, choćby, pięć.",
+      "pronunciation": "CHMAH, KHOTCH-bih, pyench"
+    },
+    {
+      "phrase": "siedem, siać, silny",
+      "meaning": "si + vowel → soft 'ś'. Listen: siedem, siać, silny.",
+      "pronunciation": "SHYE-dem, SHATCH, SHEEL-nih"
+    },
+    {
+      "phrase": "środa, śnieg, prośba",
+      "meaning": "ś before consonant / end. Same sound as 'si' in siedem. Listen: środa, śnieg, prośba.",
+      "pronunciation": "SHRO-dah, SHNYEG, PROSH-bah"
+    },
+    {
+      "phrase": "ziemia, zima, ziarno",
+      "meaning": "zi + vowel → soft 'ź'. Listen: ziemia, zima, ziarno.",
+      "pronunciation": "ZHE-myah, ZHEE-mah, ZHAR-no"
+    },
+    {
+      "phrase": "źle, źródło, bliźniak",
+      "meaning": "ź before consonant / end. Same sound as 'zi' in ziemia.",
+      "pronunciation": "ZH-leh, ZHROOD-wo, BLEEZ-nyak"
+    },
+    {
+      "phrase": "nie, niebo, nic",
+      "meaning": "ni + vowel → soft 'ń'. Listen: nie, niebo, nic.",
+      "pronunciation": "nyeh, NYE-bo, neets"
+    },
+    {
+      "phrase": "koń, kończy, końskie",
+      "meaning": "ń before consonant / end. Same sound as 'ni' in niebo. Listen: koń, kończy, końskie.",
+      "pronunciation": "koin, KOIN-chih, KOINS-kyeh"
+    },
+    {
+      "phrase": "anioł, linia, tanio",
+      "meaning": "ni in the middle of a word also softens the sound (like Spanish 'niñ'). Listen: anioł, linia, tanio.",
+      "pronunciation": "A-nyo, LEE-nya, TA-nyo"
+    },
+    {
+      "phrase": "dzień dobry, proszę, dziękuję",
+      "meaning": "Common greetings with soft consonants: dzień, proszę, dziękuję.",
+      "pronunciation": "JEN DOH-brih, PRO-sheh, JEN-KOO-yeh"
+    }
+  ]
+}
