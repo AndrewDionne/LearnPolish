@@ -706,7 +706,7 @@ def generate_reading_html(set_name, data=None):
       // Prefetch token to reduce latency
       fetchToken().catch(()=>{{}});
 
-    })();
+    }})();
 
     window.addEventListener('beforeunload', ()=>{{
       try {{ recognizer && recognizer.stopContinuousRecognitionAsync(); }} catch(_){{
