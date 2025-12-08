@@ -1,0 +1,58 @@
+{
+  "name": "On_the_tram_talking_to_another_passenger",
+  "modes": [
+    "read"
+  ],
+  "meta": {
+    "modes": [
+      "read"
+    ]
+  },
+  "passages": [
+    {
+      "polish": "Dzień dobry.",
+      "english": "Good morning.",
+      "title": "Wejście do tramwaju"
+    },
+    {
+      "polish": "Przepraszam, czy to miejsce jest wolne?",
+      "english": "Excuse me, is this seat free?",
+      "title": "Wolne miejsce"
+    },
+    {
+      "polish": "Tak, proszę usiąść.",
+      "english": "Yes, please sit down.",
+      "title": "Odpowiedź pasażera"
+    },
+    {
+      "polish": "Czy ten tramwaj jedzie do centrum?",
+      "english": "Does this tram go to the city centre?",
+      "title": "Mała rozmowa"
+    },
+    {
+      "polish": "Tak, jedzie do centrum.",
+      "english": "Yes, it goes to the centre.",
+      "title": "Potwierdzenie"
+    },
+    {
+      "polish": "Na którym przystanku muszę wysiąść?",
+      "english": "At which stop do I need to get off?",
+      "title": "Przystanek"
+    },
+    {
+      "polish": "Musi pan wysiąść na trzecim przystanku.",
+      "english": "You need to get off at the third stop.",
+      "title": "Informacja"
+    },
+    {
+      "polish": "Dziękuję bardzo za informację.",
+      "english": "Thank you very much for the information.",
+      "title": "Podziękowanie"
+    },
+    {
+      "polish": "Nie ma sprawy.",
+      "english": "No problem.",
+      "title": "Uprzejma odpowiedź"
+    }
+  ]
+}
