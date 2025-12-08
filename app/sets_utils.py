@@ -494,18 +494,25 @@ def _publish_assets_to_r2(set_name: str) -> Dict[str, Any]:
 
 # ---------------- Page generation -------------------------------------------
 
-def regenerate_set_pages(set_name: str) -> bool:
+def regenerate_set_pages(set_name: str, *_, **kwargs) -> bool:
     """
     Regenerate HTML + local audio based on explicit saved modes for this set.
+
+    kwargs (ignored but accepted for backwards compatibility):
+      - modes: optional list of generator names ("flashcards","reading","listening",...)
+      - force, verbose: legacy flags used by callers
+
     Generators are expected in MODE_GENERATORS with keys:
       - "flashcards" (for 'learn')
       - "practice"   (for 'speak')
       - "reading"    (for 'read')
-    Listening pages/audio are handled in app/listening.py separately.
+    Listening pages/audio are handled via app.listening.create_listening_set.
     """
     from .modes import MODE_GENERATORS  # avoid circular import
 
+    # Load canonical items + saved modes from docs/sets/<set_name>.json
     data, modes = load_set_data(set_name)
+    modes = [str(m).lower() for m in (modes or [])]
 
     # Local audio first (so pages can play immediately)
     if "learn" in modes or "speak" in modes:
@@ -516,11 +523,14 @@ def regenerate_set_pages(set_name: str) -> bool:
     # System cue files presence check (non-fatal)
     _ensure_system_audio()
 
-    # Map explicit modes → generators to run
+    # Map explicit modes → generators to run (flashcards / practice / reading)
     gens = set()
-    if "learn" in modes: gens.add("flashcards")
-    if "speak" in modes: gens.add("practice")
-    if "read"  in modes: gens.add("reading")
+    if "learn" in modes:
+        gens.add("flashcards")
+    if "speak" in modes:
+        gens.add("practice")
+    if "read" in modes:
+        gens.add("reading")
 
     for g in gens:
         gen_fn = MODE_GENERATORS.get(g)
@@ -528,7 +538,15 @@ def regenerate_set_pages(set_name: str) -> bool:
             html_path = gen_fn(set_name, data)
             print(f"🔄 Regenerated {g} page for set '{set_name}': {html_path}")
 
-    # Publish local assets to R2 + write manifest (if enabled)
+    # Listening pages/audio via app.listening
+    if "listen" in modes:
+        try:
+            from .listening import create_listening_set as _listen_gen
+            _listen_gen(set_name, data)
+        except Exception as e:
+            print(f"⚠️ Failed to regenerate listening page for set '{set_name}': {e}")
+
+    # Publish local assets (audio/reading/listening) to R2 + write manifest (if enabled)
     _publish_assets_to_r2(set_name)
 
     # Keep set_modes.json fresh (cheap)
