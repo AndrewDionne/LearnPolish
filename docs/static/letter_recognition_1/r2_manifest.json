@@ -1,0 +1,15 @@
+{
+  "set": "letter_recognition_1",
+  "assetsBase": "https://cdn.polishpath.com",
+  "files": {
+    "audio/letter_recognition_1/0_maz_waz_b_ad.mp3": "https://cdn.polishpath.com/audio/letter_recognition_1/0_maz_waz_b_ad.mp3",
+    "audio/letter_recognition_1/1_meza_reke_piec.mp3": "https://cdn.polishpath.com/audio/letter_recognition_1/1_meza_reke_piec.mp3",
+    "audio/letter_recognition_1/2_moj_sto_pozno.mp3": "https://cdn.polishpath.com/audio/letter_recognition_1/2_moj_sto_pozno.mp3",
+    "audio/letter_recognition_1/3_odz_wo_atwy.mp3": "https://cdn.polishpath.com/audio/letter_recognition_1/3_odz_wo_atwy.mp3",
+    "audio/letter_recognition_1/4_sroda_snieg_prosba.mp3": "https://cdn.polishpath.com/audio/letter_recognition_1/4_sroda_snieg_prosba.mp3",
+    "audio/letter_recognition_1/5_cma_cwiczyc_dziecie.mp3": "https://cdn.polishpath.com/audio/letter_recognition_1/5_cma_cwiczyc_dziecie.mp3",
+    "audio/letter_recognition_1/6_kon_konczy_dzien.mp3": "https://cdn.polishpath.com/audio/letter_recognition_1/6_kon_konczy_dzien.mp3",
+    "audio/letter_recognition_1/7_zaba_morze_duzo.mp3": "https://cdn.polishpath.com/audio/letter_recognition_1/7_zaba_morze_duzo.mp3",
+    "audio/letter_recognition_1/8_zle_zrod_o_ga_az.mp3": "https://cdn.polishpath.com/audio/letter_recognition_1/8_zle_zrod_o_ga_az.mp3"
+  }
+}

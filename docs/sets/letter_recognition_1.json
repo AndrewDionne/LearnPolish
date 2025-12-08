@@ -1,0 +1,60 @@
+{
+  "name": "letter_recognition_1",
+  "modes": [
+    "learn",
+    "speak"
+  ],
+  "meta": {
+    "modes": [
+      "learn",
+      "speak"
+    ]
+  },
+  "cards": [
+    {
+      "phrase": "mąż, wąż, błąd",
+      "meaning": "ą – nasal 'on' sound. Listen: mąż, wąż, błąd.",
+      "pronunciation": "monzh, vonzh, bwont"
+    },
+    {
+      "phrase": "męża, rękę, pięć",
+      "meaning": "ę – nasal 'en' sound. Listen: męża, rękę, pięć.",
+      "pronunciation": "MEN-zha, REN-keh, pyench"
+    },
+    {
+      "phrase": "mój, stół, późno",
+      "meaning": "ó – sounds like 'u'. Listen: mój, stół, późno.",
+      "pronunciation": "mooy, stool, POOZH-no"
+    },
+    {
+      "phrase": "łódź, wół, łatwy",
+      "meaning": "ł – like English 'w'. Listen: łódź, wół, łatwy.",
+      "pronunciation": "wooch, voow, WAT-vih"
+    },
+    {
+      "phrase": "środa, śnieg, prośba",
+      "meaning": "ś – soft 'sh' sound. Listen: środa, śnieg, prośba.",
+      "pronunciation": "SHRO-dah, SHNYEG, PROSH-bah"
+    },
+    {
+      "phrase": "ćma, ćwiczyć, dziecię",
+      "meaning": "ć – soft 'ch' (like 'chew' but softer). Listen: ćma, ćwiczyć, dziecię.",
+      "pronunciation": "CHMAH, CHVEE-chich, JEN-chen"
+    },
+    {
+      "phrase": "koń, kończy, dzień",
+      "meaning": "ń – soft 'ny' (like 'canyon'). Listen: koń, kończy, dzień.",
+      "pronunciation": "koin, KOIN-chih, jyen"
+    },
+    {
+      "phrase": "żaba, morze, dużo",
+      "meaning": "ż – 'zh' as in 'vision'. Listen: żaba, morze, dużo.",
+      "pronunciation": "ZHAH-bah, MOR-zheh, DOO-zho"
+    },
+    {
+      "phrase": "źle, źródło, gałąź",
+      "meaning": "ź – softer 'zh' sound. Listen: źle, źródło, gałąź.",
+      "pronunciation": "ZH-leh, ZHROOD-wo, GA-wonzh"
+    }
+  ]
+}
