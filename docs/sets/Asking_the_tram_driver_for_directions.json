@@ -1,0 +1,53 @@
+{
+  "name": "Asking_the_tram_driver_for_directions",
+  "modes": [
+    "read"
+  ],
+  "meta": {
+    "modes": [
+      "read"
+    ]
+  },
+  "passages": [
+    {
+      "polish": "Przepraszam, czy mogę zadać pytanie?",
+      "english": "Excuse me, may I ask a question?",
+      "title": "Podejście do kierowcy"
+    },
+    {
+      "polish": "Przepraszam, czy tym tramwajem dojadę do centrum?",
+      "english": "Excuse me, does this tram go to the city centre?",
+      "title": "Pytanie o trasę"
+    },
+    {
+      "polish": "Tak, ten tramwaj jedzie do centrum.",
+      "english": "Yes, this tram goes to the centre.",
+      "title": "Odpowiedź kierowcy"
+    },
+    {
+      "polish": "Na którym przystanku powinienem wysiąść?",
+      "english": "At which stop should I get off?",
+      "title": "Przystanek do wysiadania"
+    },
+    {
+      "polish": "Proszę wysiąść na przystanku \"Centrum\".",
+      "english": "Please get off at the ‘Centrum’ stop.",
+      "title": "Dokładna informacja"
+    },
+    {
+      "polish": "Czy mogę kupić bilet w tramwaju?",
+      "english": "Can I buy a ticket on the tram?",
+      "title": "Potwierdzenie"
+    },
+    {
+      "polish": "Tak, może pan kupić bilet w automacie.",
+      "english": "Yes, you can buy a ticket in the machine.",
+      "title": "Bilet"
+    },
+    {
+      "polish": "Dziękuję bardzo, do widzenia.",
+      "english": "Thank you very much, goodbye.",
+      "title": "Zakończenie"
+    }
+  ]
+}
