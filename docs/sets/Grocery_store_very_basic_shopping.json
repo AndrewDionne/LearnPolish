@@ -1,0 +1,58 @@
+{
+  "name": "Grocery_store_very_basic_shopping",
+  "modes": [
+    "read"
+  ],
+  "meta": {
+    "modes": [
+      "read"
+    ]
+  },
+  "passages": [
+    {
+      "polish": "Dzień dobry.",
+      "english": "Good morning.",
+      "title": "Wejście do sklepu"
+    },
+    {
+      "polish": "Dzień dobry, poproszę kilogram jabłek.",
+      "english": "Good morning, I’d like a kilo of apples, please.",
+      "title": "Prośba o jabłka"
+    },
+    {
+      "polish": "Jakie jabłka pan lubi? Czerwone czy zielone?",
+      "english": "Which apples do you like? Red or green?",
+      "title": "Doprecyzowanie"
+    },
+    {
+      "polish": "Poproszę czerwone jabłka.",
+      "english": "Red apples, please.",
+      "title": "Odpowiedź klienta"
+    },
+    {
+      "polish": "Czy chce pan coś jeszcze?",
+      "english": "Would you like anything else?",
+      "title": "Dodatkowe zakupy"
+    },
+    {
+      "polish": "Nie, dziękuję. To wszystko.",
+      "english": "No, thank you. That’s all.",
+      "title": "To wszystko"
+    },
+    {
+      "polish": "Dziesięć złotych, proszę.",
+      "english": "Ten zloty, please.",
+      "title": "Cena"
+    },
+    {
+      "polish": "Proszę, płacę kartą.",
+      "english": "Here you go, I’ll pay by card.",
+      "title": "Płacenie"
+    },
+    {
+      "polish": "Dziękuję, do widzenia.",
+      "english": "Thank you, goodbye.",
+      "title": "Zakończenie"
+    }
+  ]
+}

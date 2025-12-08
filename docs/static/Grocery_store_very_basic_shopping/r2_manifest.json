@@ -1,0 +1,15 @@
+{
+  "set": "Grocery_store_very_basic_shopping",
+  "assetsBase": "https://cdn.polishpath.com",
+  "files": {
+    "reading/Grocery_store_very_basic_shopping/0.mp3": "https://cdn.polishpath.com/reading/Grocery_store_very_basic_shopping/0.mp3",
+    "reading/Grocery_store_very_basic_shopping/1.mp3": "https://cdn.polishpath.com/reading/Grocery_store_very_basic_shopping/1.mp3",
+    "reading/Grocery_store_very_basic_shopping/2.mp3": "https://cdn.polishpath.com/reading/Grocery_store_very_basic_shopping/2.mp3",
+    "reading/Grocery_store_very_basic_shopping/3.mp3": "https://cdn.polishpath.com/reading/Grocery_store_very_basic_shopping/3.mp3",
+    "reading/Grocery_store_very_basic_shopping/4.mp3": "https://cdn.polishpath.com/reading/Grocery_store_very_basic_shopping/4.mp3",
+    "reading/Grocery_store_very_basic_shopping/5.mp3": "https://cdn.polishpath.com/reading/Grocery_store_very_basic_shopping/5.mp3",
+    "reading/Grocery_store_very_basic_shopping/6.mp3": "https://cdn.polishpath.com/reading/Grocery_store_very_basic_shopping/6.mp3",
+    "reading/Grocery_store_very_basic_shopping/7.mp3": "https://cdn.polishpath.com/reading/Grocery_store_very_basic_shopping/7.mp3",
+    "reading/Grocery_store_very_basic_shopping/8.mp3": "https://cdn.polishpath.com/reading/Grocery_store_very_basic_shopping/8.mp3"
+  }
+}
