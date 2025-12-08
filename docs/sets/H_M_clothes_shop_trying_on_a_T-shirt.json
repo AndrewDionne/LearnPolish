@@ -1,0 +1,63 @@
+{
+  "name": "H_M_clothes_shop_trying_on_a_T-shirt",
+  "modes": [
+    "read"
+  ],
+  "meta": {
+    "modes": [
+      "read"
+    ]
+  },
+  "passages": [
+    {
+      "polish": "Dzień dobry.",
+      "english": "Good morning.",
+      "title": "Wejście do sklepu"
+    },
+    {
+      "polish": "Przepraszam, czy może mi pani pomóc?",
+      "english": "Excuse me, can you help me?",
+      "title": "Pytanie o pomoc"
+    },
+    {
+      "polish": "Szukam białej koszulki.",
+      "english": "I am looking for a white T-shirt.",
+      "title": "Koszulka"
+    },
+    {
+      "polish": "Jaki rozmiar pan nosi?",
+      "english": "What size do you wear?",
+      "title": "Rozmiar"
+    },
+    {
+      "polish": "Noszę rozmiar L.",
+      "english": "I wear size L.",
+      "title": "Odpowiedź"
+    },
+    {
+      "polish": "Przepraszam, czy mogę przymierzyć tę koszulkę?",
+      "english": "Excuse me, can I try on this T-shirt?",
+      "title": "Przymierzalnia"
+    },
+    {
+      "polish": "Przymierzalnie są tam, po lewej stronie.",
+      "english": "The fitting rooms are there, on the left.",
+      "title": "Droga do przymierzalni"
+    },
+    {
+      "polish": "Koszulka jest dobra. Wezmę ją.",
+      "english": "The T-shirt is good. I’ll take it.",
+      "title": "Pasuje"
+    },
+    {
+      "polish": "Gdzie jest kasa, proszę?",
+      "english": "Where is the cash desk, please?",
+      "title": "Płacenie"
+    },
+    {
+      "polish": "Dziękuję bardzo, do widzenia.",
+      "english": "Thank you very much, goodbye.",
+      "title": "Zakończenie"
+    }
+  ]
+}
