@@ -674,7 +674,7 @@
       // Prefetch token to reduce latency
       fetchToken().catch(()=>{});
 
-    }();
+    })();
 
     window.addEventListener('beforeunload', ()=>{
       try { recognizer && recognizer.stopContinuousRecognitionAsync(); } catch(_){
