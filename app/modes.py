@@ -42,7 +42,7 @@ if generate_test_html:
     MODE_GENERATORS["test"] = generate_test_html
 
 # Convenient exports for other modules
-SET_TYPES = {"flashcards", "reading"}            # types accepted by /api/create_set
+SET_TYPES = {"flashcards", "reading", "listening", "practice"}            # types accepted by /api/create_set
 AVAILABLE_MODES = set(MODE_GENERATORS.keys())    # modes we can currently generate
 
 __all__ = [
