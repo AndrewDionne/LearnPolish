@@ -4,6 +4,8 @@ import { lessonLabel, parseManifest } from './model';
 import { useLessonAudio } from './audio';
 import { parseProgress, recallRate, recordAttempt, STORAGE_KEY } from './progress';
 import type { Progress } from './progress';
+import { PERSONAL_STORAGE_KEY, importPersonalLesson, makePersonalLesson, parsePersonalLessons, toPortableLesson, upsertPersonalLesson } from './personal';
+import type { DraftItem } from './personal';
 
 type Page = 'home' | 'library' | 'practice' | 'profile';
 type KindFilter = 'all' | LessonKind;
@@ -51,7 +53,18 @@ function AudioButton({ item, playing, onPlay }: {
 
 export default function App() {
   const [page, setPage] = useState<Page>('home');
-  const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [builtIn, setBuiltIn] = useState<Lesson[]>([]);
+  const [personal, setPersonal] = useState<Lesson[]>(() => {
+    try { return parsePersonalLessons(localStorage.getItem(PERSONAL_STORAGE_KEY)); } catch { return []; }
+  });
+  const lessons = useMemo(() => [...builtIn, ...personal.filter(x => !builtIn.some(y => y.id === x.id))], [builtIn, personal]);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draftTitle, setDraftTitle] = useState('');
+  const [draftKind, setDraftKind] = useState<LessonKind>('vocabulary');
+  const [draftRows, setDraftRows] = useState<DraftItem[]>([{ polish: '', english: '' }]);
+  const [editorError, setEditorError] = useState('');
+  const [importError, setImportError] = useState('');
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [query, setQuery] = useState('');
@@ -74,7 +87,7 @@ export default function App() {
         const response = await fetch(import.meta.env.BASE_URL + 'generated/lessons.json', { signal: controller.signal });
         if (!response.ok) throw new Error('Content unavailable (' + response.status + ')');
         const data = parseManifest(await response.json());
-        if (!controller.signal.aborted) { setLessons(data); setLoadError(''); }
+        if (!controller.signal.aborted) { setBuiltIn(data); setLoadError(''); }
       } catch (error) {
         if (!controller.signal.aborted) setLoadError(error instanceof Error ? error.message : 'Unable to load lessons');
       } finally {
@@ -87,6 +100,9 @@ export default function App() {
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); } catch { /* local progress is best effort */ }
   }, [progress]);
+  useEffect(() => {
+    try { localStorage.setItem(PERSONAL_STORAGE_KEY, JSON.stringify(personal)); } catch { /* local sets are best effort */ }
+  }, [personal]);
 
   const active = lessons.find(x => x.id === lessonId);
   const current = active?.items[index];
@@ -101,7 +117,7 @@ export default function App() {
 
   const stopAudio = () => { audio.stop(); setAudioError(''); };
   const goTo = (destination: Page) => {
-    stopAudio(); setLessonId(null); setPage(destination); setRevealed(false);
+    stopAudio(); setLessonId(null); setEditorOpen(false); setPage(destination); setRevealed(false);
   };
   const openLesson = (lesson: Lesson) => {
     stopAudio();
@@ -119,6 +135,63 @@ export default function App() {
     setProgress(previous => recordAttempt(previous, current.id, remembered, new Date().toISOString()));
     if (active && index < active.items.length - 1) jump(index + 1);
     else setRevealed(false);
+  };
+  const beginNew = () => {
+    stopAudio(); setLessonId(null); setPage('library'); setEditorOpen(true);
+    setEditingId(null); setDraftTitle(''); setDraftKind('vocabulary');
+    setDraftRows([{ polish: '', english: '' }]); setEditorError('');
+  };
+  const beginEdit = (lesson: Lesson) => {
+    if (lesson.source !== 'personal') return;
+    stopAudio(); setLessonId(null); setPage('library'); setEditorOpen(true);
+    setEditingId(lesson.id); setDraftTitle(lesson.title); setDraftKind(lesson.kind);
+    setDraftRows(lesson.items.map(({ id, polish, english, pronunciation, title }) => ({ id, polish, english, pronunciation, title })));
+    setEditorError('');
+  };
+  const changeDraftRow = (index: number, key: 'polish' | 'english', value: string) =>
+    setDraftRows(old => old.map((row, i) => i === index ? { ...row, [key]: value } : row));
+  const saveDraft = () => {
+    try {
+      const original = editingId ? personal.find(x => x.id === editingId) : undefined;
+      const lesson = makePersonalLesson({ title: draftTitle, kind: draftKind, items: draftRows }, original);
+      const next = upsertPersonalLesson(personal, lesson);
+      setPersonal(next); setEditorOpen(false); setEditorError(''); openLesson(lesson);
+    } catch (error) {
+      setEditorError(error instanceof Error ? error.message : 'Unable to save lesson');
+    }
+  };
+  const importFile = async (file: File | undefined) => {
+    if (!file) return;
+    try {
+      if (file.size > 250_000) throw new Error('Lesson JSON exceeds the 250 KB import limit.');
+      const imported = importPersonalLesson(JSON.parse(await file.text()));
+      setPersonal(old => upsertPersonalLesson(old, imported));
+      setImportError('');
+    } catch (error) {
+      setImportError(error instanceof Error ? error.message : 'Unable to import lesson');
+    }
+  };
+  const exportFile = (lesson: Lesson) => {
+    const blob = new Blob([JSON.stringify(toPortableLesson(lesson), null, 2) + '\n'], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url; anchor.download = lesson.id + '.json'; document.body.appendChild(anchor);
+    anchor.click(); anchor.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  };
+  const deletePersonalLesson = (lesson: Lesson) => {
+    if (lesson.source !== 'personal' || !window.confirm('Delete this personal lesson? This cannot be undone.')) return;
+    setPersonal(old => old.filter(x => x.id !== lesson.id));
+    setProgress(old => {
+      const next = { ...old };
+      for (const item of lesson.items) delete next[item.id];
+      return next;
+    });
+    if (lastLesson === lesson.id) {
+      setLastLesson(null);
+      try { localStorage.removeItem('ptp-v2-last-lesson'); } catch { /* best effort */ }
+    }
+    goTo('library');
   };
   const play = (path: string) => {
     setAudioError('');
@@ -152,7 +225,7 @@ export default function App() {
         {!loading && loadError && <section className="empty-state" role="alert"><h2>Lessons could not load</h2><p>{loadError}</p><p>Run <code>npm run content</code> in v2/frontend, then reload. Your progress remains saved locally.</p></section>}
 
         {!loading && !loadError && active && current && <div className="learning">
-          <button type="button" className="back-link" onClick={() => goTo('library')}>← Back to library</button>
+          <div className="lesson-tools"><button type="button" className="back-link" onClick={() => goTo('library')}>← Back to library</button><div><button type="button" onClick={() => exportFile(active)}>Export JSON</button>{active.source === 'personal' && <><button type="button" onClick={() => beginEdit(active)}>Edit lesson</button><button type="button" className="delete-link" onClick={() => deletePersonalLesson(active)}>Delete</button></>}</div></div>
           <div className="learning-head">
             <div><span className="eyebrow">{lessonLabel(active.kind)} · {active.title}</span><h1>{active.kind === 'reading' ? 'Read & understand' : active.kind === 'sounds' ? 'Hear the difference' : 'Learn the language'}</h1><p>{active.kind === 'reading' ? 'Read naturally, then reveal the translation.' : active.kind === 'sounds' ? 'Compare the examples and listen carefully. These lessons await a native-speaker content review.' : 'Think of the Polish expression before revealing its meaning.'}</p></div>
             <span className="item-count">{index + 1} <span>/ {active.items.length}</span></span>
@@ -183,7 +256,28 @@ export default function App() {
           </div>
         </div>}
 
-        {!loading && !loadError && !active && page === 'home' && <>
+        {!loading && !loadError && editorOpen && <section className="authoring">
+          <button type="button" className="back-link" onClick={() => goTo('library')}>← Cancel and return to library</button>
+          <div className="page-title"><span className="eyebrow">MAKE IT YOUR OWN</span><h1>{editingId ? 'Edit lesson' : 'Create a lesson'}<span className="title-dot">.</span></h1><p>Build your own vocabulary and reading sets. Content is stored locally, not deployed through GitHub.</p></div>
+          <div className="author-panel">
+            <div className="author-header">
+              <label>Lesson name<input type="text" value={draftTitle} maxLength={100} placeholder="e.g. At the bakery" onChange={e => setDraftTitle(e.target.value)} /></label>
+              <label>Lesson type<select value={draftKind} onChange={e => setDraftKind(e.target.value as LessonKind)}><option value="vocabulary">Vocabulary</option><option value="reading">Reading</option><option value="sounds">Polish sounds</option></select></label>
+            </div>
+            <div className="author-item-header"><h2>Learning items</h2><span>{draftRows.length} / 150</span></div>
+            {draftRows.map((row, rowIndex) => <div className="author-item" key={row.id || rowIndex}>
+              <span className="author-number">{rowIndex + 1}</span>
+              <label>Polish text<textarea value={row.polish} rows={2} placeholder="Polish word, expression, or passage" onChange={e => changeDraftRow(rowIndex, 'polish', e.target.value)}/></label>
+              <label>English meaning<textarea value={row.english} rows={2} placeholder="Translation or explanation" onChange={e => changeDraftRow(rowIndex, 'english', e.target.value)}/></label>
+              <button type="button" className="remove-row" disabled={draftRows.length <= 1} title="Remove item" aria-label={'Remove item ' + (rowIndex + 1)} onClick={() => setDraftRows(old => old.filter((_, i) => i !== rowIndex))}>×</button>
+            </div>)}
+            <button type="button" className="add-row" disabled={draftRows.length >= 150} onClick={() => setDraftRows(old => [...old, { polish: '', english: '' }])}>+ Add another item</button>
+            {editorError && <p role="alert" className="author-error">{editorError}</p>}
+            <div className="author-footer"><button type="button" className="secondary-action" onClick={() => goTo('library')}>Cancel</button><button type="button" className="primary-action" onClick={saveDraft}>{editingId ? 'Save changes' : 'Create lesson'} →</button></div>
+          </div>
+        </section>}
+
+        {!loading && !loadError && !active && !editorOpen && page === 'home' && <>
           <section className="welcome">
             <div><span className="eyebrow welcome-kicker">YOUR POLISH JOURNEY STARTS HERE</span><h1>Small steps.<br/><em>Real progress.</em></h1><p>Build confidence in Polish, one useful expression at a time. Listen, learn, and make it your own.</p><button type="button" className="hero-button" onClick={() => last ? openLesson(last) : goTo('library')}>{last ? 'Continue learning' : 'Explore lessons'} <span>↗</span></button></div>
             <div className="welcome-art" aria-hidden="true"><span className="art-orbit orbit-one"/><span className="art-orbit orbit-two"/><div className="art-center">ą</div><span className="art-accent a1">ł</span><span className="art-accent a2">ż</span><span className="art-accent a3">ś</span></div>
@@ -200,16 +294,17 @@ export default function App() {
           </div>
         </>}
 
-        {!loading && !loadError && !active && page === 'library' && <>
+        {!loading && !loadError && !active && !editorOpen && page === 'library' && <>
           <section className="page-title"><span className="eyebrow">YOUR LEARNING COLLECTION</span><h1>Lesson library<span className="title-dot">.</span></h1><p>Real Polish, organized into small lessons you can return to whenever you like.</p></section>
+          <div className="author-actions"><button type="button" className="primary-action" onClick={beginNew}>+ Create lesson</button><label className="import-button">Import lesson JSON<input aria-label="Import lesson JSON" type="file" accept=".json,application/json" onChange={e => { const file = e.currentTarget.files?.[0]; void importFile(file); e.currentTarget.value = ''; }} /></label></div>{importError && <p className="author-error" role="alert">{importError}</p>}
           <div className="library-controls"><label className="search-wrap"><span aria-hidden="true">⌕</span><input type="search" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search lessons or Polish phrases" aria-label="Search lessons" /></label><div className="filter-buttons" aria-label="Filter lessons">{(['all','vocabulary','reading','sounds'] as KindFilter[]).map(kind => <button type="button" key={kind} className={filter === kind ? 'chosen' : ''} onClick={() => setFilter(kind)}>{kind === 'all' ? 'All lessons' : lessonLabel(kind)}</button>)}</div></div>
           <div className="library-summary">{filtered.length} {filtered.length === 1 ? 'lesson' : 'lessons'} <span>· {filtered.reduce((total, lesson) => total + lesson.items.length, 0)} learning items</span></div>
           <div className="lesson-grid">{filtered.map(lesson => <LessonTile key={lesson.id} lesson={lesson} completed={completedIn(lesson)} onOpen={() => openLesson(lesson)} />)}</div>
           {filtered.length === 0 && <div className="empty-state"><h2>No matching lessons</h2><p>Try another search or select a different category.</p></div>}
-          <p className="info-footnote">This preview uses the 23 migrated legacy lesson sets. Personal lesson editing and import are the next capability slice.</p>
+          <p className="info-footnote">Built-in lessons come from the legacy collection. Personal lessons are saved to this browser only; export JSON for a portable backup.</p>
         </>}
 
-        {!loading && !loadError && !active && page === 'practice' && <>
+        {!loading && !loadError && !active && !editorOpen && page === 'practice' && <>
           <section className="page-title"><span className="eyebrow">YOUR PRACTICE SPACE</span><h1>Keep it fresh<span className="title-dot">.</span></h1><p>Every phrase you revisit makes it easier to find the words next time.</p></section>
           <div className="stats-row"><Counter value={practisedCount} label="Unique items seen"/><Counter value={Object.values(progress).reduce((total, x) => total + x.seen, 0)} label="Practice attempts"/><Counter value={recallRate(progress) + '%'} label="Self-rated recall"/></div>
           <div className="section-heading lower"><div><span className="eyebrow">RETURN TO PRACTICE</span><h2>Continue your lessons</h2></div></div>
@@ -218,7 +313,7 @@ export default function App() {
           <p className="info-footnote">These metrics reflect self-rated recall. Automated pronunciation assessment is a separate, upcoming feature.</p>
         </>}
 
-        {!loading && !loadError && !active && page === 'profile' && <>
+        {!loading && !loadError && !active && !editorOpen && page === 'profile' && <>
           <section className="page-title"><span className="eyebrow">YOUR JOURNEY</span><h1>Learning progress<span className="title-dot">.</span></h1><p>Your achievements are saved in this browser while we develop secure accounts and sync.</p></section>
           <div className="stats-row"><Counter value={lessons.length} label="Lessons available"/><Counter value={practisedCount} label="Items encountered"/><Counter value={recallRate(progress) + '%'} label="Self-rated recall"/></div>
           <section className="preferences"><h2>Local data</h2><p>Progress is currently stored on this device, not in an account. Avoid clearing browser site data if you want to keep your results.</p><button type="button" className="danger-action" onClick={() => { if (window.confirm('Erase all locally saved practice progress? This cannot be undone.')) { setProgress({}); try { localStorage.removeItem(STORAGE_KEY); } catch { /* best effort */ } } }}>Clear practice progress</button></section>
