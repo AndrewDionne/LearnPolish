@@ -1,0 +1,63 @@
+name: V2 checks
+
+on:
+  pull_request:
+    paths:
+      - 'v2/**'
+      - '.github/workflows/v2-ci.yml'
+      - 'docs/sets/**'
+      - 'docs/static/**'
+  push:
+    branches: [main]
+    paths:
+      - 'v2/**'
+      - '.github/workflows/v2-ci.yml'
+      - 'docs/sets/**'
+      - 'docs/static/**'
+
+permissions:
+  contents: read
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: v2/frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Verify migration, types, unit tests and production build
+        run: npm run check
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Browser journeys (desktop and mobile)
+        run: npm run test:e2e
+      - name: Upload browser screenshots on completion
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v2-browser-evidence
+          path: |
+            v2/frontend/test-results/**/*.png
+            v2/frontend/test-results/**/*.zip
+          if-no-files-found: ignore
+          retention-days: 7
+
+  benchmark-harness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Test offline-only benchmark safeguards
+        run: python -m unittest discover -s v2/benchmarks -p 'test_*.py' -v
