@@ -36,3 +36,46 @@ test('responsive mobile library and lesson controls', async ({ page, isMobile })
   await expect(page.getByText('Dwa', { exact: true })).toBeVisible();
   await page.screenshot({ path: 'test-results/mobile-learn.png', fullPage: true });
 });
+
+test('create, edit, export, import and delete a personal lesson without deploying', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Explore lessons' }).click();
+  await page.getByRole('button', { name: /Create lesson/ }).click();
+  await page.getByRole('textbox', { name: 'Lesson name' }).fill('At the bakery');
+  await page.getByRole('textbox', { name: 'Polish text' }).fill('Poproszę chleb');
+  await page.getByRole('textbox', { name: 'English meaning' }).fill('Bread, please');
+  await page.getByRole('button', { name: /Create lesson/ }).click();
+  await expect(page.getByText('Poproszę chleb', { exact: true })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Edit lesson' }).click();
+  await page.getByRole('textbox', { name: 'Lesson name' }).fill('At the Polish bakery');
+  await page.getByRole('textbox', { name: 'English meaning' }).fill('A loaf of bread, please');
+  await page.getByRole('button', { name: /Save changes/ }).click();
+  await expect(page.getByText('At the Polish bakery', { exact: true }).first()).toBeVisible();
+
+  const exportStarted = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Export JSON' }).click();
+  const exported = await exportStarted;
+  expect(exported.suggestedFilename()).toMatch(/personal_.*\.json/);
+
+  await page.reload();
+  await page.getByRole('button', { name: 'Library' }).first().click();
+  await expect(page.getByText('At the Polish bakery', { exact: true })).toBeVisible();
+
+  const imported = {
+    schemaVersion: 1, id: 'old-portable-id', title: 'Imported lesson',
+    kind: 'vocabulary', source: 'personal',
+    items: [{ id: 'one', polish: 'Dziękuję', english: 'Thank you', audio: 'https://untrusted.example/audio.mp3' }],
+  };
+  await page.locator('input[aria-label="Import lesson JSON"]').setInputFiles({
+    name: 'import.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(imported)),
+  });
+  await expect(page.getByText('Imported lesson', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: /Imported lesson/ }).click();
+  await expect(page.getByText('Dziękuję', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: /No audio/ })).toBeDisabled();
+
+  page.on('dialog', dialog => dialog.accept());
+  await page.getByRole('button', { name: 'Delete' }).click();
+  await expect(page.getByText('Imported lesson', { exact: true })).toHaveCount(0);
+});
