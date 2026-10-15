@@ -1,6 +1,6 @@
 # Path to Polish V2 — Rebuild Scope and Delivery Plan
 
-**Status:** V2 development active (2026-10-16). Initial foundation/Library→Learn capability merged in [PR #3](https://github.com/AndrewDionne/LearnPolish/pull/3), commit `c89010c4fd6c603f885c996d51231f8148037fea`. T0/T1 gates remain partial; see [umbrella issue #2](https://github.com/AndrewDionne/LearnPolish/issues/2) for checkpoints and CI evidence.
+**Status:** V2 development active (2026-10-16). Initial foundation/Library→Learn capability merged in [PR #3](https://github.com/AndrewDionne/LearnPolish/pull/3), commit `c89010c4fd6c603f885c996d51231f8148037fea`; personal lesson editor/import/export merged in [PR #4](https://github.com/AndrewDionne/LearnPolish/pull/4), commit `5bd2649013aa565f86c2c93bcbc036d73c5381a9`. T0/T1 gates remain partial; see [umbrella issue #2](https://github.com/AndrewDionne/LearnPolish/issues/2) for checkpoints and CI evidence.
 **Repository:** `AndrewDionne/LearnPolish` (retain; do not create a second repository).
 **Owner's product decision:** The current application is unused and may be replaced without preserving its existing runtime behaviour or uptime. Preserve useful learning content and historical source, **not** legacy design or architecture.
 **Related pronunciation decision:** [Issue #1](https://github.com/AndrewDionne/LearnPolish/issues/1).
@@ -140,9 +140,9 @@ Optional AI lesson import, nuanced dialogue coach, adaptive curricula, community
 
 The V2 frontend, migrated library, basic Learn UI and offline-only benchmark harness now exist in `main`; CI, including desktop/mobile Playwright smoke tests, passed. The old app is unmodified.
 
-1. Add **editable personal lesson sets** and portable JSON import/export, with stable IDs, local persistence, schema validation and browser tests; no Git commits for user-created sets.
-2. Add a modular backend foundation and security/auth boundary only as product needs require, without inheriting unsafe legacy endpoints.
-3. Obtain a small human-labelled Polish audio corpus and run **actual** local Whisper large-v3 inference against a clean live Azure baseline, with explicit free-tier guardrails. The harness alone is not an empirical benchmark.
-4. Expand real Read/Listen capabilities and design/synthetic/physical audits, then offline support and progress sync by roadmap gates.
+1. **Done:** Personal lesson authoring and portable JSON import/export now work with stable IDs, local browser persistence, schema and browser tests in merged PR #4; these are not cloud-synced.
+2. **Next priority:** Obtain a small human-labelled Polish audio corpus and run **actual** local Whisper large-v3 inference against a clean live Azure baseline, with explicit free-tier guardrails. The harness alone is not an empirical benchmark.
+3. Add modular, security-reviewed backend/API foundation and a proper speech capture path; do not inherit unsafe legacy endpoints.
+4. Expand genuine Read/Listen exercises, audited Polish sound comparisons, responsive screenshot and iOS Safari review, then offline downloads and progress sync by roadmap gates.
 
 **Change management:** Update this plan when a material product/architecture choice is made. Record benchmark evidence and acceptance results in linked issues/PRs. Keep GitHub the authoritative continuity source.
