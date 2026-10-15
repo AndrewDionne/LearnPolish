@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-16
+**Updated:** 2026-10-16 — first V2 implementation merged
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -24,7 +24,11 @@
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
 5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt features.
 
-## Current state
-- **Scope and benchmark are documented; V2 code has not yet been implemented.**
-- Original source baseline before plan changes: `42f3f4e8f4669d52fd7f25a26fa0ad5579219d0d`.
-- Next product increment: bootstrap V2 app/test architecture + end-to-end Library-to-Learn; concurrently implement an audio-replay harness for Whisper large-v3 and corrected Azure results.
+## Current state — verified 2026-10-16
+- **PR #3 merged to main:** `c89010c4fd6c603f885c996d51231f8148037fea`. New `v2/frontend` React/TypeScript/Vite foundation provides Home, Library, basic Learn/Read/Sounds, locally saved recall, unified audio and full 23-set content migration.
+- New `v2/benchmarks` offline-only Python harness supports dry checks, pre-downloaded Whisper large-v3 and raw Azure score parsing. **No actual Whisper/Azure comparative inference run yet.**
+- **CI PASS** on exact PR head `b46b8f1b20ca161fc50d0f557f504b783ba503bc`, including Playwright desktop/mobile smoke journeys: https://github.com/AndrewDionne/LearnPolish/actions/runs/38819091257
+- **Roadmap status:** T0 foundational frontend **partial**; T1 first Library→Learn vertical slice **partial**; T2 benchmark harness only; all larger tranche acceptance gates remain open.
+- Original source baseline before V2 plan: `42f3f4e8f4669d52fd7f25a26fa0ad5579219d0d`.
+- **Next capability:** personal editable lessons + import/export and local persistence, with schema, unit and browser tests; in parallel develop an actual labelled-corpus Whisper/Azure comparison. See issue #2 progress comment and issue #1.
+- Do not claim physical Safari certification or full design screenshot review; V2 is not deployed as the old site's replacement.
