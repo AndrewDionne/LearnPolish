@@ -28,7 +28,9 @@
 - **PR #3 merged to main:** `c89010c4fd6c603f885c996d51231f8148037fea`. New `v2/frontend` React/TypeScript/Vite foundation provides Home, Library, basic Learn/Read/Sounds, locally saved recall, unified audio and full 23-set content migration.
 - New `v2/benchmarks` offline-only Python harness supports dry checks, pre-downloaded Whisper large-v3 and raw Azure score parsing. **No actual Whisper/Azure comparative inference run yet.**
 - **CI PASS** on exact PR head `b46b8f1b20ca161fc50d0f557f504b783ba503bc`, including Playwright desktop/mobile smoke journeys: https://github.com/AndrewDionne/LearnPolish/actions/runs/38819091257
-- **Roadmap status:** T0 foundational frontend **partial**; T1 first Library→Learn vertical slice **partial**; T2 benchmark harness only; all larger tranche acceptance gates remain open.
+- **PR #4 merged into main:** `5bd2649013aa565f86c2c93bcbc036d73c5381a9`. V2 supports create/edit/delete personal lessons plus portable JSON import/export; browser-local only, audio URLs stripped from imports.
+- **PR #4 checks PASS:** https://github.com/AndrewDionne/LearnPolish/actions/runs/38819800786 (schema/ID tests, Playwright desktop/mobile authoring workflows).
+- **Roadmap status:** T0 foundational frontend **partial**; T1 usable Library→Learn + personal authoring **partial**; T2 benchmark harness only; all larger tranche release gates remain open.
 - Original source baseline before V2 plan: `42f3f4e8f4669d52fd7f25a26fa0ad5579219d0d`.
-- **Next capability:** personal editable lessons + import/export and local persistence, with schema, unit and browser tests; in parallel develop an actual labelled-corpus Whisper/Azure comparison. See issue #2 progress comment and issue #1.
+- **Next capability:** execute **actual labelled-corpus Whisper large-v3 vs clean Azure assessment**, build proper speech capture and human-grade scoring comparison (issue #1); develop vetted Polish sound-comparison lessons, responsive synthetic screenshot review and secure backend/API foundation before user sync. See issue #2 for checkpoint notes.
 - Do not claim physical Safari certification or full design screenshot review; V2 is not deployed as the old site's replacement.
