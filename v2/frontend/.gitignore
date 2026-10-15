@@ -3,3 +3,5 @@ dist/
 public/generated/
 *.tsbuildinfo
 coverage/
+test-results/
+playwright-report/
