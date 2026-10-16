@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 
 test('Home to library to Learn and progress survives reload', async ({ page }) => {
@@ -297,4 +298,48 @@ test('sound lab compares individually sourced MP3 examples, not bundled phrases'
   await expect(page.getByRole('button', { name: 'Listen', exact: true })).toBeVisible();
   await page.screenshot({ path: 'test-results/sound-lab.png', fullPage: true });
   expect(errors).toEqual([]);
+});
+
+
+test('full browser-local backup safely restores personal lessons, recall and review dates', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', {name:'Explore lessons'}).click();
+  await page.getByRole('button', {name:/Create lesson/}).click();
+  await page.getByRole('textbox', {name:'Lesson name'}).fill('Saved Polish lesson');
+  await page.getByRole('textbox', {name:'Polish text'}).fill('Świetnie');
+  await page.getByRole('textbox', {name:'English meaning'}).fill('Great');
+  await page.getByRole('button', {name:/Create lesson/}).click();
+  await page.getByRole('button', {name:/Reveal meaning/}).click();
+  await page.getByRole('button', {name:/Got it/}).click();
+  await page.getByRole('button', {name:/My progress|Profile/}).last().click();
+  const downloadEvent = page.waitForEvent('download');
+  await page.getByRole('button', {name:'Export full backup'}).click();
+  const file = await downloadEvent;
+  expect(file.suggestedFilename()).toBe('path-to-polish-v2-backup.json');
+  const bytes = await readFile(await file.path());
+  const saved = JSON.parse(bytes.toString('utf8'));
+  expect(saved.format).toBe('path-to-polish-v2-local-backup');
+  expect(saved.personalLessons).toHaveLength(1);
+  expect(Object.keys(saved.progress)).toHaveLength(1);
+  expect(Object.keys(saved.reviews)).toHaveLength(1);
+  expect(bytes.toString('utf8')).not.toContain('audio/webm');
+
+  await page.evaluate(() => {
+    for (const key of ['ptp-v2-personal-lessons','ptp-v2-progress','ptp-v2-review-schedule',
+       'ptp-v2-reading-position','ptp-v2-last-lesson']) localStorage.removeItem(key);
+  });
+  await page.reload();
+  await page.getByRole('button', {name:/My progress|Profile/}).last().click();
+  await expect(page.getByText('0%')).toBeVisible();
+  page.once('dialog', dialog => dialog.accept());
+  await page.locator('input[aria-label="Restore from backup"]').setInputFiles({
+    name:'backup.json', mimeType:'application/json', buffer:bytes,
+  });
+  await expect(page.getByText(/Backup restored: 1 personal lessons/)).toBeVisible();
+  await expect(page.getByText('100%')).toBeVisible();
+  await page.reload();
+  await page.getByRole('button', {name:'Library'}).first().click();
+  await expect(page.getByText('Saved Polish lesson', {exact:true})).toBeVisible();
+  await page.getByRole('button', {name:'Practice'}).first().click();
+  await expect(page.getByText('0 due now')).toBeVisible();
 });

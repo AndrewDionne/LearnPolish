@@ -103,3 +103,9 @@
 .contrast-play:hover{background:#e4f5ed}
 .sound-caption{font-size:11px;line-height:1.6;color:#80969b;margin:15px 0 0}
 @media(max-width:760px){.contrast-deck{padding:17px}.contrast-intro{display:block}.sound-note{max-width:none;display:block;margin-top:9px}.contrast-groups{grid-template-columns:1fr}.contrast-group>p{min-height:0}.contrast-group{padding:12px}.contrast-intro h2{font-size:20px}.contrast-examples{grid-template-columns:repeat(2,minmax(0,1fr))}.contrast-focus{padding:8px 6px}.contrast-focus strong{font-size:12px}.contrast-play{width:30px}}
+
+/* Local learning data backup / deliberate replacement */
+.backup-actions{display:flex;gap:12px;align-items:stretch;flex-wrap:wrap;margin:18px 0}
+.backup-actions .import-button{min-height:43px}.preferences p.backup-hint{font-size:11px;line-height:1.7;color:#7c9299}
+.backup-success{padding:11px 14px;background:#e9f7ef;color:#246c57;border-radius:9px;font-size:12px}
+@media(max-width:760px){.backup-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.backup-actions .import-button,.backup-actions .primary-action{font-size:11px;padding:11px 8px}.preferences{padding:21px}}
