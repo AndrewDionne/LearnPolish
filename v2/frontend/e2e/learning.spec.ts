@@ -142,6 +142,9 @@ test('offline lesson pack is confirmed only after caching and supports an offlin
     return (await cache.keys()).length;
   });
   expect(storedAudio).toBeGreaterThan(0);
+  // The worker may be installed/ready before clients.claim() controls this tab.
+  // Wait for control before disconnecting the network.
+  await page.waitForFunction(() => !!navigator.serviceWorker.controller);
   await context.setOffline(true);
   await page.reload();
   await expect(page.getByText('Real progress.')).toBeVisible();

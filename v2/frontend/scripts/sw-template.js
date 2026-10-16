@@ -51,12 +51,11 @@ self.addEventListener('fetch', event => {
     return;
   }
   if (request.mode === 'navigate') {
+    // An installed V2 PWA always serves its verified cached shell for in-scope
+    // navigations. New deployments are handled by versioned SW updates.
     event.respondWith((async () => {
-      try { return await fetch(request); }
-      catch {
-        const shell = await caches.open(SHELL);
-        return (await shell.match(new URL('./', SCOPE).href)) || Response.error();
-      }
+      const shell = await caches.open(SHELL);
+      return (await shell.match(new URL('./', SCOPE).href)) || fetch(request);
     })());
     return;
   }
