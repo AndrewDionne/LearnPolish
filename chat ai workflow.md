@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-16 — Home/Library/Learn, personal authoring, Read/Listen and verified offline merged
+**Updated:** 2026-10-16 — core V2 journeys, Speak capture, reviews and offline merged
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -35,7 +35,10 @@
 - **PR #5 merged:** `bc8b08fe3d189427eb7b8c532bc8746850be8ede`. Read and audio-first Listen are functional with reading-position persistence, transcript reveal, deterministic comprehension choices, mode-qualified progress and controlled variable-rate audio. [CI PASS](https://github.com/AndrewDionne/LearnPolish/actions/runs/38868650767).
 - **PR #6 merged:** `d5ccb1e29e7888d29965e25a9c6aa019e8f23519`. Production V2 PWA has a single versioned service worker, verified explicit offline audio downloads, cache status/removal/retry, and app-shell offline reload. Actual desktop/mobile browser offline test [CI PASS](https://github.com/AndrewDionne/LearnPolish/actions/runs/38869863571).
 - **Roadmap status now:** T0 frontend foundation **partial** (backend/auth still absent); T1 library/learn/personal sets substantially implemented but content QA remains; T2 pronunciation harness only (no actual Whisper/Azure comparison); T3 Read/Listen core **implemented** but graded content/word alignment pending; T4 verified local PWA offline **implemented** but no cloud sync; T5 release readiness pending.
-- **Next rebuild before user's physical testing:** build one robust Speak audio capture UX without claiming AI scoring; define phoneme-specific lesson content and a reliable learning review flow; add backend/data foundations only when necessary. Run synthetic browser and code checks; defer native iPhone physical tests until the core journeys are feature complete.
+- **PR #7 merged:** `62c034678acb3bb5821ed0be9a8919a70dbac7c6`. Browser microphone permission/capture, ephemeral take replay, WAV PCM16 16 kHz conversion, silence/clipping/short-take checks, provider-agnostic input contract; **no AI grading, no recording upload**. [CI PASS](https://github.com/AndrewDionne/LearnPolish/actions/runs/38871639776) incl. synthetic mic/permission desktop/mobile.
+- **PR #8 merged:** `1358aae54c3b75151589372b4505bba245cbedf0`. Self-rated Learn recall creates transparent spaced schedules; Practice lists due cards per lesson and launches focused due-only reviews; saves schedule locally. [CI PASS](https://github.com/AndrewDionne/LearnPolish/actions/runs/38872458280) incl. reload/e2e.
+- **Current checkpoint:** all four mode shells exist (Learn, Speak *ungraded*, Read, Listen). User lesson editor/import/export, local progress and spaced review, and opt-in offline packs operate in the standalone V2 preview. No accounts/cloud sync or scored pronunciation yet. **Physical iPhone Safari, real mic hardware/audio, content/audio native review and full visual screenshot audits are NOT certified.**
+- **Next rebuild before user's physical testing:** make Polish sound-contrast lessons explicit individual audio examples/minimal pairs; audit content and reading/listening UX; establish a privacy/security-reviewed backend/data architecture as needed. Perform real consented corpus comparison Whisper large-v3 versus corrected Azure *only* under free-tier controls. Leave scoring unimplemented until the benchmark is defensible.
 - **Speech models:** Whisper large-v3 remains first recognition candidate, repaired native Azure baseline for comparison; free-first and no unapproved paid usage. No actual comparative benchmark has been executed.
 
 - Do not claim physical Safari certification or full design screenshot review; V2 is not deployed as the old site's replacement.
