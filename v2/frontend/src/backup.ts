@@ -1,5 +1,7 @@
 import { validateLesson } from './model';
 import { DEFAULT_GOLD, parseGold } from './gold';
+import {validateExpedition} from './expedition/expedition';
+import type {ExpeditionState} from './expedition/expedition';
 import type { GoldState } from './gold';
 import type { Lesson } from './model';
 import { toPortableLesson } from './personal';
@@ -21,7 +23,8 @@ export type LocalBackup = {
   reviews: ReviewSchedule;
   readingPositions: ReadingPositions;
   lastLessonId: string | null;
-  gold?: GoldState; // Optional for compatibility with pre-reward V2 exports
+  gold?: GoldState; // Optional for pre-XP exports
+  expedition?: ExpeditionState;
 };
 
 export function makeBackup(data: Omit<LocalBackup, 'format' | 'version' | 'exportedAt'>, exportedAt: string): LocalBackup {
@@ -31,6 +34,7 @@ export function makeBackup(data: Omit<LocalBackup, 'format' | 'version' | 'expor
     progress: data.progress, reviews: data.reviews, readingPositions: data.readingPositions,
     lastLessonId: data.lastLessonId,
     ...(data.gold ? {gold:data.gold} : {}),
+    ...(data.expedition ? {expedition:data.expedition} : {}),
   };
 }
 
@@ -75,6 +79,8 @@ export function parseBackup(value: unknown): LocalBackup {
     gold.events.length !== (Array.isArray(raw.gold.events) ? raw.gold.events.length : -1) ||
     gold.goalMode !== raw.gold.goalMode || gold.selfGoal !== raw.gold.selfGoal
   )) throw new Error('Invalid Gold ledger in backup');
+  if (raw.expedition !== undefined && !validateExpedition(raw.expedition))
+    throw new Error('Invalid expedition XP data in backup');
   return {
     format: BACKUP_FORMAT, version: 1, exportedAt: raw.exportedAt,
     personalLessons,
@@ -83,5 +89,6 @@ export function parseBackup(value: unknown): LocalBackup {
     readingPositions: checkedMap(raw.readingPositions, parseReadingPositions, 'reading position'),
     lastLessonId: raw.lastLessonId,
     ...(raw.gold === undefined ? {} : {gold}),
+    ...(raw.expedition === undefined ? {} : {expedition:raw.expedition}),
   };
 }

@@ -10,6 +10,8 @@ export type ComprehensionCheck = {
 };
 
 export type ReadingProgression = { order: number; stage: 'foundations' | 'daily-life' | 'getting-around'; goal: string };
+/** Explicitly validated learning difficulty only; missing defaults to beginner XP. */
+export type LearningDifficulty = 1 | 2 | 3 | 4 | 5;
 
 export type LessonItem = {
   id: string;
@@ -32,6 +34,7 @@ export type Lesson = {
   intro?: string;
   soundGroups?: SoundGroup[];
   progression?: ReadingProgression;
+  difficultyTier?: LearningDifficulty;
   needsReview?: boolean;
 };
 
@@ -63,6 +66,7 @@ export function validateLesson(value: unknown): value is Lesson {
         typeof item.comprehension.feedback === 'string' && item.comprehension.feedback.length >= 10
       ))
     ) &&
+    (x.difficultyTier === undefined || [1,2,3,4,5].includes(x.difficultyTier)) &&
     (x.progression === undefined || (
       x.kind === 'reading' && Number.isInteger(x.progression.order) &&
       x.progression.order >= 1 &&

@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { makeBackup, parseBackup } from './backup';
 import {awardGold,DEFAULT_GOLD} from './gold';
+import {awardXp,emptyExpedition} from './expedition/expedition';
 import { recordAttempt } from './progress';
 import { recordReview } from './review';
 import { makePersonalLesson } from './personal';
@@ -44,4 +45,12 @@ test('Gold ledger round-trips with full backup and older exports remain valid',(
  expect(parseBackup(JSON.parse(JSON.stringify(updated))).gold).toEqual(updated.gold);
  expect(parseBackup(JSON.parse(JSON.stringify(backup))).gold).toBeUndefined();
  expect(()=>parseBackup({...updated,gold:{...updated.gold,events:[{...updated.gold?.events[0],gold:100000}]}})).toThrow(/Invalid Gold ledger/);
+});
+
+
+test('expedition XP roundtrips in full backups and invalid snapshots fail closed',()=>{
+  const xp=awardXp(emptyExpedition(),'word:1','learn','2026-10-16T12:00:00.000Z');
+  const saved=makeBackup({...backup,expedition:xp},backup.exportedAt);
+  expect(parseBackup(JSON.parse(JSON.stringify(saved))).expedition).toEqual(xp);
+  expect(()=>parseBackup({...saved,expedition:{...xp,selectedRegion:'fake'}})).toThrow(/Invalid expedition/);
 });
