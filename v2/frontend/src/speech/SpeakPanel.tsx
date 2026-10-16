@@ -8,7 +8,7 @@ type Props = {
   playing: string | null;
   onPlayReference: (path: string) => void;
   onStopReference: () => void;
-  onNext: () => void;
+  onNext: (completedTake: boolean) => void;
 };
 
 export default function SpeakPanel({item, playing, onPlayReference, onStopReference, onNext}: Props) {
@@ -63,6 +63,6 @@ export default function SpeakPanel({item, playing, onPlayReference, onStopRefere
       window.setTimeout(() => URL.revokeObjectURL(url), 0);
     }}>Save 16 kHz WAV for private AI test</button>}
     <p className="speak-privacy">Your recording stays in this browser's temporary memory. It is discarded when you leave this card; it is not uploaded or stored as progress. Saving a benchmark WAV is optional, initiated by you, and remains on your device.</p>
-    <button type="button" className="primary-action speak-next" disabled={capture.phase === 'recording' || capture.phase === 'requesting' || capture.phase === 'processing'} onClick={() => {preview.current?.pause(); onNext();}}>Next phrase →</button>
+    <button type="button" className="primary-action speak-next" disabled={capture.phase === 'recording' || capture.phase === 'requesting' || capture.phase === 'processing'} onClick={() => {preview.current?.pause(); onNext(!!prepared);}}>Next phrase →</button>
   </section>;
 }
