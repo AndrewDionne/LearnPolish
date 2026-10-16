@@ -34,7 +34,7 @@ The production bundle is written to \`v2/frontend/dist/\`, intentionally **not**
 - Test coverage for content migration, schema, and progress arithmetic.
 
 ## Intentionally not built yet
-- **Speak/pronunciation scoring**: Whisper large-v3 and corrected Azure need a benchmark; automatic audio grading is not included.
+- **Automated pronunciation scoring**: Whisper large-v3 and corrected Azure need an evidence-backed benchmark. Speak capture and replay are now implemented, but **nothing is graded**.
 - Secure identity and cloud sync, offline download acknowledgements, richer word-aligned reading annotations, authored listening questions, review scheduling, audio waveform analysis.
 - Sound lessons are *preserved but unverified*. Some contain several comma-separated examples in one card; these must be reauthored into phoneme-by-phoneme exercises.
 - User progress in this preview is **local browser storage only**, not cross-device and not permanent if site data is erased.
@@ -66,3 +66,12 @@ Use \`npm run build && npm run preview\` to test the offline-capable PWA (the Vi
 Downloads show file-by-file progress. The UI says **Offline ready** only when every requested audio file has been verified in persistent Cache Storage. Failed downloads do not display as complete, and users may retry or remove saved lesson audio. Offline Read/Listen playback and locally saved progress do not call external AI services. Polish pronunciation scoring remains unavailable offline.
 
 Limitations: Safari can evict browser storage; audio is downloaded to this device only, not synchronized to an account. Private user-created sets currently have no safe reference MP3 media and therefore no audio-pack download control. The page shell is cached for offline use after successful PWA installation; cold first loads require a connection. Native iPhone testing is still pending.
+
+
+## Speak — recording foundation, NOT pronunciation scoring
+
+In any vocabulary or Polish-sound lesson, select **Speak**. The learner can hear the pre-recorded example, request microphone permission on demand, capture up to 10 seconds, stop, replay, or discard a take by moving to another item. No audio is sent over the network or persisted, including when offline. The sample is revoked on navigation.
+
+The browser chooses a supported MediaRecorder MIME type (MP4 on Safari where supported; WebM/Opus on Chromium). After capture, it attempts to decode the recording locally into **mono 16kHz PCM16 WAV**, with acoustic validity checks for very short, near-silent, and clipped recordings. Inconclusive captures show a reason and permit immediate retry; they are **never converted to a 0% pronunciation grade**. Unsupported codecs/permissions show an explicit message, while navigation remains functional. The normalized audio plus its validation metadata are future provider-adapter inputs, not a reason to select a scoring service.
+
+The **recording is intentionally not stored** even as progress. The per-item Speak journey does not award recall/pronunciation points; scoring will only be introduced after human-labelled evidence supports a calibrated model. No automatic Azure/Groq/Whisper requests, provider account, API key or billing is required for this capability. Browser tests stub a microphone; native Safari microphone validation is still required before release.

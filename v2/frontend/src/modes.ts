@@ -1,10 +1,12 @@
 import type { Lesson, LessonItem } from './model';
 
-export type LearningMode = 'learn' | 'read' | 'listen';
+export type LearningMode = 'learn' | 'read' | 'listen' | 'speak';
 
 export function availableModes(lesson: Lesson): LearningMode[] {
   const base: LearningMode = lesson.kind === 'reading' ? 'read' : 'learn';
-  return lesson.items.some(item => !!item.audio) ? [base, 'listen'] : [base];
+  const modes: LearningMode[] = lesson.kind === 'reading' ? [base] : [base, 'speak'];
+  if (lesson.items.some(item => !!item.audio)) modes.push('listen');
+  return modes;
 }
 
 export function itemsForMode(lesson: Lesson, mode: LearningMode): LessonItem[] {

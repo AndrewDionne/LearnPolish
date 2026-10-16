@@ -3,6 +3,7 @@ import type { Lesson, LessonItem, LessonKind } from './model';
 import { lessonLabel, parseManifest } from './model';
 import { useLessonAudio } from './audio';
 import OfflineDownloadControl from './OfflineDownloadControl';
+import SpeakPanel from './speech/SpeakPanel';
 import { parseProgress, recallRate, recordAttempt, STORAGE_KEY } from './progress';
 import type { Progress } from './progress';
 import { PERSONAL_STORAGE_KEY, importPersonalLesson, makePersonalLesson, parsePersonalLessons, toPortableLesson, upsertPersonalLesson } from './personal';
@@ -252,20 +253,22 @@ export default function App() {
         {!loading && !loadError && active && current && <div className="learning">
           <div className="lesson-tools"><button type="button" className="back-link" onClick={() => goTo('library')}>← Back to library</button><div><button type="button" onClick={() => exportFile(active)}>Export JSON</button><OfflineDownloadControl lesson={active}/>{active.source === 'personal' && <><button type="button" onClick={() => beginEdit(active)}>Edit lesson</button><button type="button" className="delete-link" onClick={() => deletePersonalLesson(active)}>Delete</button></>}</div></div>
           <div className="learning-head">
-            <div><span className="eyebrow">{lessonLabel(active.kind)} · {active.title}</span><h1>{mode === 'listen' ? 'Train your ear' : mode === 'read' ? 'Read & understand' : active.kind === 'sounds' ? 'Hear the difference' : 'Learn the language'}</h1><p>{mode === 'listen' ? 'Listen first, choose the meaning, then compare your answer with the Polish transcript.' : mode === 'read' ? 'Read naturally, then reveal the translation. Your reading position is remembered.' : active.kind === 'sounds' ? 'Compare the examples and listen carefully. These lessons await native-speaker review.' : 'Think of the Polish expression before revealing its meaning.'}</p></div>
+            <div><span className="eyebrow">{lessonLabel(active.kind)} · {active.title}</span><h1>{mode === 'speak' ? 'Practise speaking' : mode === 'listen' ? 'Train your ear' : mode === 'read' ? 'Read & understand' : active.kind === 'sounds' ? 'Hear the difference' : 'Learn the language'}</h1><p>{mode === 'speak' ? 'Hear the native recording, capture your own voice, and listen to the difference. Scoring is not enabled yet.' : mode === 'listen' ? 'Listen first, choose the meaning, then compare your answer with the Polish transcript.' : mode === 'read' ? 'Read naturally, then reveal the translation. Your reading position is remembered.' : active.kind === 'sounds' ? 'Compare the examples and listen carefully. These lessons await native-speaker review.' : 'Think of the Polish expression before revealing its meaning.'}</p></div>
             <span className="item-count">{index + 1} <span>/ {sessionItems.length}</span></span>
           </div>
           <div className="lesson-meter"><span style={{ width: (100 * (index + 1) / sessionItems.length) + '%' }} /></div>
           <div className="mode-row" aria-label="Learning modes">
-            {availableModes(active).map(value => <button type="button" key={value} aria-pressed={mode === value} className={'mode ' + (mode === value ? 'active' : '')} onClick={() => switchMode(value)}>{value === 'learn' ? active.kind === 'sounds' ? 'Sounds' : 'Learn' : value === 'read' ? 'Read' : 'Listen'}</button>)}
-            <span className="mode future" title="Evidence-based pronunciation assessment is being developed">Speak · upcoming</span>
+            {availableModes(active).map(value => <button type="button" key={value} aria-pressed={mode === value} className={'mode ' + (mode === value ? 'active' : '')} onClick={() => switchMode(value)}>{value === 'learn' ? active.kind === 'sounds' ? 'Sounds' : 'Learn' : value === 'read' ? 'Read' : value === 'speak' ? 'Speak' : 'Listen'}</button>)}
           </div>
           {finished ? <section className="flashcard complete-card" aria-live="polite">
             <span className="card-label">SESSION COMPLETE</span>
             <h2>Nicely done!</h2>
-            <p>You made it through {sessionItems.length} {sessionItems.length === 1 ? 'item' : 'items'} in {mode === 'listen' ? 'listening practice' : mode === 'read' ? 'reading practice' : 'learning practice'}.</p>
+            <p>You made it through {sessionItems.length} {sessionItems.length === 1 ? 'item' : 'items'} in {mode === 'listen' ? 'listening practice' : mode === 'read' ? 'reading practice' : mode === 'speak' ? 'speaking practice (unscored)' : 'learning practice'}.</p>
             <div className="answer-actions"><button type="button" className="secondary-action" onClick={() => jump(0)}>Practise again</button><button type="button" className="primary-action" onClick={() => goTo('library')}>Back to library →</button></div>
-          </section> : mode === 'listen' ? <section className="flashcard listening-card" aria-live="polite">
+          </section> : mode === 'speak' ? <SpeakPanel key={current.id} item={current} playing={audio.playing} onPlayReference={play} onStopReference={stopAudio} onNext={() => {
+            if (index < sessionItems.length - 1) jump(index + 1);
+            else { stopAudio(); setFinished(true); }
+          }} /> : mode === 'listen' ? <section className="flashcard listening-card" aria-live="polite">
             <span className="card-label">LISTEN WITHOUT READING</span>
             <div className="listening-symbol" aria-hidden="true">♫</div>
             <h2>What did you hear?</h2>
