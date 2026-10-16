@@ -124,3 +124,33 @@ test('Listen is unavailable when personal lessons have no trusted audio', async 
   await expect(page.getByRole('button', { name: 'Listen', exact: true })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'No audio' })).toBeDisabled();
 });
+
+
+test('offline lesson pack is confirmed only after caching and supports an offline reload', async ({ page, context }) => {
+  await page.goto('/');
+  await page.evaluate(async () => {
+    if (!('serviceWorker' in navigator)) throw new Error('Service workers unavailable');
+    await navigator.serviceWorker.ready;
+  });
+  await page.getByRole('button', { name: 'Explore lessons' }).click();
+  await page.getByRole('searchbox', { name: 'Search lessons' }).fill('Conversation 1');
+  await page.getByRole('button', { name: /Conversation 1/ }).click();
+  await page.getByRole('button', { name: /Download for offline/ }).click();
+  await expect(page.getByText('Offline ready', { exact: false })).toBeVisible({ timeout: 30000 });
+  const storedAudio = await page.evaluate(async () => {
+    const cache = await caches.open('ptp-v2-lesson-audio-v1');
+    return (await cache.keys()).length;
+  });
+  expect(storedAudio).toBeGreaterThan(0);
+  await context.setOffline(true);
+  await page.reload();
+  await expect(page.getByText('Real progress.')).toBeVisible();
+  await page.getByRole('button', { name: 'Library' }).first().click();
+  await page.getByRole('searchbox', { name: 'Search lessons' }).fill('Conversation 1');
+  await page.getByRole('button', { name: /Conversation 1/ }).click();
+  await expect(page.getByText('Offline ready', { exact: false })).toBeVisible();
+  await expect(page.getByText('Dzień dobry', { exact: true })).toBeVisible();
+  await context.setOffline(false);
+  await page.getByRole('button', { name: 'Remove offline copy' }).click();
+  await expect(page.getByRole('button', { name: /Download for offline/ })).toBeVisible();
+});
