@@ -138,3 +138,8 @@ After successfully recording a Speak item, click **Save 16 kHz WAV for private A
 After finishing a Learn/Read/Listen/Speak session, the completion screen shows Gold newly earned in that session and direct handoff buttons to other available modes within the *same lesson*, without returning to the library. Choosing a mode resets that mode's card and playback state. No score is invented for Speak.
 
 My progress again offers the original **four selectable Pierogi characters** (Hero, Chonky, Tall, Junior) using the original SVG artwork retained in this repository. Avatar identity is stored alongside Gold and included in full local backups. Weekly goal completion switches the portrait into its available original happy/winning expression; the avatar artwork is precached by the production PWA so this remains available offline. This is the base revival of the character system, not a complete animation/milestone economy; deeper mood changes and customizations remain future UX polish.
+
+
+### Collect private empirical pronunciation samples
+
+Speak now exports optional timestamped WAV filenames that preserve the exact exercise identifier. The local-only Python `../benchmarks/corpus.py` uses generated V2 lessons to create a reference-verified, checksum-locked manifest for actual model comparison without typing Polish references manually. Voice files stay outside Git and no hosted services are contacted. The deterministic tests verify capture and metadata integrity, not pronunciation accuracy.
