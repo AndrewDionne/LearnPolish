@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-16 — Gold and Pierogi rewards plus four-mode handoff merged; empirical AI comparison still pending
+**Updated:** 2026-10-16 — agreed open-map family expedition, XP for effort/improvement, speech-scoring launch target
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -23,6 +23,15 @@
 3. Develop in a branch; execute available checks, report what is tested vs unverified.
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
 5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt features.
+
+## Reward-system direction — owner decision 2026-10-16 (design only)
+
+- **Retire the Pierogi characters from the intended V2 reward UX.** They remain in historical code/assets for now; do not spend time ripping them out before replacing the view. Shift from Gold-as-currency toward **XP for real effort, additional XP for demonstrable improvement, and team achievements**. Reuse existing earned-event data where safe rather than discarding it.
+- **Private family learning groups**, with encouraging, optional and friendly weekly leaderboards. Recognize distinct strengths: effort, most improvement relative to baseline, highest unlocked learning difficulty, consistency, and contribution to the group. Shared progress is permanent even when weekly leaderboards reset. No individual speech recordings exposed publicly.
+- **Open interactive map of Poland:** any Polish region can be selected at any time, irrespective of adjacency or prior unlocks. Family members can coordinate organically, but the application **does not require votes or orchestrate a route**. Individuals can independently focus/contribute XP toward a different region ("go rogue"); their progress still benefits the family's map. Unlocked regions remain permanently open. Region costs grow with progression according to a moderate configurable power curve, not a mandated fixed route.
+- **Learning difficulty and reward growth must rise together.** Later/harder lessons earn more qualifying XP, while more costly regions and anti-repetition eligibility make exploring all Poland via beginner-content farming impractical. Keep effort recognition meaningful to beginners; avoid punishing children or low-volume participants.
+- **Design for functioning pronunciation scoring at launch**, rather than creating temporary scoring/reward code to remove later. Make the reward model accept *verified learning outcomes* from Learn/Read/Listen and a future vetted Speak phonetic assessor through the same small stable interface. Speaking improvement bonuses depend on measured change from a learner baseline. An absent/inconclusive result is not zero or a fake grade, and Speak still earns base effort XP for a usable attempt. Do not tie XP to Whisper transcription accuracy alone.
+- **Avoid make-work / premature implementation.** This is a product design decision, NOT a request for an XP rewrite now. Keep existing PR #13/#14 behavior operational until one coherent UI + event-ledger + group/map tranche can replace it. Exact XP amounts, difficulty classification, region-cost formula, allocation rules and social access control need refinement during implementation; do not hard-code arbitrary constants at this stage. No content authoring. Continue the real AI evaluation with existing privacy and zero-spend gates.
 
 ## Priority pivot — owner-approved 2026-10-16
 
