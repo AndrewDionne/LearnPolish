@@ -50,3 +50,17 @@
 .offline-note{font-size:11px;color:#809a9b}
 .offline-error{font-size:11px;color:#af483e;max-width:245px}
 @media(max-width:760px){.offline-control{border-left:0;padding-left:0}}
+
+/* Speak: pre-assessment microphone capture and temporary replay */
+.speak-panel{gap:0}.speak-prompt{font:650 clamp(32px,4.6vw,52px)/1.3 "Outfit",sans-serif;letter-spacing:-1px;color:#193f51;margin:32px 0 8px;overflow-wrap:anywhere}
+.speak-translation{font-size:14px;color:#78929a;margin:0 0 16px}.speak-divider{width:100%;height:1px;background:#e9f0ec;margin:26px 0}
+.speak-instruction{font-size:13px;color:#6f888e;max-width:420px;line-height:1.65;margin:0 0 20px}
+.record-button{background:#176e69;color:#fff;font-size:13px;font-weight:800;border-radius:999px;border:0;min-height:47px;padding:13px 25px}
+.record-button:hover{background:#105b56}.record-button.stop-button{background:#b4554b}.recording-dot{color:#bd5d4d;font-weight:700}
+.speak-status{font-size:13px;line-height:1.5;margin:4px 0 16px}.speak-replay{margin:20px auto 0;width:min(100%,450px);display:grid;gap:10px}
+.speak-replay label{font-size:11px;font-weight:700;color:#416f73}.speak-replay audio{width:100%}
+.capture-warning,.capture-error,.capture-valid{width:100%;margin:20px auto 0;border-radius:10px;padding:14px 16px;font-size:12px;line-height:1.6}
+.capture-warning{background:#fff5e8;color:#8a6039}.capture-error{background:#faefed;color:#a54239}.capture-valid{background:#e9f7ef;color:#286f58}
+.speak-privacy{max-width:440px;font-size:11px;line-height:1.6;color:#849a9e;margin:23px 0 0}
+.speak-next{margin-top:20px}.speak-subtle{font-size:12px;color:#839a9c}
+@media(max-width:760px){.speak-panel{padding:27px 20px}.speak-prompt{font-size:34px;margin-top:20px}.speak-divider{margin:23px 0}}

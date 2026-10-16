@@ -15,7 +15,8 @@ describe('learning modes', () => {
   test('reading exposes listen only when real audio is present', () => {
     expect(availableModes(lesson)).toEqual(['read', 'listen']);
     expect(availableModes({ ...lesson, items: [{ id: 'x', polish: 'Tak', english: 'Yes' }] })).toEqual(['read']);
-    expect(availableModes({ ...lesson, kind: 'vocabulary' })).toEqual(['learn', 'listen']);
+    expect(availableModes({ ...lesson, kind: 'vocabulary' })).toEqual(['learn', 'speak', 'listen']);
+    expect(availableModes({ ...lesson, kind: 'sounds', items: [{ id: 's', polish: 'cześć', english: 'hi' }] })).toEqual(['learn', 'speak']);
   });
 
   test('listening never queues an item without reference audio', () => {
