@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-16 — first V2 implementation merged
+**Updated:** 2026-10-16 — Home/Library/Learn, personal authoring, Read/Listen and verified offline merged
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -32,5 +32,10 @@
 - **PR #4 checks PASS:** https://github.com/AndrewDionne/LearnPolish/actions/runs/38819800786 (schema/ID tests, Playwright desktop/mobile authoring workflows).
 - **Roadmap status:** T0 foundational frontend **partial**; T1 usable Library→Learn + personal authoring **partial**; T2 benchmark harness only; all larger tranche release gates remain open.
 - Original source baseline before V2 plan: `42f3f4e8f4669d52fd7f25a26fa0ad5579219d0d`.
-- **Next capability:** execute **actual labelled-corpus Whisper large-v3 vs clean Azure assessment**, build proper speech capture and human-grade scoring comparison (issue #1); develop vetted Polish sound-comparison lessons, responsive synthetic screenshot review and secure backend/API foundation before user sync. See issue #2 for checkpoint notes.
+- **PR #5 merged:** `bc8b08fe3d189427eb7b8c532bc8746850be8ede`. Read and audio-first Listen are functional with reading-position persistence, transcript reveal, deterministic comprehension choices, mode-qualified progress and controlled variable-rate audio. [CI PASS](https://github.com/AndrewDionne/LearnPolish/actions/runs/38868650767).
+- **PR #6 merged:** `d5ccb1e29e7888d29965e25a9c6aa019e8f23519`. Production V2 PWA has a single versioned service worker, verified explicit offline audio downloads, cache status/removal/retry, and app-shell offline reload. Actual desktop/mobile browser offline test [CI PASS](https://github.com/AndrewDionne/LearnPolish/actions/runs/38869863571).
+- **Roadmap status now:** T0 frontend foundation **partial** (backend/auth still absent); T1 library/learn/personal sets substantially implemented but content QA remains; T2 pronunciation harness only (no actual Whisper/Azure comparison); T3 Read/Listen core **implemented** but graded content/word alignment pending; T4 verified local PWA offline **implemented** but no cloud sync; T5 release readiness pending.
+- **Next rebuild before user's physical testing:** build one robust Speak audio capture UX without claiming AI scoring; define phoneme-specific lesson content and a reliable learning review flow; add backend/data foundations only when necessary. Run synthetic browser and code checks; defer native iPhone physical tests until the core journeys are feature complete.
+- **Speech models:** Whisper large-v3 remains first recognition candidate, repaired native Azure baseline for comparison; free-first and no unapproved paid usage. No actual comparative benchmark has been executed.
+
 - Do not claim physical Safari certification or full design screenshot review; V2 is not deployed as the old site's replacement.
