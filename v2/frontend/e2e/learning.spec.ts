@@ -227,6 +227,8 @@ test('Speak records, checks acoustic quality, replays locally, and clears on nex
   await expect(page.getByText(/Pronunciation is not scored yet/)).toBeVisible();
   await page.getByRole('button', {name: /Next phrase/}).click();
   await expect(page.getByText('Dobry wieczór', {exact: true})).toBeVisible();
+  const earned = await page.evaluate(() => JSON.parse(localStorage.getItem('ptp-v2-gold') || '{}'));
+  expect(earned.events.some((entry:{mode:string})=>entry.mode==='speak')).toBe(true);
   await expect(page.locator('#personal-speech-replay')).toHaveCount(0);
   const trackStops = await page.evaluate(() => (window as any).__microphoneTrackStops);
   expect(trackStops).toBeGreaterThan(0);

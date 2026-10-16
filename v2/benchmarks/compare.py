@@ -40,6 +40,8 @@ def compare(whisper: dict[str,dict], azure: dict[str,dict], labels: list[dict]) 
             raise ValueError("Wrong engine for sample "+wid)
         if w.get("reference") != a.get("reference"):
             raise ValueError("The engines must be compared against identical reference text")
+        if not isinstance(w.get("audio_sha256"),str) or len(w["audio_sha256"])!=64 or w.get("audio_sha256")!=a.get("audio_sha256"):
+            raise ValueError("The engines must process identical WAV bytes (SHA-256 mismatch) for "+wid)
         if abs(float(w.get("audio_seconds",-1))-float(a.get("audio_seconds",-2)))>0.001:
             raise ValueError("Different audio duration for sample "+wid)
         matched.append({"id":wid,"human_intelligible":row["intelligible"],

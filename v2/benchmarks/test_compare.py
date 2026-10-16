@@ -3,7 +3,7 @@ from compare import compare
 
 class CompareEvidenceTests(unittest.TestCase):
     def test_rejects_unlabelled_and_non_comparable_provider_data(self):
-        w={"a":{"engine":"whisper-local","reference":"cześć","audio_seconds":1,"status":"ok","recognized_expected_words":True}}
+        w={"a":{"engine":"whisper-local","reference":"cześć","audio_seconds":1,"audio_sha256":"a"*64,"status":"ok","recognized_expected_words":True}}
         a={"a":{"engine":"azure-raw","reference":"cześć","audio_seconds":1,"status":"ok","recognized_expected_words":True,"scores":{"AccuracyScore":79},"words":[{"phonemes":[{"phoneme":"t͡ɕ"}]}]}}
         with self.assertRaisesRegex(ValueError,"human"):
             compare(w,a,[])
