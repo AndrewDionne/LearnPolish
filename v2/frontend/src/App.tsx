@@ -6,6 +6,9 @@ import { parseProgress, recallRate, recordAttempt, STORAGE_KEY } from './progres
 import type { Progress } from './progress';
 import { PERSONAL_STORAGE_KEY, importPersonalLesson, makePersonalLesson, parsePersonalLessons, toPortableLesson, upsertPersonalLesson } from './personal';
 import type { DraftItem } from './personal';
+import { availableModes, comprehensionChoices, itemPractised, itemsForMode, progressKey } from './modes';
+import type { LearningMode } from './modes';
+import { READING_POSITION_KEY, parseReadingPositions, safeReadingPosition } from './reading-position';
 
 type Page = 'home' | 'library' | 'practice' | 'profile';
 type KindFilter = 'all' | LessonKind;
@@ -47,7 +50,7 @@ function AudioButton({ item, playing, onPlay }: {
   item: LessonItem; playing: string | null; onPlay: (path: string) => void;
 }) {
   return <button type="button" className="audio-btn" disabled={!item.audio} title={!item.audio ? 'Reference audio unavailable' : 'Play Polish recording'} onClick={() => item.audio && onPlay(item.audio)}>
-    <span aria-hidden="true">{item.audio && playing === item.audio ? '◼' : '▶'}</span> {item.audio && playing === item.audio ? 'Playing' : item.audio ? 'Listen' : 'No audio'}
+    <span aria-hidden="true">{item.audio && playing === item.audio ? '◼' : '▶'}</span> {item.audio && playing === item.audio ? 'Playing audio' : item.audio ? 'Play audio' : 'No audio'}
   </button>;
 }
 
@@ -71,9 +74,15 @@ export default function App() {
   const [filter, setFilter] = useState<KindFilter>('all');
   const [lessonId, setLessonId] = useState<string | null>(null);
   const [index, setIndex] = useState(0);
+  const [mode, setMode] = useState<LearningMode>('learn');
+  const [listenGuess, setListenGuess] = useState<string | null>(null);
+  const [listenRevealed, setListenRevealed] = useState(false);
+  const [finished, setFinished] = useState(false);
+  const [readingPositions, setReadingPositions] = useState(() => {
+    try { return parseReadingPositions(localStorage.getItem(READING_POSITION_KEY)); } catch { return {}; }
+  });
   const [revealed, setRevealed] = useState(false);
   const [translationOpen, setTranslationOpen] = useState(false);
-  const [audioError, setAudioError] = useState('');
   const [progress, setProgress] = useState<Progress>(() => {
     try { return parseProgress(localStorage.getItem(STORAGE_KEY)); } catch { return {}; }
   });
@@ -104,37 +113,55 @@ export default function App() {
     try { localStorage.setItem(PERSONAL_STORAGE_KEY, JSON.stringify(personal)); } catch { /* local sets are best effort */ }
   }, [personal]);
 
+  useEffect(() => {
+    try { localStorage.setItem(READING_POSITION_KEY, JSON.stringify(readingPositions)); } catch { /* local-only progress */ }
+  }, [readingPositions]);
+
   const active = lessons.find(x => x.id === lessonId);
-  const current = active?.items[index];
+  const sessionItems = active ? itemsForMode(active, mode) : [];
+  const current = sessionItems[index];
+  const listeningChoices = active && current && mode === 'listen' ? comprehensionChoices(active.items, current, index) : [];
   const last = lessons.find(x => x.id === lastLesson);
-  const practisedCount = Object.keys(progress).length;
-  const completedIn = (lesson: Lesson) => lesson.items.filter(item => !!progress[item.id]).length;
+  const practisedCount = lessons.reduce((total, lesson) =>
+    total + lesson.items.filter(item => itemPractised(progress, item.id)).length, 0);
+  const completedIn = (lesson: Lesson) => lesson.items.filter(item => itemPractised(progress, item.id)).length;
 
   const filtered = useMemo(() => lessons.filter(x =>
     (filter === 'all' || x.kind === filter) &&
     (x.title.toLowerCase().includes(query.toLowerCase()) || x.items.some(i => i.polish.toLowerCase().includes(query.toLowerCase())))
   ), [lessons, filter, query]);
 
-  const stopAudio = () => { audio.stop(); setAudioError(''); };
+  const stopAudio = () => { audio.stop(); };
   const goTo = (destination: Page) => {
-    stopAudio(); setLessonId(null); setEditorOpen(false); setPage(destination); setRevealed(false);
+    stopAudio(); setLessonId(null); setEditorOpen(false); setPage(destination); setRevealed(false); setFinished(false);
   };
   const openLesson = (lesson: Lesson) => {
     stopAudio();
-    setLessonId(lesson.id); setIndex(0); setRevealed(false); setTranslationOpen(false);
+    setLessonId(lesson.id); setMode(lesson.kind === 'reading' ? 'read' : 'learn');
+    setIndex(lesson.kind === 'reading' ? safeReadingPosition(readingPositions, lesson.id, lesson.items.length) : 0);
+    setRevealed(false); setTranslationOpen(false); setListenGuess(null); setListenRevealed(false); setFinished(false);
     setLastLesson(lesson.id); saveLastLesson(lesson.id);
   };
   const jump = (target: number) => {
     if (!active) return;
     stopAudio();
-    setIndex(Math.max(0, Math.min(active.items.length - 1, target)));
-    setRevealed(false); setTranslationOpen(false);
+    const next = Math.max(0, Math.min(sessionItems.length - 1, target));
+    setIndex(next);
+    if (mode === 'read') setReadingPositions(previous => ({ ...previous, [active.id]: next }));
+    setRevealed(false); setTranslationOpen(false); setListenGuess(null); setListenRevealed(false); setFinished(false);
+  };
+  const switchMode = (next: LearningMode) => {
+    if (!active || !availableModes(active).includes(next)) return;
+    stopAudio();
+    setMode(next);
+    setIndex(next === 'read' ? safeReadingPosition(readingPositions, active.id, active.items.length) : 0);
+    setRevealed(false); setTranslationOpen(false); setListenGuess(null); setListenRevealed(false); setFinished(false);
   };
   const record = (remembered: boolean) => {
     if (!current) return;
-    setProgress(previous => recordAttempt(previous, current.id, remembered, new Date().toISOString()));
-    if (active && index < active.items.length - 1) jump(index + 1);
-    else setRevealed(false);
+    setProgress(previous => recordAttempt(previous, progressKey(current.id, mode), remembered, new Date().toISOString()));
+    if (index < sessionItems.length - 1) jump(index + 1);
+    else { stopAudio(); setFinished(true); }
   };
   const beginNew = () => {
     stopAudio(); setLessonId(null); setPage('library'); setEditorOpen(true);
@@ -193,10 +220,7 @@ export default function App() {
     }
     goTo('library');
   };
-  const play = (path: string) => {
-    setAudioError('');
-    void audio.play(path).catch(error => setAudioError(error instanceof Error ? error.message : 'Playback failed'));
-  };
+  const play = (path: string) => { void audio.play(path); };
 
   return <div className="app-shell">
     <aside className="sidebar">
@@ -227,32 +251,61 @@ export default function App() {
         {!loading && !loadError && active && current && <div className="learning">
           <div className="lesson-tools"><button type="button" className="back-link" onClick={() => goTo('library')}>← Back to library</button><div><button type="button" onClick={() => exportFile(active)}>Export JSON</button>{active.source === 'personal' && <><button type="button" onClick={() => beginEdit(active)}>Edit lesson</button><button type="button" className="delete-link" onClick={() => deletePersonalLesson(active)}>Delete</button></>}</div></div>
           <div className="learning-head">
-            <div><span className="eyebrow">{lessonLabel(active.kind)} · {active.title}</span><h1>{active.kind === 'reading' ? 'Read & understand' : active.kind === 'sounds' ? 'Hear the difference' : 'Learn the language'}</h1><p>{active.kind === 'reading' ? 'Read naturally, then reveal the translation.' : active.kind === 'sounds' ? 'Compare the examples and listen carefully. These lessons await a native-speaker content review.' : 'Think of the Polish expression before revealing its meaning.'}</p></div>
-            <span className="item-count">{index + 1} <span>/ {active.items.length}</span></span>
+            <div><span className="eyebrow">{lessonLabel(active.kind)} · {active.title}</span><h1>{mode === 'listen' ? 'Train your ear' : mode === 'read' ? 'Read & understand' : active.kind === 'sounds' ? 'Hear the difference' : 'Learn the language'}</h1><p>{mode === 'listen' ? 'Listen first, choose the meaning, then compare your answer with the Polish transcript.' : mode === 'read' ? 'Read naturally, then reveal the translation. Your reading position is remembered.' : active.kind === 'sounds' ? 'Compare the examples and listen carefully. These lessons await native-speaker review.' : 'Think of the Polish expression before revealing its meaning.'}</p></div>
+            <span className="item-count">{index + 1} <span>/ {sessionItems.length}</span></span>
           </div>
-          <div className="lesson-meter"><span style={{ width: (100 * (index + 1) / active.items.length) + '%' }} /></div>
+          <div className="lesson-meter"><span style={{ width: (100 * (index + 1) / sessionItems.length) + '%' }} /></div>
           <div className="mode-row" aria-label="Learning modes">
-            <span className="mode active">{active.kind === 'reading' ? 'Read' : active.kind === 'sounds' ? 'Sounds' : 'Learn'}</span>
-            <span className="mode future" title="Available in the pronunciation tranche">Speak · soon</span>
-            <span className="mode future" title="Available in the listening tranche">Listen · soon</span>
+            {availableModes(active).map(value => <button type="button" key={value} aria-pressed={mode === value} className={'mode ' + (mode === value ? 'active' : '')} onClick={() => switchMode(value)}>{value === 'learn' ? active.kind === 'sounds' ? 'Sounds' : 'Learn' : value === 'read' ? 'Read' : 'Listen'}</button>)}
+            <span className="mode future" title="Evidence-based pronunciation assessment is being developed">Speak · upcoming</span>
           </div>
-          <section className="flashcard" aria-live="polite">
-            <span className="card-label">{active.kind === 'reading' ? (current.title || 'POLISH PASSAGE') : active.kind === 'sounds' ? 'SOUND EXAMPLES' : 'IN POLISH'}</span>
-            <div className={active.kind === 'reading' ? 'polish-text reading-text' : 'polish-text'}>{current.polish}</div>
-            {current.pronunciation && active.kind !== 'reading' && <p className="phonetic">{current.pronunciation}</p>}
+          {finished ? <section className="flashcard complete-card" aria-live="polite">
+            <span className="card-label">SESSION COMPLETE</span>
+            <h2>Nicely done!</h2>
+            <p>You made it through {sessionItems.length} {sessionItems.length === 1 ? 'item' : 'items'} in {mode === 'listen' ? 'listening practice' : mode === 'read' ? 'reading practice' : 'learning practice'}.</p>
+            <div className="answer-actions"><button type="button" className="secondary-action" onClick={() => jump(0)}>Practise again</button><button type="button" className="primary-action" onClick={() => goTo('library')}>Back to library →</button></div>
+          </section> : mode === 'listen' ? <section className="flashcard listening-card" aria-live="polite">
+            <span className="card-label">LISTEN WITHOUT READING</span>
+            <div className="listening-symbol" aria-hidden="true">♫</div>
+            <h2>What did you hear?</h2>
+            <p className="listening-prompt">Play the recording. Choose the closest meaning before revealing the Polish.</p>
             <AudioButton item={current} playing={audio.playing} onPlay={play}/>
-            {audioError && <p className="audio-error" role="alert">{audioError}</p>}
-            {(revealed || translationOpen) && <div className="translation"><span className="card-label">IN ENGLISH</span><p>{current.english}</p></div>}
-            {!revealed && !translationOpen && <button type="button" className="reveal" onClick={() => active.kind === 'reading' ? setTranslationOpen(true) : setRevealed(true)}>Reveal meaning <span>↗</span></button>}
-            {(revealed || translationOpen) && <div className="answer-actions">
-              <button type="button" className="secondary-action" onClick={() => record(false)}>{active.kind === 'reading' ? 'Review again' : 'Needs practice'}</button>
-              <button type="button" className="primary-action" onClick={() => record(true)}>{active.kind === 'reading' ? 'Finished reading →' : 'Got it →'}</button>
+            <fieldset className="speed-picker"><legend>Playback speed</legend>
+              {([0.75, 1, 1.25] as const).map(speed => <button type="button" key={speed} aria-pressed={audio.rate === speed} onClick={() => audio.setRate(speed)} className={audio.rate === speed ? 'chosen' : ''}>{speed}×</button>)}
+            </fieldset>
+            {audio.error && <p className="audio-error" role="alert">{audio.error}</p>}
+            {!listenGuess && !listenRevealed && (listeningChoices.length > 0 ? <div className="listening-options" role="group" aria-label="Choose the meaning">
+              {listeningChoices.map(choice => <button type="button" key={choice} onClick={() => { stopAudio(); setListenGuess(choice); }}>{choice}</button>)}
+            </div> : <button type="button" className="reveal" onClick={() => setListenRevealed(true)}>Reveal transcript &amp; translation</button>)}
+            {(listenGuess !== null || listenRevealed) && <div className="listening-answer">
+              {listenGuess !== null && <p className={listenGuess === current.english ? 'answer-good' : 'answer-review'}>{listenGuess === current.english ? 'Correct meaning!' : 'Not quite. Review the expression below.'}</p>}
+              <span className="card-label">POLISH TRANSCRIPT</span><p className="listen-transcript">{current.polish}</p>
+              <span className="card-label">ENGLISH TRANSLATION</span><p>{current.english}</p>
+              {listenGuess !== null ? <button type="button" className="primary-action" onClick={() => record(listenGuess === current.english)}>Continue →</button> : <div className="answer-actions">
+                <button type="button" className="secondary-action" onClick={() => record(false)}>Needs practice</button>
+                <button type="button" className="primary-action" onClick={() => record(true)}>Understood it →</button>
+              </div>}
             </div>}
-          </section>
+          </section> : <section className="flashcard" aria-live="polite">
+            <span className="card-label">{mode === 'read' ? (current.title || 'POLISH PASSAGE') : active.kind === 'sounds' ? 'SOUND EXAMPLES' : 'IN POLISH'}</span>
+            <div className={mode === 'read' ? 'polish-text reading-text' : 'polish-text'}>{current.polish}</div>
+            {current.pronunciation && mode === 'learn' && <p className="phonetic">{current.pronunciation}</p>}
+            <AudioButton item={current} playing={audio.playing} onPlay={play}/>
+            {audio.error && <p className="audio-error" role="alert">{audio.error}</p>}
+            {mode === 'read' && current.audio && <fieldset className="speed-picker"><legend>Playback speed</legend>
+              {([0.75, 1, 1.25] as const).map(speed => <button type="button" key={speed} aria-pressed={audio.rate === speed} onClick={() => audio.setRate(speed)} className={audio.rate === speed ? 'chosen' : ''}>{speed}×</button>)}
+            </fieldset>}
+            {(revealed || translationOpen) && <div className="translation"><span className="card-label">IN ENGLISH</span><p>{current.english}</p></div>}
+            {!revealed && !translationOpen && <button type="button" className="reveal" onClick={() => mode === 'read' ? setTranslationOpen(true) : setRevealed(true)}>Reveal meaning <span>↗</span></button>}
+            {(revealed || translationOpen) && <div className="answer-actions">
+              <button type="button" className="secondary-action" onClick={() => record(false)}>{mode === 'read' ? 'Review again' : 'Needs practice'}</button>
+              <button type="button" className="primary-action" onClick={() => record(true)}>{mode === 'read' ? 'Finished reading →' : 'Got it →'}</button>
+            </div>}
+          </section>}
           <div className="lesson-footer">
             <button type="button" onClick={() => jump(index - 1)} disabled={index === 0}>← Previous</button>
             <span>{completedIn(active)} of {active.items.length} explored</span>
-            <button type="button" onClick={() => jump(index + 1)} disabled={index === active.items.length - 1}>Skip to next →</button>
+            <button type="button" onClick={() => jump(index + 1)} disabled={index === sessionItems.length - 1}>Skip to next →</button>
           </div>
         </div>}
 
