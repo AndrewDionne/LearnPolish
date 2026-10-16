@@ -101,7 +101,7 @@ export function useSpeechCapture(beforeStart: () => void): SpeechCapture {
       const mime = preferredRecordingMime(type => MediaRecorder.isTypeSupported(type));
       const recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
       recorderRef.current = recorder;
-      const fragments: BlobPart[] = [];
+      const fragments: Blob[] = [];
       recorder.ondataavailable = event => {
         if (event.data.size) fragments.push(event.data);
       };
