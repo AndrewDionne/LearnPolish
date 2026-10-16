@@ -131,3 +131,10 @@ Home shows Gold toward the goal. My progress shows total Gold, weekly Gold, curr
 ## AI test capture (no model claim)
 
 After successfully recording a Speak item, click **Save 16 kHz WAV for private AI test** to explicitly export the locally normalized mono PCM16 WAV. No audio automatically leaves the browser. See \`../benchmarks/README.md\` for a private, consent-based corpus manifest, offline Whisper large-v3 runner, corrected saved native Azure result comparison and human-labelled analysis. The comparison utility is tested with synthetic fixtures; **neither Whisper inference nor Azure requests have been executed**. The user must supply consented recordings and an available local model/private Azure raw data before empirical results can be reported.
+
+
+## Mode-to-mode completion and Pierogi character revival
+
+After finishing a Learn/Read/Listen/Speak session, the completion screen shows Gold newly earned in that session and direct handoff buttons to other available modes within the *same lesson*, without returning to the library. Choosing a mode resets that mode's card and playback state. No score is invented for Speak.
+
+My progress again offers the original **four selectable Pierogi characters** (Hero, Chonky, Tall, Junior) using the original SVG artwork retained in this repository. Avatar identity is stored alongside Gold and included in full local backups. Weekly goal completion switches the portrait into its available original happy/winning expression; the avatar artwork is precached by the production PWA so this remains available offline. This is the base revival of the character system, not a complete animation/milestone economy; deeper mood changes and customizations remain future UX polish.

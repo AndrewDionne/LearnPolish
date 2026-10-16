@@ -1,5 +1,5 @@
 import {describe,expect,test} from 'vitest';
-import {awardGold,parseGold,goldSummary,DEFAULT_GOLD,setGoal} from './gold';
+import {awardGold,parseGold,goldSummary,DEFAULT_GOLD,setGoal,selectAvatar} from './gold';
 
 describe('earned, non-gameable Gold',()=>{
  test('awards completed Learn/Read/Listen/Speak once per item/mode/day, never from score',()=>{
@@ -24,4 +24,10 @@ describe('earned, non-gameable Gold',()=>{
    expect(parseGold('invalid').events).toHaveLength(0);
    expect(setGoal(state,'self',5)).toEqual(state);
  });
+});
+
+
+test('legacy Pierogi selection survives Gold parsing',()=>{
+ const s=selectAvatar(DEFAULT_GOLD,'tall');
+ expect(parseGold(JSON.stringify(s)).avatar).toBe('tall');
 });

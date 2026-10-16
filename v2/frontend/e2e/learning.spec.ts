@@ -398,3 +398,34 @@ test('Gold survives a full backup roundtrip and custom weekly goal', async ({pag
   await page.locator('input[aria-label="Restore from backup"]').setInputFiles({name:'restore.json',mimeType:'application/json',buffer:bytes});
   await expect(page.getByRole('region',{name:'Your Gold rewards'})).toContainText('weekly goal of 250');
 });
+
+
+test('completed Read lesson hands off to Listen without leaving the lesson', async ({page})=>{
+  await page.goto('/');
+  await page.getByRole('button',{name:'Explore lessons'}).click();
+  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Basic 01R');
+  await page.getByRole('button',{name:/Basic 01R/}).click();
+  for(let i=0;i<5;i++) await page.getByRole('button',{name:/Skip to next/}).click();
+  await page.getByRole('button',{name:/Reveal translation without answering/}).click();
+  await page.getByRole('button',{name:/Finished reading/}).click();
+  await expect(page.getByText('SESSION COMPLETE',{exact:true})).toBeVisible();
+  const next=page.getByRole('group',{name:'Continue learning in another mode'});
+  await expect(next.getByRole('button',{name:'Listen →'})).toBeVisible();
+  await next.getByRole('button',{name:'Listen →'}).click();
+  await expect(page.getByRole('button',{name:'Listen',exact:true})).toHaveAttribute('aria-pressed','true');
+  await expect(page.getByText('What did you hear?')).toHaveCount(0);
+  await expect(page.getByRole('button',{name:/Play audio/})).toBeVisible();
+});
+
+test('Pierogi selection persists in local Gold ledger and through reload',async ({page})=>{
+  await page.goto('/');
+  await page.getByRole('button',{name:/My progress|Profile/}).last().click();
+  const chooser=page.getByRole('group',{name:'Choose your Pierogi'});
+  await chooser.getByRole('button',{name:'Chonky'}).click();
+  await expect(chooser.getByRole('button',{name:'Chonky'})).toHaveAttribute('aria-pressed','true');
+  await page.reload();
+  await page.getByRole('button',{name:/My progress|Profile/}).last().click();
+  await expect(page.getByRole('img',{name:'Pierogi Chonky'})).toHaveAttribute('src',/avatars\/chonky-neutral.svg/);
+  const state=await page.evaluate(()=>JSON.parse(localStorage.getItem('ptp-v2-gold')||'{}'));
+  expect(state.avatar).toBe('chonky');
+});

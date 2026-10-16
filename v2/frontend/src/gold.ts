@@ -4,7 +4,9 @@
 export type RewardMode = 'learn' | 'read' | 'listen' | 'speak';
 export type GoldEvent = { id: string; itemId: string; mode: RewardMode; at: string; gold: 10 };
 export type GoalMode = 'path' | 'self';
-export type GoldState = { schemaVersion: 1; goalMode: GoalMode; selfGoal: number; events: GoldEvent[] };
+export type AvatarId = 'hero' | 'chonky' | 'tall' | 'junior';
+export const AVATARS: {id:AvatarId; label:string}[] = [{id:'hero',label:'Pierogi Hero'},{id:'chonky',label:'Pierogi Chonky'},{id:'tall',label:'Pierogi Tall'},{id:'junior',label:'Pierogi Junior'}];
+export type GoldState = { schemaVersion: 1; goalMode: GoalMode; selfGoal: number; events: GoldEvent[]; avatar?: AvatarId };
 export const GOLD_STORAGE_KEY = 'ptp-v2-gold';
 export const DEFAULT_GOLD: GoldState = { schemaVersion:1, goalMode:'path', selfGoal:500, events:[] };
 export const GOLD_PER_ITEM = 10;
@@ -39,7 +41,8 @@ export function parseGold(raw: string | null): GoldState {
       keys.add(event.id);
       valid.push(event);
     }
-    return {schemaVersion:1,goalMode:value.goalMode!,selfGoal:value.selfGoal!,events:valid};
+    return {schemaVersion:1,goalMode:value.goalMode!,selfGoal:value.selfGoal!,events:valid,
+      ...(AVATARS.some(avatar => avatar.id === value.avatar) ? {avatar:value.avatar} : {})};
   } catch {return {...DEFAULT_GOLD,events:[]};}
 }
 
@@ -79,4 +82,8 @@ export function goldSummary(state: GoldState, now: string) {
 export function setGoal(state: GoldState, mode: GoalMode, selfGoal: number): GoldState {
   if (!Number.isSafeInteger(selfGoal) || selfGoal<50 || selfGoal>5000 || selfGoal%10) return state;
   return {...state,goalMode:mode,selfGoal};
+}
+
+export function selectAvatar(state:GoldState, avatar:AvatarId):GoldState {
+  return AVATARS.some(choice=>choice.id===avatar) ? {...state,avatar} : state;
 }
