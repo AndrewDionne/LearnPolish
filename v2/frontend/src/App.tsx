@@ -15,17 +15,21 @@ import { READING_POSITION_KEY, parseReadingPositions, safeReadingPosition } from
 import { REVIEW_STORAGE_KEY, countDue, dueItems, nextDue, parseReviewSchedule, recordReview } from './review';
 import type { ReviewSchedule } from './review';
 import { MAX_BACKUP_BYTES, makeBackup, parseBackup } from './backup';
-import { GOLD_STORAGE_KEY, AVATARS, awardGold, goldSummary, parseGold, selectAvatar, setGoal, GOLD_PER_ITEM } from './gold';
-import type { AvatarId } from './gold';
+import { GOLD_STORAGE_KEY, parseGold } from './gold';
 import type { RewardMode } from './gold';
+import ExpeditionMap from './expedition/ExpeditionMap';
+import { EXPEDITION_STORAGE_KEY, awardXp, emptyExpedition, nextRegionCost,
+  parseExpedition, regionTotal, setXpGoal, unlockedRegions, xpSummary } from './expedition/expedition';
+import type { LearningTier, VerifiedOutcome } from './expedition/expedition';
 
-type Page = 'home' | 'library' | 'practice' | 'profile';
+type Page = 'home' | 'library' | 'practice' | 'expedition' | 'profile';
 type KindFilter = 'all' | LessonKind;
 
 const nav: { id: Page; label: string; symbol: string }[] = [
   { id: 'home', label: 'Home', symbol: '⌂' },
   { id: 'library', label: 'Library', symbol: '▦' },
   { id: 'practice', label: 'Practice', symbol: '◎' },
+  { id: 'expedition', label: 'Expedition', symbol: '◇' },
   { id: 'profile', label: 'My progress', symbol: '◷' },
 ];
 
@@ -86,7 +90,7 @@ export default function App() {
   const [filter, setFilter] = useState<KindFilter>('all');
   const [lessonId, setLessonId] = useState<string | null>(null);
   const [index, setIndex] = useState(0);
-  const [sessionStartGold, setSessionStartGold] = useState(0);
+  const [sessionStartXp, setSessionStartXp] = useState(0);
   const [mode, setMode] = useState<LearningMode>('learn');
   const [reviewOnly, setReviewOnly] = useState<string[] | null>(null);
   const [listenGuess, setListenGuess] = useState<string | null>(null);
@@ -102,18 +106,20 @@ export default function App() {
     try { return parseProgress(localStorage.getItem(STORAGE_KEY)); } catch { return {}; }
   });
   const [lastLesson, setLastLesson] = useState<string | null>(storedLastLesson);
-  const [gold, setGold] = useState(() => {
-    try { return parseGold(localStorage.getItem(GOLD_STORAGE_KEY)); } catch { return parseGold(null); }
+  const [expedition, setExpedition] = useState(() => {
+    try { return parseExpedition(localStorage.getItem(EXPEDITION_STORAGE_KEY),
+      parseGold(localStorage.getItem(GOLD_STORAGE_KEY))); }
+    catch { return emptyExpedition(); }
   });
   const [selfGoalDraft, setSelfGoalDraft] = useState('500');
   const [reviews, setReviews] = useState<ReviewSchedule>(() => {
     try { return parseReviewSchedule(localStorage.getItem(REVIEW_STORAGE_KEY)); } catch { return {}; }
   });
   const audio = useLessonAudio();
-  useEffect(() => { setSelfGoalDraft(String(gold.selfGoal)); }, [gold.selfGoal]);
+  useEffect(() => { setSelfGoalDraft(String(expedition.selfGoal)); }, [expedition.selfGoal]);
   useEffect(() => {
-    try { localStorage.setItem(GOLD_STORAGE_KEY, JSON.stringify(gold)); } catch { /* local only */ }
-  }, [gold]);
+    try { localStorage.setItem(EXPEDITION_STORAGE_KEY, JSON.stringify(expedition)); } catch { /* local only */ }
+  }, [expedition]);
   const mainRef = useRef<HTMLElement>(null);
   const hasMounted = useRef(false);
   // Announce full-screen route changes to keyboard and assistive-technology users.
@@ -169,10 +175,11 @@ export default function App() {
     total + lesson.items.filter(item => itemPractised(progress, item.id)).length, 0);
   const completedIn = (lesson: Lesson) => lesson.items.filter(item => itemPractised(progress, item.id)).length;
   const nowIso = new Date().toISOString();
-  const goldStats = goldSummary(gold, nowIso);
-  const sessionGold = Math.max(0, gold.events.length - sessionStartGold) * GOLD_PER_ITEM;
-  const selectedAvatar = gold.avatar || 'hero';
-  const avatarImage = import.meta.env.BASE_URL + 'avatars/' + selectedAvatar + '-' + (goldStats.reachedGoal ? 'win' : 'neutral') + '.svg';
+  const xpStats = xpSummary(expedition, nowIso);
+  const sessionXp = expedition.events.slice(sessionStartXp).reduce((sum,event)=>sum+event.xp,0);
+  const explored = unlockedRegions(expedition);
+  const selectedXp = regionTotal(expedition,expedition.selectedRegion);
+  const selectedTarget = expedition.regionGoals[expedition.selectedRegion] ?? nextRegionCost(expedition);
   const totalDue = countDue(lessons, reviews, nowIso);
   const scheduledNext = nextDue(lessons, reviews, nowIso);
   const dueLessons = lessons.filter(lesson => dueItems(lesson, reviews, nowIso).length > 0);
@@ -190,7 +197,7 @@ export default function App() {
   const openLesson = (lesson: Lesson) => {
     stopAudio();
     setReviewOnly(null);
-    setSessionStartGold(gold.events.length);
+    setSessionStartXp(expedition.events.length);
     setLessonId(lesson.id); setMode(lesson.kind === 'reading' ? 'read' : 'learn');
     setIndex(lesson.kind === 'reading' ? safeReadingPosition(readingPositions, lesson.id, lesson.items.length) : 0);
     setRevealed(false); setTranslationOpen(false); setListenGuess(null); setReadGuess(null); setListenRevealed(false); setFinished(false);
@@ -214,18 +221,27 @@ export default function App() {
     if (!active || !availableModes(active).includes(next)) return;
     stopAudio();
     setMode(next);
-    setSessionStartGold(gold.events.length);
+    setSessionStartXp(expedition.events.length);
     setReviewOnly(null);
     setIndex(next === 'read' ? safeReadingPosition(readingPositions, active.id, active.items.length) : 0);
     setRevealed(false); setTranslationOpen(false); setListenGuess(null); setReadGuess(null); setListenRevealed(false); setFinished(false);
   };
-  const earn = (id: string, learningMode: RewardMode) =>
-    setGold(previous => awardGold(previous, id, learningMode, new Date().toISOString()));
+  const earn = (id: string, learningMode: RewardMode, outcome?: VerifiedOutcome) =>
+    setExpedition(previous => awardXp(previous, id, learningMode, new Date().toISOString(),
+      (active?.difficultyTier ?? 1) as LearningTier, outcome));
   const record = (remembered: boolean) => {
     if (!current) return;
     const at = new Date().toISOString();
     setProgress(previous => recordAttempt(previous, progressKey(current.id, mode), remembered, at));
-    if (mode === 'learn' || mode === 'read' || mode === 'listen') earn(current.id, mode);
+    if (mode === 'learn' || mode === 'read' || mode === 'listen') {
+      const objective = current.comprehension && (
+        (mode === 'read' && readGuess !== null) ||
+        (mode === 'listen' && listenGuess !== null));
+      const measured: VerifiedOutcome | undefined = objective
+        ? {skill:'comprehension',metric:'dialogue-v1',score:remembered?1:0,evidence:'verified'}
+        : undefined;
+      earn(current.id, mode, measured);
+    }
     if (mode === 'learn') setReviews(previous => recordReview(previous, current.id, remembered, at));
     if (index < sessionItems.length - 1) jump(index + 1);
     else { stopAudio(); setFinished(true); }
@@ -276,7 +292,7 @@ export default function App() {
   const downloadBackup = () => {
     try {
       const data = makeBackup({
-        personalLessons: personal, progress, reviews, readingPositions, lastLessonId: lastLesson, gold,
+        personalLessons: personal, progress, reviews, readingPositions, lastLessonId: lastLesson, expedition,
       }, new Date().toISOString());
       const blob = new Blob([JSON.stringify(data, null, 2) + '\n'], {type:'application/json'});
       const link = document.createElement('a');
@@ -304,7 +320,7 @@ export default function App() {
       setPersonal(data.personalLessons);
       setProgress(data.progress);
       setReviews(data.reviews);
-      setGold(data.gold || parseGold(null));
+      setExpedition(data.expedition ?? parseExpedition(null,data.gold));
       setReadingPositions(data.readingPositions);
       setLastLesson(data.lastLessonId);
       if (data.lastLessonId) saveLastLesson(data.lastLessonId);
@@ -382,7 +398,7 @@ export default function App() {
             <span className="card-label">{reviewOnly ? 'REVIEW COMPLETE' : 'SESSION COMPLETE'}</span>
             <h2>Nicely done!</h2>
             <p>You made it through {sessionItems.length} {sessionItems.length === 1 ? 'item' : 'items'} in {mode === 'listen' ? 'listening practice' : mode === 'read' ? 'reading practice' : mode === 'speak' ? 'speaking practice (unscored)' : 'learning practice'}.</p>
-            <p className="reward-note" aria-live="polite">{sessionGold ? '+' + sessionGold + ' Gold earned in this session.' : 'No new Gold this session — skipping and repeats do not earn rewards.'} Your total: {goldStats.total} Gold.</p>
+            <p className="reward-note" aria-live="polite">{sessionXp ? '+' + sessionXp + ' XP earned in this session.' : 'No new XP this session — skips and repeats are not rewarded.'} Your total: {xpStats.total} XP.</p>
             {availableModes(active).some(candidate => candidate !== mode) && <div className="mode-handoff" role="group" aria-label="Continue learning in another mode">
               <strong>Keep going with another mode</strong><div>
               {availableModes(active).filter(candidate => candidate !== mode).map(candidate => <button type="button" key={candidate} className="handoff-button" onClick={() => switchMode(candidate)}>
@@ -479,12 +495,15 @@ export default function App() {
             <div><span className="eyebrow welcome-kicker">YOUR POLISH JOURNEY STARTS HERE</span><h1>Small steps.<br/><em>Real progress.</em></h1><p>Build confidence in Polish, one useful expression at a time. Listen, learn, and make it your own.</p><button type="button" className="hero-button" onClick={() => last ? openLesson(last) : goTo('library')}>{last ? 'Continue learning' : 'Explore lessons'} <span>↗</span></button></div>
             <div className="welcome-art" aria-hidden="true"><span className="art-orbit orbit-one"/><span className="art-orbit orbit-two"/><div className="art-center">ą</div><span className="art-accent a1">ł</span><span className="art-accent a2">ż</span><span className="art-accent a3">ś</span></div>
           </section>
-          <div className="gold-ribbon" role="region" aria-label="Weekly Gold progress">
-            <span className="gold-medal" aria-hidden="true">✦</span>
-            <div className="gold-ribbon-text"><strong>{goldStats.weekly} / {goldStats.goal} Gold this week</strong>
-              <span>{goldStats.reachedGoal ? 'Weekly goal reached!' : goldStats.remaining + ' Gold to your weekly goal'} · {goldStats.streak} day streak</span>
-              <div className="gold-track" role="progressbar" aria-label="Weekly Gold goal" aria-valuenow={Math.min(goldStats.weekly,goldStats.goal)} aria-valuemin={0} aria-valuemax={goldStats.goal}><span style={{width:Math.min(100,goldStats.weekly/goldStats.goal*100)+'%'}}/></div>
-            </div><button type="button" onClick={() => goTo('profile')}>View rewards →</button>
+          <div className="xp-ribbon" role="region" aria-label="Weekly XP progress">
+            <div className="xp-ribbon-heading"><div><span className="eyebrow">YOUR WEEKLY EFFORT</span><strong>{xpStats.weekly} / {xpStats.goal} XP</strong>
+              <span>{xpStats.weekly>=xpStats.goal ? 'Weekly goal reached!' : (xpStats.goal-xpStats.weekly)+' XP to your goal'} · {xpStats.streak} day streak</span></div>
+              <button type="button" onClick={() => goTo('profile')}>My progress →</button></div>
+            <div className="xp-track" role="progressbar" aria-label="Weekly XP goal" aria-valuemin={0} aria-valuemax={xpStats.goal}
+              aria-valuenow={Math.min(xpStats.weekly,xpStats.goal)}><span style={{width:Math.min(100,100*xpStats.weekly/xpStats.goal)+'%'}}/></div>
+            <button type="button" className="xp-expedition-link" onClick={() => goTo('expedition')}>
+              Explore Poland → {explored.length} / 16 regions unlocked · {Math.min(selectedXp,selectedTarget)} / {selectedTarget} XP to current destination
+            </button>
           </div>
           {totalDue > 0 && <button type="button" className="review-home" onClick={() => goTo('practice')}>
             <span className="review-home-number">{totalDue}</span><span><strong>Ready to review</strong><small>Your scheduled Polish expressions are ready.</small></span><span aria-hidden="true">Review →</span>
@@ -530,30 +549,34 @@ export default function App() {
           <p className="info-footnote">These metrics reflect self-rated recall. Automated pronunciation assessment is a separate, upcoming feature.</p>
         </>}
 
+        {!loading && !loadError && !active && !editorOpen && page === 'expedition' && <>
+          <section className="page-title"><span className="eyebrow">SHARED ADVENTURE · LOCAL PREVIEW</span><h1>Your Poland expedition<span className="title-dot">.</span></h1>
+            <p>Choose anywhere in Poland. No forced route, voting or adjacency rules. Every region you unlock stays open.</p></section>
+          <ExpeditionMap state={expedition} onChange={setExpedition}/>
+          <p className="info-footnote">Local-only progress today. Secure private family groups, member-specific destinations, synchronized XP and friendly leaderboards will follow as one connected capability.</p>
+        </>}
         {!loading && !loadError && !active && !editorOpen && page === 'profile' && <>
           <section className="page-title"><span className="eyebrow">YOUR JOURNEY</span><h1>Learning progress<span className="title-dot">.</span></h1><p>Your achievements are saved in this browser while we develop secure accounts and sync.</p></section>
           <div className="stats-row"><Counter value={lessons.length} label="Lessons available"/><Counter value={practisedCount} label="Items encountered"/><Counter value={recallRate(progress) + '%'} label="Self-rated recall"/></div>
-          <section className="gold-rewards" aria-label="Your Gold rewards">
-            <div className="gold-header"><div><span className="eyebrow">REWARD FOR THE WORK</span><h2>Your Gold</h2></div><span className="gold-medal" aria-hidden="true">✦</span></div>
-            <div className="pierogi-avatar-feature"><img src={avatarImage} alt={AVATARS.find(x => x.id === selectedAvatar)?.label || 'Pierogi avatar'} />
-              <div><strong>{AVATARS.find(x => x.id === selectedAvatar)?.label}</strong><span>{goldStats.reachedGoal ? 'Your character is celebrating your weekly goal!' : 'Keep practising to reach your weekly Gold goal.'}</span></div>
-            </div>
-            <fieldset className="pierogi-chooser"><legend>Choose your Pierogi</legend><div>
-              {AVATARS.map(choice => <button key={choice.id} type="button" aria-pressed={choice.id===selectedAvatar}
-                className={choice.id===selectedAvatar ? 'selected' : ''} onClick={() => setGold(previous=>selectAvatar(previous, choice.id as AvatarId))}>
-                <img src={import.meta.env.BASE_URL + 'avatars/' + choice.id + '-neutral.svg'} alt="" />
-                <span>{choice.label.replace('Pierogi ', '')}</span>
-              </button>)}
-            </div></fieldset>
-            <div className="gold-stats"><div><strong>{goldStats.total}</strong><span>Total Gold</span></div><div><strong>{goldStats.weekly}</strong><span>This week</span></div><div><strong>{goldStats.streak}</strong><span>Day streak</span></div></div>
-            <div className="gold-track" role="progressbar" aria-label="Weekly Gold goal" aria-valuenow={Math.min(goldStats.weekly,goldStats.goal)} aria-valuemin={0} aria-valuemax={goldStats.goal}><span style={{width:Math.min(100,goldStats.weekly/goldStats.goal*100)+'%'}}/></div>
-            <p>{goldStats.reachedGoal ? 'Weekly goal reached — well earned.' : goldStats.remaining+' Gold until your weekly goal of '+goldStats.goal+'.'}</p>
-            <fieldset className="gold-goal"><legend>Weekly goal style</legend>
-              <label><input type="radio" name="goldGoalMode" checked={gold.goalMode==='path'} onChange={() => setGold(prev => setGoal(prev,'path',prev.selfGoal))}/> Path goal (500 Gold)</label>
-              <label><input type="radio" name="goldGoalMode" checked={gold.goalMode==='self'} onChange={() => setGold(prev => setGoal(prev,'self',prev.selfGoal))}/> My own goal</label>
-              {gold.goalMode==='self' && <label>Gold per week <input aria-label="Custom weekly Gold goal" type="number" min={50} max={5000} step={10} value={selfGoalDraft} onChange={e => setSelfGoalDraft(e.target.value)}/><button type="button" onClick={() => setGold(prev => setGoal(prev,'self',Number(selfGoalDraft)))}>Save goal</button></label>}
-            </fieldset>
-            <p className="gold-explain">Earn 10 Gold for completing a Learn/Read/Listen response or a usable Speak recording. Each item and mode awards Gold at most once per day. Skipping, replaying, and unreliable microphone captures never generate Gold. Gold measures practice effort, not pronunciation quality; no paid currency or artificial grades.</p>
+          <section className="xp-rewards" aria-label="Your learning XP">
+            <div className="xp-rewards-heading"><div><span className="eyebrow">RECOGNITION FOR YOUR WORK</span><h2>Learning XP</h2></div>
+              <button type="button" onClick={() => goTo('expedition')}>Open Poland map →</button></div>
+            <div className="xp-stats"><div><strong>{xpStats.total}</strong><span>Lifetime XP</span></div><div><strong>{xpStats.weekly}</strong><span>This week</span></div>
+              <div><strong>{xpStats.improved}</strong><span>Improvement bonuses</span></div><div><strong>{xpStats.streak}</strong><span>Day streak</span></div></div>
+            <div className="xp-track" role="progressbar" aria-label="Weekly XP goal" aria-valuemin={0} aria-valuemax={xpStats.goal}
+              aria-valuenow={Math.min(xpStats.weekly,xpStats.goal)}><span style={{width:Math.min(100,100*xpStats.weekly/xpStats.goal)+'%'}}/></div>
+            <p>{xpStats.weekly>=xpStats.goal ? 'Weekly effort goal reached.' : xpStats.goal-xpStats.weekly+' XP until your weekly goal.'}</p>
+            <fieldset className="xp-goal"><legend>Weekly goal</legend>
+              <label><input type="radio" name="xpGoalMode" checked={expedition.goalMode==='path'}
+                onChange={() => setExpedition(old=>setXpGoal(old,'path',old.selfGoal))}/> Path goal (500 XP)</label>
+              <label><input type="radio" name="xpGoalMode" checked={expedition.goalMode==='self'}
+                onChange={() => setExpedition(old=>setXpGoal(old,'self',old.selfGoal))}/> My own goal</label>
+              {expedition.goalMode==='self' && <label>XP per week
+                <input aria-label="Custom weekly XP goal" type="number" min={50} max={5000} step={10} value={selfGoalDraft}
+                  onChange={e=>setSelfGoalDraft(e.target.value)}/>
+                <button type="button" onClick={() => setExpedition(old=>setXpGoal(old,'self',Number(selfGoalDraft)))}>Save goal</button>
+              </label>}</fieldset>
+            <p className="xp-note">Real completed practice earns XP; repeat farming and skips earn none. Comparable objectively verified improvement earns an additional bonus. Speech-quality bonuses use the same reward interface once phonetic assessment is validated — no transcription-only grades.</p>
           </section>
           <section className="preferences"><h2>Your local learning data</h2><p>Lessons, progress, and review schedules are stored only in this browser. Export a full backup before clearing browser data or changing devices.</p>
             <div className="backup-actions"><button type="button" className="primary-action" onClick={downloadBackup}>Export full backup</button>
@@ -564,8 +587,8 @@ export default function App() {
             {backupStatus && <p className="backup-success" role="status">{backupStatus}</p>}
             {backupError && <p className="author-error" role="alert">{backupError}</p>}
             <p className="backup-hint">A restore replaces the local lessons, all practice history, scheduled reviews and reading positions. Built-in lessons and downloadable audio are part of the app, not this backup. No recordings are included.</p>
-            <button type="button" className="danger-action" onClick={() => { if (window.confirm('Erase local practice history, review dates AND earned Gold? Personal lessons will be kept. This cannot be undone.')) {
-              setProgress({}); setReviews({}); setGold(parseGold(null)); setBackupStatus('Practice, review schedules and earned Gold cleared. Personal lessons are unchanged.');
+            <button type="button" className="danger-action" onClick={() => { if (window.confirm('Erase local practice history, review dates AND earned XP? Personal lessons will be kept. This cannot be undone.')) {
+              setProgress({}); setReviews({}); setExpedition(emptyExpedition()); setBackupStatus('Practice, review schedules and earned XP cleared. Personal lessons are unchanged.');
             } }}>Clear practice and reviews</button></section>
         </>}
       </main>

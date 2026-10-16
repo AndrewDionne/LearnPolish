@@ -227,7 +227,7 @@ test('Speak records, checks acoustic quality, replays locally, and clears on nex
   await expect(page.getByText(/Pronunciation is not scored yet/)).toBeVisible();
   await page.getByRole('button', {name: /Next phrase/}).click();
   await expect(page.getByText('Dobry wieczór', {exact: true})).toBeVisible();
-  const earned = await page.evaluate(() => JSON.parse(localStorage.getItem('ptp-v2-gold') || '{}'));
+  const earned = await page.evaluate(() => JSON.parse(localStorage.getItem('ptp-v2-expedition') || '{}'));
   expect(earned.events.some((entry:{mode:string})=>entry.mode==='speak')).toBe(true);
   await expect(page.locator('#personal-speech-replay')).toHaveCount(0);
   const trackStops = await page.evaluate(() => (window as any).__microphoneTrackStops);
@@ -347,58 +347,61 @@ test('full browser-local backup safely restores personal lessons, recall and rev
 });
 
 
-test('earned Gold rewards Learn, Read, Listen and verified Speak work, not skips or repeated attempts',async ({page})=>{
-  await page.goto('/');
-  await page.getByRole('button',{name:'Explore lessons'}).click();
-  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Conversation 1');
-  await page.getByRole('button',{name:/Conversation 1/}).click();
-  await page.getByRole('button',{name:/Reveal meaning/}).click();
-  await page.getByRole('button',{name:/Got it/}).click();
-  await page.getByRole('button',{name:'Listen',exact:true}).click();
-  const options=page.getByRole('group',{name:'Choose the meaning'});
-  await options.getByRole('button').first().click();
-  await page.getByRole('button',{name:'Continue →',exact:true}).click();
-  await page.getByRole('button',{name:'Speak',exact:true}).click();
-  // Simply skipping a Speak card must never count as a practice recording.
-  await page.getByRole('button',{name:/Next phrase/}).click();
-  await page.getByRole('button',{name:/My progress|Profile/}).last().click();
-  await expect(page.getByRole('region',{name:'Your Gold rewards'})).toContainText('20');
-  const ledger=await page.evaluate(()=>JSON.parse(localStorage.getItem('ptp-v2-gold')||'{}'));
-  expect(ledger.events.map((e:{mode:string})=>e.mode).sort()).toEqual(['learn','listen']);
-  await page.reload();
-  await page.getByRole('button',{name:/My progress|Profile/}).last().click();
-  await expect(page.getByRole('region',{name:'Your Gold rewards'})).toContainText('20');
+test('XP is awarded for actual Learn/Listen responses, but not a skipped Speak attempt', async ({page})=>{
+ await page.goto('/');
+ await page.getByRole('button',{name:'Explore lessons'}).click();
+ await page.getByRole('searchbox',{name:'Search lessons'}).fill('Conversation 1');
+ await page.getByRole('button',{name:/Conversation 1/}).click();
+ await page.getByRole('button',{name:/Reveal meaning/}).click();
+ await page.getByRole('button',{name:/Got it/}).click();
+ await page.getByRole('button',{name:'Listen',exact:true}).click();
+ await page.getByRole('group',{name:'Choose the meaning'}).getByRole('button').first().click();
+ await page.getByRole('button',{name:'Continue →',exact:true}).click();
+ await page.getByRole('button',{name:'Speak',exact:true}).click();
+ await page.getByRole('button',{name:/Next phrase/}).click();
+ await page.getByRole('button',{name:/My progress|Profile/}).last().click();
+ const xp=page.getByRole('region',{name:'Your learning XP'});
+ await expect(xp).toContainText('20');
+ const state=await page.evaluate(()=>JSON.parse(localStorage.getItem('ptp-v2-expedition')||'{}'));
+ expect(state.events.map((e:{mode:string})=>e.mode).sort()).toEqual(['learn','listen']);
+ await page.reload();
+ await page.getByRole('button',{name:/My progress|Profile/}).last().click();
+ await expect(page.getByRole('region',{name:'Your learning XP'})).toContainText('20');
 });
 
-test('Gold survives a full backup roundtrip and custom weekly goal', async ({page})=>{
-  await page.goto('/');
-  await page.getByRole('button',{name:'Explore lessons'}).click();
-  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Basic 01R');
-  await page.getByRole('button',{name:/Basic 01R/}).click();
-  await page.getByRole('button',{name:'How are you?',exact:true}).click();
-  await page.getByRole('button',{name:'Continue →',exact:true}).click();
-  await page.getByRole('button',{name:/My progress|Profile/}).last().click();
-  const rewards=page.getByRole('region',{name:'Your Gold rewards'});
-  await expect(rewards.getByText('10',{exact:true}).first()).toBeVisible();
-  await rewards.getByLabel('My own goal').check();
-  await rewards.getByRole('spinbutton',{name:'Custom weekly Gold goal'}).fill('250');
-  await rewards.getByRole('button',{name:'Save goal'}).click();
-  await expect(rewards).toContainText('weekly goal of 250');
-  const download=page.waitForEvent('download');
-  await page.getByRole('button',{name:'Export full backup'}).click();
-  const file=await download;
-  const bytes=await readFile(await file.path());
-  const data=JSON.parse(bytes.toString('utf8'));
-  expect(data.gold.events).toHaveLength(1);
-  expect(data.gold.selfGoal).toBe(250);
-  await page.evaluate(()=>localStorage.removeItem('ptp-v2-gold'));
-  await page.reload();
-  await page.getByRole('button',{name:/My progress|Profile/}).last().click();
-  page.once('dialog',d=>d.accept());
-  await page.locator('input[aria-label="Restore from backup"]').setInputFiles({name:'restore.json',mimeType:'application/json',buffer:bytes});
-  await expect(page.getByRole('region',{name:'Your Gold rewards'})).toContainText('weekly goal of 250');
+test('XP and expedition targets survive full backup and restore; custom weekly goal persists',async ({page})=>{
+ await page.goto('/');
+ await page.getByRole('button',{name:'Expedition'}).first().click();
+ await page.getByLabel('Explore another region').selectOption('podkarpackie');
+ await expect(page.getByRole('heading',{name:'Podkarpackie'})).toBeVisible();
+ await page.getByRole('button',{name:'Library'}).first().click();
+ await page.getByRole('searchbox',{name:'Search lessons'}).fill('Basic 01R');
+ await page.getByRole('button',{name:/Basic 01R/}).click();
+ await page.getByRole('button',{name:'How are you?',exact:true}).click();
+ await page.getByRole('button',{name:'Continue →',exact:true}).click();
+ await page.getByRole('button',{name:/My progress|Profile/}).last().click();
+ await page.getByLabel('My own goal').check();
+ await page.getByRole('spinbutton',{name:'Custom weekly XP goal'}).fill('250');
+ await page.getByRole('button',{name:'Save goal'}).click();
+ const download=page.waitForEvent('download');
+ await page.getByRole('button',{name:'Export full backup'}).click();
+ const bytes=await readFile(await (await download).path());
+ const data=JSON.parse(bytes.toString());
+ expect(data.expedition.events).toHaveLength(1);
+ expect(data.expedition.selectedRegion).toBe('podkarpackie');
+ expect(data.expedition.selfGoal).toBe(250);
+ await page.evaluate(()=>localStorage.removeItem('ptp-v2-expedition'));
+ await page.reload();
+ await page.getByRole('button',{name:/My progress|Profile/}).last().click();
+ page.once('dialog',d=>d.accept());
+ await page.locator('input[aria-label="Restore from backup"]').setInputFiles({name:'restore.json',mimeType:'application/json',buffer:bytes});
+ await expect(page.getByRole('region',{name:'Your learning XP'})).toContainText('240 XP until your weekly goal');
+ await expect(page.getByLabel('My own goal')).toBeChecked();
+ await expect(page.getByRole('spinbutton',{name:'Custom weekly XP goal'})).toHaveValue('250');
+ await page.getByRole('button',{name:'Expedition'}).first().click();
+ await expect(page.getByRole('heading',{name:'Podkarpackie'})).toBeVisible();
+ await expect(page.getByRole('progressbar',{name:'Podkarpackie unlock progress'})).toHaveAttribute('aria-valuenow','10');
 });
-
 
 test('completed Read lesson hands off to Listen without leaving the lesson', async ({page})=>{
   await page.goto('/');
@@ -417,21 +420,22 @@ test('completed Read lesson hands off to Listen without leaving the lesson', asy
   await expect(page.getByRole('button',{name:/Play audio/})).toBeVisible();
 });
 
-test('Pierogi selection persists in local Gold ledger and through reload',async ({page})=>{
-  await page.goto('/');
-  await page.getByRole('button',{name:/My progress|Profile/}).last().click();
-  const chooser=page.getByRole('group',{name:'Choose your Pierogi'});
-  await chooser.getByRole('button',{name:'Chonky'}).click();
-  await expect(chooser.getByRole('button',{name:'Chonky'})).toHaveAttribute('aria-pressed','true');
-  await page.reload();
-  await page.getByRole('button',{name:/My progress|Profile/}).last().click();
-  await expect(page.getByRole('img',{name:'Pierogi Chonky'})).toHaveAttribute('src',/avatars\/chonky-neutral.svg/);
-  const state=await page.evaluate(()=>JSON.parse(localStorage.getItem('ptp-v2-gold')||'{}'));
-  expect(state.avatar).toBe('chonky');
+test('interactive open map permits distant choice and restores destination on reload',async ({page})=>{
+ await page.goto('/');
+ await page.getByRole('button',{name:'Expedition'}).first().click();
+ const map=page.getByRole('region',{name:'Open Poland expedition map'});
+ await expect(map.locator('path[role="button"]')).toHaveCount(16);
+ await map.getByRole('button',{name:'Małopolskie'}).click();
+ await expect(map.getByRole('heading',{name:'Małopolskie'})).toBeVisible();
+ await map.getByLabel('Explore another region').selectOption('pomorskie');
+ await page.reload();
+ await page.getByRole('button',{name:'Expedition'}).first().click();
+ await expect(page.getByRole('heading',{name:'Pomorskie'})).toBeVisible();
+ await expect(page.getByText(/Single-learner preview/)).toBeVisible();
+ await page.screenshot({path:'test-results/open-poland-expedition.png',fullPage:true});
 });
 
-
-test('late microphone permission after leaving Speak stops tracks and cannot award Gold', async ({page}) => {
+test('late microphone permission after leaving Speak stops tracks and cannot award XP', async ({page}) => {
   await page.addInitScript(() => {
     (window as any).__lateTracksStopped = 0;
     (window as any).__resolveLateMicrophone = null;
@@ -456,7 +460,7 @@ test('late microphone permission after leaving Speak stops tracks and cannot awa
   await page.getByRole('button',{name:/Back to library/}).click();
   await page.evaluate(() => (window as any).__resolveLateMicrophone?.());
   await expect.poll(() => page.evaluate(() => (window as any).__lateTracksStopped)).toBe(1);
-  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('ptp-v2-gold') || '{}'));
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('ptp-v2-expedition') || '{}'));
   expect(saved.events).toHaveLength(0);
   expect(browserErrors).toEqual([]);
 });

@@ -60,3 +60,11 @@ describe('authored reading comprehension schema', () => {
     expect(validateLesson({...sample, kind:'vocabulary'})).toBe(false);
   });
 });
+
+
+describe('explicit learning tier validation',()=>{
+  test('tiers remain opt-in and unknown difficulty is not invented',()=>{
+    expect(validateLesson({...lesson,difficultyTier:3})).toBe(true);
+    expect(validateLesson({...lesson,difficultyTier:9})).toBe(false);
+  });
+});
