@@ -9,7 +9,7 @@ import { parseProgress, recallRate, recordAttempt, STORAGE_KEY } from './progres
 import type { Progress } from './progress';
 import { PERSONAL_STORAGE_KEY, importPersonalLesson, makePersonalLesson, parsePersonalLessons, toPortableLesson, upsertPersonalLesson } from './personal';
 import type { DraftItem } from './personal';
-import { availableModes, comprehensionChoices, itemPractised, itemsForMode, progressKey } from './modes';
+import { availableModes, comprehensionChoices, correctComprehensionAnswer, itemPractised, itemsForMode, progressKey, readingStage } from './modes';
 import type { LearningMode } from './modes';
 import { READING_POSITION_KEY, parseReadingPositions, safeReadingPosition } from './reading-position';
 import { REVIEW_STORAGE_KEY, countDue, dueItems, nextDue, parseReviewSchedule, recordReview } from './review';
@@ -45,6 +45,7 @@ function LessonTile({ lesson, completed, onOpen }: { lesson: Lesson; completed: 
     <span className="lesson-tile-body">
       <span className="eyebrow">{lessonLabel(lesson.kind)}</span>
       <strong>{lesson.title}</strong>
+      {lesson.progression && <span className="reading-stage">Step {lesson.progression.order} · {readingStage(lesson.progression.stage)}</span>}
       <span className="tile-detail">{lesson.items.length} {lesson.kind === 'reading' ? 'passages' : 'items'} · {completed} practised</span>
       <span className="meter" aria-hidden="true"><span style={{ width: (100 * completed / lesson.items.length) + '%' }} /></span>
     </span>
@@ -85,6 +86,7 @@ export default function App() {
   const [mode, setMode] = useState<LearningMode>('learn');
   const [reviewOnly, setReviewOnly] = useState<string[] | null>(null);
   const [listenGuess, setListenGuess] = useState<string | null>(null);
+  const [readGuess, setReadGuess] = useState<string | null>(null);
   const [listenRevealed, setListenRevealed] = useState(false);
   const [finished, setFinished] = useState(false);
   const [readingPositions, setReadingPositions] = useState(() => {
@@ -146,7 +148,10 @@ export default function App() {
     ? reviewOnly && mode === 'learn' ? active.items.filter(item => reviewOnly.includes(item.id)) : itemsForMode(active, mode)
     : [];
   const current = sessionItems[index];
-  const listeningChoices = active && current && mode === 'listen' ? comprehensionChoices(active.items, current, index) : [];
+  const listeningChoices = active && current && mode === 'listen' ? comprehensionChoices(active.items, current, index, active.kind === 'reading') : [];
+  const correctAnswer = current ? correctComprehensionAnswer(current) : null;
+  const chosenAnswer = correctAnswer || current?.english || '';
+  const listenAnsweredCorrectly = listenGuess !== null && listenGuess === chosenAnswer;
   const last = lessons.find(x => x.id === lastLesson);
   const practisedCount = lessons.reduce((total, lesson) =>
     total + lesson.items.filter(item => itemPractised(progress, item.id)).length, 0);
@@ -159,7 +164,8 @@ export default function App() {
   const filtered = useMemo(() => lessons.filter(x =>
     (filter === 'all' || x.kind === filter) &&
     (x.title.toLowerCase().includes(query.toLowerCase()) || x.items.some(i => i.polish.toLowerCase().includes(query.toLowerCase())))
-  ), [lessons, filter, query]);
+  ).sort((a,b) => a.kind === 'reading' && b.kind === 'reading'
+    ? (a.progression?.order ?? 999) - (b.progression?.order ?? 999) : 0), [lessons, filter, query]);
 
   const stopAudio = () => { audio.stop(); };
   const goTo = (destination: Page) => {
@@ -170,7 +176,7 @@ export default function App() {
     setReviewOnly(null);
     setLessonId(lesson.id); setMode(lesson.kind === 'reading' ? 'read' : 'learn');
     setIndex(lesson.kind === 'reading' ? safeReadingPosition(readingPositions, lesson.id, lesson.items.length) : 0);
-    setRevealed(false); setTranslationOpen(false); setListenGuess(null); setListenRevealed(false); setFinished(false);
+    setRevealed(false); setTranslationOpen(false); setListenGuess(null); setReadGuess(null); setListenRevealed(false); setFinished(false);
     setLastLesson(lesson.id); saveLastLesson(lesson.id);
   };
   const openDueReview = (lesson: Lesson) => {
@@ -185,7 +191,7 @@ export default function App() {
     const next = Math.max(0, Math.min(sessionItems.length - 1, target));
     setIndex(next);
     if (mode === 'read') setReadingPositions(previous => ({ ...previous, [active.id]: next }));
-    setRevealed(false); setTranslationOpen(false); setListenGuess(null); setListenRevealed(false); setFinished(false);
+    setRevealed(false); setTranslationOpen(false); setListenGuess(null); setReadGuess(null); setListenRevealed(false); setFinished(false);
   };
   const switchMode = (next: LearningMode) => {
     if (!active || !availableModes(active).includes(next)) return;
@@ -193,7 +199,7 @@ export default function App() {
     setMode(next);
     setReviewOnly(null);
     setIndex(next === 'read' ? safeReadingPosition(readingPositions, active.id, active.items.length) : 0);
-    setRevealed(false); setTranslationOpen(false); setListenGuess(null); setListenRevealed(false); setFinished(false);
+    setRevealed(false); setTranslationOpen(false); setListenGuess(null); setReadGuess(null); setListenRevealed(false); setFinished(false);
   };
   const record = (remembered: boolean) => {
     if (!current) return;
@@ -341,6 +347,7 @@ export default function App() {
             <div><span className="eyebrow">{reviewOnly ? 'DUE REVIEW' : lessonLabel(active.kind)} · {active.title}</span><h1>{reviewOnly ? 'Review what matters' : mode === 'speak' ? 'Practise speaking' : mode === 'listen' ? 'Train your ear' : mode === 'read' ? 'Read & understand' : active.kind === 'sounds' ? 'Hear the difference' : 'Learn the language'}</h1><p>{reviewOnly ? 'These expressions are due for recall practice. Answer honestly; missed items remain available for review.' : mode === 'speak' ? 'Hear the native recording, capture your own voice, and listen to the difference. Scoring is not enabled yet.' : mode === 'listen' ? 'Listen first, choose the meaning, then compare your answer with the Polish transcript.' : mode === 'read' ? 'Read naturally, then reveal the translation. Your reading position is remembered.' : active.kind === 'sounds' ? active.soundGroups ? 'Play each recording individually and compare neighbouring sound families. Audio quality and pronunciation notes await native review.' : 'Compare the examples and listen carefully. These lessons await native-speaker review.' : 'Think of the Polish expression before revealing its meaning.'}</p></div>
             <span className="item-count">{index + 1} <span>/ {sessionItems.length}</span></span>
           </div>
+          {active.progression && <p className="pathway-hint">Reading pathway · Step {active.progression.order} · {readingStage(active.progression.stage)} — {active.progression.goal}</p>}
           <div className="lesson-meter" role="progressbar" aria-label="Lesson progress" aria-valuemin={0} aria-valuemax={sessionItems.length} aria-valuenow={index + 1}><span style={{ width: (100 * (index + 1) / sessionItems.length) + '%' }} /></div>
           <div className="mode-row" role="group" aria-label="Learning modes">
             {availableModes(active).map(value => <button type="button" key={value} aria-pressed={mode === value} className={'mode ' + (mode === value ? 'active' : '')} onClick={() => switchMode(value)}>{value === 'learn' ? active.kind === 'sounds' ? 'Sounds' : 'Learn' : value === 'read' ? 'Read' : value === 'speak' ? 'Speak' : 'Listen'}</button>)}
@@ -360,21 +367,25 @@ export default function App() {
           }} /> : mode === 'listen' ? <section className="flashcard listening-card" aria-live="polite">
             <span className="card-label">LISTEN WITHOUT READING</span>
             <div className="listening-symbol" aria-hidden="true">♫</div>
-            <h2>What did you hear?</h2>
-            <p className="listening-prompt">Play the recording. Choose the closest meaning before revealing the Polish.</p>
+            <h2>{current.comprehension ? 'Listen for a detail' : 'What did you hear?'}</h2>
+            <p className="listening-prompt">{current.comprehension
+              ? 'Listen first. Answer the question before revealing the Polish transcript.'
+              : active.kind === 'reading' ? 'Listen carefully, then reveal the transcript and assess your understanding.' : 'Play the recording. Choose the closest English meaning before revealing the Polish.'}</p>
             <AudioButton item={current} playing={audio.playing} onPlay={play}/>
             <fieldset className="speed-picker"><legend>Playback speed</legend>
               {([0.75, 1, 1.25] as const).map(speed => <button type="button" key={speed} aria-pressed={audio.rate === speed} onClick={() => audio.setRate(speed)} className={audio.rate === speed ? 'chosen' : ''}>{speed}×</button>)}
             </fieldset>
             {audio.error && <p className="audio-error" role="alert">{audio.error}</p>}
-            {!listenGuess && !listenRevealed && (listeningChoices.length > 0 ? <div className="listening-options" role="group" aria-label="Choose the meaning">
+            {listenGuess === null && !listenRevealed && (listeningChoices.length > 0 ? <div className="listening-options" role="group" aria-label={current.comprehension ? 'Answer the listening question' : 'Choose the meaning'}>
+              {current.comprehension && <p className="comprehension-prompt">{current.comprehension.prompt}</p>}
               {listeningChoices.map(choice => <button type="button" key={choice} onClick={() => { stopAudio(); setListenGuess(choice); }}>{choice}</button>)}
             </div> : <button type="button" className="reveal" onClick={() => setListenRevealed(true)}>Reveal transcript &amp; translation</button>)}
             {(listenGuess !== null || listenRevealed) && <div className="listening-answer">
-              {listenGuess !== null && <p className={listenGuess === current.english ? 'answer-good' : 'answer-review'}>{listenGuess === current.english ? 'Correct meaning!' : 'Not quite. Review the expression below.'}</p>}
+              {listenGuess !== null && <p className={listenAnsweredCorrectly ? 'answer-good' : 'answer-review'}>{listenAnsweredCorrectly ? 'Correct!' : 'Not quite. Review the expression below.'}</p>}
+              {listenGuess !== null && current.comprehension && <p className="comprehension-feedback">{current.comprehension.feedback}</p>}
               <span className="card-label">POLISH TRANSCRIPT</span><p lang="pl" className="listen-transcript">{current.polish}</p>
               <span className="card-label">ENGLISH TRANSLATION</span><p>{current.english}</p>
-              {listenGuess !== null ? <button type="button" className="primary-action" onClick={() => record(listenGuess === current.english)}>Continue →</button> : <div className="answer-actions">
+              {listenGuess !== null ? <button type="button" className="primary-action" onClick={() => record(listenAnsweredCorrectly)}>Continue →</button> : <div className="answer-actions">
                 <button type="button" className="secondary-action" onClick={() => record(false)}>Needs practice</button>
                 <button type="button" className="primary-action" onClick={() => record(true)}>Understood it →</button>
               </div>}
@@ -388,12 +399,22 @@ export default function App() {
             {mode === 'read' && current.audio && <fieldset className="speed-picker"><legend>Playback speed</legend>
               {([0.75, 1, 1.25] as const).map(speed => <button type="button" key={speed} aria-pressed={audio.rate === speed} onClick={() => audio.setRate(speed)} className={audio.rate === speed ? 'chosen' : ''}>{speed}×</button>)}
             </fieldset>}
+            {mode === 'read' && current.comprehension && !translationOpen && <fieldset className="reading-check"><legend>{current.comprehension.prompt}</legend>
+              <div className="reading-check-options">{current.comprehension.options.map(option =>
+                <button type="button" key={option} onClick={() => {stopAudio(); setReadGuess(option); setTranslationOpen(true);}}>{option}</button>
+              )}</div>
+            </fieldset>}
+            {readGuess !== null && current.comprehension && <div className="reading-check-result" role="status">
+              <p className={readGuess === correctAnswer ? 'answer-good' : 'answer-review'}>{readGuess === correctAnswer ? 'Correct!' : 'Not quite — review the passage.'}</p>
+              <p>{current.comprehension.feedback}</p>
+            </div>}
             {(revealed || translationOpen) && <div className="translation"><span className="card-label">IN ENGLISH</span><p>{current.english}</p></div>}
-            {!revealed && !translationOpen && <button type="button" className="reveal" onClick={() => mode === 'read' ? setTranslationOpen(true) : setRevealed(true)}>Reveal meaning <span>↗</span></button>}
-            {(revealed || translationOpen) && <div className="answer-actions">
+            {!revealed && !translationOpen && (mode !== 'read' || !current.comprehension) && <button type="button" className="reveal" onClick={() => mode === 'read' ? setTranslationOpen(true) : setRevealed(true)}>Reveal meaning <span>↗</span></button>}
+            {mode === 'read' && current.comprehension && !translationOpen && <button type="button" className="reveal" onClick={() => setTranslationOpen(true)}>Reveal translation without answering</button>}
+            {(revealed || translationOpen) && (mode === 'read' && readGuess !== null ? <button type="button" className="primary-action reading-continue" onClick={() => record(readGuess === correctAnswer)}>Continue →</button> : <div className="answer-actions">
               <button type="button" className="secondary-action" onClick={() => record(false)}>{mode === 'read' ? 'Review again' : 'Needs practice'}</button>
               <button type="button" className="primary-action" onClick={() => record(true)}>{mode === 'read' ? 'Finished reading →' : 'Got it →'}</button>
-            </div>}
+            </div>)}
           </section>}
           <div className="lesson-footer">
             <button type="button" onClick={() => jump(index - 1)} disabled={index === 0}>← Previous</button>
