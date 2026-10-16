@@ -32,7 +32,9 @@ export function parseGold(raw: string | null): GoldState {
           typeof event.itemId !== 'string' || !/^[\w:.-]{1,180}$/.test(event.itemId) ||
           !MODES.has(event.mode) || typeof event.at !== 'string' || !Number.isFinite(Date.parse(event.at)) ||
           event.gold !== GOLD_PER_ITEM ||
-          !new RegExp('^'+ event.mode + ':' + event.itemId.replace(/[.*+?^${}()|[]\\]/g,'\\          event.id !== event.mode + ':' + event.itemId + ':' + calendarDay(event.at) ||') + ':\\d{4}-\\d{2}-\\d{2}
+          typeof event.id !== 'string' ||
+          !/\d{4}-\d{2}-\d{2}$/.test(event.id) ||
+          event.id !== event.mode + ':' + event.itemId + ':' + event.id.slice(-10) ||
           keys.has(event.id)) continue;
       keys.add(event.id);
       valid.push(event);
