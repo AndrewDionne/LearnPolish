@@ -53,7 +53,16 @@ export default function SpeakPanel({item, playing, onPlayReference, onStopRefere
     </div>}
     {capture.phase === 'inconclusive' && <p role="status" className="capture-warning">Recording inconclusive: {capture.message || 'Try again.'}</p>}
     {capture.phase === 'ready' && prepared && <p role="status" className="capture-valid">Recording captured ({capture.check?.seconds.toFixed(1)} s). You can replay it or try again. Pronunciation is not scored yet.</p>}
-    <p className="speak-privacy">Your recording stays in this browser's temporary memory. It is discarded when you leave this card; it is not uploaded or stored as progress.</p>
+    {prepared && <button type="button" className="benchmark-export" onClick={() => {
+      // Explicit learner action; no upload, no server, no silent retention.
+      const url = URL.createObjectURL(prepared.wav);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'polish-benchmark-' + prepared.itemId.replace(/[^a-zA-Z0-9_-]/g,'_') + '.wav';
+      document.body.appendChild(a); a.click(); a.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    }}>Save 16 kHz WAV for private AI test</button>}
+    <p className="speak-privacy">Your recording stays in this browser's temporary memory. It is discarded when you leave this card; it is not uploaded or stored as progress. Saving a benchmark WAV is optional, initiated by you, and remains on your device.</p>
     <button type="button" className="primary-action speak-next" disabled={capture.phase === 'recording' || capture.phase === 'requesting' || capture.phase === 'processing'} onClick={() => {preview.current?.pause(); onNext();}}>Next phrase →</button>
   </section>;
 }

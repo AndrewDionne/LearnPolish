@@ -51,3 +51,22 @@ This mode performs **zero Azure API calls**, parses the supplied native scores/p
 5. A separate **phonetic assessment** component (Whisper alone cannot grade articulation).
 
 [See benchmark issue #1](https://github.com/AndrewDionne/LearnPolish/issues/1).
+
+
+## Paired evidence comparison — no external calls
+
+The new \`compare.py\` requires three **private, local** files: real saved \`whisper-local\` results JSONL, \`azure-raw\` results JSONL from **the same immutable audio**, and independent human labels such as:
+
+    [{"id":"contrast-cz-01","intelligible":true}]
+
+Run:
+
+    python v2/benchmarks/compare.py \
+       --whisper-results /private/whisper-results.jsonl \
+       --azure-results /private/azure-results.jsonl \
+       --human-labels /private/human-labels.json \
+       --output /private/paired-comparison.json
+
+It checks matching recording IDs, source references and durations. It reports ASR-recognition agreement with human intelligibility separately from Azure native phoneme data, and treats missing inference as **inconclusive**, not a failure or fake 0% grade. This is a comparison **tool**, not an actual completed model evaluation.
+
+The V2 Speak UI can export one normalized 16-kHz WAV per chosen recording via a user-clicked local download, but keeps voice recordings ephemeral by default. **No data is uploaded or shared automatically.** Native-Polish human labels and actual model executions are still required. Avoid storing learner recordings in the public GitHub repository.

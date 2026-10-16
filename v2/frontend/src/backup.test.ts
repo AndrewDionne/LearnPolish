@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { makeBackup, parseBackup } from './backup';
+import {awardGold,DEFAULT_GOLD} from './gold';
 import { recordAttempt } from './progress';
 import { recordReview } from './review';
 import { makePersonalLesson } from './personal';
@@ -35,4 +36,12 @@ describe('full local-data backup and restore',()=>{
   test('rejects duplicate personal identifiers',()=>{
     expect(()=>parseBackup({...backup,personalLessons:[lesson,lesson]})).toThrow(/duplicate/);
   });
+});
+
+
+test('Gold ledger round-trips with full backup and older exports remain valid',()=>{
+ const updated=makeBackup({...backup,gold:awardGold(DEFAULT_GOLD,'items:0','read','2026-10-16T12:00:00Z')},backup.exportedAt);
+ expect(parseBackup(JSON.parse(JSON.stringify(updated))).gold).toEqual(updated.gold);
+ expect(parseBackup(JSON.parse(JSON.stringify(backup))).gold).toBeUndefined();
+ expect(()=>parseBackup({...updated,gold:{...updated.gold,events:[{...updated.gold?.events[0],gold:100000}]}})).toThrow(/Invalid Gold ledger/);
 });
