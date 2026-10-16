@@ -139,10 +139,12 @@ Optional AI lesson import, nuanced dialogue coach, adaptive curricula, community
 ## 7. Current delivered capabilities and remaining pre-physical-test work (2026-10-16)
 
 **Additional merged tranches**
+- [PR #7](https://github.com/AndrewDionne/LearnPolish/pull/7): browser Speak capture, temporary replay, local acoustic validity checks and provider-neutral PCM16 WAV preparation. No pronunciation grade or paid AI integration. Desktop/mobile synthetic microphone CI passed.
+- [PR #8](https://github.com/AndrewDionne/LearnPolish/pull/8): local deterministic spaced recall, due-only focused review queue and persistent schedule. Desktop/mobile browser CI passed.
 - [PR #5](https://github.com/AndrewDionne/LearnPolish/pull/5): Read/Listen (audio-first comprehension) with saved passage position, separate mode histories, secure media path, repeatable audio playback speed. Desktop/mobile browser CI passed.
 - [PR #6](https://github.com/AndrewDionne/LearnPolish/pull/6): Production PWA shell and verified lesson MP3 download/removal with cache confirmation, real browser offline disconnect+reload checks. Desktop/mobile browser CI passed.
 
-**Still before user physical testing**: native-speaker content QA and sound-contrast lessons; Polish pronunciation-engine benchmark and controlled Speak audio-capture journey; better guided review/revisit UX; security-reviewed backend/auth and cloud-sync architecture (no need to activate social features); synthetic UX screenshots and responsive audits. Test physically only when core journeys are coherent. Offline is now testable in the V2 **production preview**, not dev mode. No empirical Whisper/Azure comparison yet.
+**Still before user physical testing**: native-speaker content QA and precise sound-contrast lessons; real labelled Polish pronunciation-engine benchmark (Whisper v3 vs clean Azure) and evidence-based scoring; richer authored graded Read/Listen; security-reviewed backend/auth and cloud-sync architecture (no need to activate social features); synthetic UX screenshot and responsive accessibility audits. Test physically only when core journeys are coherent. Offline is now testable in the V2 **production preview**, not dev mode. No empirical Whisper/Azure comparison yet.
 
 ## 8. Previous immediate next development action (historical checkpoint after PR #3)
 
@@ -150,7 +152,7 @@ The V2 frontend, migrated library, basic Learn UI and offline-only benchmark har
 
 1. **Done:** Personal lesson authoring and portable JSON import/export now work with stable IDs, local browser persistence, schema and browser tests in merged PR #4; these are not cloud-synced.
 2. **Next priority:** Obtain a small human-labelled Polish audio corpus and run **actual** local Whisper large-v3 inference against a clean live Azure baseline, with explicit free-tier guardrails. The harness alone is not an empirical benchmark.
-3. Add modular, security-reviewed backend/API foundation and a proper speech capture path; do not inherit unsafe legacy endpoints.
+3. Add modular, security-reviewed backend/API foundation; browser Speak capture is now implemented in PR #7, but real audio hardware and scoring remain untested.
 4. Expand genuine Read/Listen exercises, audited Polish sound comparisons, responsive screenshot and iOS Safari review, then offline downloads and progress sync by roadmap gates.
 
 **Change management:** Update this plan when a material product/architecture choice is made. Record benchmark evidence and acceptance results in linked issues/PRs. Keep GitHub the authoritative continuity source.
