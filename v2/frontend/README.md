@@ -57,3 +57,12 @@ From **Library → Create lesson**, write a lesson name, choose Vocabulary, Read
 - Lessons with matching pre-existing reference MP3s offer **Listen**. This is **comprehension practice**, not a pronunciation score: the Polish text is hidden until the user chooses an English meaning; outcomes are stored under separate mode-qualified progress keys. Lessons containing no safe reference audio do not offer Listen, rather than pretending TTS works.
 - All modes share one audio player. Mode changes, lesson changes and passage changes stop the previous recording; speed options are 0.75×, 1× and 1.25×. Audio file validation prevents arbitrary network URLs from an imported lesson.
 - Pronunciation coaching/Speak, fully offline audio cache, real graded listening content and physical iPhone Safari certification are not implemented.
+
+
+## Verified offline access (production build)
+
+Use \`npm run build && npm run preview\` to test the offline-capable PWA (the Vite **dev** server intentionally does not register a service worker). On the first online visit, the service worker installs the core app HTML, bundled JS/CSS and lesson catalog. The lesson toolbar offers **Download for offline** when a built-in lesson has an existing MP3 reference recording.
+
+Downloads show file-by-file progress. The UI says **Offline ready** only when every requested audio file has been verified in persistent Cache Storage. Failed downloads do not display as complete, and users may retry or remove saved lesson audio. Offline Read/Listen playback and locally saved progress do not call external AI services. Polish pronunciation scoring remains unavailable offline.
+
+Limitations: Safari can evict browser storage; audio is downloaded to this device only, not synchronized to an account. Private user-created sets currently have no safe reference MP3 media and therefore no audio-pack download control. The page shell is cached for offline use after successful PWA installation; cold first loads require a connection. Native iPhone testing is still pending.

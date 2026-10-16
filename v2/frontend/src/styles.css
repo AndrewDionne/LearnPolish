@@ -41,3 +41,12 @@
 .answer-good{color:#277762;background:#e8f6ef}.answer-review{color:#8a6445;background:#fcf0e3}
 .complete-card{justify-content:center}.complete-card h2{font-size:43px;letter-spacing:-1px;margin:18px 0 9px}.complete-card p{font-size:15px;color:#71898e;max-width:460px;line-height:1.7}
 @media(max-width:760px){.listening-symbol{margin-top:16px;height:68px;width:68px;font-size:40px}.listening-card h2{font-size:26px}.listening-options button{padding:12px 15px}.speed-picker{gap:5px}.speed-picker legend{float:none;width:100%;text-align:center}.complete-card h2{font-size:34px}}
+
+/* Verified service-worker-managed offline packs */
+.offline-control{display:flex;align-items:center;gap:7px;flex-wrap:wrap;border-left:1px solid #e1ece7;padding-left:10px}
+.lesson-tools>div .offline-control button{color:#236c60}
+.lesson-tools>div .offline-control button.offline-cta{font-weight:800}
+.offline-ready{font-size:11px;color:#328e6b;font-family:"DM Sans",sans-serif}
+.offline-note{font-size:11px;color:#809a9b}
+.offline-error{font-size:11px;color:#af483e;max-width:245px}
+@media(max-width:760px){.offline-control{border-left:0;padding-left:0}}

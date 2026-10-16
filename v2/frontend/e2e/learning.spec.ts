@@ -124,3 +124,50 @@ test('Listen is unavailable when personal lessons have no trusted audio', async 
   await expect(page.getByRole('button', { name: 'Listen', exact: true })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'No audio' })).toBeDisabled();
 });
+
+
+test('offline lesson pack is confirmed only after caching and supports an offline reload', async ({ page, context }) => {
+  await page.goto('/');
+  await page.evaluate(async () => {
+    if (!('serviceWorker' in navigator)) throw new Error('Service workers unavailable');
+    await navigator.serviceWorker.ready;
+  });
+  await page.getByRole('button', { name: 'Explore lessons' }).click();
+  await page.getByRole('searchbox', { name: 'Search lessons' }).fill('Conversation 1');
+  await page.getByRole('button', { name: /Conversation 1/ }).click();
+  await page.getByRole('button', { name: /Download for offline/ }).click();
+  await expect(page.getByText('Offline ready', { exact: false })).toBeVisible({ timeout: 30000 });
+  const storedAudio = await page.evaluate(async () => {
+    const cache = await caches.open('ptp-v2-lesson-audio-v1');
+    return (await cache.keys()).length;
+  });
+  expect(storedAudio).toBeGreaterThan(0);
+  // The worker may be installed/ready before clients.claim() controls this tab.
+  // Wait for control before disconnecting the network.
+  await page.waitForFunction(() => !!navigator.serviceWorker.controller);
+  await context.setOffline(true);
+  const before = await page.evaluate(async () => {
+    const keys = await caches.keys();
+    try {
+      const response = await fetch('/');
+      return { cacheNames: keys, fetchOk: response.ok, status: response.status, controlled: !!navigator.serviceWorker.controller };
+    } catch (error) { return { cacheNames: keys, fetchError: String(error), controlled: !!navigator.serviceWorker.controller }; }
+  });
+  console.log('OFFLINE PRE-RELOAD:', JSON.stringify(before));
+  await page.reload();
+  const after = await page.evaluate(async () => {
+    let cacheInfo = [];
+    try { cacheInfo = await caches.keys(); } catch { /* browser error page */ }
+    return { href: location.href, title: document.title, body: document.body?.innerText.slice(0, 700), controlled: !!navigator.serviceWorker?.controller, cacheInfo };
+  }).catch(error => ({ error: String(error) }));
+  console.log('OFFLINE POST-RELOAD:', JSON.stringify(after));
+  await expect(page.getByText('Real progress.')).toBeVisible();
+  await page.getByRole('button', { name: 'Library' }).first().click();
+  await page.getByRole('searchbox', { name: 'Search lessons' }).fill('Conversation 1');
+  await page.getByRole('button', { name: /Conversation 1/ }).click();
+  await expect(page.getByText('Offline ready', { exact: false })).toBeVisible();
+  await expect(page.getByText('Dzień dobry', { exact: true })).toBeVisible();
+  await context.setOffline(false);
+  await page.getByRole('button', { name: 'Remove offline copy' }).click();
+  await expect(page.getByRole('button', { name: /Download for offline/ })).toBeVisible();
+});
