@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-16 — agreed open-map family expedition, XP for effort/improvement, speech-scoring launch target
+**Updated:** 2026-10-16 — PR #15 private reference-verified speech research handoff merged; family expedition XP design retained
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -23,6 +23,12 @@
 3. Develop in a branch; execute available checks, report what is tested vs unverified.
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
 5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt features.
+
+## Latest shipped speech research checkpoint — 2026-10-16
+
+**PR #15 merged** [view](https://github.com/AndrewDionne/LearnPolish/pull/15), squash commit `b33bbf04ea4763118cf22d957fda8bfd71e7f1f8`. [CI PASS #38959948628](https://github.com/AndrewDionne/LearnPolish/actions/runs/38959948628): 38 frontend unit / 39 desktop-mobile browser tests, Python benchmark/corpus safeguards. Speak's already opt-in 16-kHz mono PCM16 WAV export now carries the exact lesson-item ID and capture timestamp in a safe, versioned filename. **No recorded voice is automatically uploaded.** New standard-library `v2/benchmarks/corpus.py` builds a *private, local* benchmark manifest directly from exported WAVs and the generated V2 lesson catalog, with verified exact Polish references, duplicate/unknown-ID and unusable-audio rejection, 100-recording / 600-second caps, and SHA-256 fingerprints. The benchmark runner rejects modified input files after manifest preparation. Mobile/desktop browser test verifies WAV download, RIFF/16kHz/mono, and safe teardown if microphone permission arrives after leaving Speak.
+
+**Exact real-AI status:** No learner WAV corpus has been collected in this GitHub workflow, no real Whisper large-v3 inference, no Azure pl-PL request, and no independent human pronunciation ratings yet. The above tests are simulated audio and deterministic safety checks; do not equate them with speech-model evaluation. Next: procure explicitly consented private speech WAVs and human ratings, verify zero-spend inference route and same-audio provider provenance, then execute and compare both engines. Do not introduce fake provisional Speak accuracy, XP bonuses, or content tranches. Existing Gold/Pierogi remains until coherent future family XP/open-map implementation.
 
 ## Reward-system direction — owner decision 2026-10-16 (design only)
 
