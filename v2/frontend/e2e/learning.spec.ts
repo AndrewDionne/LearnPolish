@@ -260,7 +260,7 @@ test('Practice review queue targets only due cards and preserves scheduling afte
     }));
   });
   await page.reload();
-  await page.getByRole('button', {name:'Practice', exact:true}).first().click();
+  await page.getByRole('button', {name:/Practice/}).first().click();
   await expect(page.getByText('1 due now')).toBeVisible();
   await page.getByRole('button', {name:/Conversation 1.*1 expression.*Review/}).click();
   await expect(page.getByText('Review what matters')).toBeVisible();
@@ -268,10 +268,10 @@ test('Practice review queue targets only due cards and preserves scheduling afte
   await page.getByRole('button', {name:/Reveal meaning/}).click();
   await page.getByRole('button', {name:/Got it/}).click();
   await expect(page.getByText('REVIEW COMPLETE', {exact:true})).toBeVisible();
-  await page.getByRole('button', {name:/Back to library/}).click();
-  await page.getByRole('button', {name:'Practice', exact:true}).first().click();
+  await page.getByRole('button', {name:'Back to library →', exact:true}).click();
+  await page.getByRole('button', {name:/Practice/}).first().click();
   await expect(page.getByText('0 due now')).toBeVisible();
   await page.reload();
-  await page.getByRole('button', {name:'Practice', exact:true}).first().click();
+  await page.getByRole('button', {name:/Practice/}).first().click();
   await expect(page.getByText('0 due now')).toBeVisible();
 });
