@@ -188,3 +188,11 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .eyebrow.welcome-kicker{color:#215d54}
 .reading-text,.polish-text{color:#213f4c}
 .contrast-focus small{color:#465f66}
+
+
+/* Residual axe WCAG AA text-contrast repairs in the full screen audit. */
+.reveal{color:#205f55}
+.preferences p.backup-hint{color:#4d656d}
+.mobile-nav button{color:#4b656a}
+.mobile-nav button.selected{color:#155f56}
+.mobile-nav small{color:inherit}
