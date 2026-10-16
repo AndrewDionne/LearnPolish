@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-16 — PR #15 private reference-verified speech research handoff merged; family expedition XP design retained
+**Updated:** 2026-10-16 — PR #16 interactive Poland expedition, earned XP and migration merged; empirical AI testing deferred
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -23,6 +23,16 @@
 3. Develop in a branch; execute available checks, report what is tested vs unverified.
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
 5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt features.
+
+## Latest delivered product tranche — 2026-10-16
+
+**Owner instruction:** Continue V2 development and explicitly **defer AI testing**. No AI service calls, fabricated pronunciation quality or attempts to collect speech recordings are needed in this tranche.
+
+**PR #16 merged** [view](https://github.com/AndrewDionne/LearnPolish/pull/16), commit `f7f9dfd1b6fc90abcfa28b4b70b2e8dd6900d374`. [CI PASS 38963206900](https://github.com/AndrewDionne/LearnPolish/actions/runs/38963206900): **45 frontend unit tests, 39 desktop/mobile Playwright tests**, Python bench harness. Replaced *visible* Pierogi/Gold surfaces with personal XP and a genuine clickable offline SVG map of **all 16 Polish voivodeships** using Piotr Patrzyk's [MIT-licensed map dataset](https://github.com/ppatrzyk/polska-geojson) (credit in `v2/frontend/src/expedition/BOUNDARIES.md`). Open map with no votes/routes/adjacency restrictions, local destination selector, map progress, permanent region unlocks, increasing target costs frozen on first funded activity, anti-repetition map-XP taper, and per-tier XP schedule using explicit optional `difficultyTier`; untiered lessons correctly remain tier 1. Importantly **personal XP remains awarded for legitimate practice** even when repeated practice yields less territory XP.
+
+XP ledger `ptp-v2-expedition` credits previous valid Gold once on initial migration, keeps the old Gold parser and historic backups supported, saves new XP in full JSON backups, and clears XP on confirmed reset. Objective curated comprehension improves only on demonstrated improvement over earlier comparable attempts; a provider-independent, verified pronunciation outcome input exists for launch-quality assessment later, without speculative grades or AI work now. Four-mode earning and session handoff survive. **No Pierogi avatar appears in V2 UI**; historical source/media may remain for compatibility or later cleanup.
+
+**Truthful stage boundary:** the expedition is **single-learner browser-local**. Private family accounts, synced member-specific destinations, group XP, concurrent allocation and friendly ranked recognition (effort/improvement/consistency/highest mastered difficulty) do **not** exist yet; do not claim otherwise. Next recommended tranche: secure group identity/membership, synchronized and idempotent group ledger, access control and team leaderboard experiences. Physical iPhone/Safari testing and screenshot *manual inspection* still outstanding. No further content authoring and AI testing remains deferred by the owner.
 
 ## Latest shipped speech research checkpoint — 2026-10-16
 
