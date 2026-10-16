@@ -196,3 +196,10 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .mobile-nav button{color:#4b656a}
 .mobile-nav button.selected{color:#155f56}
 .mobile-nav small{color:inherit}
+
+
+/* Narrow libraries: prefer visible two-row filters over offscreen controls. */
+@media(max-width:760px){
+  .filter-buttons{flex-wrap:wrap;overflow:visible;max-width:100%}
+  .filter-buttons button{flex:1 1 calc(50% - 8px);min-height:44px;white-space:normal}
+}
