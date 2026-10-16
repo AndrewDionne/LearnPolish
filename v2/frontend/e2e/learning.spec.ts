@@ -275,3 +275,26 @@ test('Practice review queue targets only due cards and preserves scheduling afte
   await page.getByRole('button', {name:/Practice/}).first().click();
   await expect(page.getByText('0 due now')).toBeVisible();
 });
+
+
+test('sound lab compares individually sourced MP3 examples, not bundled phrases', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Explore lessons' }).click();
+  await page.locator('.filter-buttons').getByRole('button', { name: 'Polish sounds' }).click();
+  await expect(page.getByRole('button', { name: /C · CZ · Ć/ })).toBeVisible();
+  await expect(page.getByText('letter recognition', { exact: false })).toHaveCount(0);
+  await page.getByRole('button', { name: /C · CZ · Ć/ }).click();
+  const lab = page.getByRole('region', { name: 'Compare Polish sounds' });
+  await expect(lab).toBeVisible();
+  await expect(lab.getByRole('button', { name: 'Play plac' })).toBeVisible();
+  await expect(lab.getByRole('button', { name: 'Play Cztery' })).toBeVisible();
+  await expect(lab.getByRole('button', { name: 'Play Pięć' })).toBeVisible();
+  await lab.getByRole('button', { name: /Cztery/ }).first().click();
+  await expect(lab.getByRole('button', { name: /Cztery/ }).first()).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('button', { name: 'Speak', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Listen', exact: true })).toBeVisible();
+  await page.screenshot({ path: 'test-results/sound-lab.png', fullPage: true });
+  expect(errors).toEqual([]);
+});

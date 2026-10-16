@@ -82,3 +82,12 @@ The **recording is intentionally not stored** even as progress. The per-item Spe
 Learn mode now schedules each item after the learner selects **Got it** or **Needs practice**. Remembered items return after 1, 3, 7, 14, 30, 60 or 90 days (capped); missed items become eligible again immediately. Open **Practice → Scheduled review** to focus on only due cards in a particular lesson. Session identity is frozen when started so marking an item does not skip later cards; the schedule persists in this browser and survives page reloads.
 
 Read/Listen success is distinct from Learn recall, and Speak **never** creates pronunciation scores or review grades. A review plan is not synchronized between devices yet and is not an adaptive AI estimate; it is a transparent first version to be tuned after real user experience.
+
+
+## Sound lab — V2 individually playable contrast lessons
+
+The three old letter-recognition sets contained several spoken words *inside one sound recording*. They are preserved in Git but **retired from V2's catalog**. Four hand-authored **comparison curricula** replace them, with 22 independently playable existing recordings for C/CZ/Ć, S/SZ/Ś, Z/Ż-RZ/Ź-ZI, and L/Ł.
+
+The build process requires every chosen sound example to match an exact existing source lesson/card and already copied MP3; a mismatched source text or missing audio fails the build. Sound-group identity, IPA symbol, short articulation note, and audio provenance remain in versioned content schema rather than being inferred by LLMs. The sound lab displays groups side by side and allows selection or playback of one example without playing three unrelated words consecutively. Speak remains an ungraded local recording exercise.
+
+**Editorial gate remains open:** The original MP3s, articulation descriptions and selected words have not yet undergone native-speaker quality validation. These are sound contrasts with whole-word examples, **not verified minimal pairs**. Dedicated isolated phoneme recordings and real minimal-pair lesson sets need a separate sound-quality and content review.

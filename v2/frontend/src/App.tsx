@@ -4,6 +4,7 @@ import { lessonLabel, parseManifest } from './model';
 import { useLessonAudio } from './audio';
 import OfflineDownloadControl from './OfflineDownloadControl';
 import SpeakPanel from './speech/SpeakPanel';
+import SoundContrastDeck from './SoundContrastDeck';
 import { parseProgress, recallRate, recordAttempt, STORAGE_KEY } from './progress';
 import type { Progress } from './progress';
 import { PERSONAL_STORAGE_KEY, importPersonalLesson, makePersonalLesson, parsePersonalLessons, toPortableLesson, upsertPersonalLesson } from './personal';
@@ -284,13 +285,17 @@ export default function App() {
         {!loading && !loadError && active && current && <div className="learning">
           <div className="lesson-tools"><button type="button" className="back-link" onClick={() => goTo('library')}>← Back to library</button><div><button type="button" onClick={() => exportFile(active)}>Export JSON</button><OfflineDownloadControl lesson={active}/>{active.source === 'personal' && <><button type="button" onClick={() => beginEdit(active)}>Edit lesson</button><button type="button" className="delete-link" onClick={() => deletePersonalLesson(active)}>Delete</button></>}</div></div>
           <div className="learning-head">
-            <div><span className="eyebrow">{reviewOnly ? 'DUE REVIEW' : lessonLabel(active.kind)} · {active.title}</span><h1>{reviewOnly ? 'Review what matters' : mode === 'speak' ? 'Practise speaking' : mode === 'listen' ? 'Train your ear' : mode === 'read' ? 'Read & understand' : active.kind === 'sounds' ? 'Hear the difference' : 'Learn the language'}</h1><p>{reviewOnly ? 'These expressions are due for recall practice. Answer honestly; missed items remain available for review.' : mode === 'speak' ? 'Hear the native recording, capture your own voice, and listen to the difference. Scoring is not enabled yet.' : mode === 'listen' ? 'Listen first, choose the meaning, then compare your answer with the Polish transcript.' : mode === 'read' ? 'Read naturally, then reveal the translation. Your reading position is remembered.' : active.kind === 'sounds' ? 'Compare the examples and listen carefully. These lessons await native-speaker review.' : 'Think of the Polish expression before revealing its meaning.'}</p></div>
+            <div><span className="eyebrow">{reviewOnly ? 'DUE REVIEW' : lessonLabel(active.kind)} · {active.title}</span><h1>{reviewOnly ? 'Review what matters' : mode === 'speak' ? 'Practise speaking' : mode === 'listen' ? 'Train your ear' : mode === 'read' ? 'Read & understand' : active.kind === 'sounds' ? 'Hear the difference' : 'Learn the language'}</h1><p>{reviewOnly ? 'These expressions are due for recall practice. Answer honestly; missed items remain available for review.' : mode === 'speak' ? 'Hear the native recording, capture your own voice, and listen to the difference. Scoring is not enabled yet.' : mode === 'listen' ? 'Listen first, choose the meaning, then compare your answer with the Polish transcript.' : mode === 'read' ? 'Read naturally, then reveal the translation. Your reading position is remembered.' : active.kind === 'sounds' ? active.soundGroups ? 'Play each recording individually and compare neighbouring sound families. Audio quality and pronunciation notes await native review.' : 'Compare the examples and listen carefully. These lessons await native-speaker review.' : 'Think of the Polish expression before revealing its meaning.'}</p></div>
             <span className="item-count">{index + 1} <span>/ {sessionItems.length}</span></span>
           </div>
           <div className="lesson-meter"><span style={{ width: (100 * (index + 1) / sessionItems.length) + '%' }} /></div>
           <div className="mode-row" aria-label="Learning modes">
             {availableModes(active).map(value => <button type="button" key={value} aria-pressed={mode === value} className={'mode ' + (mode === value ? 'active' : '')} onClick={() => switchMode(value)}>{value === 'learn' ? active.kind === 'sounds' ? 'Sounds' : 'Learn' : value === 'read' ? 'Read' : value === 'speak' ? 'Speak' : 'Listen'}</button>)}
           </div>
+          {active.kind === 'sounds' && mode === 'learn' && !finished && active.soundGroups && <SoundContrastDeck lesson={active} currentId={current.id} playing={audio.playing} onSelect={id => {
+            const target = sessionItems.findIndex(item => item.id === id);
+            if (target >= 0) jump(target);
+          }} onPlay={play}/>}
           {finished ? <section className="flashcard complete-card" aria-live="polite">
             <span className="card-label">{reviewOnly ? 'REVIEW COMPLETE' : 'SESSION COMPLETE'}</span>
             <h2>Nicely done!</h2>

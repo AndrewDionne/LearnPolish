@@ -1,0 +1,228 @@
+[
+  {
+    "id": "contrast_c_cz_cie",
+    "title": "C · CZ · Ć — Hard and soft CH sounds",
+    "intro": "Three different Polish consonants. Compare each example by ear, then repeat it aloud. These are sound contrasts, not minimal pairs.",
+    "groups": [
+      {
+        "id": "c",
+        "label": "C",
+        "ipa": "/t͡s/",
+        "hint": "A crisp ts sound, as in the ending of English 'cats'.",
+        "examples": [
+          {
+            "set": "Road_Terminology",
+            "index": 2,
+            "expected": "plac"
+          },
+          {
+            "set": "Road_Terminology",
+            "index": 0,
+            "expected": "ulica"
+          }
+        ]
+      },
+      {
+        "id": "cz",
+        "label": "CZ",
+        "ipa": "/t͡ʂ/",
+        "hint": "A deeper, farther-back CH sound.",
+        "examples": [
+          {
+            "set": "numbers_1-20",
+            "index": 3,
+            "expected": "Cztery"
+          },
+          {
+            "set": "Countries_of_the_World",
+            "index": 25,
+            "expected": "Czechy"
+          }
+        ]
+      },
+      {
+        "id": "ci",
+        "label": "Ć / CI",
+        "ipa": "/t͡ɕ/",
+        "hint": "A softer, more forward CH sound than CZ.",
+        "examples": [
+          {
+            "set": "numbers_1-20",
+            "index": 4,
+            "expected": "Pięć"
+          },
+          {
+            "set": "numbers_1-20",
+            "index": 5,
+            "expected": "Sześć"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "contrast_s_sz_sie",
+    "title": "S · SZ · Ś — Three SH families",
+    "intro": "The plain S, deeper SZ, and softer Ś / SI are different sounds. Hear whole-word examples separately and compare.",
+    "groups": [
+      {
+        "id": "s",
+        "label": "S",
+        "ipa": "/s/",
+        "hint": "A clear English-style s sound.",
+        "examples": [
+          {
+            "set": "Numbers_20-100",
+            "index": 16,
+            "expected": "Sto"
+          },
+          {
+            "set": "Countries_of_the_World",
+            "index": 35,
+            "expected": "Serbia"
+          }
+        ]
+      },
+      {
+        "id": "sz",
+        "label": "SZ",
+        "ipa": "/ʂ/",
+        "hint": "A deeper, farther-back SH sound.",
+        "examples": [
+          {
+            "set": "numbers_1-20",
+            "index": 5,
+            "expected": "Sześć"
+          },
+          {
+            "set": "Countries_of_the_World",
+            "index": 16,
+            "expected": "Szwecja"
+          }
+        ]
+      },
+      {
+        "id": "si",
+        "label": "Ś / SI",
+        "ipa": "/ɕ/",
+        "hint": "A softer SH made farther forward than SZ.",
+        "examples": [
+          {
+            "set": "Districts_of_Warszawa",
+            "index": 0,
+            "expected": "Śródmieście"
+          },
+          {
+            "set": "numbers_1-20",
+            "index": 6,
+            "expected": "Siedem"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "contrast_z_zh_zi",
+    "title": "Z · Ż / RZ · Ź / ZI — Hear the contrast",
+    "intro": "Distinguish ordinary Z from the deeper Ż/RZ and softer Ź/ZI sounds. The two spellings within each pair can represent the same phoneme.",
+    "groups": [
+      {
+        "id": "z",
+        "label": "Z",
+        "ipa": "/z/",
+        "hint": "Ordinary voiced z, as in English 'zoo'.",
+        "examples": [
+          {
+            "set": "Conversation_-_shopping",
+            "index": 13,
+            "expected": "Za małe"
+          },
+          {
+            "set": "Conversation_-_restaurant",
+            "index": 12,
+            "expected": "Zupa dnia"
+          }
+        ]
+      },
+      {
+        "id": "zh",
+        "label": "Ż / RZ",
+        "ipa": "/ʐ/",
+        "hint": "A deeper zh sound, spelled Ż or RZ in these examples.",
+        "examples": [
+          {
+            "set": "Districts_of_Warszawa",
+            "index": 5,
+            "expected": "Żoliborz"
+          },
+          {
+            "set": "The_Cities_of_Poland",
+            "index": 16,
+            "expected": "Rzeszów"
+          }
+        ]
+      },
+      {
+        "id": "zi",
+        "label": "Ź / ZI",
+        "ipa": "/ʑ/",
+        "hint": "A softer, more forward zh sound than Ż/RZ.",
+        "examples": [
+          {
+            "set": "The_Cities_of_Poland",
+            "index": 22,
+            "expected": "Zielona Góra"
+          },
+          {
+            "set": "Names_of_Poland_1",
+            "index": 8,
+            "expected": "Mateusz Woźniak"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "contrast_l_lstroked",
+    "title": "L · Ł — A different letter, a different sound",
+    "intro": "Polish L is a clear L sound, while modern Polish Ł is pronounced like English W.",
+    "groups": [
+      {
+        "id": "l",
+        "label": "L",
+        "ipa": "/l/",
+        "hint": "Touch your tongue behind your upper teeth.",
+        "examples": [
+          {
+            "set": "The_Cities_of_Poland",
+            "index": 8,
+            "expected": "Lublin"
+          },
+          {
+            "set": "The_Cities_of_Poland",
+            "index": 26,
+            "expected": "Legnica"
+          }
+        ]
+      },
+      {
+        "id": "lstroked",
+        "label": "Ł",
+        "ipa": "/w/",
+        "hint": "Round your lips like the English W in 'water'.",
+        "examples": [
+          {
+            "set": "The_Cities_of_Poland",
+            "index": 2,
+            "expected": "Łódź"
+          },
+          {
+            "set": "Countries_of_the_World",
+            "index": 29,
+            "expected": "Łotwa"
+          }
+        ]
+      }
+    ]
+  }
+]
