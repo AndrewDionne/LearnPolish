@@ -11,6 +11,8 @@ import type { DraftItem } from './personal';
 import { availableModes, comprehensionChoices, itemPractised, itemsForMode, progressKey } from './modes';
 import type { LearningMode } from './modes';
 import { READING_POSITION_KEY, parseReadingPositions, safeReadingPosition } from './reading-position';
+import { REVIEW_STORAGE_KEY, countDue, dueItems, nextDue, parseReviewSchedule, recordReview } from './review';
+import type { ReviewSchedule } from './review';
 
 type Page = 'home' | 'library' | 'practice' | 'profile';
 type KindFilter = 'all' | LessonKind;
@@ -77,6 +79,7 @@ export default function App() {
   const [lessonId, setLessonId] = useState<string | null>(null);
   const [index, setIndex] = useState(0);
   const [mode, setMode] = useState<LearningMode>('learn');
+  const [reviewOnly, setReviewOnly] = useState<string[] | null>(null);
   const [listenGuess, setListenGuess] = useState<string | null>(null);
   const [listenRevealed, setListenRevealed] = useState(false);
   const [finished, setFinished] = useState(false);
@@ -89,6 +92,9 @@ export default function App() {
     try { return parseProgress(localStorage.getItem(STORAGE_KEY)); } catch { return {}; }
   });
   const [lastLesson, setLastLesson] = useState<string | null>(storedLastLesson);
+  const [reviews, setReviews] = useState<ReviewSchedule>(() => {
+    try { return parseReviewSchedule(localStorage.getItem(REVIEW_STORAGE_KEY)); } catch { return {}; }
+  });
   const audio = useLessonAudio();
 
   useEffect(() => {
@@ -119,14 +125,24 @@ export default function App() {
     try { localStorage.setItem(READING_POSITION_KEY, JSON.stringify(readingPositions)); } catch { /* local-only progress */ }
   }, [readingPositions]);
 
+  useEffect(() => {
+    try { localStorage.setItem(REVIEW_STORAGE_KEY, JSON.stringify(reviews)); } catch { /* local-only review state */ }
+  }, [reviews]);
+
   const active = lessons.find(x => x.id === lessonId);
-  const sessionItems = active ? itemsForMode(active, mode) : [];
+  const sessionItems = active
+    ? reviewOnly && mode === 'learn' ? active.items.filter(item => reviewOnly.includes(item.id)) : itemsForMode(active, mode)
+    : [];
   const current = sessionItems[index];
   const listeningChoices = active && current && mode === 'listen' ? comprehensionChoices(active.items, current, index) : [];
   const last = lessons.find(x => x.id === lastLesson);
   const practisedCount = lessons.reduce((total, lesson) =>
     total + lesson.items.filter(item => itemPractised(progress, item.id)).length, 0);
   const completedIn = (lesson: Lesson) => lesson.items.filter(item => itemPractised(progress, item.id)).length;
+  const nowIso = new Date().toISOString();
+  const totalDue = countDue(lessons, reviews, nowIso);
+  const scheduledNext = nextDue(lessons, reviews, nowIso);
+  const dueLessons = lessons.filter(lesson => dueItems(lesson, reviews, nowIso).length > 0);
 
   const filtered = useMemo(() => lessons.filter(x =>
     (filter === 'all' || x.kind === filter) &&
@@ -135,14 +151,21 @@ export default function App() {
 
   const stopAudio = () => { audio.stop(); };
   const goTo = (destination: Page) => {
-    stopAudio(); setLessonId(null); setEditorOpen(false); setPage(destination); setRevealed(false); setFinished(false);
+    stopAudio(); setLessonId(null); setEditorOpen(false); setReviewOnly(null); setPage(destination); setRevealed(false); setFinished(false);
   };
   const openLesson = (lesson: Lesson) => {
     stopAudio();
+    setReviewOnly(null);
     setLessonId(lesson.id); setMode(lesson.kind === 'reading' ? 'read' : 'learn');
     setIndex(lesson.kind === 'reading' ? safeReadingPosition(readingPositions, lesson.id, lesson.items.length) : 0);
     setRevealed(false); setTranslationOpen(false); setListenGuess(null); setListenRevealed(false); setFinished(false);
     setLastLesson(lesson.id); saveLastLesson(lesson.id);
+  };
+  const openDueReview = (lesson: Lesson) => {
+    const due = dueItems(lesson, reviews, new Date().toISOString()).map(item => item.id);
+    if (!due.length || lesson.kind === 'reading') return;
+    openLesson(lesson);
+    setReviewOnly(due); setMode('learn'); setIndex(0);
   };
   const jump = (target: number) => {
     if (!active) return;
@@ -156,12 +179,15 @@ export default function App() {
     if (!active || !availableModes(active).includes(next)) return;
     stopAudio();
     setMode(next);
+    setReviewOnly(null);
     setIndex(next === 'read' ? safeReadingPosition(readingPositions, active.id, active.items.length) : 0);
     setRevealed(false); setTranslationOpen(false); setListenGuess(null); setListenRevealed(false); setFinished(false);
   };
   const record = (remembered: boolean) => {
     if (!current) return;
-    setProgress(previous => recordAttempt(previous, progressKey(current.id, mode), remembered, new Date().toISOString()));
+    const at = new Date().toISOString();
+    setProgress(previous => recordAttempt(previous, progressKey(current.id, mode), remembered, at));
+    if (mode === 'learn') setReviews(previous => recordReview(previous, current.id, remembered, at));
     if (index < sessionItems.length - 1) jump(index + 1);
     else { stopAudio(); setFinished(true); }
   };
@@ -216,6 +242,11 @@ export default function App() {
       for (const item of lesson.items) delete next[item.id];
       return next;
     });
+    setReviews(old => {
+      const next = { ...old };
+      for (const item of lesson.items) delete next[item.id];
+      return next;
+    });
     if (lastLesson === lesson.id) {
       setLastLesson(null);
       try { localStorage.removeItem('ptp-v2-last-lesson'); } catch { /* best effort */ }
@@ -253,7 +284,7 @@ export default function App() {
         {!loading && !loadError && active && current && <div className="learning">
           <div className="lesson-tools"><button type="button" className="back-link" onClick={() => goTo('library')}>← Back to library</button><div><button type="button" onClick={() => exportFile(active)}>Export JSON</button><OfflineDownloadControl lesson={active}/>{active.source === 'personal' && <><button type="button" onClick={() => beginEdit(active)}>Edit lesson</button><button type="button" className="delete-link" onClick={() => deletePersonalLesson(active)}>Delete</button></>}</div></div>
           <div className="learning-head">
-            <div><span className="eyebrow">{lessonLabel(active.kind)} · {active.title}</span><h1>{mode === 'speak' ? 'Practise speaking' : mode === 'listen' ? 'Train your ear' : mode === 'read' ? 'Read & understand' : active.kind === 'sounds' ? 'Hear the difference' : 'Learn the language'}</h1><p>{mode === 'speak' ? 'Hear the native recording, capture your own voice, and listen to the difference. Scoring is not enabled yet.' : mode === 'listen' ? 'Listen first, choose the meaning, then compare your answer with the Polish transcript.' : mode === 'read' ? 'Read naturally, then reveal the translation. Your reading position is remembered.' : active.kind === 'sounds' ? 'Compare the examples and listen carefully. These lessons await native-speaker review.' : 'Think of the Polish expression before revealing its meaning.'}</p></div>
+            <div><span className="eyebrow">{reviewOnly ? 'DUE REVIEW' : lessonLabel(active.kind)} · {active.title}</span><h1>{reviewOnly ? 'Review what matters' : mode === 'speak' ? 'Practise speaking' : mode === 'listen' ? 'Train your ear' : mode === 'read' ? 'Read & understand' : active.kind === 'sounds' ? 'Hear the difference' : 'Learn the language'}</h1><p>{reviewOnly ? 'These expressions are due for recall practice. Answer honestly; missed items remain available for review.' : mode === 'speak' ? 'Hear the native recording, capture your own voice, and listen to the difference. Scoring is not enabled yet.' : mode === 'listen' ? 'Listen first, choose the meaning, then compare your answer with the Polish transcript.' : mode === 'read' ? 'Read naturally, then reveal the translation. Your reading position is remembered.' : active.kind === 'sounds' ? 'Compare the examples and listen carefully. These lessons await native-speaker review.' : 'Think of the Polish expression before revealing its meaning.'}</p></div>
             <span className="item-count">{index + 1} <span>/ {sessionItems.length}</span></span>
           </div>
           <div className="lesson-meter"><span style={{ width: (100 * (index + 1) / sessionItems.length) + '%' }} /></div>
@@ -261,7 +292,7 @@ export default function App() {
             {availableModes(active).map(value => <button type="button" key={value} aria-pressed={mode === value} className={'mode ' + (mode === value ? 'active' : '')} onClick={() => switchMode(value)}>{value === 'learn' ? active.kind === 'sounds' ? 'Sounds' : 'Learn' : value === 'read' ? 'Read' : value === 'speak' ? 'Speak' : 'Listen'}</button>)}
           </div>
           {finished ? <section className="flashcard complete-card" aria-live="polite">
-            <span className="card-label">SESSION COMPLETE</span>
+            <span className="card-label">{reviewOnly ? 'REVIEW COMPLETE' : 'SESSION COMPLETE'}</span>
             <h2>Nicely done!</h2>
             <p>You made it through {sessionItems.length} {sessionItems.length === 1 ? 'item' : 'items'} in {mode === 'listen' ? 'listening practice' : mode === 'read' ? 'reading practice' : mode === 'speak' ? 'speaking practice (unscored)' : 'learning practice'}.</p>
             <div className="answer-actions"><button type="button" className="secondary-action" onClick={() => jump(0)}>Practise again</button><button type="button" className="primary-action" onClick={() => goTo('library')}>Back to library →</button></div>
@@ -339,6 +370,9 @@ export default function App() {
             <div><span className="eyebrow welcome-kicker">YOUR POLISH JOURNEY STARTS HERE</span><h1>Small steps.<br/><em>Real progress.</em></h1><p>Build confidence in Polish, one useful expression at a time. Listen, learn, and make it your own.</p><button type="button" className="hero-button" onClick={() => last ? openLesson(last) : goTo('library')}>{last ? 'Continue learning' : 'Explore lessons'} <span>↗</span></button></div>
             <div className="welcome-art" aria-hidden="true"><span className="art-orbit orbit-one"/><span className="art-orbit orbit-two"/><div className="art-center">ą</div><span className="art-accent a1">ł</span><span className="art-accent a2">ż</span><span className="art-accent a3">ś</span></div>
           </section>
+          {totalDue > 0 && <button type="button" className="review-home" onClick={() => goTo('practice')}>
+            <span className="review-home-number">{totalDue}</span><span><strong>Ready to review</strong><small>Your scheduled Polish expressions are ready.</small></span><span aria-hidden="true">Review →</span>
+          </button>}
           <div className="section-heading"><div><span className="eyebrow">TODAY'S PATH</span><h2>Pick up where you left off</h2></div><button className="text-link" type="button" onClick={() => goTo('library')}>Browse library →</button></div>
           {last ? <button type="button" className="resume-card" onClick={() => openLesson(last)}>
             <span className="resume-icon">↗</span><span><small>CONTINUE YOUR LESSON</small><strong>{last.title}</strong><span>{completedIn(last)} of {last.items.length} items explored</span></span><span className="resume-arrow">→</span>
@@ -363,6 +397,16 @@ export default function App() {
 
         {!loading && !loadError && !active && !editorOpen && page === 'practice' && <>
           <section className="page-title"><span className="eyebrow">YOUR PRACTICE SPACE</span><h1>Keep it fresh<span className="title-dot">.</span></h1><p>Every phrase you revisit makes it easier to find the words next time.</p></section>
+          <section className="due-panel">
+            <div className="due-heading"><h2>Scheduled review</h2><span>{totalDue} due now</span></div>
+            {dueLessons.length ? <div className="due-list">{dueLessons.filter(lesson => lesson.kind !== 'reading').map(lesson => {
+              const count = dueItems(lesson, reviews, nowIso).length;
+              return <button type="button" className="due-row" key={lesson.id} onClick={() => openDueReview(lesson)}>
+                <strong>{lesson.title}</strong><span>{count} {count === 1 ? 'expression' : 'expressions'} due</span><span>Review →</span>
+              </button>;
+            })}</div> : <p>No expressions are due right now. Keep learning and they will appear here automatically.{scheduledNext ? ' Your next review is scheduled for ' + new Date(scheduledNext).toLocaleDateString() + '.' : ''}</p>}
+            <p className="due-explain">Remembered → 1, 3, 7, 14 days and beyond. Needs practice → available again immediately. These are self-rated recall reviews, not pronunciation grades.</p>
+          </section>
           <div className="stats-row"><Counter value={practisedCount} label="Unique items seen"/><Counter value={Object.values(progress).reduce((total, x) => total + x.seen, 0)} label="Practice attempts"/><Counter value={recallRate(progress) + '%'} label="Self-rated recall"/></div>
           <div className="section-heading lower"><div><span className="eyebrow">RETURN TO PRACTICE</span><h2>Continue your lessons</h2></div></div>
           <div className="lesson-grid">{lessons.filter(x => completedIn(x) > 0).sort((a,b)=>completedIn(b)-completedIn(a)).slice(0,8).map(x => <LessonTile key={x.id} lesson={x} completed={completedIn(x)} onOpen={() => openLesson(x)}/>)}</div>
