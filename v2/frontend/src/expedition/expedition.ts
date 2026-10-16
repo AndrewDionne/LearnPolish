@@ -18,7 +18,7 @@ export type VerifiedOutcome = {
 };
 export type XpEvent = {
   id: string; itemId: string; mode: RewardMode; at:string; xp:number;
-  baseXp:number; improvementXp:number; tier:LearningTier;
+  baseXp:number; improvementXp:number; expeditionXp:number; tier:LearningTier;
   region:RegionId; source:'practice'|'legacy'; outcome?: VerifiedOutcome;
 };
 export type ExpeditionState = {
@@ -29,7 +29,7 @@ export function emptyExpedition():ExpeditionState {
   return {schemaVersion:1,selectedRegion:DEFAULT_REGION,goalMode:'path',selfGoal:500,events:[],regionGoals:{}};
 }
 export function regionTotal(state:ExpeditionState, id:string):number {
-  return state.events.filter(e=>e.region===id).reduce((sum,e)=>sum+e.xp,0);
+  return state.events.filter(e=>e.region===id).reduce((sum,e)=>sum+e.expeditionXp,0);
 }
 export function unlockedRegions(state:ExpeditionState):string[]{
   return REGION_IDS.filter(id=>Number.isInteger(state.regionGoals[id]) &&
@@ -37,7 +37,7 @@ export function unlockedRegions(state:ExpeditionState):string[]{
 }
 /** Prices are frozen when XP is first contributed to a region; no retroactive goalposts. */
 export function nextRegionCost(state:ExpeditionState):number {
-  return Math.round((300*Math.pow(1+0.22*unlockedRegions(state).length,1.35))/10)*10;
+  return Math.round((300*Math.pow(1+0.22*Object.keys(state.regionGoals).length,1.35))/10)*10;
 }
 function validGoal(n:number):boolean {return Number.isSafeInteger(n)&&n>=50&&n<=5000&&n%10===0;}
 export function chooseRegion(state:ExpeditionState,id:string):ExpeditionState {
@@ -79,7 +79,11 @@ export function awardXp(state:ExpeditionState,itemId:string,mode:RewardMode,at:s
     /^[a-z0-9:_-]{1,80}$/i.test(outcome.metric)&&Number.isFinite(outcome.score)&&outcome.score>=0&&outcome.score<=1;
   const improvementXp=eligible&&prior&&outcome.score>prior.score?5:0;
   const baseXp=TIER_XP[tier];
-  const next:XpEvent={id,itemId,mode,at,xp:baseXp+improvementXp,baseXp,improvementXp,tier,
+  const repeats=state.events.filter(e=>e.itemId===itemId&&e.mode===mode).length;
+  // Personal effort always counts; map progress tapers on rote repetitions.
+  // Verified improvement still contributes, even for well-known material.
+  const expeditionXp=(repeats===0?baseXp:repeats===1?Math.round(baseXp/2):0)+improvementXp;
+  const next:XpEvent={id,itemId,mode,at,xp:baseXp+improvementXp,baseXp,improvementXp,expeditionXp,tier,
     region:state.selectedRegion,source:'practice',...(eligible?{outcome}:{} )};
   const regionGoals={...state.regionGoals};
   if(regionGoals[state.selectedRegion]===undefined)regionGoals[state.selectedRegion]=nextRegionCost(state);
@@ -92,7 +96,7 @@ export function migrateGold(gold?:GoldState):ExpeditionState{
   state.selfGoal=gold.selfGoal;
   for(const event of gold.events){
     state.events.push({id:event.id,itemId:event.itemId,mode:event.mode,at:event.at,
-      xp:10,baseXp:10,improvementXp:0,tier:1,region:DEFAULT_REGION,source:'legacy'});
+      xp:10,baseXp:10,improvementXp:0,expeditionXp:10,tier:1,region:DEFAULT_REGION,source:'legacy'});
   }
   if(state.events.length)state.regionGoals[DEFAULT_REGION]=300;
   return state;
@@ -117,6 +121,7 @@ export function parseExpedition(raw:string|null,legacy?:GoldState):ExpeditionSta
         !/^\d{4}-\d\d-\d\d$/.test(e.id.slice(-10))||seen.has(e.id)||
         ![1,2,3,4,5].includes(e.tier)||e.baseXp!==TIER_XP[e.tier]||
         ![0,5].includes(e.improvementXp)||e.xp!==e.baseXp+e.improvementXp||
+        !Number.isSafeInteger(e.expeditionXp)||e.expeditionXp<0||e.expeditionXp>e.xp||
         !['legacy','practice'].includes(e.source)||
         (e.outcome!==undefined && (e.outcome.evidence!=='verified'||
           !['comprehension','recall','pronunciation'].includes(e.outcome.skill)||
