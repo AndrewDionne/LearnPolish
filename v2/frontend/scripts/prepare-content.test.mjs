@@ -30,11 +30,21 @@ test('new catalog retires bundled sound examples while retaining all other legac
   assert.equal(report.reading, 6);
   assert.equal(report.sounds, 4);
   assert.equal(report.curatedAudioReferences, 22);
+  assert.equal(report.authoredReadingChecks, 24);
+  assert.equal(report.readingPathwayLessons, 6);
   assert.equal(report.audioCopied, 455);
   assert.equal(report.missingAudio, 0);
   assert.deepEqual(report.legacyGroupedSoundSetsRetired,
     ['letter_recognition_1', 'letter_recognition_2', 'letter_recognition_3']);
   const catalog = JSON.parse(fs.readFileSync(path.resolve('public/generated/lessons.json'), 'utf8')).lessons;
+  const reading = catalog.filter(x => x.kind === 'reading');
+  assert.deepEqual(reading.map(x => x.progression.order).sort((a,b)=>a-b), [1,2,3,4,5,6]);
+  assert.equal(reading.reduce((count,x) => count + x.items.filter(i => !!i.comprehension).length,0),24);
+  for (const item of reading.flatMap(x => x.items).filter(x => !!x.comprehension)) {
+    assert.equal(item.comprehension.options.length,3);
+    assert.equal(new Set(item.comprehension.options).size,3);
+    assert.ok(item.audio);
+  }
   const sounds = catalog.filter(x => x.kind === 'sounds');
   assert.equal(sounds.length, 4);
   for (const lesson of sounds) {
@@ -53,4 +63,19 @@ test('curriculum rejects incorrect audio/text mapping rather than playing mismat
   assert.throws(() => buildSoundCurriculum([
     {id:'words',kind:'vocabulary',items:[{id:'words:0',polish:'plac',english:'square',audio:'generated/audio/words/0.mp3'}]},
   ], [{id:'sounds',groups:[{id:'c',label:'C',hint:'ts',examples:[{set:'words',index:0,expected:'cztery'},{set:'words',index:0,expected:'plac'}]},{id:'cz',label:'CZ',hint:'hard ch',examples:[{set:'words',index:0,expected:'plac'},{set:'words',index:0,expected:'plac'}]}]}]), /mismatched individual audio/);
+});
+
+
+test('authored reading questions reject a changed or mismatched Polish sentence', async () => {
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const { attachReadingCurriculum } = await import('./prepare-content.mjs');
+  const definitions = JSON.parse(fs.readFileSync(path.resolve('../../v2/content/reading-checks.json'),'utf8'));
+  const lesson = {id:'Basic_01R',kind:'reading',items:[
+    {polish:'WRONG TEXT',audio:'generated/audio/Basic_01R/0.mp3'}
+  ]};
+  assert.throws(
+    () => attachReadingCurriculum([lesson], {schemaVersion:1,curricula:[{...definitions.curricula[0]}]}),
+    /Invalid or mismatched reading check|Reading curriculum/,
+  );
 });

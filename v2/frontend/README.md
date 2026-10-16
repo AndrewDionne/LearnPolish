@@ -107,3 +107,16 @@ Personal lessons cannot reference arbitrary external audio URLs. The restore pro
 The V2 UI includes an accessible skip-to-main link, main-content focus after route changes, active-nav state, correct Polish language spans for screen readers, keyboard-visible focus for inputs and authoring controls, and minimum touch target sizes for sound comparison and mode controls. Mobile bottom navigation respects the safe-area inset.
 
 Playwright now audits Home, Library, Learn/Listen, Sound Lab, personal lesson authoring and Profile on desktop/mobile, including 320px compact layouts. Checks include serious/critical WCAG accessibility violations (axe), browser page errors, horizontal overflow, keyboard skip-link navigation and captured screenshots. Automated WCAG checks do **not** replace an actual expert accessibility or native VoiceOver review. Screenshots are CI artifacts for future inspection; do not equate screenshot capture with manual visual review.
+
+
+## Read/Listen authored dialogue checks and learning pathway
+
+The six legacy reading-dialogue sets remain intact (same stable IDs and audio files). Their V2 manifest now carries an explicit **six-step suggested practice sequence**: Foundations → Daily life → Getting around. These are **editorial navigation stages, not CEFR proficiency certifications**.
+
+24 selected dialogue turns have author-written comprehension checks grounded in the exact Polish source line, with a question, three distinct answer options, one correct response and a brief feedback explanation. The migration rejects a source-text mismatch, duplicate answer or invalid choice; each graded item must have a reference MP3. The question data is versioned in \`v2/content/reading-checks.json\` (editorial status: awaiting native-Polish review).
+
+**Read:** On an authored passage, answer a comprehension question before its English translation is shown. Optionally reveal translation without answering, then self-assess. Unauthored passages still support read/reveal/self-assess and saved passage position.
+
+**Listen:** Authored dialogue turns use the source-grounded question without displaying the transcript beforehand; selecting an answer reveals the Polish, English, correctness and explanation. Unauthored dialogue turns offer **ungraded** reveal and self-assessment, not random distractors from unrelated dialogue lines. Vocabulary and Sound Lab lessons retain their simpler English translation-recognition exercises.
+
+No grades imply validated Polish phonetics or official language level. Native review, richer contextual passages, variable difficulty within lessons and certified audio quality are not yet completed.

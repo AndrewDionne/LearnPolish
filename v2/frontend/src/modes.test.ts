@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { availableModes, comprehensionChoices, itemPractised, itemsForMode, progressKey } from './modes';
+import { availableModes, comprehensionChoices, itemPractised, itemsForMode, progressKey, correctComprehensionAnswer, readingStage } from './modes';
 import type { Lesson } from './model';
 
 const lesson: Lesson = {
@@ -31,6 +31,18 @@ describe('learning modes', () => {
       expect(new Set(choices).size).toBe(choices.length);
     }
     expect(comprehensionChoices([lesson.items[0]], lesson.items[0], 0)).toEqual([]);
+  });
+
+  test('authored dialogue questions take precedence; missing dialogue checks never invent a scored quiz', () => {
+    const authored = {
+      ...lesson.items[0],
+      comprehension: {prompt:'What is being asked?', options:['How are you?','What is your name?','Where are you?'] as [string,string,string], correctIndex:0, feedback:'Greeting question'},
+    };
+    expect(comprehensionChoices(lesson.items, authored, 0, true)).toEqual(authored.comprehension.options);
+    expect(correctComprehensionAnswer(authored)).toBe('How are you?');
+    expect(comprehensionChoices(lesson.items, lesson.items[1], 1, true)).toEqual([]);
+    expect(correctComprehensionAnswer(lesson.items[1])).toBeNull();
+    expect(readingStage('getting-around')).toBe('Getting around');
   });
 
   test('mode-specific practice leaves Learn history intact', () => {

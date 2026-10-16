@@ -1,0 +1,342 @@
+{
+  "schemaVersion": 1,
+  "editorialStatus": "awaiting-native-review",
+  "curricula": [
+    {
+      "lesson": "Basic_01R",
+      "order": 1,
+      "stage": "foundations",
+      "goal": "Greetings, names and polite expressions",
+      "checks": [
+        {
+          "index": 0,
+          "expected": "Cześć! Jak się masz?",
+          "prompt": "What does the speaker ask?",
+          "options": [
+            "Where are you going?",
+            "How are you?",
+            "What time is it?"
+          ],
+          "correctIndex": 1,
+          "feedback": "Jak się masz? asks how someone is doing."
+        },
+        {
+          "index": 3,
+          "expected": "Mam na imię Andrew.",
+          "prompt": "What information does the speaker give?",
+          "options": [
+            "Their name",
+            "Their age",
+            "Their address"
+          ],
+          "correctIndex": 0,
+          "feedback": "Mam na imię introduces a person's name."
+        },
+        {
+          "index": 4,
+          "expected": "Proszę i dziękuję są bardzo ważne.",
+          "prompt": "Which two expressions are described as important?",
+          "options": [
+            "Yes and no",
+            "Hello and goodbye",
+            "Please and thank you"
+          ],
+          "correctIndex": 2,
+          "feedback": "Proszę means please (or you're welcome), and dziękuję means thank you."
+        },
+        {
+          "index": 5,
+          "expected": "Przepraszam, nie rozumiem.",
+          "prompt": "What problem does the speaker express?",
+          "options": [
+            "They are late",
+            "They do not understand",
+            "They need a ticket"
+          ],
+          "correctIndex": 1,
+          "feedback": "Nie rozumiem means I do not understand."
+        }
+      ]
+    },
+    {
+      "lesson": "Grocery_store_very_basic_shopping",
+      "order": 2,
+      "stage": "daily-life",
+      "goal": "Request items and handle a simple grocery purchase",
+      "checks": [
+        {
+          "index": 1,
+          "expected": "Dzień dobry, poproszę kilogram jabłek.",
+          "prompt": "What does the customer request?",
+          "options": [
+            "One kilogram of apples",
+            "One kilogram of pears",
+            "A bottle of water"
+          ],
+          "correctIndex": 0,
+          "feedback": "Kilogram jabłek means a kilogram of apples."
+        },
+        {
+          "index": 2,
+          "expected": "Jakie jabłka pan lubi? Czerwone czy zielone?",
+          "prompt": "What choice is offered?",
+          "options": [
+            "Large or small apples",
+            "Red or green apples",
+            "Sweet or sour pears"
+          ],
+          "correctIndex": 1,
+          "feedback": "Czerwone czy zielone asks red or green."
+        },
+        {
+          "index": 3,
+          "expected": "Poproszę czerwone jabłka.",
+          "prompt": "Which apples does the customer choose?",
+          "options": [
+            "Green apples",
+            "Yellow apples",
+            "Red apples"
+          ],
+          "correctIndex": 2,
+          "feedback": "Czerwone jabłka means red apples."
+        },
+        {
+          "index": 7,
+          "expected": "Proszę, płacę kartą.",
+          "prompt": "How will the customer pay?",
+          "options": [
+            "By card",
+            "With cash",
+            "With a voucher"
+          ],
+          "correctIndex": 0,
+          "feedback": "Płacę kartą means I am paying by card."
+        }
+      ]
+    },
+    {
+      "lesson": "H_M_clothes_shop_trying_on_a_T-shirt",
+      "order": 3,
+      "stage": "daily-life",
+      "goal": "Find clothing, ask about size and try something on",
+      "checks": [
+        {
+          "index": 2,
+          "expected": "Szukam białej koszulki.",
+          "prompt": "What is the shopper looking for?",
+          "options": [
+            "Black trousers",
+            "A white T-shirt",
+            "Blue shoes"
+          ],
+          "correctIndex": 1,
+          "feedback": "Białej koszulki means a white T-shirt in this phrase."
+        },
+        {
+          "index": 3,
+          "expected": "Jaki rozmiar pan nosi?",
+          "prompt": "What does the clerk ask?",
+          "options": [
+            "Which colour do you want?",
+            "How much will you pay?",
+            "What size do you wear?"
+          ],
+          "correctIndex": 2,
+          "feedback": "Jaki rozmiar asks which size."
+        },
+        {
+          "index": 5,
+          "expected": "Przepraszam, czy mogę przymierzyć tę koszulkę?",
+          "prompt": "What does the shopper want to do?",
+          "options": [
+            "Try on the T-shirt",
+            "Return the T-shirt",
+            "Pay for the T-shirt"
+          ],
+          "correctIndex": 0,
+          "feedback": "Przymierzyć means to try on clothing."
+        },
+        {
+          "index": 6,
+          "expected": "Przymierzalnie są tam, po lewej stronie.",
+          "prompt": "Where are the fitting rooms?",
+          "options": [
+            "On the right",
+            "On the left",
+            "Upstairs"
+          ],
+          "correctIndex": 1,
+          "feedback": "Po lewej stronie means on the left-hand side."
+        }
+      ]
+    },
+    {
+      "lesson": "On_the_tram_talking_to_another_passenger",
+      "order": 4,
+      "stage": "getting-around",
+      "goal": "Ask a fellow passenger about seats and stops",
+      "checks": [
+        {
+          "index": 1,
+          "expected": "Przepraszam, czy to miejsce jest wolne?",
+          "prompt": "What does the passenger ask about?",
+          "options": [
+            "Whether the seat is free",
+            "Whether the fare is free",
+            "Whether the train is late"
+          ],
+          "correctIndex": 0,
+          "feedback": "Czy to miejsce jest wolne? asks whether this place/seat is free."
+        },
+        {
+          "index": 3,
+          "expected": "Czy ten tramwaj jedzie do centrum?",
+          "prompt": "Where does the passenger want to go?",
+          "options": [
+            "The airport",
+            "The stadium",
+            "The city centre"
+          ],
+          "correctIndex": 2,
+          "feedback": "Do centrum means to the city centre."
+        },
+        {
+          "index": 5,
+          "expected": "Na którym przystanku muszę wysiąść?",
+          "prompt": "What does the passenger need to know?",
+          "options": [
+            "When the next tram leaves",
+            "Which stop to get off at",
+            "Where to buy lunch"
+          ],
+          "correctIndex": 1,
+          "feedback": "Na którym przystanku means at which stop."
+        },
+        {
+          "index": 6,
+          "expected": "Musi pan wysiąść na trzecim przystanku.",
+          "prompt": "When should the passenger get off?",
+          "options": [
+            "At the third stop",
+            "At the first stop",
+            "At the final stop"
+          ],
+          "correctIndex": 0,
+          "feedback": "Na trzecim przystanku means at the third stop."
+        }
+      ]
+    },
+    {
+      "lesson": "Asking_the_tram_driver_for_directions",
+      "order": 5,
+      "stage": "getting-around",
+      "goal": "Ask a driver about routes, stops and tickets",
+      "checks": [
+        {
+          "index": 1,
+          "expected": "Przepraszam, czy tym tramwajem dojadę do centrum?",
+          "prompt": "What destination is the traveller checking?",
+          "options": [
+            "The city centre",
+            "The airport",
+            "The hospital"
+          ],
+          "correctIndex": 0,
+          "feedback": "Do centrum means to the city centre."
+        },
+        {
+          "index": 3,
+          "expected": "Na którym przystanku powinienem wysiąść?",
+          "prompt": "What information is requested?",
+          "options": [
+            "The ticket price",
+            "The driver's name",
+            "The stop to get off at"
+          ],
+          "correctIndex": 2,
+          "feedback": "Powinienem wysiąść means I should get off."
+        },
+        {
+          "index": 4,
+          "expected": "Proszę wysiąść na przystanku \"Centrum\".",
+          "prompt": "Which stop does the driver recommend?",
+          "options": [
+            "Dworzec",
+            "Centrum",
+            "Rynek"
+          ],
+          "correctIndex": 1,
+          "feedback": "Na przystanku Centrum indicates the stop named Centrum."
+        },
+        {
+          "index": 6,
+          "expected": "Tak, może pan kupić bilet w automacie.",
+          "prompt": "Where can the traveller buy a ticket?",
+          "options": [
+            "From a ticket machine",
+            "At a museum counter",
+            "From another passenger"
+          ],
+          "correctIndex": 0,
+          "feedback": "W automacie means at a machine."
+        }
+      ]
+    },
+    {
+      "lesson": "Museum_buying_tickets_and_basic_info",
+      "order": 6,
+      "stage": "getting-around",
+      "goal": "Buy museum tickets and ask for directions inside",
+      "checks": [
+        {
+          "index": 0,
+          "expected": "Dzień dobry, poproszę dwa bilety do muzeum.",
+          "prompt": "How many tickets does the visitor want?",
+          "options": [
+            "One",
+            "Three",
+            "Two"
+          ],
+          "correctIndex": 2,
+          "feedback": "Dwa bilety means two tickets."
+        },
+        {
+          "index": 1,
+          "expected": "Normalne czy ulgowe?",
+          "prompt": "Which ticket types are being offered?",
+          "options": [
+            "Morning or evening",
+            "Regular or reduced",
+            "Paper or digital"
+          ],
+          "correctIndex": 1,
+          "feedback": "Normalne czy ulgowe asks regular or reduced tickets."
+        },
+        {
+          "index": 3,
+          "expected": "Do której godziny muzeum jest otwarte?",
+          "prompt": "What does the visitor want to know?",
+          "options": [
+            "When the museum closes",
+            "Where the museum is",
+            "How much a guide costs"
+          ],
+          "correctIndex": 0,
+          "feedback": "Do której godziny asks until what time."
+        },
+        {
+          "index": 6,
+          "expected": "Szatnia jest na prawo, za schodami.",
+          "prompt": "Where is the cloakroom?",
+          "options": [
+            "On the left before the stairs",
+            "On the right past the stairs",
+            "On the second floor"
+          ],
+          "correctIndex": 1,
+          "feedback": "Na prawo, za schodami means to the right, past the stairs."
+        }
+      ]
+    }
+  ]
+}

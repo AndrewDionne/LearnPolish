@@ -14,7 +14,10 @@ export function itemsForMode(lesson: Lesson, mode: LearningMode): LessonItem[] {
   return lesson.items;
 }
 
-export function comprehensionChoices(items: LessonItem[], current: LessonItem, index: number): string[] {
+export function comprehensionChoices(items: LessonItem[], current: LessonItem, index: number, reading = false): string[] {
+  // Dialogue lines without authored questions must never be graded using unrelated translations.
+  if (reading && !current.comprehension) return [];
+  if (current.comprehension) return [...current.comprehension.options];
   const alternatives = [...new Set(items.map(item => item.english))]
     .filter(text => text !== current.english);
   if (alternatives.length < 1) return [];
@@ -32,4 +35,14 @@ export function progressKey(id: string, mode: LearningMode) {
 
 export function itemPractised(progress: Record<string, unknown>, id: string): boolean {
   return [id, 'read:' + id, 'listen:' + id].some(key => Object.hasOwn(progress, key));
+}
+
+
+/** A real authored comprehension answer is independent of the whole-line translation. */
+export function correctComprehensionAnswer(item: LessonItem): string | null {
+  return item.comprehension?.options[item.comprehension.correctIndex] ?? null;
+}
+
+export function readingStage(stage: 'foundations' | 'daily-life' | 'getting-around'): string {
+  return stage === 'foundations' ? 'Foundations' : stage === 'daily-life' ? 'Daily life' : 'Getting around';
 }

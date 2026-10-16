@@ -7,6 +7,7 @@ const legacySets = path.join(root, 'docs/sets');
 const legacyAudio = path.join(root, 'docs/static');
 const outRoot = path.join(root, 'v2/frontend/public/generated');
 const curatedSoundsFile = path.join(root, 'v2/content/sound-contrasts.json');
+const readingChecksFile = path.join(root, 'v2/content/reading-checks.json');
 const retiredGroupedSoundSets = new Set(['letter_recognition_1', 'letter_recognition_2', 'letter_recognition_3']);
 
 export function migrateLesson(filename, source) {
@@ -101,6 +102,63 @@ export function buildSoundCurriculum(sourceLessons, definitions) {
   });
 }
 
+
+/**
+ * Questions are authored against exact Polish text. A wording mismatch is an
+ * editorial breakage, never a reason to invent a new distractor at runtime.
+ * Missing checks remain available as ungraded reveal/self-assessment.
+ */
+export function attachReadingCurriculum(lessons, definitions) {
+  const reading = lessons.filter(lesson => lesson.kind === 'reading');
+  if (definitions?.schemaVersion !== 1 || !Array.isArray(definitions.curricula) ||
+      definitions.curricula.length !== reading.length) {
+    throw new Error('Reading curriculum must cover every migrated reading lesson');
+  }
+  const indexed = new Map(reading.map(lesson => [lesson.id, lesson]));
+  const seen = new Set();
+  const orders = new Set();
+  let count = 0;
+  for (const definition of definitions.curricula) {
+    const lesson = indexed.get(definition.lesson);
+    if (!lesson || seen.has(definition.lesson) || !Number.isInteger(definition.order) ||
+        definition.order < 1 || orders.has(definition.order) ||
+        !['foundations','daily-life','getting-around'].includes(definition.stage) ||
+        typeof definition.goal !== 'string' || definition.goal.length < 10 ||
+        !Array.isArray(definition.checks) || definition.checks.length < 3) {
+      throw new Error('Invalid reading sequence for ' + definition.lesson);
+    }
+    orders.add(definition.order);
+    seen.add(definition.lesson);
+    lesson.progression = {order:definition.order,stage:definition.stage,goal:definition.goal};
+    const checked = new Set();
+    for (const check of definition.checks) {
+      const item = lesson.items[check.index];
+      if (!Number.isInteger(check.index) || !item || checked.has(check.index) ||
+          item.polish.normalize('NFC') !== check.expected ||
+          !item.audio ||
+          typeof check.prompt !== 'string' || check.prompt.length < 12 ||
+          !Array.isArray(check.options) || check.options.length !== 3 ||
+          check.options.some(text => typeof text !== 'string' || text.trim().length < 2) ||
+          new Set(check.options.map(text => text.trim().toLocaleLowerCase('en'))).size !== 3 ||
+          !Number.isInteger(check.correctIndex) || check.correctIndex < 0 || check.correctIndex > 2 ||
+          typeof check.feedback !== 'string' || check.feedback.length < 10) {
+        throw new Error('Invalid or mismatched reading check in ' + definition.lesson + ' at ' + check.index);
+      }
+      checked.add(check.index);
+      item.comprehension = {
+        prompt:check.prompt, options:check.options,
+        correctIndex:check.correctIndex, feedback:check.feedback,
+      };
+      count++;
+    }
+  }
+  if (seen.size !== reading.length ||
+      [...orders].sort((a,b)=>a-b).some((order,i)=>order!==i+1)) {
+    throw new Error('Missing reading sequence step or lesson');
+  }
+  return count;
+}
+
 export function buildContent() {
   if (!fs.existsSync(legacySets)) throw new Error('Legacy content directory missing: ' + legacySets);
   fs.rmSync(outRoot, { recursive: true, force: true });
@@ -124,6 +182,8 @@ export function buildContent() {
   if (!Array.isArray(soundDefinitions) || soundDefinitions.length === 0) throw new Error('Missing curated sound definitions');
   const curatedSounds = buildSoundCurriculum(lessons, soundDefinitions);
   lessons.push(...curatedSounds);
+  const readingDefinitions = JSON.parse(fs.readFileSync(readingChecksFile, 'utf8'));
+  const authoredReadingChecks = attachReadingCurriculum(lessons, readingDefinitions);
   fs.writeFileSync(path.join(outRoot, 'lessons.json'), JSON.stringify({ schemaVersion: 1, lessons }, null, 2) + '\n');
   const report = {
     lessons: lessons.length,
@@ -133,6 +193,8 @@ export function buildContent() {
     items: lessons.reduce((a, b) => a + b.items.length, 0),
     audioCopied: audioCount,
     curatedAudioReferences: curatedSounds.reduce((count, lesson) => count + lesson.items.filter(item => !!item.audio).length, 0),
+    authoredReadingChecks,
+    readingPathwayLessons: lessons.filter(lesson => lesson.progression).length,
     legacyGroupedSoundSetsRetired: retiredSoundSets,
     missingAudio: lessons.reduce((a, b) => a + b.items.filter(x => !x.audio).length, 0),
     soundLessonsNeedingReview: lessons.filter(x => x.needsReview).map(x => x.id),
