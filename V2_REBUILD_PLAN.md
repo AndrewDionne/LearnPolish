@@ -1,6 +1,6 @@
 # Path to Polish V2 — Rebuild Scope and Delivery Plan
 
-**Status:** V2 development active (2026-10-16). Initial foundation/Library→Learn capability merged in [PR #3](https://github.com/AndrewDionne/LearnPolish/pull/3), commit `c89010c4fd6c603f885c996d51231f8148037fea`; personal lesson editor/import/export merged in [PR #4](https://github.com/AndrewDionne/LearnPolish/pull/4), commit `5bd2649013aa565f86c2c93bcbc036d73c5381a9`. T0/T1 gates remain partial; see [umbrella issue #2](https://github.com/AndrewDionne/LearnPolish/issues/2) for checkpoints and CI evidence.
+**Status:** V2 development active (2026-10-16). Initial foundation/Library→Learn capability merged in [PR #3](https://github.com/AndrewDionne/LearnPolish/pull/3), commit `c89010c4fd6c603f885c996d51231f8148037fea`; personal lesson editor/import/export merged in [PR #4](https://github.com/AndrewDionne/LearnPolish/pull/4), commit `5bd2649013aa565f86c2c93bcbc036d73c5381a9`. T0/T1 gates remain partial; Read/Listen and verified offline PWA capability have now been merged in PRs #5 and #6, but release gates remain open; see [umbrella issue #2](https://github.com/AndrewDionne/LearnPolish/issues/2) for checkpoints and CI evidence.
 **Repository:** `AndrewDionne/LearnPolish` (retain; do not create a second repository).
 **Owner's product decision:** The current application is unused and may be replaced without preserving its existing runtime behaviour or uptime. Preserve useful learning content and historical source, **not** legacy design or architecture.
 **Related pronunciation decision:** [Issue #1](https://github.com/AndrewDionne/LearnPolish/issues/1).
@@ -136,7 +136,15 @@ Optional AI lesson import, nuanced dialogue coach, adaptive curricula, community
 - **Cost:** use recurring free usage and local models for development where possible; quote realistic production costs only after benchmark measurements. No automatic paid consumption.
 - **Observability:** report test evidence, exact branch/head, status of checkpoints, open defects and next smallest high-value tranche in GitHub.
 
-## 7. Immediate next development action (after merged PR #3)
+## 7. Current delivered capabilities and remaining pre-physical-test work (2026-10-16)
+
+**Additional merged tranches**
+- [PR #5](https://github.com/AndrewDionne/LearnPolish/pull/5): Read/Listen (audio-first comprehension) with saved passage position, separate mode histories, secure media path, repeatable audio playback speed. Desktop/mobile browser CI passed.
+- [PR #6](https://github.com/AndrewDionne/LearnPolish/pull/6): Production PWA shell and verified lesson MP3 download/removal with cache confirmation, real browser offline disconnect+reload checks. Desktop/mobile browser CI passed.
+
+**Still before user physical testing**: native-speaker content QA and sound-contrast lessons; Polish pronunciation-engine benchmark and controlled Speak audio-capture journey; better guided review/revisit UX; security-reviewed backend/auth and cloud-sync architecture (no need to activate social features); synthetic UX screenshots and responsive audits. Test physically only when core journeys are coherent. Offline is now testable in the V2 **production preview**, not dev mode. No empirical Whisper/Azure comparison yet.
+
+## 8. Previous immediate next development action (historical checkpoint after PR #3)
 
 The V2 frontend, migrated library, basic Learn UI and offline-only benchmark harness now exist in `main`; CI, including desktop/mobile Playwright smoke tests, passed. The old app is unmodified.
 
