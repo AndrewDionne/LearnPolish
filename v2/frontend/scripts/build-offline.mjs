@@ -13,7 +13,11 @@ export function shellResources(baseDir = dist) {
     ? fs.readdirSync(path.join(baseDir, 'assets')).filter(name => /\.(?:js|css)$/.test(name)).sort()
       .map(name => 'assets/' + name)
     : [];
-  return ['./', 'index.html', 'generated/lessons.json', ...assets];
+  const avatars = fs.existsSync(path.join(baseDir, 'avatars'))
+    ? fs.readdirSync(path.join(baseDir, 'avatars')).filter(name=>/^[a-z-]+\.svg$/.test(name)).sort()
+      .map(name => 'avatars/' + name)
+    : [];
+  return ['./', 'index.html', 'generated/lessons.json', ...assets, ...avatars];
 }
 
 export function writeServiceWorker() {

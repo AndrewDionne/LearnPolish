@@ -15,7 +15,8 @@ import { READING_POSITION_KEY, parseReadingPositions, safeReadingPosition } from
 import { REVIEW_STORAGE_KEY, countDue, dueItems, nextDue, parseReviewSchedule, recordReview } from './review';
 import type { ReviewSchedule } from './review';
 import { MAX_BACKUP_BYTES, makeBackup, parseBackup } from './backup';
-import { GOLD_STORAGE_KEY, awardGold, goldSummary, parseGold, setGoal, GOLD_PER_ITEM } from './gold';
+import { GOLD_STORAGE_KEY, AVATARS, awardGold, goldSummary, parseGold, selectAvatar, setGoal, GOLD_PER_ITEM } from './gold';
+import type { AvatarId } from './gold';
 import type { RewardMode } from './gold';
 
 type Page = 'home' | 'library' | 'practice' | 'profile';
@@ -85,6 +86,7 @@ export default function App() {
   const [filter, setFilter] = useState<KindFilter>('all');
   const [lessonId, setLessonId] = useState<string | null>(null);
   const [index, setIndex] = useState(0);
+  const [sessionStartGold, setSessionStartGold] = useState(0);
   const [mode, setMode] = useState<LearningMode>('learn');
   const [reviewOnly, setReviewOnly] = useState<string[] | null>(null);
   const [listenGuess, setListenGuess] = useState<string | null>(null);
@@ -168,6 +170,9 @@ export default function App() {
   const completedIn = (lesson: Lesson) => lesson.items.filter(item => itemPractised(progress, item.id)).length;
   const nowIso = new Date().toISOString();
   const goldStats = goldSummary(gold, nowIso);
+  const sessionGold = Math.max(0, gold.events.length - sessionStartGold) * GOLD_PER_ITEM;
+  const selectedAvatar = gold.avatar || 'hero';
+  const avatarImage = import.meta.env.BASE_URL + 'avatars/' + selectedAvatar + '-' + (goldStats.reachedGoal ? 'win' : 'neutral') + '.svg';
   const totalDue = countDue(lessons, reviews, nowIso);
   const scheduledNext = nextDue(lessons, reviews, nowIso);
   const dueLessons = lessons.filter(lesson => dueItems(lesson, reviews, nowIso).length > 0);
@@ -185,6 +190,7 @@ export default function App() {
   const openLesson = (lesson: Lesson) => {
     stopAudio();
     setReviewOnly(null);
+    setSessionStartGold(gold.events.length);
     setLessonId(lesson.id); setMode(lesson.kind === 'reading' ? 'read' : 'learn');
     setIndex(lesson.kind === 'reading' ? safeReadingPosition(readingPositions, lesson.id, lesson.items.length) : 0);
     setRevealed(false); setTranslationOpen(false); setListenGuess(null); setReadGuess(null); setListenRevealed(false); setFinished(false);
@@ -208,6 +214,7 @@ export default function App() {
     if (!active || !availableModes(active).includes(next)) return;
     stopAudio();
     setMode(next);
+    setSessionStartGold(gold.events.length);
     setReviewOnly(null);
     setIndex(next === 'read' ? safeReadingPosition(readingPositions, active.id, active.items.length) : 0);
     setRevealed(false); setTranslationOpen(false); setListenGuess(null); setReadGuess(null); setListenRevealed(false); setFinished(false);
@@ -375,7 +382,13 @@ export default function App() {
             <span className="card-label">{reviewOnly ? 'REVIEW COMPLETE' : 'SESSION COMPLETE'}</span>
             <h2>Nicely done!</h2>
             <p>You made it through {sessionItems.length} {sessionItems.length === 1 ? 'item' : 'items'} in {mode === 'listen' ? 'listening practice' : mode === 'read' ? 'reading practice' : mode === 'speak' ? 'speaking practice (unscored)' : 'learning practice'}.</p>
-            <p className="reward-note">Completed learning work earns Gold once per expression, mode and day. +{GOLD_PER_ITEM} for each eligible activity; skipped items earn none.</p>
+            <p className="reward-note" aria-live="polite">{sessionGold ? '+' + sessionGold + ' Gold earned in this session.' : 'No new Gold this session — skipping and repeats do not earn rewards.'} Your total: {goldStats.total} Gold.</p>
+            {availableModes(active).some(candidate => candidate !== mode) && <div className="mode-handoff" role="group" aria-label="Continue learning in another mode">
+              <strong>Keep going with another mode</strong><div>
+              {availableModes(active).filter(candidate => candidate !== mode).map(candidate => <button type="button" key={candidate} className="handoff-button" onClick={() => switchMode(candidate)}>
+                {candidate === 'learn' ? 'Learn' : candidate === 'read' ? 'Read' : candidate === 'speak' ? 'Speak' : 'Listen'} →
+              </button>)}</div>
+            </div>}
             <div className="answer-actions"><button type="button" className="secondary-action" onClick={() => jump(0)}>Practise again</button><button type="button" className="primary-action" onClick={() => goTo('library')}>Back to library →</button></div>
           </section> : mode === 'speak' ? <SpeakPanel key={current.id} item={current} playing={audio.playing} onPlayReference={play} onStopReference={stopAudio} onNext={(completedTake) => {
             if (completedTake) earn(current.id, 'speak');
@@ -522,6 +535,16 @@ export default function App() {
           <div className="stats-row"><Counter value={lessons.length} label="Lessons available"/><Counter value={practisedCount} label="Items encountered"/><Counter value={recallRate(progress) + '%'} label="Self-rated recall"/></div>
           <section className="gold-rewards" aria-label="Your Gold rewards">
             <div className="gold-header"><div><span className="eyebrow">REWARD FOR THE WORK</span><h2>Your Gold</h2></div><span className="gold-medal" aria-hidden="true">✦</span></div>
+            <div className="pierogi-avatar-feature"><img src={avatarImage} alt={AVATARS.find(x => x.id === selectedAvatar)?.label || 'Pierogi avatar'} />
+              <div><strong>{AVATARS.find(x => x.id === selectedAvatar)?.label}</strong><span>{goldStats.reachedGoal ? 'Your character is celebrating your weekly goal!' : 'Keep practising to reach your weekly Gold goal.'}</span></div>
+            </div>
+            <fieldset className="pierogi-chooser"><legend>Choose your Pierogi</legend><div>
+              {AVATARS.map(choice => <button key={choice.id} type="button" aria-pressed={choice.id===selectedAvatar}
+                className={choice.id===selectedAvatar ? 'selected' : ''} onClick={() => setGold(previous=>selectAvatar(previous, choice.id as AvatarId))}>
+                <img src={import.meta.env.BASE_URL + 'avatars/' + choice.id + '-neutral.svg'} alt="" />
+                <span>{choice.label.replace('Pierogi ', '')}</span>
+              </button>)}
+            </div></fieldset>
             <div className="gold-stats"><div><strong>{goldStats.total}</strong><span>Total Gold</span></div><div><strong>{goldStats.weekly}</strong><span>This week</span></div><div><strong>{goldStats.streak}</strong><span>Day streak</span></div></div>
             <div className="gold-track" role="progressbar" aria-label="Weekly Gold goal" aria-valuenow={Math.min(goldStats.weekly,goldStats.goal)} aria-valuemin={0} aria-valuemax={goldStats.goal}><span style={{width:Math.min(100,goldStats.weekly/goldStats.goal*100)+'%'}}/></div>
             <p>{goldStats.reachedGoal ? 'Weekly goal reached — well earned.' : goldStats.remaining+' Gold until your weekly goal of '+goldStats.goal+'.'}</p>

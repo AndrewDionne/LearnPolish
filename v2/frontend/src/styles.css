@@ -224,3 +224,20 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 
 .benchmark-export{min-height:44px;border:1px solid #97c8b8;background:#eff9f4;color:#205d55;border-radius:10px;padding:11px 16px;font-size:12px;font-weight:700;margin-top:10px}
 .benchmark-export:hover{background:#e1f3eb}
+
+/* Legacy Pierogi character identities and an explicit end-of-mode handoff */
+.mode-handoff{width:100%;max-width:540px;padding:17px 18px;margin:18px auto;border:1px solid #c7e4d6;background:#f2faf6;border-radius:13px}
+.mode-handoff>strong{font-size:13px;color:#276f62}.mode-handoff>div{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}
+.handoff-button{min-height:44px;border:1px solid #8bc6b3;background:white;color:#1a6559;padding:10px 17px;border-radius:9px;font-weight:750}
+.pierogi-avatar-feature{display:flex;gap:14px;align-items:center;background:#fff;border:1px solid #ecdbb8;padding:14px;border-radius:14px;margin:16px 0}
+.pierogi-avatar-feature img{width:83px;height:83px;object-fit:contain;background:#f6e7c8;border-radius:50%;flex:none}
+.pierogi-avatar-feature div{display:grid;gap:7px;min-width:0}
+.pierogi-avatar-feature strong{color:#614619;font-size:18px}
+.pierogi-avatar-feature span{color:#72664e;font-size:12px;line-height:1.6}
+.pierogi-chooser{border:1px solid #e4d4b1;border-radius:12px;padding:14px;margin-top:14px}
+.pierogi-chooser legend{font-size:12px;font-weight:750;color:#655128;padding:0 8px}
+.pierogi-chooser>div{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.pierogi-chooser button{background:white;border:2px solid #e7d8b6;border-radius:12px;padding:10px;min-width:0;display:grid;justify-items:center;gap:7px;font-size:12px;color:#605132;font-weight:700}
+.pierogi-chooser button.selected{border-color:#986b17;background:#fff6da}
+.pierogi-chooser img{max-width:100%;height:75px;object-fit:contain}
+@media(max-width:760px){.pierogi-chooser>div{grid-template-columns:repeat(2,minmax(0,1fr))}.pierogi-chooser img{height:55px}}
