@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-16 — authored Read/Listen comprehension and reading pathway merged; V2 core rebuilt
+**Updated:** 2026-10-16 — product focus reset to cross-mode E2E UX, empirical AI testing, and rewards for work
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -23,6 +23,19 @@
 3. Develop in a branch; execute available checks, report what is tested vs unverified.
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
 5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt features.
+
+## Priority pivot — owner-approved 2026-10-16
+
+**Pause all new lesson/content authoring and content QA tranches. Work in this sequence:**
+1. **Four learning modes E2E:** coherent Home → Library → Learn/Speak/Read/Listen → response/capture → meaningful completion → next mode, with audio reset, feedback, progress and real phone UX. Keep voice assessment **ungraded** until proven.
+2. **Empirically test pronunciation AI:** Whisper large-v3 first, paired with corrected Azure native pl-PL results on **identical WAV bytes**. Private consented learner speech, labelled by human Polish judgement; prohibit paid use and auto-upgrades. A green synthetic benchmark harness does **not** mean the AI has been tested.
+3. **Restore motivation/reward for work:** legacy Gold, 500-Gold weekly Path goal versus personal weekly goal, total Gold, daily streak, profile progress and eventually Pierogi character expressions/milestones. Reward completed, validated effort, not arbitrary pronunciation grades or clicking Skip. No coins with cash value.
+
+**PR #13 merged** [view](https://github.com/AndrewDionne/LearnPolish/pull/13), commit `89a2940575f6ac1d178d51c92b97ddbb818d2ed9`. A **locally persisted earned Gold ledger** awards 10 Gold once per item/mode/local day for completed Learn/Read/Listen responses or usable recorded Speak takes. Skips, microphone failures and rapid repeat sessions do not earn extra Gold. Home shows weekly progress; Profile shows total/weekly/streak and goal mode; full backups include rewards and pre-rewards backups remain compatible. Speak has a **user-triggered, explicit WAV export** to collect consented private AI test audio, never automatically uploaded. Python `compare.py` only reports paired Whisper-vs-Azure evidence if both matching SHA-256 WAV fingerprints and independent human intelligibility labels exist, with invalid/inconclusive otherwise. [CI PASS 38934043274](https://github.com/AndrewDionne/LearnPolish/actions/runs/38934043274) 35 unit tests, 33 desktop/mobile Playwright journeys, Python benchmark guardrails. **No real Whisper/Azure model inference run.** Avatar selection and full reward animations still pending.
+
+**Model feasibility checked against official documentation:** [Groq rate limits](https://console.groq.com/docs/rate-limits) currently list `whisper-large-v3` in Free with quota examples; organization/account-specific limits and billing must be verified before requesting any speech. [Azure language support](https://learn.microsoft.com/en-gb/azure/ai-services/speech-service/language-support?tabs=pronunciation-assessment) includes `pl-PL` pronunciation assessment; current entitlement/cost remains unverified. Default AI test path is **local pre-downloaded model + saved Azure raw** (zero network calls), not automatic hosted usage.
+
+**Next development:** deliver a coherent completion→next-mode UX and legacy Pierogi/avatar reward presentation, then perform actual private labelled AI benchmark once real learner recordings/model runtime and verified zero-spend entitlement exist. **Do not resume content creation without owner direction.**
 
 ## Current state — verified 2026-10-16
 - **PR #3 merged to main:** `c89010c4fd6c603f885c996d51231f8148037fea`. New `v2/frontend` React/TypeScript/Vite foundation provides Home, Library, basic Learn/Read/Sounds, locally saved recall, unified audio and full 23-set content migration.
