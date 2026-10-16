@@ -47,7 +47,7 @@ self.addEventListener('fetch', event => {
   const relative = url.href.slice(SCOPE.length);
   if (relative.startsWith('generated/audio/')) {
     // Only explicitly downloaded audio is made available offline.
-    event.respondWith((async () => (await (await caches.open(LESSONS)).match(request)) || fetch(request))());
+    event.respondWith((async () => (await (await caches.open(LESSONS)).match(request, { ignoreVary: true })) || fetch(request))());
     return;
   }
   if (request.mode === 'navigate') {
@@ -61,7 +61,9 @@ self.addEventListener('fetch', event => {
   }
   event.respondWith((async () => {
     const shell = await caches.open(SHELL);
-    const cached = await shell.match(request);
+    // Module scripts may have an Origin header that differs from install requests.
+    // This is safe for exact same-origin, same-URL cached static assets.
+    const cached = await shell.match(request, { ignoreVary: true });
     return cached || fetch(request);
   })());
 });
