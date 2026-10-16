@@ -15,6 +15,8 @@ import { READING_POSITION_KEY, parseReadingPositions, safeReadingPosition } from
 import { REVIEW_STORAGE_KEY, countDue, dueItems, nextDue, parseReviewSchedule, recordReview } from './review';
 import type { ReviewSchedule } from './review';
 import { MAX_BACKUP_BYTES, makeBackup, parseBackup } from './backup';
+import { GOLD_STORAGE_KEY, awardGold, goldSummary, parseGold, setGoal, GOLD_PER_ITEM } from './gold';
+import type { RewardMode } from './gold';
 
 type Page = 'home' | 'library' | 'practice' | 'profile';
 type KindFilter = 'all' | LessonKind;
@@ -98,10 +100,18 @@ export default function App() {
     try { return parseProgress(localStorage.getItem(STORAGE_KEY)); } catch { return {}; }
   });
   const [lastLesson, setLastLesson] = useState<string | null>(storedLastLesson);
+  const [gold, setGold] = useState(() => {
+    try { return parseGold(localStorage.getItem(GOLD_STORAGE_KEY)); } catch { return parseGold(null); }
+  });
+  const [selfGoalDraft, setSelfGoalDraft] = useState('500');
   const [reviews, setReviews] = useState<ReviewSchedule>(() => {
     try { return parseReviewSchedule(localStorage.getItem(REVIEW_STORAGE_KEY)); } catch { return {}; }
   });
   const audio = useLessonAudio();
+  useEffect(() => { setSelfGoalDraft(String(gold.selfGoal)); }, [gold.selfGoal]);
+  useEffect(() => {
+    try { localStorage.setItem(GOLD_STORAGE_KEY, JSON.stringify(gold)); } catch { /* local only */ }
+  }, [gold]);
   const mainRef = useRef<HTMLElement>(null);
   const hasMounted = useRef(false);
   // Announce full-screen route changes to keyboard and assistive-technology users.
@@ -157,6 +167,7 @@ export default function App() {
     total + lesson.items.filter(item => itemPractised(progress, item.id)).length, 0);
   const completedIn = (lesson: Lesson) => lesson.items.filter(item => itemPractised(progress, item.id)).length;
   const nowIso = new Date().toISOString();
+  const goldStats = goldSummary(gold, nowIso);
   const totalDue = countDue(lessons, reviews, nowIso);
   const scheduledNext = nextDue(lessons, reviews, nowIso);
   const dueLessons = lessons.filter(lesson => dueItems(lesson, reviews, nowIso).length > 0);
@@ -201,10 +212,13 @@ export default function App() {
     setIndex(next === 'read' ? safeReadingPosition(readingPositions, active.id, active.items.length) : 0);
     setRevealed(false); setTranslationOpen(false); setListenGuess(null); setReadGuess(null); setListenRevealed(false); setFinished(false);
   };
+  const earn = (id: string, learningMode: RewardMode) =>
+    setGold(previous => awardGold(previous, id, learningMode, new Date().toISOString()));
   const record = (remembered: boolean) => {
     if (!current) return;
     const at = new Date().toISOString();
     setProgress(previous => recordAttempt(previous, progressKey(current.id, mode), remembered, at));
+    if (mode === 'learn' || mode === 'read' || mode === 'listen') earn(current.id, mode);
     if (mode === 'learn') setReviews(previous => recordReview(previous, current.id, remembered, at));
     if (index < sessionItems.length - 1) jump(index + 1);
     else { stopAudio(); setFinished(true); }
@@ -255,7 +269,7 @@ export default function App() {
   const downloadBackup = () => {
     try {
       const data = makeBackup({
-        personalLessons: personal, progress, reviews, readingPositions, lastLessonId: lastLesson,
+        personalLessons: personal, progress, reviews, readingPositions, lastLessonId: lastLesson, gold,
       }, new Date().toISOString());
       const blob = new Blob([JSON.stringify(data, null, 2) + '\n'], {type:'application/json'});
       const link = document.createElement('a');
@@ -283,6 +297,7 @@ export default function App() {
       setPersonal(data.personalLessons);
       setProgress(data.progress);
       setReviews(data.reviews);
+      setGold(data.gold || parseGold(null));
       setReadingPositions(data.readingPositions);
       setLastLesson(data.lastLessonId);
       if (data.lastLessonId) saveLastLesson(data.lastLessonId);
@@ -360,8 +375,10 @@ export default function App() {
             <span className="card-label">{reviewOnly ? 'REVIEW COMPLETE' : 'SESSION COMPLETE'}</span>
             <h2>Nicely done!</h2>
             <p>You made it through {sessionItems.length} {sessionItems.length === 1 ? 'item' : 'items'} in {mode === 'listen' ? 'listening practice' : mode === 'read' ? 'reading practice' : mode === 'speak' ? 'speaking practice (unscored)' : 'learning practice'}.</p>
+            <p className="reward-note">Completed learning work earns Gold once per expression, mode and day. +{GOLD_PER_ITEM} for each eligible activity; skipped items earn none.</p>
             <div className="answer-actions"><button type="button" className="secondary-action" onClick={() => jump(0)}>Practise again</button><button type="button" className="primary-action" onClick={() => goTo('library')}>Back to library →</button></div>
-          </section> : mode === 'speak' ? <SpeakPanel key={current.id} item={current} playing={audio.playing} onPlayReference={play} onStopReference={stopAudio} onNext={() => {
+          </section> : mode === 'speak' ? <SpeakPanel key={current.id} item={current} playing={audio.playing} onPlayReference={play} onStopReference={stopAudio} onNext={(completedTake) => {
+            if (completedTake) earn(current.id, 'speak');
             if (index < sessionItems.length - 1) jump(index + 1);
             else { stopAudio(); setFinished(true); }
           }} /> : mode === 'listen' ? <section className="flashcard listening-card" aria-live="polite">
@@ -449,6 +466,13 @@ export default function App() {
             <div><span className="eyebrow welcome-kicker">YOUR POLISH JOURNEY STARTS HERE</span><h1>Small steps.<br/><em>Real progress.</em></h1><p>Build confidence in Polish, one useful expression at a time. Listen, learn, and make it your own.</p><button type="button" className="hero-button" onClick={() => last ? openLesson(last) : goTo('library')}>{last ? 'Continue learning' : 'Explore lessons'} <span>↗</span></button></div>
             <div className="welcome-art" aria-hidden="true"><span className="art-orbit orbit-one"/><span className="art-orbit orbit-two"/><div className="art-center">ą</div><span className="art-accent a1">ł</span><span className="art-accent a2">ż</span><span className="art-accent a3">ś</span></div>
           </section>
+          <div className="gold-ribbon" role="region" aria-label="Weekly Gold progress">
+            <span className="gold-medal" aria-hidden="true">✦</span>
+            <div className="gold-ribbon-text"><strong>{goldStats.weekly} / {goldStats.goal} Gold this week</strong>
+              <span>{goldStats.reachedGoal ? 'Weekly goal reached!' : goldStats.remaining + ' Gold to your weekly goal'} · {goldStats.streak} day streak</span>
+              <div className="gold-track" role="progressbar" aria-label="Weekly Gold goal" aria-valuenow={Math.min(goldStats.weekly,goldStats.goal)} aria-valuemin={0} aria-valuemax={goldStats.goal}><span style={{width:Math.min(100,goldStats.weekly/goldStats.goal*100)+'%'}}/></div>
+            </div><button type="button" onClick={() => goTo('profile')}>View rewards →</button>
+          </div>
           {totalDue > 0 && <button type="button" className="review-home" onClick={() => goTo('practice')}>
             <span className="review-home-number">{totalDue}</span><span><strong>Ready to review</strong><small>Your scheduled Polish expressions are ready.</small></span><span aria-hidden="true">Review →</span>
           </button>}
@@ -496,6 +520,18 @@ export default function App() {
         {!loading && !loadError && !active && !editorOpen && page === 'profile' && <>
           <section className="page-title"><span className="eyebrow">YOUR JOURNEY</span><h1>Learning progress<span className="title-dot">.</span></h1><p>Your achievements are saved in this browser while we develop secure accounts and sync.</p></section>
           <div className="stats-row"><Counter value={lessons.length} label="Lessons available"/><Counter value={practisedCount} label="Items encountered"/><Counter value={recallRate(progress) + '%'} label="Self-rated recall"/></div>
+          <section className="gold-rewards" aria-label="Your Gold rewards">
+            <div className="gold-header"><div><span className="eyebrow">REWARD FOR THE WORK</span><h2>Your Gold</h2></div><span className="gold-medal" aria-hidden="true">✦</span></div>
+            <div className="gold-stats"><div><strong>{goldStats.total}</strong><span>Total Gold</span></div><div><strong>{goldStats.weekly}</strong><span>This week</span></div><div><strong>{goldStats.streak}</strong><span>Day streak</span></div></div>
+            <div className="gold-track" role="progressbar" aria-label="Weekly Gold goal" aria-valuenow={Math.min(goldStats.weekly,goldStats.goal)} aria-valuemin={0} aria-valuemax={goldStats.goal}><span style={{width:Math.min(100,goldStats.weekly/goldStats.goal*100)+'%'}}/></div>
+            <p>{goldStats.reachedGoal ? 'Weekly goal reached — well earned.' : goldStats.remaining+' Gold until your weekly goal of '+goldStats.goal+'.'}</p>
+            <fieldset className="gold-goal"><legend>Weekly goal style</legend>
+              <label><input type="radio" name="goldGoalMode" checked={gold.goalMode==='path'} onChange={() => setGold(prev => setGoal(prev,'path',prev.selfGoal))}/> Path goal (500 Gold)</label>
+              <label><input type="radio" name="goldGoalMode" checked={gold.goalMode==='self'} onChange={() => setGold(prev => setGoal(prev,'self',prev.selfGoal))}/> My own goal</label>
+              {gold.goalMode==='self' && <label>Gold per week <input aria-label="Custom weekly Gold goal" type="number" min={50} max={5000} step={10} value={selfGoalDraft} onChange={e => setSelfGoalDraft(e.target.value)}/><button type="button" onClick={() => setGold(prev => setGoal(prev,'self',Number(selfGoalDraft)))}>Save goal</button></label>}
+            </fieldset>
+            <p className="gold-explain">Earn 10 Gold for completing a Learn/Read/Listen response or a usable Speak recording. Each item and mode awards Gold at most once per day. Skipping, replaying, and unreliable microphone captures never generate Gold. Gold measures practice effort, not pronunciation quality; no paid currency or artificial grades.</p>
+          </section>
           <section className="preferences"><h2>Your local learning data</h2><p>Lessons, progress, and review schedules are stored only in this browser. Export a full backup before clearing browser data or changing devices.</p>
             <div className="backup-actions"><button type="button" className="primary-action" onClick={downloadBackup}>Export full backup</button>
               <label className="import-button">Restore from backup<input type="file" aria-label="Restore from backup" accept=".json,application/json" onChange={e => {
@@ -505,8 +541,8 @@ export default function App() {
             {backupStatus && <p className="backup-success" role="status">{backupStatus}</p>}
             {backupError && <p className="author-error" role="alert">{backupError}</p>}
             <p className="backup-hint">A restore replaces the local lessons, all practice history, scheduled reviews and reading positions. Built-in lessons and downloadable audio are part of the app, not this backup. No recordings are included.</p>
-            <button type="button" className="danger-action" onClick={() => { if (window.confirm('Erase local practice history AND scheduled review dates? Personal lessons will be kept. This cannot be undone.')) {
-              setProgress({}); setReviews({}); setBackupStatus('Practice history and review schedules cleared. Personal lessons are unchanged.');
+            <button type="button" className="danger-action" onClick={() => { if (window.confirm('Erase local practice history, review dates AND earned Gold? Personal lessons will be kept. This cannot be undone.')) {
+              setProgress({}); setReviews({}); setGold(parseGold(null)); setBackupStatus('Practice, review schedules and earned Gold cleared. Personal lessons are unchanged.');
             } }}>Clear practice and reviews</button></section>
         </>}
       </main>

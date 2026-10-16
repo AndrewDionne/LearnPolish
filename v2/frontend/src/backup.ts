@@ -1,4 +1,6 @@
 import { validateLesson } from './model';
+import { DEFAULT_GOLD, parseGold } from './gold';
+import type { GoldState } from './gold';
 import type { Lesson } from './model';
 import { toPortableLesson } from './personal';
 import type { Progress } from './progress';
@@ -19,6 +21,7 @@ export type LocalBackup = {
   reviews: ReviewSchedule;
   readingPositions: ReadingPositions;
   lastLessonId: string | null;
+  gold?: GoldState; // Optional for compatibility with pre-reward V2 exports
 };
 
 export function makeBackup(data: Omit<LocalBackup, 'format' | 'version' | 'exportedAt'>, exportedAt: string): LocalBackup {
@@ -27,6 +30,7 @@ export function makeBackup(data: Omit<LocalBackup, 'format' | 'version' | 'expor
     personalLessons: data.personalLessons.map(toPortableLesson),
     progress: data.progress, reviews: data.reviews, readingPositions: data.readingPositions,
     lastLessonId: data.lastLessonId,
+    ...(data.gold ? {gold:data.gold} : {}),
   };
 }
 
@@ -65,6 +69,12 @@ export function parseBackup(value: unknown): LocalBackup {
   if (raw.lastLessonId !== null &&
       (typeof raw.lastLessonId !== 'string' || !/^[a-zA-Z0-9_-]{1,140}$/.test(raw.lastLessonId)))
     throw new Error('Invalid recent-lesson reference in backup');
+  const gold = raw.gold === undefined ? DEFAULT_GOLD : parseGold(JSON.stringify(raw.gold));
+  if (raw.gold !== undefined && (
+    !raw.gold || typeof raw.gold !== 'object' ||
+    gold.events.length !== (Array.isArray(raw.gold.events) ? raw.gold.events.length : -1) ||
+    gold.goalMode !== raw.gold.goalMode || gold.selfGoal !== raw.gold.selfGoal
+  )) throw new Error('Invalid Gold ledger in backup');
   return {
     format: BACKUP_FORMAT, version: 1, exportedAt: raw.exportedAt,
     personalLessons,
@@ -72,5 +82,6 @@ export function parseBackup(value: unknown): LocalBackup {
     reviews: checkedMap(raw.reviews, parseReviewSchedule, 'scheduled review'),
     readingPositions: checkedMap(raw.readingPositions, parseReadingPositions, 'reading position'),
     lastLessonId: raw.lastLessonId,
+    ...(raw.gold === undefined ? {} : {gold}),
   };
 }

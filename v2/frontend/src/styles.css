@@ -221,3 +221,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .reading-continue{margin-top:25px}
 .listening-options .comprehension-prompt{margin-bottom:3px}
 @media(max-width:760px){.reading-check{padding:17px 0 0}.reading-check-options button{padding:12px 13px}.pathway-hint{font-size:11px}}
+
+.benchmark-export{min-height:44px;border:1px solid #97c8b8;background:#eff9f4;color:#205d55;border-radius:10px;padding:11px 16px;font-size:12px;font-weight:700;margin-top:10px}
+.benchmark-export:hover{background:#e1f3eb}

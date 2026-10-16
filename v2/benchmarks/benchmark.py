@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import pathlib
 import re
@@ -62,7 +63,7 @@ def read_audio_metadata(path: pathlib.Path) -> dict:
         if sys.byteorder != "little":
             samples.byteswap()
         peak = max(map(abs, samples), default=0)
-        return {"seconds": frames / rate, "sample_rate": rate, "peak": peak, "valid_signal": peak >= 120}
+        return {"seconds": frames / rate, "sample_rate": rate, "peak": peak, "valid_signal": peak >= 120, "audio_sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
 
 
 def polish_match(reference: str, prediction: str) -> bool:
@@ -119,7 +120,7 @@ def run(manifest: pathlib.Path, engine: str, model_path: str | None, seconds_lim
         raise ValueError("Unsupported engine: " + engine)
     results = []
     for item, audio in checked:
-        result = {"id": item.id, "reference": item.reference, "engine": engine, "audio_seconds": round(audio["seconds"], 3)}
+        result = {"id": item.id, "reference": item.reference, "engine": engine, "audio_seconds": round(audio["seconds"], 3), "audio_sha256": audio["audio_sha256"]}
         if not audio["valid_signal"]:
             result.update({"status": "inconclusive", "reason": "silent or very low-level recording"})
         elif engine == "dry-run":

@@ -120,3 +120,14 @@ The six legacy reading-dialogue sets remain intact (same stable IDs and audio fi
 **Listen:** Authored dialogue turns use the source-grounded question without displaying the transcript beforehand; selecting an answer reveals the Polish, English, correctness and explanation. Unauthored dialogue turns offer **ungraded** reveal and self-assessment, not random distractors from unrelated dialogue lines. Vocabulary and Sound Lab lessons retain their simpler English translation-recognition exercises.
 
 No grades imply validated Polish phonetics or official language level. Native review, richer contextual passages, variable difficulty within lessons and certified audio quality are not yet completed.
+
+
+## Earned Gold — work-based rewards (V2 revival)
+
+The original Path to Polish offered Gold, a 500-Gold weekly goal, total lifetime Gold, daily study streaks and a custom weekly-goal option. V2 restores those mechanics with a transparent **10 Gold per completed activity per unique item/mode/local day**. Learn, Read and Listen award on a completed learning response, independent of correctness; Speak awards **only when an actual recording passes the local capture-quality check** and the learner advances. Skipping earns none. Revisiting/restarting the same item/mode on the same day does not multiply Gold. A weekly-goal milestone is celebratory, not an extra spendable reward. Gold is intentionally not a pronunciation accuracy metric, paid currency, or server-validated competition.
+
+Home shows Gold toward the goal. My progress shows total Gold, weekly Gold, current streak, and **Path goal (500)** or **self-directed** goal. Rewards are device-local and included in the full backup/restore JSON. Pre-reward backups remain importable with an empty ledger. Clearing practice also clears earned Gold with an explicit warning. The original selectable pierogi avatar family and further character-expression states are preserved as legacy assets, not yet rebuilt in V2.
+
+## AI test capture (no model claim)
+
+After successfully recording a Speak item, click **Save 16 kHz WAV for private AI test** to explicitly export the locally normalized mono PCM16 WAV. No audio automatically leaves the browser. See \`../benchmarks/README.md\` for a private, consent-based corpus manifest, offline Whisper large-v3 runner, corrected saved native Azure result comparison and human-labelled analysis. The comparison utility is tested with synthetic fixtures; **neither Whisper inference nor Azure requests have been executed**. The user must supply consented recordings and an available local model/private Azure raw data before empirical results can be reported.

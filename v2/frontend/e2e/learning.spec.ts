@@ -227,6 +227,8 @@ test('Speak records, checks acoustic quality, replays locally, and clears on nex
   await expect(page.getByText(/Pronunciation is not scored yet/)).toBeVisible();
   await page.getByRole('button', {name: /Next phrase/}).click();
   await expect(page.getByText('Dobry wieczór', {exact: true})).toBeVisible();
+  const earned = await page.evaluate(() => JSON.parse(localStorage.getItem('ptp-v2-gold') || '{}'));
+  expect(earned.events.some((entry:{mode:string})=>entry.mode==='speak')).toBe(true);
   await expect(page.locator('#personal-speech-replay')).toHaveCount(0);
   const trackStops = await page.evaluate(() => (window as any).__microphoneTrackStops);
   expect(trackStops).toBeGreaterThan(0);
@@ -342,4 +344,57 @@ test('full browser-local backup safely restores personal lessons, recall and rev
   await expect(page.getByText('Saved Polish lesson', {exact:true})).toBeVisible();
   await page.getByRole('button', {name:'Practice'}).first().click();
   await expect(page.getByText('0 due now')).toBeVisible();
+});
+
+
+test('earned Gold rewards Learn, Read, Listen and verified Speak work, not skips or repeated attempts',async ({page})=>{
+  await page.goto('/');
+  await page.getByRole('button',{name:'Explore lessons'}).click();
+  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Conversation 1');
+  await page.getByRole('button',{name:/Conversation 1/}).click();
+  await page.getByRole('button',{name:/Reveal meaning/}).click();
+  await page.getByRole('button',{name:/Got it/}).click();
+  await page.getByRole('button',{name:'Listen',exact:true}).click();
+  const options=page.getByRole('group',{name:'Choose the meaning'});
+  await options.getByRole('button').first().click();
+  await page.getByRole('button',{name:'Continue →',exact:true}).click();
+  await page.getByRole('button',{name:'Speak',exact:true}).click();
+  // Simply skipping a Speak card must never count as a practice recording.
+  await page.getByRole('button',{name:/Next phrase/}).click();
+  await page.getByRole('button',{name:/My progress|Profile/}).last().click();
+  await expect(page.getByRole('region',{name:'Your Gold rewards'})).toContainText('20');
+  const ledger=await page.evaluate(()=>JSON.parse(localStorage.getItem('ptp-v2-gold')||'{}'));
+  expect(ledger.events.map((e:{mode:string})=>e.mode).sort()).toEqual(['learn','listen']);
+  await page.reload();
+  await page.getByRole('button',{name:/My progress|Profile/}).last().click();
+  await expect(page.getByRole('region',{name:'Your Gold rewards'})).toContainText('20');
+});
+
+test('Gold survives a full backup roundtrip and custom weekly goal', async ({page})=>{
+  await page.goto('/');
+  await page.getByRole('button',{name:'Explore lessons'}).click();
+  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Basic 01R');
+  await page.getByRole('button',{name:/Basic 01R/}).click();
+  await page.getByRole('button',{name:'How are you?',exact:true}).click();
+  await page.getByRole('button',{name:'Continue →',exact:true}).click();
+  await page.getByRole('button',{name:/My progress|Profile/}).last().click();
+  const rewards=page.getByRole('region',{name:'Your Gold rewards'});
+  await expect(rewards.getByText('10',{exact:true}).first()).toBeVisible();
+  await rewards.getByLabel('My own goal').check();
+  await rewards.getByRole('spinbutton',{name:'Custom weekly Gold goal'}).fill('250');
+  await rewards.getByRole('button',{name:'Save goal'}).click();
+  await expect(rewards).toContainText('weekly goal of 250');
+  const download=page.waitForEvent('download');
+  await page.getByRole('button',{name:'Export full backup'}).click();
+  const file=await download;
+  const bytes=await readFile(await file.path());
+  const data=JSON.parse(bytes.toString('utf8'));
+  expect(data.gold.events).toHaveLength(1);
+  expect(data.gold.selfGoal).toBe(250);
+  await page.evaluate(()=>localStorage.removeItem('ptp-v2-gold'));
+  await page.reload();
+  await page.getByRole('button',{name:/My progress|Profile/}).last().click();
+  page.once('dialog',d=>d.accept());
+  await page.locator('input[aria-label="Restore from backup"]').setInputFiles({name:'restore.json',mimeType:'application/json',buffer:bytes});
+  await expect(page.getByRole('region',{name:'Your Gold rewards'})).toContainText('weekly goal of 250');
 });
