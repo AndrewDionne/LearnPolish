@@ -97,3 +97,8 @@ docs/static/*
 !docs/static/brand.svg
 
 
+
+# Private pronunciation research recordings must never enter source control.
+v2/benchmarks/private/
+v2/benchmarks/recordings/
+ptp-speech-v1--*.wav

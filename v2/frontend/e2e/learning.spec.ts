@@ -429,3 +429,34 @@ test('Pierogi selection persists in local Gold ledger and through reload',async 
   const state=await page.evaluate(()=>JSON.parse(localStorage.getItem('ptp-v2-gold')||'{}'));
   expect(state.avatar).toBe('chonky');
 });
+
+
+test('late microphone permission after leaving Speak stops tracks and cannot award Gold', async ({page}) => {
+  await page.addInitScript(() => {
+    (window as any).__lateTracksStopped = 0;
+    (window as any).__resolveLateMicrophone = null;
+    Object.defineProperty(navigator.mediaDevices, 'getUserMedia', {
+      configurable: true,
+      value: () => new Promise(resolve => {
+        (window as any).__resolveLateMicrophone = () => resolve({
+          getTracks: () => [{stop: () => {(window as any).__lateTracksStopped++;}}],
+        });
+      }),
+    });
+  });
+  const browserErrors: string[] = [];
+  page.on('pageerror', e => browserErrors.push(e.message));
+  await page.goto('/');
+  await page.getByRole('button',{name:'Explore lessons'}).click();
+  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Conversation 1');
+  await page.getByRole('button',{name:/Conversation 1/}).click();
+  await page.getByRole('button',{name:'Speak',exact:true}).click();
+  await page.getByRole('button',{name:/Start recording/}).click();
+  await expect(page.getByText(/Requesting microphone permission/)).toBeVisible();
+  await page.getByRole('button',{name:/Back to library/}).click();
+  await page.evaluate(() => (window as any).__resolveLateMicrophone?.());
+  await expect.poll(() => page.evaluate(() => (window as any).__lateTracksStopped)).toBe(1);
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('ptp-v2-gold') || '{}'));
+  expect(saved.events).toHaveLength(0);
+  expect(browserErrors).toEqual([]);
+});

@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import type { LessonItem } from '../model';
 import { prepareAssessmentInput } from './format';
+import { researchWavFilename } from './research';
 import { useSpeechCapture } from './useSpeechCapture';
 
 type Props = {
@@ -58,11 +59,11 @@ export default function SpeakPanel({item, playing, onPlayReference, onStopRefere
       const url = URL.createObjectURL(prepared.wav);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'polish-benchmark-' + prepared.itemId.replace(/[^a-zA-Z0-9_-]/g,'_') + '.wav';
+      a.download = researchWavFilename(prepared.itemId, new Date().toISOString());
       document.body.appendChild(a); a.click(); a.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 0);
     }}>Save 16 kHz WAV for private AI test</button>}
-    <p className="speak-privacy">Your recording stays in this browser's temporary memory. It is discarded when you leave this card; it is not uploaded or stored as progress. Saving a benchmark WAV is optional, initiated by you, and remains on your device.</p>
+    <p className="speak-privacy">Your recording stays in this browser's temporary memory. It is discarded when you leave this card; it is not uploaded or stored as progress. Saving a benchmark WAV is optional, initiated by you, and remains on your device. Its filename identifies the exact Polish exercise for private testing.</p>
     <button type="button" className="primary-action speak-next" disabled={capture.phase === 'recording' || capture.phase === 'requesting' || capture.phase === 'processing'} onClick={() => {preview.current?.pause(); onNext(!!prepared);}}>Next phrase →</button>
   </section>;
 }

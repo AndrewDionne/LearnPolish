@@ -22,6 +22,7 @@ class Sample:
     audio: pathlib.Path
     reference: str
     azure_result: pathlib.Path | None = None
+    audio_sha256: str | None = None
 
 
 def load_manifest(path: pathlib.Path) -> list[Sample]:
@@ -41,6 +42,9 @@ def load_manifest(path: pathlib.Path) -> list[Sample]:
             raise ValueError("Every recording needs reference text and an audio path")
         if pathlib.Path(audio).is_absolute():
             raise ValueError("Audio paths must be relative to the manifest")
+        digest = row.get("audio_sha256")
+        if digest is not None and (not isinstance(digest, str) or not re.fullmatch("[a-f0-9]{64}", digest)):
+            raise ValueError("Invalid immutable WAV fingerprint for " + row["id"])
         az = row.get("azure_result")
         if az is not None and (not isinstance(az, str) or pathlib.Path(az).is_absolute()):
             raise ValueError("Azure result path must be relative")
@@ -49,6 +53,7 @@ def load_manifest(path: pathlib.Path) -> list[Sample]:
             reference=reference,
             audio=(path.parent / audio).resolve(),
             azure_result=(path.parent / az).resolve() if az else None,
+            audio_sha256=digest,
         ))
     return samples
 
@@ -105,6 +110,8 @@ def run(manifest: pathlib.Path, engine: str, model_path: str | None, seconds_lim
     duration = 0.0
     for item in samples:
         audio = read_audio_metadata(item.audio)
+        if item.audio_sha256 and audio["audio_sha256"] != item.audio_sha256:
+            raise ValueError("Recording bytes changed since corpus creation: " + item.id)
         duration += audio["seconds"]
         checked.append((item, audio))
     if duration > seconds_limit:

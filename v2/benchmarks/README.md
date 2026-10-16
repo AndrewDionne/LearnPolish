@@ -70,3 +70,20 @@ Run:
 It checks matching recording IDs, source references and durations. It reports ASR-recognition agreement with human intelligibility separately from Azure native phoneme data, and treats missing inference as **inconclusive**, not a failure or fake 0% grade. This is a comparison **tool**, not an actual completed model evaluation.
 
 The V2 Speak UI can export one normalized 16-kHz WAV per chosen recording via a user-clicked local download, but keeps voice recordings ephemeral by default. **No data is uploaded or shared automatically.** Native-Polish human labels and actual model executions are still required. Avoid storing learner recordings in the public GitHub repository.
+
+
+## V2 Speak: verified private research-corpus handoff
+
+The fastest route from **consented real Speak recordings** to a reference-verified benchmark without copying audio into GitHub or requesting paid AI:
+
+1. In V2 Speak, record a phrase and click **Save 16 kHz WAV for private AI test**. The exported filename includes its exact lesson-item ID and UTC timestamp, e.g. `ptp-speech-v1--Conversation_1%3A0--20261016T194218123Z.wav`. No learner name is embedded.
+2. Put the exported WAVs in a **private folder outside the repository**. On a fresh clone, run `cd v2/frontend && npm run content` to build `public/generated/lessons.json`.
+3. From the repository root, run:
+
+       python v2/benchmarks/corpus.py --audio-dir /private/path/to/recordings --catalog v2/frontend/public/generated/lessons.json
+
+   The script creates `manifest.json` in that private directory, with **no upload or inference**. It validates mono PCM16 16 kHz, 100-recording/600-second caps, signal usability, unique WAV hashes, and maps every recording ID to the exact Polish lesson reference. Unknown IDs or altered bytes fail closed. Personal lesson exports absent from the built-in catalog require a separate private reference procedure.
+4. Validate: `python v2/benchmarks/benchmark.py --manifest /private/path/to/recordings/manifest.json --engine dry-run`.
+5. For an actual evaluation, run Whisper large-v3 from a predownloaded local model and obtain correct Azure `pl-PL` native phoneme-assessment responses on the identical WAVs, using independently verified free/no-spend settings. Add independent native-human labels and run `compare.py`.
+
+**Privacy:** Never commit or automatically upload learner recordings. Export is explicit on each usable take; normal recording is transient. The filename establishes the *intended phrase*, not that the learner pronounced it correctly. SHA-256 locks the local input bytes; provider execution provenance still needs real evidence, and no Azure request is claimed here.
