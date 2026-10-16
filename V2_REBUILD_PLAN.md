@@ -5,6 +5,12 @@
 **Owner's product decision:** The current application is unused and may be replaced without preserving its existing runtime behaviour or uptime. Preserve useful learning content and historical source, **not** legacy design or architecture.
 **Related pronunciation decision:** [Issue #1](https://github.com/AndrewDionne/LearnPolish/issues/1).
 
+## Priority reset — 2026-10-16
+
+Owner instruction: **pause further lesson-content expansion**. Concentrate exclusively on (1) coherent four-mode end-to-end UX (mode entry, transitions, feedback, completion, mobile/audio lifecycle), (2) actual privacy-respecting Whisper large-v3 vs corrected Azure pronunciation evaluation, (3) revival of **rewards for work** (legacy Gold weekly target/default 500, total Gold, streaks, custom goal, later Pierogi avatar/expressions). Do not introduce arbitrary/perfect pronunciation grades, paid API calls or coin economics. PR #13 introduced the earned-Gold ledger and opt-in WAV download/paired evidence comparator, [CI green](https://github.com/AndrewDionne/LearnPolish/actions/runs/38934043274); **no actual real-model accuracy results**.
+
+Research gate remains blocked by missing consented private recordings/human labels, preloaded local Whisper large-v3 model or approved free-hosted access, and clean Azure `pl-PL` raw assessment result with confirmed zero-spend billing. The user need not physically test V2 for UI/content yet; collecting recordings for an explicit AI research test is a distinct opt-in task.
+
 ## 1. Product mission and non-negotiables
 
 **Path to Polish** is an approachable, mobile-first Polish-learning app built around four integrated learning experiences: **Learn, Speak, Read, Listen**. Pronunciation is a first-class pillar. The user should be able to open the app, choose or create a lesson, hear accurate Polish, practise, get constructive feedback, and pick up where they left off.
