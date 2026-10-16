@@ -161,3 +161,30 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   .lesson-tools>div{flex-wrap:wrap;gap:12px}
   .topbar .crumb>span:first-child,.crumb-slash{display:none}
 }
+
+
+/* WCAG contrast audit repair. Text below AA contrast on light backgrounds was
+ * a recurrent legacy styling defect: preserve the palette but darken muted copy.
+ */
+.nav-heading,.sidebar-version{color:#c6dce5}
+.crumb,.crumb>span:first-child{color:#4e666c}
+.local-pill{color:#205f53}
+.eyebrow,.welcome-kicker,.resume-card small,.feature-next,.text-link,.back-link,
+.lesson-tools>div button,.lesson-footer button{color:#225f56}
+.welcome p,.start-card p,.feature-card>span:nth-last-child(2),.page-title p,.library-summary span,
+.tile-detail,.info-footnote,.learning-head p,.item-count span,.card-label,.phonetic,
+.lesson-footer span,.stat span,.preferences p,.speak-translation,.speak-instruction,.speak-privacy,
+.listening-prompt,.listening-answer>p,.due-panel>p,.due-panel p.due-explain,.contrast-intro p,
+.contrast-group>p,.contrast-focus small,.sound-caption,.sound-note,.offline-note,
+.author-item-header span,.author-panel label,.review-home small,
+.speak-subtle,.speed-picker legend,.contrast-group-label span{color:#4d656d}
+.welcome-kicker,.feature-next{color:#215d54}
+.art-accent{color:#246659}
+.resume-card>span:nth-child(2)>span,.resume-card .resume-arrow{color:#36665e}
+.nav-link{color:#deebee}.nav-link.selected{color:white}
+.filter-buttons button{color:#435c63}
+.search-wrap span{color:#4b626a}
+.stat strong{color:#1d6558}
+.eyebrow.welcome-kicker{color:#215d54}
+.reading-text,.polish-text{color:#213f4c}
+.contrast-focus small{color:#465f66}

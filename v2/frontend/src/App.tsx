@@ -311,7 +311,7 @@ export default function App() {
   return <div className="app-shell">
     <a className="skip-link" href="#main-content">Skip to main content</a>
     <aside className="sidebar">
-      <button className="brand" type="button" onClick={() => goTo('home')} aria-label="Path to Polish home">
+      <button className="brand" type="button" onClick={() => goTo('home')}>
         <span className="brand-symbol">p<span>.</span></span>
         <span className="brand-name">path to <strong>polish</strong><small>LEARN WITH CONFIDENCE</small></span>
       </button>

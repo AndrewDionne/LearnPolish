@@ -9,7 +9,9 @@ async function audit(page: Page, label: string) {
   const serious = results.violations
     .filter(v => v.impact === 'serious' || v.impact === 'critical')
     .map(v => v.id + ' (' + v.impact + '): ' + v.nodes.slice(0, 6).map(n => n.target.join(' ')).join(', '));
-  expect(serious, 'WCAG issues on ' + label).toEqual([]);
+  // Record the actual screenshot and geometry even when a WCAG check fails.
+  // This creates durable CI evidence for diagnosis rather than a blank artifact.
+  const wcagErrors = serious;
   const metrics = await page.evaluate(() => {
     const width = window.innerWidth;
     const overflow = Math.round(document.documentElement.scrollWidth - width);
@@ -22,9 +24,11 @@ async function audit(page: Page, label: string) {
       }).map(el => el.tagName.toLowerCase() + ':' + (el.getAttribute('aria-label') || el.textContent?.trim().slice(0, 40)));
     return {overflow, clippedControls};
   });
+  console.log('AUDIT ' + label + ': ' + JSON.stringify({wcag:wcagErrors,metrics}));
+  await page.screenshot({path:'test-results/audit-' + label + '.png', fullPage:true});
+  expect(wcagErrors, 'WCAG issues on ' + label).toEqual([]);
   expect(metrics.overflow, 'Document width overflow on ' + label).toBeLessThanOrEqual(2);
   expect(metrics.clippedControls, 'Off-viewport interactive controls on ' + label).toEqual([]);
-  await page.screenshot({path:'test-results/audit-' + label + '.png', fullPage:true});
 }
 
 test('Home, Library and Profile pass synthetic WCAG and responsive geometry audit', async ({page}) => {
