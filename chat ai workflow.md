@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-16 — product focus reset to cross-mode E2E UX, empirical AI testing, and rewards for work
+**Updated:** 2026-10-16 — Gold and Pierogi rewards plus four-mode handoff merged; empirical AI comparison still pending
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -33,9 +33,11 @@
 
 **PR #13 merged** [view](https://github.com/AndrewDionne/LearnPolish/pull/13), commit `89a2940575f6ac1d178d51c92b97ddbb818d2ed9`. A **locally persisted earned Gold ledger** awards 10 Gold once per item/mode/local day for completed Learn/Read/Listen responses or usable recorded Speak takes. Skips, microphone failures and rapid repeat sessions do not earn extra Gold. Home shows weekly progress; Profile shows total/weekly/streak and goal mode; full backups include rewards and pre-rewards backups remain compatible. Speak has a **user-triggered, explicit WAV export** to collect consented private AI test audio, never automatically uploaded. Python `compare.py` only reports paired Whisper-vs-Azure evidence if both matching SHA-256 WAV fingerprints and independent human intelligibility labels exist, with invalid/inconclusive otherwise. [CI PASS 38934043274](https://github.com/AndrewDionne/LearnPolish/actions/runs/38934043274) 35 unit tests, 33 desktop/mobile Playwright journeys, Python benchmark guardrails. **No real Whisper/Azure model inference run.** Avatar selection and full reward animations still pending.
 
+**PR #14 merged** [view](https://github.com/AndrewDionne/LearnPolish/pull/14), commit `8577f794cd93dba0800b8aa9af494fc6d3a56884`. A learner finishing a mode sees Gold genuinely earned in that session and **can continue directly into any other available mode of that lesson**; no Library round-trip, mode-specific playback and answer state reset. Restored the four original **Pierogi Hero, Chonky, Tall, Junior** SVG avatar choices and original win expressions on reaching the weekly Gold goal, with avatar identity in saved Gold and backup state, and eight SVG assets precached in PWA. [CI PASS 38935124109](https://github.com/AndrewDionne/LearnPolish/actions/runs/38935124109): **36 unit tests, 37 desktop/mobile Playwright tests**, Python benchmark suite PASS. Moods beyond win/neutral, optional celebrations and native phone testing remain later UI work.
+
 **Model feasibility checked against official documentation:** [Groq rate limits](https://console.groq.com/docs/rate-limits) currently list `whisper-large-v3` in Free with quota examples; organization/account-specific limits and billing must be verified before requesting any speech. [Azure language support](https://learn.microsoft.com/en-gb/azure/ai-services/speech-service/language-support?tabs=pronunciation-assessment) includes `pl-PL` pronunciation assessment; current entitlement/cost remains unverified. Default AI test path is **local pre-downloaded model + saved Azure raw** (zero network calls), not automatic hosted usage.
 
-**Next development:** deliver a coherent completion→next-mode UX and legacy Pierogi/avatar reward presentation, then perform actual private labelled AI benchmark once real learner recordings/model runtime and verified zero-spend entitlement exist. **Do not resume content creation without owner direction.**
+**Next development:** focus on the actual consented/private audio corpus and running Whisper large-v3 vs clean Azure pl-PL (same SHA-256 WAV) with independent native-Polish labels. Verify free-tier entitlements/cost controls before any hosted call. Then revisit physical UI testing. **Do not resume content creation without owner direction.**
 
 ## Current state — verified 2026-10-16
 - **PR #3 merged to main:** `c89010c4fd6c603f885c996d51231f8148037fea`. New `v2/frontend` React/TypeScript/Vite foundation provides Home, Library, basic Learn/Read/Sounds, locally saved recall, unified audio and full 23-set content migration.
