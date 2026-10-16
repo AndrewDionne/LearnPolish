@@ -395,7 +395,9 @@ test('XP and expedition targets survive full backup and restore; custom weekly g
  await page.getByRole('button',{name:/My progress|Profile/}).last().click();
  page.once('dialog',d=>d.accept());
  await page.locator('input[aria-label="Restore from backup"]').setInputFiles({name:'restore.json',mimeType:'application/json',buffer:bytes});
- await expect(page.getByRole('region',{name:'Your learning XP'})).toContainText('250');
+ await expect(page.getByRole('region',{name:'Your learning XP'})).toContainText('240 XP until your weekly goal');
+ await expect(page.getByLabel('My own goal')).toBeChecked();
+ await expect(page.getByRole('spinbutton',{name:'Custom weekly XP goal'})).toHaveValue('250');
  await page.getByRole('button',{name:'Expedition'}).first().click();
  await expect(page.getByRole('heading',{name:'Podkarpackie'})).toBeVisible();
  await expect(page.getByRole('progressbar',{name:'Podkarpackie unlock progress'})).toHaveAttribute('aria-valuenow','10');
@@ -458,7 +460,7 @@ test('late microphone permission after leaving Speak stops tracks and cannot awa
   await page.getByRole('button',{name:/Back to library/}).click();
   await page.evaluate(() => (window as any).__resolveLateMicrophone?.());
   await expect.poll(() => page.evaluate(() => (window as any).__lateTracksStopped)).toBe(1);
-  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('ptp-v2-gold') || '{}'));
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('ptp-v2-expedition') || '{}'));
   expect(saved.events).toHaveLength(0);
   expect(browserErrors).toEqual([]);
 });
