@@ -79,3 +79,48 @@ test('create, edit, export, import and delete a personal lesson without deployin
   await page.getByRole('button', { name: 'Delete' }).click();
   await expect(page.getByText('Imported lesson', { exact: true })).toHaveCount(0);
 });
+
+
+test('Read resumes a saved passage and Listen reveals content only after answering', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Explore lessons' }).click();
+  await page.getByRole('searchbox', { name: 'Search lessons' }).fill('Basic 01R');
+  await page.getByRole('button', { name: /Basic 01R/ }).click();
+  await expect(page.getByText('Cześć! Jak się masz?', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Read' })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: /Skip to next/ }).click();
+  await expect(page.getByText('Dziękuję, mam się dobrze.', { exact: true })).toBeVisible();
+  await page.reload();
+  await page.getByRole('button', { name: 'Library' }).first().click();
+  await page.getByRole('searchbox', { name: 'Search lessons' }).fill('Basic 01R');
+  await page.getByRole('button', { name: /Basic 01R/ }).click();
+  await expect(page.getByText('Dziękuję, mam się dobrze.', { exact: true })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Listen', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Listen', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByText('Cześć! Jak się masz?', { exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: '0.75×' }).click();
+  await expect(page.getByRole('button', { name: '0.75×' })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('group', { name: 'Choose the meaning' }).getByRole('button').first().click();
+  await expect(page.getByText('POLISH TRANSCRIPT')).toBeVisible();
+  await expect(page.getByText('Cześć! Jak się masz?', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: /Continue/ }).click();
+  await expect(page.getByText('What did you hear?')).toBeVisible();
+  await expect(page.getByText('Dziękuję, mam się dobrze.', { exact: true })).toHaveCount(0);
+  await page.screenshot({ path: 'test-results/listen-practice.png', fullPage: true });
+  expect(errors).toEqual([]);
+});
+
+test('Listen is unavailable when personal lessons have no trusted audio', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Explore lessons' }).click();
+  await page.getByRole('button', { name: /Create lesson/ }).click();
+  await page.getByRole('textbox', { name: 'Lesson name' }).fill('No audio yet');
+  await page.getByRole('textbox', { name: 'Polish text' }).fill('Jabłko');
+  await page.getByRole('textbox', { name: 'English meaning' }).fill('Apple');
+  await page.getByRole('button', { name: /Create lesson/ }).click();
+  await expect(page.getByRole('button', { name: 'Listen', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'No audio' })).toBeDisabled();
+});

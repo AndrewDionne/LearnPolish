@@ -1,48 +1,85 @@
 import { useEffect, useRef, useState } from 'react';
 
-type Playback = { playing: string | null; play: (relativePath: string) => Promise<void>; stop: () => void };
+export type AudioRate = 0.75 | 1 | 1.25;
+type Playback = {
+  playing: string | null;
+  rate: AudioRate;
+  setRate: (speed: AudioRate) => void;
+  error: string;
+  play: (relativePath: string) => Promise<void>;
+  stop: () => void;
+};
 
 export function useLessonAudio(): Playback {
   const player = useRef<HTMLAudioElement | null>(null);
+  const token = useRef(0);
   const [playing, setPlaying] = useState<string | null>(null);
+  const [rate, setRateValue] = useState<AudioRate>(1);
+  const [error, setError] = useState('');
 
   const stop = () => {
-    if (player.current) {
-      player.current.pause();
-      player.current.currentTime = 0;
-      player.current.src = '';
-      player.current = null;
+    token.current++;
+    const old = player.current;
+    player.current = null;
+    if (old) {
+      old.pause();
+      old.removeAttribute('src');
+      old.load();
     }
     setPlaying(null);
   };
 
+  const setRate = (speed: AudioRate) => {
+    setRateValue(speed);
+    if (player.current) player.current.playbackRate = speed;
+  };
+
   const play = async (relativePath: string) => {
     stop();
-    const audio = new Audio(import.meta.env.BASE_URL + relativePath);
-    player.current = audio;
-    setPlaying(relativePath);
+    setError('');
+    // Media imported from other apps must never control which network URL we load.
+    if (!/^generated\/audio\/[a-zA-Z0-9_%.-]+\/[0-9]+\.mp3$/.test(relativePath)) {
+      setError('This recording is not a trusted lesson audio file.');
+      return;
+    }
+    const ticket = token.current;
+    const element = new Audio(import.meta.env.BASE_URL + relativePath);
+    element.preload = 'auto';
+    element.playbackRate = rate;
+    player.current = element;
     const finish = () => {
-      if (player.current === audio) {
-        player.current = null;
-        setPlaying(null);
-      }
+      if (player.current !== element || token.current !== ticket) return;
+      player.current = null;
+      setPlaying(null);
     };
-    audio.addEventListener('ended', finish, { once: true });
-    audio.addEventListener('error', finish, { once: true });
-    try { await audio.play(); } catch {
-      finish();
-      throw new Error('Audio could not play. Check your connection and try again.');
+    element.addEventListener('ended', finish, { once: true });
+    element.addEventListener('error', () => {
+      if (player.current === element && token.current === ticket) {
+        setError('Could not load this recording. Check your connection or try another item.');
+        finish();
+      }
+    }, { once: true });
+    try {
+      await element.play();
+      if (player.current === element && token.current === ticket) setPlaying(relativePath);
+    } catch {
+      if (player.current === element && token.current === ticket) {
+        setError('Playback was blocked or unavailable. Tap Listen to retry.');
+        finish();
+      }
     }
   };
 
   useEffect(() => () => {
-    if (player.current) {
-      player.current.pause();
-      player.current.removeAttribute('src');
-      player.current.load();
-      player.current = null;
+    token.current++;
+    const old = player.current;
+    player.current = null;
+    if (old) {
+      old.pause();
+      old.removeAttribute('src');
+      old.load();
     }
   }, []);
 
-  return { playing, play, stop };
+  return { playing, rate, setRate, error, play, stop };
 }

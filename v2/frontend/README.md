@@ -27,13 +27,15 @@ The production bundle is written to \`v2/frontend/dist/\`, intentionally **not**
 - Search/filter all migrated lessons (23 sets; 488 items) and resume most recent.
 - Flashcards with controlled reveal, previous/next, self-rated recall and browser-local progress.
 - Personal vocabulary/reading/sound lesson authoring, rename/edit/delete, JSON import/export and browser-local lesson persistence; no Git write or server is involved.
-- Basic reading and sound-example lessons; existing recorded audio plays through one controlled stream. Missing MP3s are explicitly marked unavailable.
+- **Read:** Polish passages, translation reveal, progress and saved reading position across reloads.
+- **Listen:** audio-first multiple-choice comprehension (and reveal/self-assessment fallback for tiny sets), transcript only after answering, 0.75×/1×/1.25× playback, and separate mode-specific progress. Listen is shown only when reference audio is available.
+- Existing recorded audio plays through one controlled stream. Missing MP3s are explicitly marked unavailable; media load failures have explicit error feedback.
 - Deterministic content migration and inventory report, with sound-comparison content flagged for editorial review.
 - Test coverage for content migration, schema, and progress arithmetic.
 
 ## Intentionally not built yet
 - **Speak/pronunciation scoring**: Whisper large-v3 and corrected Azure need a benchmark; automatic audio grading is not included.
-- Secure identity and cloud sync, offline download acknowledgements, comprehensive Read/Listen exercises, review algorithm, audio waveform analysis.
+- Secure identity and cloud sync, offline download acknowledgements, richer word-aligned reading annotations, authored listening questions, review scheduling, audio waveform analysis.
 - Sound lessons are *preserved but unverified*. Some contain several comma-separated examples in one card; these must be reauthored into phoneme-by-phoneme exercises.
 - User progress in this preview is **local browser storage only**, not cross-device and not permanent if site data is erased.
 - No bundled third-party AI model, requests to paid endpoints, or credentials.
@@ -47,3 +49,11 @@ The production bundle is written to \`v2/frontend/dist/\`, intentionally **not**
 ## Personal lessons (second V2 increment)
 
 From **Library → Create lesson**, write a lesson name, choose Vocabulary, Reading or Polish sounds, and enter Polish/English pairs. You can edit, export or delete it from within the lesson. **Library → Import lesson JSON** accepts the portable V2 single-lesson format; it assigns a fresh ID and deliberately strips all untrusted audio URLs. Local-browser storage is not cloud synchronization: export your lesson JSON files to back them up. Imported lessons have no reference audio until a future validated media workflow is added.
+
+
+## Read / Listen implementation tranche
+
+- Reading lessons begin in **Read**, remember their last passage by stable lesson ID, and provide translated passages with explicit progress controls. Word-level highlighting is intentionally not fabricated: the current MP3 collection has no verified word timings.
+- Lessons with matching pre-existing reference MP3s offer **Listen**. This is **comprehension practice**, not a pronunciation score: the Polish text is hidden until the user chooses an English meaning; outcomes are stored under separate mode-qualified progress keys. Lessons containing no safe reference audio do not offer Listen, rather than pretending TTS works.
+- All modes share one audio player. Mode changes, lesson changes and passage changes stop the previous recording; speed options are 0.75×, 1× and 1.25×. Audio file validation prevents arbitrary network URLs from an imported lesson.
+- Pronunciation coaching/Speak, fully offline audio cache, real graded listening content and physical iPhone Safari certification are not implemented.
