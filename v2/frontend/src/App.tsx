@@ -14,6 +14,7 @@ import type { LearningMode } from './modes';
 import { READING_POSITION_KEY, parseReadingPositions, safeReadingPosition } from './reading-position';
 import { REVIEW_STORAGE_KEY, countDue, dueItems, nextDue, parseReviewSchedule, recordReview } from './review';
 import type { ReviewSchedule } from './review';
+import { MAX_BACKUP_BYTES, makeBackup, parseBackup } from './backup';
 
 type Page = 'home' | 'library' | 'practice' | 'profile';
 type KindFilter = 'all' | LessonKind;
@@ -73,6 +74,8 @@ export default function App() {
   const [draftRows, setDraftRows] = useState<DraftItem[]>([{ polish: '', english: '' }]);
   const [editorError, setEditorError] = useState('');
   const [importError, setImportError] = useState('');
+  const [backupStatus, setBackupStatus] = useState('');
+  const [backupError, setBackupError] = useState('');
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [query, setQuery] = useState('');
@@ -234,6 +237,47 @@ export default function App() {
     anchor.href = url; anchor.download = lesson.id + '.json'; document.body.appendChild(anchor);
     anchor.click(); anchor.remove();
     setTimeout(() => URL.revokeObjectURL(url), 0);
+  };
+  const downloadBackup = () => {
+    try {
+      const data = makeBackup({
+        personalLessons: personal, progress, reviews, readingPositions, lastLessonId: lastLesson,
+      }, new Date().toISOString());
+      const blob = new Blob([JSON.stringify(data, null, 2) + '\n'], {type:'application/json'});
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.href=url; link.download='path-to-polish-v2-backup.json'; document.body.appendChild(link);
+      link.click(); link.remove();
+      window.setTimeout(()=>URL.revokeObjectURL(url), 0);
+      setBackupError(''); setBackupStatus('Your current learning data was exported as a JSON file.');
+    } catch {
+      setBackupStatus(''); setBackupError('Unable to export local learning data.');
+    }
+  };
+  const restoreBackup = async (file: File | undefined) => {
+    if (!file) return;
+    setBackupError(''); setBackupStatus('');
+    try {
+      if (file.size > MAX_BACKUP_BYTES) throw new Error('Backup exceeds the 2 MB file limit.');
+      const data = parseBackup(JSON.parse(await file.text()));
+      const confirmed = window.confirm(
+        'Restore backup from ' + new Date(data.exportedAt).toLocaleDateString() + '?\n\n' +
+        'This will replace ALL personal lessons, practice history, scheduled reviews and reading positions saved in this browser. The current local data will be lost. Export a backup first if you need it.'
+      );
+      if (!confirmed) {setBackupStatus('Restore cancelled. Your existing data was not changed.');return;}
+      stopAudio();
+      setPersonal(data.personalLessons);
+      setProgress(data.progress);
+      setReviews(data.reviews);
+      setReadingPositions(data.readingPositions);
+      setLastLesson(data.lastLessonId);
+      if (data.lastLessonId) saveLastLesson(data.lastLessonId);
+      else {try {localStorage.removeItem('ptp-v2-last-lesson');} catch { /* storage denied */ }}
+      setLessonId(null); setEditorOpen(false); setReviewOnly(null); setPage('profile');
+      setBackupStatus('Backup restored: ' + data.personalLessons.length + ' personal lessons and their saved practice records.');
+    } catch (error) {
+      setBackupError(error instanceof Error ? error.message : 'Could not restore the backup.');
+    }
   };
   const deletePersonalLesson = (lesson: Lesson) => {
     if (lesson.source !== 'personal' || !window.confirm('Delete this personal lesson? This cannot be undone.')) return;
@@ -422,7 +466,18 @@ export default function App() {
         {!loading && !loadError && !active && !editorOpen && page === 'profile' && <>
           <section className="page-title"><span className="eyebrow">YOUR JOURNEY</span><h1>Learning progress<span className="title-dot">.</span></h1><p>Your achievements are saved in this browser while we develop secure accounts and sync.</p></section>
           <div className="stats-row"><Counter value={lessons.length} label="Lessons available"/><Counter value={practisedCount} label="Items encountered"/><Counter value={recallRate(progress) + '%'} label="Self-rated recall"/></div>
-          <section className="preferences"><h2>Local data</h2><p>Progress is currently stored on this device, not in an account. Avoid clearing browser site data if you want to keep your results.</p><button type="button" className="danger-action" onClick={() => { if (window.confirm('Erase all locally saved practice progress? This cannot be undone.')) { setProgress({}); try { localStorage.removeItem(STORAGE_KEY); } catch { /* best effort */ } } }}>Clear practice progress</button></section>
+          <section className="preferences"><h2>Your local learning data</h2><p>Lessons, progress, and review schedules are stored only in this browser. Export a full backup before clearing browser data or changing devices.</p>
+            <div className="backup-actions"><button type="button" className="primary-action" onClick={downloadBackup}>Export full backup</button>
+              <label className="import-button">Restore from backup<input type="file" aria-label="Restore from backup" accept=".json,application/json" onChange={e => {
+                const file = e.currentTarget.files?.[0]; void restoreBackup(file); e.currentTarget.value='';
+              }}/></label>
+            </div>
+            {backupStatus && <p className="backup-success" role="status">{backupStatus}</p>}
+            {backupError && <p className="author-error" role="alert">{backupError}</p>}
+            <p className="backup-hint">A restore replaces the local lessons, all practice history, scheduled reviews and reading positions. Built-in lessons and downloadable audio are part of the app, not this backup. No recordings are included.</p>
+            <button type="button" className="danger-action" onClick={() => { if (window.confirm('Erase local practice history AND scheduled review dates? Personal lessons will be kept. This cannot be undone.')) {
+              setProgress({}); setReviews({}); setBackupStatus('Practice history and review schedules cleared. Personal lessons are unchanged.');
+            } }}>Clear practice and reviews</button></section>
         </>}
       </main>
     </div>

@@ -91,3 +91,12 @@ The three old letter-recognition sets contained several spoken words *inside one
 The build process requires every chosen sound example to match an exact existing source lesson/card and already copied MP3; a mismatched source text or missing audio fails the build. Sound-group identity, IPA symbol, short articulation note, and audio provenance remain in versioned content schema rather than being inferred by LLMs. The sound lab displays groups side by side and allows selection or playback of one example without playing three unrelated words consecutively. Speak remains an ungraded local recording exercise.
 
 **Editorial gate remains open:** The original MP3s, articulation descriptions and selected words have not yet undergone native-speaker quality validation. These are sound contrasts with whole-word examples, **not verified minimal pairs**. Dedicated isolated phoneme recordings and real minimal-pair lesson sets need a separate sound-quality and content review.
+
+
+## Back up and restore ALL local learning data
+
+**My progress → Export full backup** downloads a portable, human-readable Path to Polish V2 JSON with your personal lesson definitions, individual learning attempts, spaced review dates, reading positions and last-opened lesson ID. It does **not** contain microphone recordings, audio files, tokens or passwords.
+
+**My progress → Restore from backup** validates the file schema, exact personal-lesson identities, data size and review history, then displays a confirmation **before** replacing the current browser's local learning state. An invalid backup or declined confirmation leaves existing data unchanged. Use it when switching browsers/devices until secure cross-device sync ships. Full backups are separate from single-lesson JSON exports.
+
+Personal lessons cannot reference arbitrary external audio URLs. The restore process deliberately accepts text-only lesson items. Offline MP3s are packaged in the app and can be downloaded again; Cache Storage is not included in the exported JSON.
