@@ -46,12 +46,17 @@ describe('curated contrast structure', () => {
 
 describe('authored reading comprehension schema', () => {
   test('rejects ambiguous answers, invalid indexes and questions on vocabulary items', () => {
-    const q = {prompt:'What is the speaker asking?',options:['Blue','Green','Red'],correctIndex:1,feedback:'Green is the answer.'};
-    const sample = {...lesson, kind:'reading', items:[{...lesson.items[0],comprehension:q}],
-      progression:{stage:'foundations',order:1,goal:'Start with greetings'}};
+    const q = {prompt:'What is the speaker asking?', options:['Blue','Green','Red'], correctIndex:1, feedback:'Green is the answer.'};
+    const sample = {
+      ...lesson, kind:'reading',
+      items:[{...lesson.items[0], comprehension:q}],
+      progression:{stage:'foundations', order:1, goal:'Start with greetings'},
+    };
+    const duplicate = {...sample, items:[{...lesson.items[0], comprehension:{...q, options:['Blue','Blue','Red']}}]};
+    const invalidIndex = {...sample, items:[{...lesson.items[0], comprehension:{...q, correctIndex:4}}]};
     expect(validateLesson(sample)).toBe(true);
-    expect(validateLesson({...sample, items:[{...lesson.items[0],comprehension:{...q,options:['Blue','Blue','Red']}]}]})).toBe(false);
-    expect(validateLesson({...sample, items:[{...lesson.items[0],comprehension:{...q,correctIndex:4}}]})).toBe(false);
-    expect(validateLesson({...sample,kind:'vocabulary'})).toBe(false);
+    expect(validateLesson(duplicate)).toBe(false);
+    expect(validateLesson(invalidIndex)).toBe(false);
+    expect(validateLesson({...sample, kind:'vocabulary'})).toBe(false);
   });
 });
