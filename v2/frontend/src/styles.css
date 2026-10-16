@@ -109,3 +109,97 @@
 .backup-actions .import-button{min-height:43px}.preferences p.backup-hint{font-size:11px;line-height:1.7;color:#7c9299}
 .backup-success{padding:11px 14px;background:#e9f7ef;color:#246c57;border-radius:9px;font-size:12px}
 @media(max-width:760px){.backup-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.backup-actions .import-button,.backup-actions .primary-action{font-size:11px;padding:11px 8px}.preferences{padding:21px}}
+
+
+/* Accessibility/responsive audit — 2026-10-16. See e2e/accessibility.spec.ts.
+ * Keep controls operable at 320 px, with visible keyboard focus and iPhone safe area.
+ */
+.skip-link{position:fixed;z-index:30;top:10px;left:10px;transform:translateY(-170%);padding:12px 18px;border-radius:9px;background:#143e55;color:white;font-size:14px;font-weight:800;text-decoration:none}
+.skip-link:focus{transform:translateY(0);outline:3px solid #74beb4;outline-offset:2px}
+.page-content:focus{outline:none}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid #168071;outline-offset:3px}
+.search-wrap:focus-within{border-color:#168071;box-shadow:0 0 0 3px #16807155}
+.search-wrap input:focus-visible{outline:none}
+.mode-row button.mode,.filter-buttons button,.audio-btn,.contrast-play,.contrast-focus,.record-button{min-height:44px}
+.contrast-play{min-width:44px}
+.contrast-example{min-width:0}
+.contrast-focus{min-width:0}
+.lesson-footer button,.back-link{min-height:44px;display:inline-flex;align-items:center}
+.lesson-footer button{padding:8px}
+.crumb{min-width:0}
+.crumb strong{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.topbar .crumb>span:first-child,.crumb-slash{flex:none}
+.top-right{flex:none}
+.learning-head>div{min-width:0}
+.lesson-tools>div{min-width:0}
+.author-panel select:focus-visible,.author-panel textarea:focus-visible,.author-panel input:focus-visible{outline:3px solid #168071;outline-offset:2px}
+@media(max-width:760px){
+  .mobile-nav{height:calc(69px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom)}
+  .mobile-nav button{min-height:44px;min-width:0}
+  .page-content{padding-bottom:calc(118px + env(safe-area-inset-bottom))}
+  .topbar .crumb{flex:1;overflow:hidden}
+  .topbar .crumb strong{max-width:100%}
+  .contrast-play{width:44px}
+  .contrast-examples{grid-template-columns:1fr}
+  .contrast-group-label strong{font-size:27px}
+  .lesson-tools>div{gap:12px}
+  .learning-head{align-items:flex-start}
+}
+@media(max-width:380px){
+  .topbar{padding:0 14px}
+  .page-content{padding-left:14px;padding-right:14px}
+  .welcome{padding:26px 20px}
+  .welcome h1{font-size:clamp(34px,11vw,42px)}
+  .learning-head h1{font-size:29px}
+  .learning-head{gap:8px}
+  .item-count{font-size:18px}
+  .item-count span{font-size:12px}
+  .author-actions{flex-direction:column;align-items:stretch}
+  .author-actions>*{width:100%}
+  .backup-actions{grid-template-columns:1fr}
+  .lesson-tools{flex-direction:column;align-items:stretch}
+  .lesson-tools>div{flex-wrap:wrap;gap:12px}
+  .topbar .crumb>span:first-child,.crumb-slash{display:none}
+}
+
+
+/* WCAG contrast audit repair. Text below AA contrast on light backgrounds was
+ * a recurrent legacy styling defect: preserve the palette but darken muted copy.
+ */
+.nav-heading,.sidebar-version{color:#c6dce5}
+.crumb,.crumb>span:first-child{color:#4e666c}
+.local-pill{color:#205f53}
+.eyebrow,.welcome-kicker,.resume-card small,.feature-next,.text-link,.back-link,
+.lesson-tools>div button,.lesson-footer button{color:#225f56}
+.welcome p,.start-card p,.feature-card>span:nth-last-child(2),.page-title p,.library-summary span,
+.tile-detail,.info-footnote,.learning-head p,.item-count span,.card-label,.phonetic,
+.lesson-footer span,.stat span,.preferences p,.speak-translation,.speak-instruction,.speak-privacy,
+.listening-prompt,.listening-answer>p,.due-panel>p,.due-panel p.due-explain,.contrast-intro p,
+.contrast-group>p,.contrast-focus small,.sound-caption,.sound-note,.offline-note,
+.author-item-header span,.author-panel label,.review-home small,
+.speak-subtle,.speed-picker legend,.contrast-group-label span{color:#4d656d}
+.welcome-kicker,.feature-next{color:#215d54}
+.art-accent{color:#246659}
+.resume-card>span:nth-child(2)>span,.resume-card .resume-arrow{color:#36665e}
+.nav-link{color:#deebee}.nav-link.selected{color:white}
+.filter-buttons button{color:#435c63}
+.search-wrap span{color:#4b626a}
+.stat strong{color:#1d6558}
+.eyebrow.welcome-kicker{color:#215d54}
+.reading-text,.polish-text{color:#213f4c}
+.contrast-focus small{color:#465f66}
+
+
+/* Residual axe WCAG AA text-contrast repairs in the full screen audit. */
+.reveal{color:#205f55}
+.preferences p.backup-hint{color:#4d656d}
+.mobile-nav button{color:#4b656a}
+.mobile-nav button.selected{color:#155f56}
+.mobile-nav small{color:inherit}
+
+
+/* Narrow libraries: prefer visible two-row filters over offscreen controls. */
+@media(max-width:760px){
+  .filter-buttons{flex-wrap:wrap;overflow:visible;max-width:100%}
+  .filter-buttons button{flex:1 1 calc(50% - 8px);min-height:44px;white-space:normal}
+}

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Lesson, LessonItem, LessonKind } from './model';
 import { lessonLabel, parseManifest } from './model';
 import { useLessonAudio } from './audio';
@@ -100,6 +100,14 @@ export default function App() {
     try { return parseReviewSchedule(localStorage.getItem(REVIEW_STORAGE_KEY)); } catch { return {}; }
   });
   const audio = useLessonAudio();
+  const mainRef = useRef<HTMLElement>(null);
+  const hasMounted = useRef(false);
+  // Announce full-screen route changes to keyboard and assistive-technology users.
+  // Advancing cards or switching learning modes deliberately does not steal focus.
+  useEffect(() => {
+    if (!hasMounted.current) { hasMounted.current = true; return; }
+    mainRef.current?.focus({ preventScroll: true });
+  }, [page, lessonId, editorOpen]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -301,14 +309,15 @@ export default function App() {
   const play = (path: string) => { void audio.play(path); };
 
   return <div className="app-shell">
+    <a className="skip-link" href="#main-content">Skip to main content</a>
     <aside className="sidebar">
-      <button className="brand" type="button" onClick={() => goTo('home')} aria-label="Path to Polish home">
+      <button className="brand" type="button" onClick={() => goTo('home')}>
         <span className="brand-symbol">p<span>.</span></span>
         <span className="brand-name">path to <strong>polish</strong><small>LEARN WITH CONFIDENCE</small></span>
       </button>
       <span className="nav-heading">EXPLORE</span>
       <nav className="side-links" aria-label="Main navigation">
-        {nav.map(item => <button key={item.id} className={'nav-link ' + (!lessonId && page === item.id ? 'selected' : '')} type="button" onClick={() => goTo(item.id)}><span className="nav-icon">{item.symbol}</span>{item.label}</button>)}
+        {nav.map(item => <button key={item.id} className={'nav-link ' + (!lessonId && page === item.id ? 'selected' : '')} type="button" aria-current={!lessonId && page === item.id ? 'page' : undefined} onClick={() => goTo(item.id)}><span className="nav-icon">{item.symbol}</span>{item.label}</button>)}
       </nav>
       <div className="sidebar-bottom">
         <div className="mini-mark">PL</div>
@@ -322,7 +331,7 @@ export default function App() {
         <div className="crumb"><span>PATH TO POLISH</span><span className="crumb-slash">/</span><strong>{active ? active.title : nav.find(x => x.id === page)?.label}</strong></div>
         <div className="top-right"><span className="local-pill">● Local preview</span><span className="initial-badge" aria-label="Local learner">P</span></div>
       </header>
-      <main className="page-content">
+      <main className="page-content" id="main-content" ref={mainRef} tabIndex={-1}>
         {loading && <section className="empty-state" role="status"><h2>Gathering your lessons…</h2><p>Preparing your Polish library.</p></section>}
         {!loading && loadError && <section className="empty-state" role="alert"><h2>Lessons could not load</h2><p>{loadError}</p><p>Run <code>npm run content</code> in v2/frontend, then reload. Your progress remains saved locally.</p></section>}
 
@@ -332,8 +341,8 @@ export default function App() {
             <div><span className="eyebrow">{reviewOnly ? 'DUE REVIEW' : lessonLabel(active.kind)} · {active.title}</span><h1>{reviewOnly ? 'Review what matters' : mode === 'speak' ? 'Practise speaking' : mode === 'listen' ? 'Train your ear' : mode === 'read' ? 'Read & understand' : active.kind === 'sounds' ? 'Hear the difference' : 'Learn the language'}</h1><p>{reviewOnly ? 'These expressions are due for recall practice. Answer honestly; missed items remain available for review.' : mode === 'speak' ? 'Hear the native recording, capture your own voice, and listen to the difference. Scoring is not enabled yet.' : mode === 'listen' ? 'Listen first, choose the meaning, then compare your answer with the Polish transcript.' : mode === 'read' ? 'Read naturally, then reveal the translation. Your reading position is remembered.' : active.kind === 'sounds' ? active.soundGroups ? 'Play each recording individually and compare neighbouring sound families. Audio quality and pronunciation notes await native review.' : 'Compare the examples and listen carefully. These lessons await native-speaker review.' : 'Think of the Polish expression before revealing its meaning.'}</p></div>
             <span className="item-count">{index + 1} <span>/ {sessionItems.length}</span></span>
           </div>
-          <div className="lesson-meter"><span style={{ width: (100 * (index + 1) / sessionItems.length) + '%' }} /></div>
-          <div className="mode-row" aria-label="Learning modes">
+          <div className="lesson-meter" role="progressbar" aria-label="Lesson progress" aria-valuemin={0} aria-valuemax={sessionItems.length} aria-valuenow={index + 1}><span style={{ width: (100 * (index + 1) / sessionItems.length) + '%' }} /></div>
+          <div className="mode-row" role="group" aria-label="Learning modes">
             {availableModes(active).map(value => <button type="button" key={value} aria-pressed={mode === value} className={'mode ' + (mode === value ? 'active' : '')} onClick={() => switchMode(value)}>{value === 'learn' ? active.kind === 'sounds' ? 'Sounds' : 'Learn' : value === 'read' ? 'Read' : value === 'speak' ? 'Speak' : 'Listen'}</button>)}
           </div>
           {active.kind === 'sounds' && mode === 'learn' && !finished && active.soundGroups && <SoundContrastDeck lesson={active} currentId={current.id} playing={audio.playing} onSelect={id => {
@@ -363,7 +372,7 @@ export default function App() {
             </div> : <button type="button" className="reveal" onClick={() => setListenRevealed(true)}>Reveal transcript &amp; translation</button>)}
             {(listenGuess !== null || listenRevealed) && <div className="listening-answer">
               {listenGuess !== null && <p className={listenGuess === current.english ? 'answer-good' : 'answer-review'}>{listenGuess === current.english ? 'Correct meaning!' : 'Not quite. Review the expression below.'}</p>}
-              <span className="card-label">POLISH TRANSCRIPT</span><p className="listen-transcript">{current.polish}</p>
+              <span className="card-label">POLISH TRANSCRIPT</span><p lang="pl" className="listen-transcript">{current.polish}</p>
               <span className="card-label">ENGLISH TRANSLATION</span><p>{current.english}</p>
               {listenGuess !== null ? <button type="button" className="primary-action" onClick={() => record(listenGuess === current.english)}>Continue →</button> : <div className="answer-actions">
                 <button type="button" className="secondary-action" onClick={() => record(false)}>Needs practice</button>
@@ -372,7 +381,7 @@ export default function App() {
             </div>}
           </section> : <section className="flashcard" aria-live="polite">
             <span className="card-label">{mode === 'read' ? (current.title || 'POLISH PASSAGE') : active.kind === 'sounds' ? 'SOUND EXAMPLES' : 'IN POLISH'}</span>
-            <div className={mode === 'read' ? 'polish-text reading-text' : 'polish-text'}>{current.polish}</div>
+            <div lang="pl" className={mode === 'read' ? 'polish-text reading-text' : 'polish-text'}>{current.polish}</div>
             {current.pronunciation && mode === 'learn' && <p className="phonetic">{current.pronunciation}</p>}
             <AudioButton item={current} playing={audio.playing} onPlay={play}/>
             {audio.error && <p className="audio-error" role="alert">{audio.error}</p>}
@@ -437,7 +446,7 @@ export default function App() {
         {!loading && !loadError && !active && !editorOpen && page === 'library' && <>
           <section className="page-title"><span className="eyebrow">YOUR LEARNING COLLECTION</span><h1>Lesson library<span className="title-dot">.</span></h1><p>Real Polish, organized into small lessons you can return to whenever you like.</p></section>
           <div className="author-actions"><button type="button" className="primary-action" onClick={beginNew}>+ Create lesson</button><label className="import-button">Import lesson JSON<input aria-label="Import lesson JSON" type="file" accept=".json,application/json" onChange={e => { const file = e.currentTarget.files?.[0]; void importFile(file); e.currentTarget.value = ''; }} /></label></div>{importError && <p className="author-error" role="alert">{importError}</p>}
-          <div className="library-controls"><label className="search-wrap"><span aria-hidden="true">⌕</span><input type="search" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search lessons or Polish phrases" aria-label="Search lessons" /></label><div className="filter-buttons" aria-label="Filter lessons">{(['all','vocabulary','reading','sounds'] as KindFilter[]).map(kind => <button type="button" key={kind} className={filter === kind ? 'chosen' : ''} onClick={() => setFilter(kind)}>{kind === 'all' ? 'All lessons' : lessonLabel(kind)}</button>)}</div></div>
+          <div className="library-controls"><label className="search-wrap"><span aria-hidden="true">⌕</span><input type="search" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search lessons or Polish phrases" aria-label="Search lessons" /></label><div className="filter-buttons" role="group" aria-label="Filter lessons">{(['all','vocabulary','reading','sounds'] as KindFilter[]).map(kind => <button type="button" key={kind} className={filter === kind ? 'chosen' : ''} onClick={() => setFilter(kind)}>{kind === 'all' ? 'All lessons' : lessonLabel(kind)}</button>)}</div></div>
           <div className="library-summary">{filtered.length} {filtered.length === 1 ? 'lesson' : 'lessons'} <span>· {filtered.reduce((total, lesson) => total + lesson.items.length, 0)} learning items</span></div>
           <div className="lesson-grid">{filtered.map(lesson => <LessonTile key={lesson.id} lesson={lesson} completed={completedIn(lesson)} onOpen={() => openLesson(lesson)} />)}</div>
           {filtered.length === 0 && <div className="empty-state"><h2>No matching lessons</h2><p>Try another search or select a different category.</p></div>}
@@ -482,6 +491,6 @@ export default function App() {
       </main>
     </div>
 
-    <nav className="mobile-nav" aria-label="Mobile navigation">{nav.map(item => <button type="button" key={item.id} className={!lessonId && page === item.id ? 'selected' : ''} onClick={() => goTo(item.id)}><span aria-hidden="true">{item.symbol}</span><small>{item.label === 'My progress' ? 'Profile' : item.label}</small></button>)}</nav>
+    <nav className="mobile-nav" aria-label="Mobile navigation">{nav.map(item => <button type="button" key={item.id} className={!lessonId && page === item.id ? 'selected' : ''} aria-current={!lessonId && page === item.id ? 'page' : undefined} onClick={() => goTo(item.id)}><span aria-hidden="true">{item.symbol}</span><small>{item.label === 'My progress' ? 'Profile' : item.label}</small></button>)}</nav>
   </div>;
 }
