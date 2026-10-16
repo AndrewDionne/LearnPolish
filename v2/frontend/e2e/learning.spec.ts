@@ -311,7 +311,7 @@ test('full browser-local backup safely restores personal lessons, recall and rev
   await page.getByRole('button', {name:/Create lesson/}).click();
   await page.getByRole('button', {name:/Reveal meaning/}).click();
   await page.getByRole('button', {name:/Got it/}).click();
-  await page.getByRole('button', {name:'My progress'}).first().click();
+  await page.getByRole('button', {name:/My progress|Profile/}).last().click();
   const downloadEvent = page.waitForEvent('download');
   await page.getByRole('button', {name:'Export full backup'}).click();
   const file = await downloadEvent;
@@ -329,7 +329,7 @@ test('full browser-local backup safely restores personal lessons, recall and rev
        'ptp-v2-reading-position','ptp-v2-last-lesson']) localStorage.removeItem(key);
   });
   await page.reload();
-  await page.getByRole('button', {name:'My progress'}).first().click();
+  await page.getByRole('button', {name:/My progress|Profile/}).last().click();
   await expect(page.getByText('0%')).toBeVisible();
   page.once('dialog', dialog => dialog.accept());
   await page.locator('input[aria-label="Restore from backup"]').setInputFiles({
