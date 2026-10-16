@@ -104,7 +104,7 @@ test('Read resumes a saved passage and Listen reveals content only after answeri
   await page.getByRole('button', { name: '0.75×' }).click();
   await expect(page.getByRole('button', { name: '0.75×' })).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('group', { name: 'Choose the meaning' }).getByRole('button').first().click();
-  await expect(page.getByText('POLISH TRANSCRIPT')).toBeVisible();
+  await expect(page.getByText('POLISH TRANSCRIPT', { exact: true })).toBeVisible();
   await expect(page.getByText('Cześć! Jak się masz?', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: /Continue/ }).click();
   await expect(page.getByText('What did you hear?')).toBeVisible();
