@@ -6,6 +6,8 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../.
 const legacySets = path.join(root, 'docs/sets');
 const legacyAudio = path.join(root, 'docs/static');
 const outRoot = path.join(root, 'v2/frontend/public/generated');
+const curatedSoundsFile = path.join(root, 'v2/content/sound-contrasts.json');
+const retiredGroupedSoundSets = new Set(['letter_recognition_1', 'letter_recognition_2', 'letter_recognition_3']);
 
 export function migrateLesson(filename, source) {
   const id = path.basename(filename, '.json');
@@ -52,6 +54,53 @@ function copyAudio(setId, lesson) {
   return copied;
 }
 
+export function buildSoundCurriculum(sourceLessons, definitions) {
+  const byId = new Map(sourceLessons.map(lesson => [lesson.id, lesson]));
+  const seen = new Set(sourceLessons.map(lesson => lesson.id));
+  return definitions.map(definition => {
+    if (!definition.id || seen.has(definition.id) || !Array.isArray(definition.groups) || definition.groups.length < 2) {
+      throw new Error('Invalid or duplicate curated sound lesson: ' + definition.id);
+    }
+    seen.add(definition.id);
+    const groups = [];
+    const items = [];
+    const seenGroups = new Set();
+    for (const group of definition.groups) {
+      if (!group.id || seenGroups.has(group.id) || !group.label || !group.hint ||
+          !Array.isArray(group.examples) || group.examples.length < 2) {
+        throw new Error(definition.id + ': invalid sound group');
+      }
+      seenGroups.add(group.id);
+      const itemIds = [];
+      for (let i = 0; i < group.examples.length; i++) {
+        const example = group.examples[i];
+        const source = byId.get(example.set);
+        if (!source || source.kind !== 'vocabulary') throw new Error('Missing source lesson: ' + example.set);
+        const matched = source.items[example.index];
+        if (!matched || matched.polish.normalize('NFC').trim() !== example.expected ||
+            !matched.audio || !fs.existsSync(path.join(outRoot, matched.audio.replace(/^generated\//, '')))) {
+          throw new Error(definition.id + ': missing or mismatched individual audio for ' + example.expected);
+        }
+        if (/[,\n]/.test(matched.polish) || matched.polish.includes(' / ')) {
+          throw new Error(definition.id + ': bundled or alternative utterance not allowed: ' + example.expected);
+        }
+        const id = definition.id + ':' + group.id + ':' + i;
+        itemIds.push(id);
+        items.push({
+          id, polish: matched.polish, english: matched.english,
+          audio: matched.audio, soundGroupId: group.id,
+        });
+      }
+      groups.push({id: group.id, label: group.label, ipa: group.ipa, hint: group.hint, itemIds});
+    }
+    return {
+      schemaVersion: 1, id: definition.id, title: definition.title, kind: 'sounds',
+      source: 'curated', needsReview: true, intro: definition.intro,
+      soundGroups: groups, items,
+    };
+  });
+}
+
 export function buildContent() {
   if (!fs.existsSync(legacySets)) throw new Error('Legacy content directory missing: ' + legacySets);
   fs.rmSync(outRoot, { recursive: true, force: true });
@@ -59,13 +108,22 @@ export function buildContent() {
   const files = fs.readdirSync(legacySets).filter(name => name.endsWith('.json')).sort();
   const lessons = [];
   let audioCount = 0;
+  const retiredSoundSets = [];
   for (const filename of files) {
     const source = JSON.parse(fs.readFileSync(path.join(legacySets, filename), 'utf8'));
     const lesson = migrateLesson(filename, source);
+    if (retiredGroupedSoundSets.has(lesson.id)) {
+      retiredSoundSets.push(lesson.id);
+      continue;
+    }
     audioCount += copyAudio(lesson.id, lesson);
     lessons.push(lesson);
   }
   if (!lessons.length) throw new Error('No lessons migrated');
+  const soundDefinitions = JSON.parse(fs.readFileSync(curatedSoundsFile, 'utf8'));
+  if (!Array.isArray(soundDefinitions) || soundDefinitions.length === 0) throw new Error('Missing curated sound definitions');
+  const curatedSounds = buildSoundCurriculum(lessons, soundDefinitions);
+  lessons.push(...curatedSounds);
   fs.writeFileSync(path.join(outRoot, 'lessons.json'), JSON.stringify({ schemaVersion: 1, lessons }, null, 2) + '\n');
   const report = {
     lessons: lessons.length,
@@ -74,6 +132,8 @@ export function buildContent() {
     sounds: lessons.filter(x => x.kind === 'sounds').length,
     items: lessons.reduce((a, b) => a + b.items.length, 0),
     audioCopied: audioCount,
+    curatedAudioReferences: curatedSounds.reduce((count, lesson) => count + lesson.items.filter(item => !!item.audio).length, 0),
+    legacyGroupedSoundSetsRetired: retiredSoundSets,
     missingAudio: lessons.reduce((a, b) => a + b.items.filter(x => !x.audio).length, 0),
     soundLessonsNeedingReview: lessons.filter(x => x.needsReview).map(x => x.id),
   };

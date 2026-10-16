@@ -29,3 +29,16 @@ describe('progress', () => {
     expect(parseProgress('{"a":{"seen":-1,"remembered":1,"needsPractice":0,"lastSeen":"x"}}')).toEqual({});
   });
 });
+
+describe('curated contrast structure', () => {
+  test('rejects a sound group referencing unrelated items', () => {
+    const base = { ...lesson, source: 'curated', kind: 'sounds',
+      items: [{ id:'x:0', polish:'plac', english:'square', soundGroupId:'c' },
+        { id:'x:1', polish:'Cztery', english:'four', soundGroupId:'cz' }] };
+    const soundGroups = [
+      { id:'c', label:'C', ipa:'/t͡s/', hint:'ts', itemIds:['x:0','x:1'] },
+      { id:'cz', label:'CZ', ipa:'/t͡ʂ/', hint:'hard ch', itemIds:['x:1','x:0'] },
+    ];
+    expect(validateLesson({ ...base, soundGroups })).toBe(false);
+  });
+});

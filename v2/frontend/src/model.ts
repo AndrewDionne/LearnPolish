@@ -1,5 +1,7 @@
 export type LessonKind = 'vocabulary' | 'reading' | 'sounds';
 
+export type SoundGroup = { id: string; label: string; ipa: string; hint: string; itemIds: string[] };
+
 export type LessonItem = {
   id: string;
   polish: string;
@@ -7,6 +9,7 @@ export type LessonItem = {
   pronunciation?: string;
   title?: string;
   audio?: string;
+  soundGroupId?: string;
 };
 
 export type Lesson = {
@@ -15,7 +18,9 @@ export type Lesson = {
   title: string;
   kind: LessonKind;
   items: LessonItem[];
-  source: 'legacy' | 'personal';
+  source: 'legacy' | 'personal' | 'curated';
+  intro?: string;
+  soundGroups?: SoundGroup[];
   needsReview?: boolean;
 };
 
@@ -28,14 +33,26 @@ export function validateLesson(value: unknown): value is Lesson {
     typeof x.id === 'string' && x.id.length > 0 &&
     typeof x.title === 'string' && x.title.length > 0 &&
     ['vocabulary', 'reading', 'sounds'].includes(String(x.kind)) &&
-    (x.source === 'legacy' || x.source === 'personal') &&
+    (x.source === 'legacy' || x.source === 'personal' || x.source === 'curated') &&
     Array.isArray(x.items) && x.items.length > 0 &&
     x.items.every((item: LessonItem) =>
       !!item && typeof item.id === 'string' &&
       typeof item.polish === 'string' && item.polish.trim().length > 0 &&
       typeof item.english === 'string' && item.english.trim().length > 0 &&
-      (item.audio === undefined || typeof item.audio === 'string')
-    );
+      (item.audio === undefined || typeof item.audio === 'string') &&
+      (item.soundGroupId === undefined || typeof item.soundGroupId === 'string')
+    ) &&
+    (x.soundGroups === undefined || (
+      x.kind === 'sounds' && Array.isArray(x.soundGroups) &&
+      x.soundGroups.length >= 2 && x.soundGroups.every(group =>
+        !!group && typeof group.id === 'string' && group.id.length > 0 &&
+        typeof group.label === 'string' && typeof group.ipa === 'string' &&
+        typeof group.hint === 'string' && Array.isArray(group.itemIds) &&
+        group.itemIds.length >= 2 && group.itemIds.every(id =>
+          typeof id === 'string' && x.items?.some(item => item.id === id && item.soundGroupId === group.id)
+        )
+      )
+    ));
 }
 
 export function parseManifest(value: unknown): Lesson[] {
