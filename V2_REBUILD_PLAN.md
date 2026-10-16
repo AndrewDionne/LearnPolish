@@ -9,6 +9,8 @@
 
 Owner instruction: **pause further lesson-content expansion**. Concentrate exclusively on (1) coherent four-mode end-to-end UX (mode entry, transitions, feedback, completion, mobile/audio lifecycle), (2) actual privacy-respecting Whisper large-v3 vs corrected Azure pronunciation evaluation, (3) revival of **rewards for work** (legacy Gold weekly target/default 500, total Gold, streaks, custom goal, later Pierogi avatar/expressions). Do not introduce arbitrary/perfect pronunciation grades, paid API calls or coin economics. PR #13 introduced the earned-Gold ledger and opt-in WAV download/paired evidence comparator, [CI green](https://github.com/AndrewDionne/LearnPolish/actions/runs/38934043274); **no actual real-model accuracy results**.
 
+PR #14 adds same-lesson **completion → next learning mode** controls, displays session-earned Gold, restores original 4 Pierogi avatar selections + win/neutral expressions with PWA offline media caching, and preserves avatar selection in Gold backups. [CI green](https://github.com/AndrewDionne/LearnPolish/actions/runs/38935124109): 36 frontend unit and 37 Playwright desktop/mobile cases, Python offline AI guards. **No model inference or phonetic scoring has been run.**
+
 Research gate remains blocked by missing consented private recordings/human labels, preloaded local Whisper large-v3 model or approved free-hosted access, and clean Azure `pl-PL` raw assessment result with confirmed zero-spend billing. The user need not physically test V2 for UI/content yet; collecting recordings for an explicit AI research test is a distinct opt-in task.
 
 ## 1. Product mission and non-negotiables
