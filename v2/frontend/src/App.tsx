@@ -50,7 +50,7 @@ function AudioButton({ item, playing, onPlay }: {
   item: LessonItem; playing: string | null; onPlay: (path: string) => void;
 }) {
   return <button type="button" className="audio-btn" disabled={!item.audio} title={!item.audio ? 'Reference audio unavailable' : 'Play Polish recording'} onClick={() => item.audio && onPlay(item.audio)}>
-    <span aria-hidden="true">{item.audio && playing === item.audio ? '◼' : '▶'}</span> {item.audio && playing === item.audio ? 'Playing' : item.audio ? 'Listen' : 'No audio'}
+    <span aria-hidden="true">{item.audio && playing === item.audio ? '◼' : '▶'}</span> {item.audio && playing === item.audio ? 'Playing audio' : item.audio ? 'Play audio' : 'No audio'}
   </button>;
 }
 
