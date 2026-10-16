@@ -282,7 +282,7 @@ test('sound lab compares individually sourced MP3 examples, not bundled phrases'
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('/');
   await page.getByRole('button', { name: 'Explore lessons' }).click();
-  await page.getByRole('button', { name: 'Polish sounds' }).click();
+  await page.locator('.filter-buttons').getByRole('button', { name: 'Polish sounds' }).click();
   await expect(page.getByRole('button', { name: /C · CZ · Ć/ })).toBeVisible();
   await expect(page.getByText('letter recognition', { exact: false })).toHaveCount(0);
   await page.getByRole('button', { name: /C · CZ · Ć/ }).click();
