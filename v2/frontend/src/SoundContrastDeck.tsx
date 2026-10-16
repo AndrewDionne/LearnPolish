@@ -19,7 +19,7 @@ export default function SoundContrastDeck({ lesson, currentId, playing, onSelect
     </div>
     <div className="contrast-groups">
       {lesson.soundGroups.map(group => <article key={group.id} className="contrast-group">
-        <div className="contrast-group-label"><strong>{group.label}</strong><span>{group.ipa}</span></div>
+        <div className="contrast-group-label"><strong lang="pl">{group.label}</strong><span>{group.ipa}</span></div>
         <p>{group.hint}</p>
         <div className="contrast-examples">
           {group.itemIds.map(id => {
@@ -27,7 +27,7 @@ export default function SoundContrastDeck({ lesson, currentId, playing, onSelect
             if (!item) return null;
             return <div key={item.id} className={'contrast-example ' + (currentId === item.id ? 'chosen' : '')}>
               <button type="button" className="contrast-focus" aria-pressed={currentId === item.id} onClick={() => onSelect(item.id)}>
-                <strong>{item.polish}</strong><small>{item.english}</small>
+                <strong lang="pl">{item.polish}</strong><small>{item.english}</small>
               </button>
               <button className="contrast-play" type="button" aria-label={'Play ' + item.polish} disabled={!item.audio} onClick={() => {
                 onSelect(item.id);

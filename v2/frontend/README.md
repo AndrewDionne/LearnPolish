@@ -100,3 +100,10 @@ The build process requires every chosen sound example to match an exact existing
 **My progress → Restore from backup** validates the file schema, exact personal-lesson identities, data size and review history, then displays a confirmation **before** replacing the current browser's local learning state. An invalid backup or declined confirmation leaves existing data unchanged. Use it when switching browsers/devices until secure cross-device sync ships. Full backups are separate from single-lesson JSON exports.
 
 Personal lessons cannot reference arbitrary external audio URLs. The restore process deliberately accepts text-only lesson items. Offline MP3s are packaged in the app and can be downloaded again; Cache Storage is not included in the exported JSON.
+
+
+## Automated accessibility and responsive UX audit
+
+The V2 UI includes an accessible skip-to-main link, main-content focus after route changes, active-nav state, correct Polish language spans for screen readers, keyboard-visible focus for inputs and authoring controls, and minimum touch target sizes for sound comparison and mode controls. Mobile bottom navigation respects the safe-area inset.
+
+Playwright now audits Home, Library, Learn/Listen, Sound Lab, personal lesson authoring and Profile on desktop/mobile, including 320px compact layouts. Checks include serious/critical WCAG accessibility violations (axe), browser page errors, horizontal overflow, keyboard skip-link navigation and captured screenshots. Automated WCAG checks do **not** replace an actual expert accessibility or native VoiceOver review. Screenshots are CI artifacts for future inspection; do not equate screenshot capture with manual visual review.

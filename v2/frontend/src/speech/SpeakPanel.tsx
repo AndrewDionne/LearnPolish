@@ -28,7 +28,7 @@ export default function SpeakPanel({item, playing, onPlayReference, onStopRefere
 
   return <section className="flashcard speak-panel" aria-live="polite">
     <span className="card-label">SAY IT IN POLISH</span>
-    <h2 className="speak-prompt">{item.polish}</h2>
+    <h2 lang="pl" className="speak-prompt">{item.polish}</h2>
     <p className="speak-translation">{item.english}</p>
     {item.audio
       ? <button type="button" className="audio-btn" disabled={capture.phase === 'requesting' || capture.phase === 'recording' || capture.phase === 'processing'} onClick={onReference}>
