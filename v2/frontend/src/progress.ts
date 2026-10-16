@@ -33,7 +33,8 @@ export function recordAttempt(progress: Progress, id: string, remembered: boolea
 }
 
 export function recallRate(progress: Progress): number {
-  const values = Object.values(progress);
+  // Read/listening comprehension uses separate progress keys; recall is Learn only.
+  const values = Object.entries(progress).filter(([key]) => !key.startsWith('read:') && !key.startsWith('listen:') && !key.startsWith('speak:')).map(([,value]) => value);
   const remembered = values.reduce((sum, x) => sum + x.remembered, 0);
   const seen = values.reduce((sum, x) => sum + x.seen, 0);
   return seen ? Math.round(100 * remembered / seen) : 0;

@@ -75,3 +75,10 @@ In any vocabulary or Polish-sound lesson, select **Speak**. The learner can hear
 The browser chooses a supported MediaRecorder MIME type (MP4 on Safari where supported; WebM/Opus on Chromium). After capture, it attempts to decode the recording locally into **mono 16kHz PCM16 WAV**, with acoustic validity checks for very short, near-silent, and clipped recordings. Inconclusive captures show a reason and permit immediate retry; they are **never converted to a 0% pronunciation grade**. Unsupported codecs/permissions show an explicit message, while navigation remains functional. The normalized audio plus its validation metadata are future provider-adapter inputs, not a reason to select a scoring service.
 
 The **recording is intentionally not stored** even as progress. The per-item Speak journey does not award recall/pronunciation points; scoring will only be introduced after human-labelled evidence supports a calibrated model. No automatic Azure/Groq/Whisper requests, provider account, API key or billing is required for this capability. Browser tests stub a microphone; native Safari microphone validation is still required before release.
+
+
+## Spaced review (self-rated recall)
+
+Learn mode now schedules each item after the learner selects **Got it** or **Needs practice**. Remembered items return after 1, 3, 7, 14, 30, 60 or 90 days (capped); missed items become eligible again immediately. Open **Practice → Scheduled review** to focus on only due cards in a particular lesson. Session identity is frozen when started so marking an item does not skip later cards; the schedule persists in this browser and survives page reloads.
+
+Read/Listen success is distinct from Learn recall, and Speak **never** creates pronunciation scores or review grades. A review plan is not synchronized between devices yet and is not an adaptive AI estimate; it is a transparent first version to be tuned after real user experience.

@@ -249,3 +249,29 @@ test('Speak handles denied microphone permissions without grading or blocking na
   await page.getByRole('button', {name: /Next phrase/}).click();
   await expect(page.getByText('Dwa', {exact: true})).toBeVisible();
 });
+
+
+test('Practice review queue targets only due cards and preserves scheduling after reload', async ({page}) => {
+  await page.goto('/');
+  await page.evaluate(() => {
+    localStorage.setItem('ptp-v2-review-schedule', JSON.stringify({
+      'Conversation_1:0': {streak: 0, attempts: 1, lastReviewedAt: '2020-01-01T00:00:00.000Z', dueAt: '2020-01-01T00:00:00.000Z'},
+      'Conversation_1:1': {streak: 1, attempts: 1, lastReviewedAt: '2020-01-01T00:00:00.000Z', dueAt: '2099-01-01T00:00:00.000Z'},
+    }));
+  });
+  await page.reload();
+  await page.getByRole('button', {name:/Practice/}).first().click();
+  await expect(page.getByText('1 due now')).toBeVisible();
+  await page.getByRole('button', {name:/Conversation 1.*1 expression.*Review/}).click();
+  await expect(page.getByText('Review what matters')).toBeVisible();
+  await expect(page.getByText('Dzień dobry', {exact:true})).toBeVisible();
+  await page.getByRole('button', {name:/Reveal meaning/}).click();
+  await page.getByRole('button', {name:/Got it/}).click();
+  await expect(page.getByText('REVIEW COMPLETE', {exact:true})).toBeVisible();
+  await page.getByRole('button', {name:'Back to library →', exact:true}).click();
+  await page.getByRole('button', {name:/Practice/}).first().click();
+  await expect(page.getByText('0 due now')).toBeVisible();
+  await page.reload();
+  await page.getByRole('button', {name:/Practice/}).first().click();
+  await expect(page.getByText('0 due now')).toBeVisible();
+});
