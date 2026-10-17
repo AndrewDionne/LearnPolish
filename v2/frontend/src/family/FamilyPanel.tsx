@@ -1,12 +1,12 @@
-import {useEffect,useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import {FAMILY_API,familyRequest} from './api';
 import type {FamilyConnection,FamilyGroup,FamilySummary} from './api';
 
 type Props={onConnection:(connection:FamilyConnection|null)=>void;
             onSummary:(summary:FamilySummary|null)=>void;
-            syncMessage:string};
+            syncMessage:string; syncVersion:number};
 
-export default function FamilyPanel({onConnection,onSummary,syncMessage}:Props){
+export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVersion}:Props){
   const [token,setToken]=useState(()=>{try{return sessionStorage.getItem('ptp-v2-family-session')||'';}catch{return '';}});
   const [group,setGroup]=useState(()=>{try{return Number(sessionStorage.getItem('ptp-v2-family-group'))||0;}catch{return 0;}});
   const [enabled,setEnabled]=useState(()=>{try{return sessionStorage.getItem('ptp-v2-family-sharing')==='yes';}catch{return false;}});
@@ -21,6 +21,9 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage}:Props){
   const [error,setError]=useState('');
   const [status,setStatus]=useState('');
   const [busy,setBusy]=useState(false);
+  // Ignore earlier summary fetches that finish after a refresh or group change.
+  const summaryRequestId=useRef(0);
+  const initialSync=useRef(syncVersion);
 
   useEffect(()=>{
     onConnection(enabled&&token&&group&&FAMILY_API?{token,groupId:group}:null);
@@ -36,17 +39,28 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage}:Props){
 
   const refresh=async(t=token,g=group)=>{
     if(!t||!g)return;
+    const id=++summaryRequestId.current;
     const data=await familyRequest<FamilySummary>('/api/v2/family/groups/'+g+'/summary','GET',undefined,t);
-    setSummary(data);onSummary(data);
+    if(id===summaryRequestId.current){
+      setSummary(data);onSummary(data);
+    }
   };
   useEffect(()=>{
     if(!token||!group||!FAMILY_API)return;
     let active=true;
+    const id=++summaryRequestId.current;
     void familyRequest<FamilySummary>('/api/v2/family/groups/'+group+'/summary','GET',undefined,token)
-      .then(data=>{if(active)setSummary(data);onSummary(data);})
-      .catch(()=>{if(active){setError('Unable to load this private family group.');setEnabled(false);}});
-    return ()=>{active=false;};
+      .then(data=>{if(active&&id===summaryRequestId.current){setSummary(data);onSummary(data);}})
+      .catch(()=>{if(active&&id===summaryRequestId.current){setError('Unable to load this private family group.');setEnabled(false);}});
+    return ()=>{active=false;summaryRequestId.current++;};
   },[token,group]);
+  useEffect(()=>{
+    // The parent increments only AFTER the server acknowledges a contributed activity.
+    if(syncVersion>initialSync.current&&token&&group&&FAMILY_API){
+      initialSync.current=syncVersion;
+      void refresh().catch(()=>setError('Unable to refresh family results; try Refresh rankings.'));
+    }
+  },[syncVersion,token,group]);
 
   const run=async(action:()=>Promise<void>)=>{
     setBusy(true);setError('');setStatus('');
@@ -57,6 +71,7 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage}:Props){
     setToken(value);try{sessionStorage.setItem('ptp-v2-family-session',value);}catch{/* private browsing */}
   };
   const pickGroup=(id:number)=>{
+    summaryRequestId.current++;
     setGroup(id);setSummary(null);onSummary(null);setEnabled(false);
     try{sessionStorage.setItem('ptp-v2-family-group',String(id));sessionStorage.removeItem('ptp-v2-family-sharing');}catch{}
   };
