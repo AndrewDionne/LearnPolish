@@ -77,3 +77,45 @@ deletion/consent reconciliation and a verified privacy/retention plan. Also
 pending: TLS hosting, persistent disk/restore monitoring, account email
 verification and recovery, parent/guardian controls, operator incident review,
 and real multi-device/physical iOS tests. No production family accounts yet.
+
+
+## Private password recovery (SMTP delivery, not hosted)
+
+The private family service now supports **email-code password recovery** when an
+operator has configured actual secure SMTP delivery. It does not simulate or log
+recovery tokens. Configure these environment variables **outside the repository**:
+
+- `PTP_FAMILY_SMTP_HOST`: trusted provider SMTP hostname
+- `PTP_FAMILY_SMTP_PORT`: implicit-TLS SMTP port (defaults to 465)
+- `PTP_FAMILY_SMTP_USER`, `PTP_FAMILY_SMTP_PASSWORD`: dedicated mail account
+- `PTP_FAMILY_SMTP_FROM`: verified sending address authorized by the provider
+
+Only verified-certificate **SMTP over implicit TLS** is supported. Partial SMTP
+configuration prevents API startup rather than silently claiming recovery works.
+Without SMTP configured, the `/api/v2/family/health` capability reports
+`password_recovery_available:false`; the browser hides **Forgot password?**
+and recovery endpoints fail closed (503). No tokens are printed to logs or
+written to web URLs, and the frontend requires manual code entry from email.
+
+Flow: `POST /api/v2/family/recovery/request` accepts an email and returns the
+same generic 202 response for known, unknown and throttled accounts when
+delivery is configured. New 256-bit one-use codes expire in **15 minutes**,
+invalidate the prior code, are stored only by SHA-256 hash and may be requested
+at most three times per email/hour (plus a network-wide guard). The app emails
+the code directly, not a clickable token-bearing URL. `POST
+/api/v2/family/recovery/complete` accepts code plus a 12–256-character new
+password; it rotates the salted PBKDF2 password hash, removes every existing
+session and all outstanding codes. Normal authenticated password change and
+account erasure also invalidate recovery codes. Mailer failures return the
+same generic response and discard the undelivered code. Database and CI
+security regression cases cover expiry, reuse, throttling, missing SMTP,
+session invalidation, account deletion and delivery failures.
+
+**Not email ownership verification:** current sign-up still accepts an
+unverified address and does not require mailbox verification to join a group.
+Before public rollout, enforce verified email at onboarding, design rate-limit
+and bounce/abuse handling across IPs/providers, implement guardian/child account
+authorization, choose a permitted email delivery service, and test actual mail
+deliverability and spam handling. No real SMTP messages are sent in CI; tests
+inject an isolated synthetic sender. This tranche does not make hosted family
+accounts ready for users.
