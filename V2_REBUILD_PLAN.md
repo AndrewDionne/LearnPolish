@@ -400,3 +400,22 @@ new zero-byte JSONL output, but retains genuine partial results. Owner's
 source folder is unchanged, `PathToPolish-Private-AI/`. Actual provider
 permission resolution, first successful transcripts and Polish contrast
 accuracy remain pending. No API calls made in CI.
+
+
+## 19. Confirmed transport discrepancy — curl GET 200, urllib GET 403
+
+Owner's physical Mac call to Groq **GET /openai/v1/models via curl** returned
+HTTP **200 application/json**, using the same current account/key for which
+Python urllib GET and first transcription POST got HTTP403. This does not
+prove root cause (client fingerprint, headers, proxy, network filter possible)
+or that Groq POST Whisper inference is available; do not attribute to the
+account, cloud region, or Polish WAV. Implement standard curl transport option
+`--transport curl`, with immutable-model allowlist, authorization over stdin
+config (never argv), no client rc, no retries/redirects, allowlisted HTTPS API
+endpoints, no output of untrusted Groq body and no paid calls on preview or
+GET. First new owner action: `groq_pilot.py --check-access --transport curl`
+with already-loaded key; compare returned model list, no audio uploaded. Only
+after free tier/permissions/consent confirmation use explicitly opt-in
+`--transport curl --send` for the same two native WAVs and both v3/Turbo,
+new `groq-transcripts-curl-01.jsonl` under unchanged owner research folder.
+Tests are mocked; provider POST still unverified pending Mac physical trial.

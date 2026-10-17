@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-17 — PR #30 merged Groq 403 safe access diagnostics; owner next run GET-only; existing folder unchanged
+**Updated:** 2026-10-17 — owner Mac curl GET 200 vs urllib 403; add curl transport under CI, original folder unchanged
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -23,6 +23,12 @@
 3. Develop in a branch; execute available checks, report what is tested vs unverified.
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
 5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt features.
+
+## Mac curl GET 200 versus Python urllib GET 403 — corrected transport tranche (2026-10-17)
+
+**Owner's physical signal:** with the same Mac, current local `GROQ_API_KEY`, Groq `GET https://api.groq.com/openai/v1/models` returned **HTTP 200 JSON using native curl**, but prior Python `urllib` requests to model list and transcription returned **403**. Key is accepted via curl. Thus lack of general API access is NOT established; one client/request-path difference is confirmed, cause unproven (UA/TLS/intermediary potential), and curl transcription rights unverified. Do not recommend changing key/account/network or moving any files.
+
+**New capability:** `v2/benchmarks/groq_curl_transport.py` performs one curl request with no shell/no `.curlrc`/no retry/no redirects/non-Groq URLs. Secret is passed via stdin curl config, never process argv or error logs. `groq_pilot.py --check-access --transport curl` is read-only GET/no WAV/inference and should reproduce HTTP200 and list v3 + Turbo on owner's Mac. `--transport curl` with existing `--send --approve-voice-upload --confirm-free-plan` and hard caps subsequently supports actual dual-model study on SAME original `PathToPolish-Private-AI/commons-native-01/manifest.json`, writing new `.../groq-transcripts-curl-01.jsonl`; never overwrite old empty result file. No automatic retries, paid calls, or new file moves. Tests mock curl GET/POST response, secret redaction, no-network dry-run and invalid key/URL inputs; CI synthetic only. README documents exact commands and the fact that curl GET success alone does not prove inference permission.
 
 ## PR #30 merged — Groq 403 no-audio diagnostics certified 2026-10-17
 
