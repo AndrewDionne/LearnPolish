@@ -1,5 +1,17 @@
 # Polish speech/pronunciation benchmark — first increment
 
+## Azure-only real inference error classification
+
+The owner ran both Groq Whisper models and Azure on two real Polish
+FLEURS clips. Whisper returned transcripts, while Azure was
+`inconclusive` on both. New `azure_retest.py` performs exactly
+ONE Azure-only request (zero Groq calls) and reports allowlisted SDK
+NoMatch/Canceled/error enums without leaking free-form details or
+replacing original results. See
+[THREE_MODEL_PILOT.md](THREE_MODEL_PILOT.md) for Mac commands and
+original public-audio/free-tier gate.
+
+
 ## Microphone quality screening and subsequent native candidate batches
 
 After physically listening to 10 real FLEURS Polish candidates, the
