@@ -73,7 +73,7 @@ def measure_wav(path: Path) -> dict:
     quiet_windows = sum(v < 0.0031623 for v in windows)
     clipping_pct = 100 * clipped / total
     hints = []
-    if _db(rms) < -32 or _db(peak_norm) < -15:
+    if _db(rms) < -32 or _db(peak_norm) < -25:
         hints.append("low_signal_level")
     if clipping_pct > 0.1:
         hints.append("possible_clipping")
