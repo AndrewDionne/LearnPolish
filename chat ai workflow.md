@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-17 — PR #31 curl transport merged; owner validation of model-list via curl remains next, original audio folder unchanged
+**Updated:** 2026-10-17 — PR #31 curl model-list physically PASS on owner Mac; next explicit four-call v3/Turbo transcription; audio folder unchanged
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -23,6 +23,23 @@
 3. Develop in a branch; execute available checks, report what is tested vs unverified.
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
 5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt features.
+
+## Owner Mac curl-model-list physical verification — PASS (2026-10-17)
+
+**Physical result after PR #31**: owner updated local main to `29ab1056eb6076a3dd5e000ae31c12613798ed51` and ran `python3 v2/benchmarks/groq_pilot.py --check-access --transport curl`. The real Groq API returned `api_authentication: model-list request accepted`, with `whisper-large-v3: true`, `whisper-large-v3-turbo: true`, `no_audio_sent: true`, `no_transcription_requests: true`. **This resolves the earlier read-only urllib403/curl200 transport discrepancy for our runner**, but does NOT verify transcription permission, phonetic quality or Free Plan/billing status. No new data files moved.
+
+**Exact next controlled live step** (only AFTER owner independently verifies Groq Free Plan/no billing, API key still loaded and approves Commons source upload) from repo root:
+
+```bash
+python3 v2/benchmarks/groq_pilot.py \
+  --manifest PathToPolish-Private-AI/commons-native-01/manifest.json \
+  --models whisper-large-v3 whisper-large-v3-turbo \
+  --transport curl --max-requests 4 --max-billed-seconds 40 \
+  --send --approve-voice-upload --confirm-free-plan \
+  --output PathToPolish-Private-AI/commons-native-01/groq-transcripts-curl-01.jsonl
+```
+
+That is two unchanged native WAVs × two models = at most four consented transcription calls, minimum 40 billed audio seconds counted against allowance. **No result from POST has been observed yet**. Run only once; results file may not exist or be partial if blocked, choose unused file on any later authorized run. Compare actual raw ASR transcript(s) against `czapka` and `ciasto`; ASR is NOT pronunciation-quality grading. Owner's original Ogg/WAV/manifest folder remains `PathToPolish-Private-AI/` in root, NEVER relocated.
 
 ## PR #31 merged — curl Groq research transport, no inference claims (2026-10-17)
 
