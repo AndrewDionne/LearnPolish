@@ -354,6 +354,9 @@ on the user's Mac remain the acceptance gate. See README recovery section.
 
 ## 16. AI study workspace — owner-selected repository temp
 
+**Merged:** PR #28 (2026-10-17), commit `b4ee7d8a4719fae1b5e3771a654ae9d063ad31e0`; CI run #39037897459 all four checks passed, including 32 offline benchmark tests. Local WAV import and first Groq results remain pending owner physical execution.
+
+
 Owner requested storing native Polish source media, normalized WAV controls,
 manifests and model output **under the actual LearnPolish repository**, not in
 a disconnected Mac home folder. Standardize on the root **`temp/` directory
