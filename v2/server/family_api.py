@@ -353,6 +353,164 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
         con.commit()
         return jsonify(accepted=True,xp=xp,expedition_xp=expedition_xp,region=region,target=target), 201
 
+
+    def _owner_guard(user, family_id):
+        group = db().execute("SELECT owner_id FROM families WHERE id=?", (family_id,)).fetchone()
+        if not group or not member(user, family_id):
+            return fail("not_found", 404)
+        if group["owner_id"] != user["id"]:
+            return fail("owner_only", 403)
+        return None
+
+    def _purge_group(con, family_id):
+        """Erase an entirely abandoned family and all identifiers in one transaction."""
+        con.execute("DELETE FROM invitations WHERE family_id=?", (family_id,))
+        con.execute("DELETE FROM activities WHERE family_id=?", (family_id,))
+        con.execute("DELETE FROM region_goals WHERE family_id=?", (family_id,))
+        con.execute("DELETE FROM members WHERE family_id=?", (family_id,))
+        con.execute("DELETE FROM families WHERE id=?", (family_id,))
+
+    @app.post("/api/v2/family/groups/<int:family_id>/invites/revoke")
+    @auth
+    def revoke_invites(user, family_id):
+        access = _owner_guard(user, family_id)
+        if access:
+            return access
+        con = db()
+        con.execute("BEGIN IMMEDIATE")
+        deleted = con.execute(
+            "DELETE FROM invitations WHERE family_id=? AND redeemed_by IS NULL",
+            (family_id,)
+        ).rowcount
+        con.commit()
+        return jsonify(revoked=deleted)
+
+    @app.post("/api/v2/family/groups/<int:family_id>/transfer")
+    @auth
+    def transfer_group(user, family_id):
+        access = _owner_guard(user, family_id)
+        if access:
+            return access
+        target = _json().get("new_owner_id")
+        if type(target) is not int or target == user["id"]:
+            return fail("invalid_new_owner")
+        con = db()
+        con.execute("BEGIN IMMEDIATE")
+        if not con.execute(
+            "SELECT 1 FROM members WHERE family_id=? AND user_id=?",
+            (family_id, target)
+        ).fetchone():
+            con.rollback()
+            return fail("new_owner_must_be_member", 400)
+        con.execute("UPDATE families SET owner_id=? WHERE id=?", (target, family_id))
+        con.commit()
+        return jsonify(transferred=True, new_owner_id=target)
+
+    @app.post("/api/v2/family/groups/<int:family_id>/leave")
+    @auth
+    def leave_group(user, family_id):
+        if not member(user, family_id):
+            return fail("not_found", 404)
+        con = db()
+        con.execute("BEGIN IMMEDIATE")
+        group = con.execute("SELECT owner_id FROM families WHERE id=?", (family_id,)).fetchone()
+        if not group:
+            con.rollback()
+            return fail("not_found", 404)
+        if group["owner_id"] == user["id"]:
+            others = con.execute(
+                "SELECT 1 FROM members WHERE family_id=? AND user_id<>?",
+                (family_id, user["id"])
+            ).fetchone()
+            if others:
+                con.rollback()
+                return fail("transfer_ownership_before_leaving", 409)
+            _purge_group(con, family_id)
+            erased = True
+            removed = 0
+        else:
+            # Data minimization: do not retain linked activities after withdrawal.
+            removed = con.execute(
+                "DELETE FROM activities WHERE family_id=? AND user_id=?",
+                (family_id, user["id"])
+            ).rowcount
+            con.execute("DELETE FROM members WHERE family_id=? AND user_id=?",
+                        (family_id, user["id"]))
+            erased = False
+        con.commit()
+        return jsonify(left=True, family_deleted=erased, removed_activities=removed)
+
+    @app.get("/api/v2/family/account/export")
+    @auth
+    def export_account(user):
+        con = db()
+        owned = con.execute(
+            """SELECT f.id,f.name,f.owner_id
+               FROM families f JOIN members m ON f.id=m.family_id
+               WHERE m.user_id=? ORDER BY f.id""", (user["id"],)
+        ).fetchall()
+        earned = con.execute(
+            """SELECT family_id,item_id,mode,day,tier,xp,expedition_xp,region,created_at
+               FROM activities WHERE user_id=? ORDER BY id""", (user["id"],)
+        ).fetchall()
+        return jsonify(version=1, exported_at=datetime.now(timezone.utc).isoformat(),
+                       profile={"id":user["id"],"email":user["email"],"name":user["name"]},
+                       families=[dict(row) for row in owned],
+                       activities=[dict(row) for row in earned])
+
+    @app.post("/api/v2/family/account/password")
+    @auth
+    def change_password(user):
+        data = _json()
+        current = data.get("current_password")
+        new = data.get("new_password")
+        if (not isinstance(current, str) or not isinstance(new, str) or
+                not 12 <= len(new) <= 256 or current == new):
+            return fail("invalid_password_change")
+        con = db()
+        row = con.execute("SELECT salt,password_hash FROM users WHERE id=?", (user["id"],)).fetchone()
+        if not row or not hmac.compare_digest(_password(current, row["salt"]), row["password_hash"]):
+            return fail("invalid_credentials", 401)
+        salt = secrets.token_hex(16)
+        con.execute("BEGIN IMMEDIATE")
+        con.execute("UPDATE users SET salt=?,password_hash=? WHERE id=?",
+                    (salt, _password(new, salt), user["id"]))
+        con.execute("DELETE FROM sessions WHERE user_id=?", (user["id"],))
+        con.commit()
+        return jsonify(changed=True, sign_in_again=True)
+
+    @app.post("/api/v2/family/account/delete")
+    @auth
+    def delete_account(user):
+        data = _json()
+        password = data.get("password")
+        if data.get("confirmation") != "DELETE MY ACCOUNT" or not isinstance(password, str):
+            return fail("explicit_confirmation_required")
+        con = db()
+        row = con.execute("SELECT salt,password_hash FROM users WHERE id=?", (user["id"],)).fetchone()
+        if not row or not hmac.compare_digest(_password(password, row["salt"]), row["password_hash"]):
+            return fail("invalid_credentials", 401)
+        con.execute("BEGIN IMMEDIATE")
+        owned = con.execute("SELECT id FROM families WHERE owner_id=?", (user["id"],)).fetchall()
+        for entry in owned:
+            other = con.execute(
+                "SELECT 1 FROM members WHERE family_id=? AND user_id<>?",
+                (entry["id"],user["id"])
+            ).fetchone()
+            if other:
+                con.rollback()
+                return fail("transfer_ownership_before_deletion", 409)
+        for entry in owned:
+            _purge_group(con, entry["id"])
+        # Revocation MUST delete consumed invites, never make one-use codes reusable.
+        con.execute("DELETE FROM invitations WHERE redeemed_by=?", (user["id"],))
+        con.execute("DELETE FROM activities WHERE user_id=?", (user["id"],))
+        con.execute("DELETE FROM members WHERE user_id=?", (user["id"],))
+        con.execute("DELETE FROM sessions WHERE user_id=?", (user["id"],))
+        con.execute("DELETE FROM users WHERE id=?", (user["id"],))
+        con.commit()
+        return jsonify(deleted=True)
+
     @app.get("/api/v2/family/groups/<int:family_id>/summary")
     @auth
     def summary(user,family_id):
