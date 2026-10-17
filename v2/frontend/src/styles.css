@@ -342,3 +342,17 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .family-board-filters button[aria-pressed=true]{background:#176e69;color:#fff;border-color:#176e69}
 .family-recognition-pending{border:1px solid #e2dccb;background:#fffaf2;padding:17px;border-radius:11px;font-size:12px;line-height:1.7}
 @media(max-width:760px){.family-board-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.family-board-filters button{padding:10px 7px;min-width:0}.family-board-filters button:last-child{grid-column:1/-1}}
+
+/* Explicit family privacy and data-lifecycle controls. */
+.family-privacy{margin-top:26px;border-top:1px solid #cfddd8;padding-top:15px}
+.family-privacy summary{cursor:pointer;font-size:13px;font-weight:750;color:#235b61;min-height:44px;padding:13px 2px}
+.family-privacy>p{max-width:660px;font-size:12px;line-height:1.7}
+.family-privacy-actions{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin:13px 0 23px}
+.family-privacy-actions label{min-width:180px;flex:1}
+.family-private-fieldset{border:1px solid #d8e5e0;border-radius:12px;padding:17px;margin:17px 0;display:grid;gap:12px}
+.family-private-fieldset legend{padding:0 8px;font-size:12px;font-weight:750;color:#36645e}
+.family-private-fieldset label{max-width:440px}
+.family-private-fieldset button{justify-self:start}
+.family-private-fieldset .family-danger{border-color:#a54d4d;color:#9b2828;background:#fff8f8}
+.family-private-fieldset p{max-width:690px}
+@media(max-width:760px){.family-privacy-actions{display:grid;grid-template-columns:1fr}.family-privacy-actions button{width:100%}}
