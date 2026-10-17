@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-17 — owner confirms existing Render-connected Azure Speech resource is Free tier; live token probe passes, first consented adult audio test pending; private folder unchanged
+**Updated:** 2026-10-17 — OWNER CORRECTION: first Azure PA test MUST use verified native Polish positive controls, not learner recordings; F0 owner-confirmed and token probe passes; folder unchanged
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -22,7 +22,15 @@
 2. Check umbrella issue and code. Choose the next unfinished acceptance checkpoint, identifying dependencies and relevant tests.
 3. Develop in a branch; execute available checks, report what is tested vs unverified.
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
-5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt features.
+5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt feature## 2026-10-17 — Owner correction: NATIVE Polish positive control FIRST (binding benchmark requirement)
+
+**Owner rejected the suggestion to begin the real Azure pronunciation test with the owner's own developing Polish pronunciation.** The FIRST real Azure `pl-PL` PA benchmark must use **authentic, clearly articulated native-speaker Polish**, not learner, distorted, clipped, or isolated-word speech. The objective is to verify that Azure awards appropriate high accuracy for genuinely good spoken Polish and that its word/phoneme evidence aligns with expert listening. Do not label any unverified corpus clip as gold-standard just because a dataset includes a transcription.
+
+**Active evidence sequence:** (1) source ~8–12 uninterrupted 5–15-second, 4+-word native Polish sentence recordings across two speakers with licensed reuse and explicit permission for Azure processing; Google FLEURS Polish (`google/fleurs`, `pl_pl`, CC BY 4.0) is one candidate [dataset](https://huggingface.co/datasets/google/fleurs), NOT automatic proof of audio clarity or pronunciation correctness; (2) independent fluent/native Polish listener confirms exact audible text, natural articulation, completeness, no clipping, no background/music and reliable prosody; (3) preserve source WAV bytes and labels with SHA-256 and attribution in existing `repo/PathToPolish-Private-AI/`, never move the previous original files; (4) run offline `sentence_study.py` audit, freeze 1× and optionally 0.85× tempo for separate Whisper ASR sensitivity; (5) **FIRST Azure `pl-PL` `azure_pilot.py` test uses exactly ONE verified unprocessed 1× native speaker sentence**, on previously confirmed Germany West Central Azure Speech **owner-confirmed F0** resource, with account free quota and explicit source license/consent rechecked; (6) inspect native accuracy/fluency/completeness, per-word and available phoneme scores; scores are uncalibrated and Polish named phonemes limitations remain; (7) only AFTER high-quality Polish positive controls pass, compare with independent human-labelled adult learner speech. No testing learner pronunciation before an honest native baseline.
+
+**Existing two Commons one-word clips are unsuitable for either model ranking or PA positive control**; retain only for infrastructure smoke tests. Synthesized neural Polish can be supplementary, not sole/native ground truth. **Neither high scores nor guaranteed native speaker perfection may be assumed in advance**: this is precisely what tests measure. No new Azure audio call has been run. **Do not ask owner to record their own learner speech as the first test**, or advise "slowing an imperfect learner recording" as the native baseline.
+
+s.
 
 ## Azure F0 tier — owner confirmed in conversation (2026-10-17)
 
