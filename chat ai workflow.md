@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-17 — first owner-run real Groq Large-v3 + Turbo curl pilot completed 4 requests; results pending review; study folder unchanged
+**Updated:** 2026-10-17 — first owner Groq v3/Turbo four transcripts reviewed; strict equality vs target presence issue, offline analysis tranche; folder unchanged
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -23,6 +23,18 @@
 3. Develop in a branch; execute available checks, report what is tested vs unverified.
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
 5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt features.
+
+## First actual v3 vs Turbo results — strict-match bug identified; offline replay (2026-10-17)
+
+**Owner's real four results** (same immutable SHA WAVs in unchanged `repo/PathToPolish-Private-AI/commons-native-01/`): `czapka` → v3 `Czap, czapka.`, Turbo `Czap-czapka.`; `ciasto` → v3 `Często.`, Turbo `CZASTO`. Both responses on `czapka` include exact target as a **standalone word**, but the saved legacy `recognized_expected_words: false` is full-transcript equality, misleading if used to report target recognition. Neither response on `ciasto` is exact or has target; `CZASTO` is still not `ciasto`, no fuzzy credit. **Exact whole-reference matches: 0/2 per model; target token present: 1/2 per model.** Two short native controls do not decide model, speaker performance or phoneme accuracy.
+
+**New logic:** `benchmark.py:polish_target_present` detects contiguous whole target tokens in punctuation/hyphen-separated transcript, case-insensitive/diacritic-sensitive, no approximate matching. `groq_pilot.py` records both `reference_exact_match` and `reference_present` for future calls while retaining legacy strict `recognized_expected_words` for backwards compatibility. `review_groq.py` **replays existing results entirely offline**, verifies locked WAV SHA/reference/engine IDs/durations, identifies missing/duplicate results and prints exact and token-presence comparison. Does not alter saved JSONL, upload audio or call Groq; requires no new paid calls. Mac command:
+
+```bash
+python3 v2/benchmarks/review_groq.py --manifest PathToPolish-Private-AI/commons-native-01/manifest.json --results PathToPolish-Private-AI/commons-native-01/groq-transcripts-curl-01.jsonl
+```
+
+**Next physical work:** listen to both original native WAVs to determine whether the transcribed `Czap` fragments were actually spoken; don't treat them as hallucination or ground-truth phonetic errors until listened. Then collect longer native sentences with trusted transcripts and separately adult learner sound contrasts with independent human reference judgements, aligned with pilot protocol. **Files stay exactly where they are; no moving/rebuilding source directory.**
 
 ## First real two-model Whisper transcription — OWNER MAC PASS (2026-10-17)
 

@@ -17,7 +17,7 @@ import urllib.error
 import urllib.request
 from typing import Callable
 
-from benchmark import load_manifest, polish_match, read_audio_metadata
+from benchmark import load_manifest, polish_match, polish_target_present, read_audio_metadata
 from research_paths import check_research_location
 from groq_curl_transport import request_json as curl_request_json
 
@@ -225,8 +225,14 @@ def run(manifest: Path, models: tuple[str, ...], max_requests: int = 4,
                               "audio_sha256": meta["audio_sha256"],
                               "status": "ok" if transcript else "inconclusive",
                               "transcript": transcript,
+                              # Historical field is STRICT reference equality.
+                              # Preserve it for existing downstream consumers.
                               "recognized_expected_words": (
                                   polish_match(sample.reference, transcript) if transcript else None),
+                              "reference_exact_match": (
+                                  polish_match(sample.reference, transcript) if transcript else None),
+                              "reference_present": (
+                                  polish_target_present(sample.reference, transcript) if transcript else None),
                               "pronunciation_score": None}
                     stream.write(json.dumps(result, ensure_ascii=False) + "\n")
                     stream.flush()
