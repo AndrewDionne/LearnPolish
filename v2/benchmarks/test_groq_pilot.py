@@ -108,7 +108,7 @@ class GroqPilotTests(unittest.TestCase):
             def __exit__(self, *args):
                 pass
             def read(self, size):
-                return b'{"text":"dzień dobry"}'
+                return '{"text":"dzień dobry"}'.encode("utf-8")
         def fake_urlopen(request, timeout):
             self.assertEqual(timeout, 45)
             self.assertIn("/audio/transcriptions", request.full_url)
