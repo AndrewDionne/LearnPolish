@@ -464,3 +464,14 @@ test('late microphone permission after leaving Speak stops tracks and cannot awa
   expect(saved.events).toHaveLength(0);
   expect(browserErrors).toEqual([]);
 });
+
+
+test('unconfigured private family service shows an honest disabled state, not invented leaderboard',async ({page})=>{
+  await page.goto('/');
+  await page.getByRole('button',{name:'Expedition'}).first().click();
+  const section=page.getByRole('region',{name:'Family expedition'});
+  await expect(section).toContainText('not configured yet');
+  await expect(section).toContainText('No pretend family accounts or rankings');
+  await expect(section.getByRole('button',{name:'Sign in'})).toHaveCount(0);
+  await page.screenshot({path:'test-results/family-disabled-expedition.png',fullPage:true});
+});

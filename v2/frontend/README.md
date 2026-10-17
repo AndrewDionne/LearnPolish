@@ -143,3 +143,10 @@ My progress again offers the original **four selectable Pierogi characters** (He
 ### Collect private empirical pronunciation samples
 
 Speak now exports optional timestamped WAV filenames that preserve the exact exercise identifier. The local-only Python `../benchmarks/corpus.py` uses generated V2 lessons to create a reference-verified, checksum-locked manifest for actual model comparison without typing Polish references manually. Voice files stay outside Git and no hosted services are contacted. The deterministic tests verify capture and metadata integrity, not pronunciation accuracy.
+
+
+## Private family group API (development integration)
+
+V2 now contains an isolated private family API and an opt-in Family panel below the open Poland map. **It is not deployed by this repository change.** The panel is explicitly disabled when \`VITE_FAMILY_API_URL\` is absent. For provisioning, HTTPS, required persistent storage, invitation/account flows and security boundaries, read \`../server/README.md\`. Never configure it with an ephemeral database.
+
+After signing in, family members can join using a one-use invitation, choose their group and **explicitly opt in** to contributing *future* eligible built-in lesson activity to a server-side shared map. Members can independently choose regions. The server ignores claimed client XP and validates known lesson IDs, modes, deduplication and region targets. Group boards show weekly XP, regularity and highest catalog tier; improvement recognition stays unavailable until verified evidence is available. Local offline XP and family XP remain separate; no automatic uploads of historical backup data, personal lessons, recordings, or voice scores.
