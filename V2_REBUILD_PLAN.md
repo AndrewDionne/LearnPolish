@@ -271,3 +271,22 @@ child-associated account/data rights, safe invitations, external mail
 deliverability monitoring, deletion reconciliation, TLS persistent hosting,
 and physical Safari tests remain separate release gates. No AI testing or
 new course authoring in this tranche.
+
+
+## 12. Pronunciation AI research resumed — pilot protocol (2026-10-17)
+
+Priority shifted from future guardian profiles to an **adult-only, consented
+pronunciation engine study**. No prior production or model accuracy is
+demonstrated. Use the no-spend reproducible 12-stimulus x 2-take pilot in
+[`v2/benchmarks/PILOT_PROTOCOL.md`](v2/benchmarks/PILOT_PROTOCOL.md),
+existing Speak opt-in WAV export / built-in-reference manifest, and new
+independent human-label templates/validation. Control native false negatives
+and contrasting sound errors before selecting a pronunciation architecture.
+
+Reconfirmed Azure `pl-PL` assessment capability versus its limited **named
+phoneme** / spoken-phoneme / prosody localization (English-specific); and
+Whisper large-v3 transcription versus phonetic quality. Account-level free
+quotas, real adult recordings, native listener evidence, pretrained local
+model or explicitly approved free Groq, and native Azure result remain
+prerequisites. No API spend, audio uploads or child-voice collection initiated.
+Do not reintroduce fake perfect pronunciation or lesson content changes.
