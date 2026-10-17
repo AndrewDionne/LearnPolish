@@ -119,3 +119,41 @@ authorization, choose a permitted email delivery service, and test actual mail
 deliverability and spam handling. No real SMTP messages are sent in CI; tests
 inject an isolated synthetic sender. This tranche does not make hosted family
 accounts ready for users.
+
+
+## Mandatory email verification before private family sign-in
+
+Family registration is now **fail-closed without configured secure SMTP**.
+The same private SMTP environment variables listed for password recovery
+deliver a distinct **account verification** email; no fake local code is
+exposed to users. New `POST /api/v2/family/signup` requests create pending
+accounts and send a one-use 256-bit code (30-minute lifetime), **not a
+bearer token or immediate login**. The browser asks for the emailed code
+before signing in. The server stores only SHA-256 code fingerprints.
+
+- `POST /api/v2/family/verification/confirm` with email + code confirms
+  mailbox access once, clears pending codes and revokes any old sessions.
+- `POST /api/v2/family/verification/resend` with email + account password
+  issues a replacement code to an **unverified** mailbox and returns a generic
+  202 for missing/incorrect accounts and throttled requests. A previously
+  issued code then stops working.
+- New registration and resends have per-destination (3 per hour) and per-network
+  (20 per hour) quotas. Registration mail failure removes that pending account;
+  SMTP is never silently skipped. Password recovery alone cannot activate an
+  unverified account.
+- Existing account databases are preserved with a new verification metadata
+  table. Prior users **must verify once**; any old bearer tokens are rejected
+  until then and revoked on successful verification. Operators must ensure
+  working SMTP before migrating an active service. This V2 service is currently
+  **undeployed**, so no real accounts are being migrated.
+
+CI runs `v2/server/ci_family_server.py` only inside GitHub Actions and stores
+synthetic email codes in a runner-private `0600` outbox file to complete a
+two-account real-API Playwright journey. No debug verification endpoint exists
+in the production API. This is not a mail provider integration test.
+
+**Next security/privacy gates:** tested mailbox delivery and bounce handling,
+anti-abuse controls beyond local SQLite/IP, verified parent/guardian authority
+and child account creation/privacy, incident monitoring, TLS/persistent hosting,
+encryption/retention of offsite backups and erasure reconciliation, physical
+Safari/VoiceOver. Email verification alone is **not** guardian consent.
