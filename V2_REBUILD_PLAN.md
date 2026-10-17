@@ -293,3 +293,18 @@ quotas, real adult recordings, native listener evidence, pretrained local
 model or explicitly approved free Groq, and native Azure result remain
 prerequisites. No API spend, audio uploads or child-voice collection initiated.
 Do not reintroduce fake perfect pronunciation or lesson content changes.
+
+
+## 13. Groq two-model recognition pilot — explicit free-plan gating
+
+A local standard-library research client for Groq Whisper `whisper-large-v3`
+and `whisper-large-v3-turbo` reads existing SHA-256-locked adult WAV manifests
+and produces **model-specific transcripts only**. Default dry-run requires
+no key or network; sending requires explicit voice-upload consent, a locally
+loaded environment key, owner-confirmed account Free Plan/no paid billing,
+and strict per-run API-request and billed-audio caps. Keys and WAVs cannot be
+checked into Git; transcripts are saved as private, never-overwritten results
+outside the repository. Backend-only mocked tests prohibit surprise uploads;
+a completed free-account setup still does NOT constitute AI accuracy evidence.
+See `v2/benchmarks/README.md` and issue #1 for exact operator steps and
+reproducible human/Azure comparison requirements.
