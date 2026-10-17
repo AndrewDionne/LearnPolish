@@ -1,5 +1,59 @@
 # First actual three-engine Polish speech trial — exploratory
 
+## 2026-10-18: Azure-only diagnostic after first real three-model run
+
+The owner actually ran all six calls: Groq Whisper V3 and Turbo returned
+Polish transcripts, but **Azure returned inconclusive on both** 00003
+and 00009. Offline inspection of first result JSONL found
+`Azure did not recognize complete speech` and no Azure raw JSON for
+either. Earlier code collapsed SDK `NoMatch` and `Canceled` into
+one generic reason; no definite Azure root cause is yet known.
+
+NEW `azure_retest.py`: exactly **one Azure-only request** on the
+existing original unmodified FLEURS clip `fleurs-pl-val-00003` (5.64s).
+No new Groq calls, no audio downloads, source edits or old result
+overwrites. Prints allowlisted SDK result reason, no-match/cancellation
+reasons and error codes (never free-text SDK error_details or secrets).
+The old strict production Azure benchmark native-human gate remains
+intact; this is an exploratory public-audio integration diagnostic.
+
+Mac commands, from repo root, using existing Azure SDK virtual environment:
+
+```bash
+git switch main
+git pull --ff-only origin main
+PathToPolish-Private-AI/.venv-speech-test/bin/python \
+  v2/benchmarks/azure_retest.py \
+  --manifest PathToPolish-Private-AI/sentences-source.json \
+  --sample-id fleurs-pl-val-00003
+```
+
+The above is **offline preview only**. After checking existing Azure
+resource F0, remaining free quota, zero paid billing and public
+FLEURS rights for third-party processing, run **one** diagnostic request:
+
+```bash
+PathToPolish-Private-AI/.venv-speech-test/bin/python \
+  v2/benchmarks/azure_retest.py \
+  --manifest PathToPolish-Private-AI/sentences-source.json \
+  --sample-id fleurs-pl-val-00003 \
+  --max-requests 1 --max-audio-seconds 10 \
+  --send --approve-public-audio-upload \
+  --confirm-azure-f0 --confirm-no-paid-billing \
+  --output PathToPolish-Private-AI/azure-sdk-diagnostic-01.jsonl
+```
+
+Only Azure environment key and `AZURE_SPEECH_REGION=germanywestcentral`
+needed; Groq Keychain key is not used. The result is saved as a new
+Git-ignored 0600 private JSONL with original SHA; output is sanitized
+to standard SDK codes. **Stop after one call and report the exact
+`sdk_result_reason`, `sdk_no_match_reason`,
+`sdk_cancellation_reason`, `sdk_error_code`** (or success).
+Potential authentication, connection or silence categories are only
+hypotheses until this result. If the old and new SDK both return no
+scores, do not repeat without analyzing the new category.
+
+
 OWNER DIRECTION (2026-10-17): Run a preliminary comparison now, before spending more time chasing a perfect native corpus.
 
 ## Precisely what it tests
