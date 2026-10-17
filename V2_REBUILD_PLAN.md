@@ -297,6 +297,9 @@ Do not reintroduce fake perfect pronunciation or lesson content changes.
 
 ## 13. Groq two-model recognition pilot — explicit free-plan gating
 
+**Implemented and merged:** [PR #25](https://github.com/AndrewDionne/LearnPolish/pull/25), commit `e585dc77b3bbe38ec0f7c46daf6e0a848b5d3243`; [four CI lanes PASS #39021508148](https://github.com/AndrewDionne/LearnPolish/actions/runs/39021508148), 19 offline benchmark tests. Actual free-plan key verification, consented recordings, independent human ratings and first real AI result remain owner-driven next steps; no provider was called.
+
+
 A local standard-library research client for Groq Whisper `whisper-large-v3`
 and `whisper-large-v3-turbo` reads existing SHA-256-locked adult WAV manifests
 and produces **model-specific transcripts only**. Default dry-run requires
