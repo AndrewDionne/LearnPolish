@@ -26,7 +26,7 @@ export function rankFamily(members:FamilyMember[],category:Supported){
   const sorted=members.slice().sort((a,b)=>
     recognitionScore(b,category)-recognitionScore(a,category) ||
     a.name.localeCompare(b.name)||a.id-b.id);
-  return sorted.map((member,index)=>{
+  return sorted.map(member=>{
     const score=recognitionScore(member,category);
     const rank=score===0?null:
       sorted.findIndex(other=>recognitionScore(other,category)===score)+1;
