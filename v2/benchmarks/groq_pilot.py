@@ -90,7 +90,7 @@ def transcribe(audio_path: Path, model: str, api_key: str,
 
 
 def _private_output(path: Path):
-    """Create results only inside ignored repo/temp or private external directories."""
+    """Save results in the owner's ignored research folder or an external private directory."""
     destination = path.absolute()
     check_research_location(destination)
     if destination.exists() or destination.is_symlink():
@@ -151,7 +151,7 @@ def main() -> int:
                         help="I have explicit informed consent for sending these adult voice recordings to Groq")
     parser.add_argument("--confirm-free-plan", action="store_true",
                         help="I checked Groq Console account limits, free plan and disabled paid billing")
-    parser.add_argument("--output", type=Path, help="New 0600 JSONL in ignored repo/temp or outside the repository")
+    parser.add_argument("--output", type=Path, help="New 0600 JSONL in PathToPolish-Private-AI/ or private external directory")
     args = parser.parse_args()
     try:
         report = run(args.manifest.resolve(), tuple(args.models), args.max_requests,
