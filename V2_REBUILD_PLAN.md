@@ -18,6 +18,14 @@
 
 [PR #15](https://github.com/AndrewDionne/LearnPolish/pull/15), squash commit `b33bbf04ea4763118cf22d957fda8bfd71e7f1f8`, adds timestamped/ID-preserving 16-kHz Speak research WAV export, automatic offline exact-Polish manifest construction, verified SHA-256 file identity, silent/duplicate/unknown-ID and volume-cap rejection, and a browser test for delayed mic permissions after switching screens. [CI passed](https://github.com/AndrewDionne/LearnPolish/actions/runs/38959948628): 38 unit tests / 39 browser tests plus Python dry-run benchmark protections. **Still no actual Whisper/Azure model inference or native Polish ratings**. Real private samples and a confirmed no-spend inference environment are the next gate. **Keep family expedition XP/open-map and no-Pierogi reward direction; do not implement make-work temporary scoring.**
 
+## Family UX follow-ups — merged 2026-10-17
+
+[PR #18](https://github.com/AndrewDionne/LearnPolish/pull/18), `946d77ffca32b6192ba12c218b1e69aed48e3373`, fixes stale team totals when a summary fetch races with server XP credit. Acknowledged contributions trigger a new authoritative summary and older HTTP responses are discarded; late-activity 2-person connected browser test passes. [CI PASS](https://github.com/AndrewDionne/LearnPolish/actions/runs/39007280451).
+
+[PR #19](https://github.com/AndrewDionne/LearnPolish/pull/19), `112c45c5657f3f7cfdbbc4bd8bff6a58a829e3e3`, ships a compact team dashboard with five weekly recognition views: earned XP, days practised, highest curriculum tier attempted, team map XP and evidence-gated Most Improved (pending, **no invented pronunciation/improvement values**). Equal results share places and inactivity produces no false winner. Create/join inputs are collapsed after entering a family. [CI PASS](https://github.com/AndrewDionne/LearnPolish/actions/runs/39007780208): **50 Vitest, 41 general browser + 2 connected desktop/mobile browser**, backend private-membership tests and Python offline benchmark guards.
+
+Synthetic screenshots from connected CI manually inspected. Team and personal map are distinct; compact management improves mobile density. The accessibility skip-link appears in one full-page captured frame (possible screenshot-focus artifact); verify on subsequent visual/physical review. **Actual family backend is still not publicly deployed; AI testing intentionally remains deferred.** Next substantive tranche should focus on deployable secure service, recovery and multi-device validation, not more synthetic/fictional social features.
+
 ## Family groups, server-owned XP and synced map — merged 2026-10-17
 
 [**PR #17**](https://github.com/AndrewDionne/LearnPolish/pull/17), squash `468329c6c96fcc55b57f7fb3b67eb4bf897e3e0a`, [CI green](https://github.com/AndrewDionne/LearnPolish/actions/runs/39006527751): 47 unit, 41 general browser, 2 *real connected* two-learner browser journeys, 4 isolated backend authorization/security tests and benchmark guards.
