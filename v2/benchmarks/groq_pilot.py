@@ -18,6 +18,7 @@ import urllib.request
 from typing import Callable
 
 from benchmark import load_manifest, polish_match, read_audio_metadata
+from research_paths import check_research_location
 
 GROQ_ENDPOINT = "https://api.groq.com/openai/v1/audio/transcriptions"
 MODELS = ("whisper-large-v3", "whisper-large-v3-turbo")
@@ -89,12 +90,9 @@ def transcribe(audio_path: Path, model: str, api_key: str,
 
 
 def _private_output(path: Path):
-    """Create results outside Git with 0600 permissions; never overwrite."""
+    """Create results only inside ignored repo/temp or private external directories."""
     destination = path.absolute()
-    root = Path(__file__).resolve().parents[2]
-    resolved = destination.resolve(strict=False)
-    if resolved == root or root in resolved.parents:
-        raise ValueError("AI research results must be saved outside the Git repository")
+    check_research_location(destination)
     if destination.exists() or destination.is_symlink():
         raise ValueError("Output already exists; choose a new filename")
     parent = destination.parent
@@ -153,7 +151,7 @@ def main() -> int:
                         help="I have explicit informed consent for sending these adult voice recordings to Groq")
     parser.add_argument("--confirm-free-plan", action="store_true",
                         help="I checked Groq Console account limits, free plan and disabled paid billing")
-    parser.add_argument("--output", type=Path, help="New private JSONL outside this repository (0600)")
+    parser.add_argument("--output", type=Path, help="New 0600 JSONL in ignored repo/temp or outside the repository")
     args = parser.parse_args()
     try:
         report = run(args.manifest.resolve(), tuple(args.models), args.max_requests,

@@ -21,6 +21,7 @@ import urllib.request
 import urllib.error
 
 from benchmark import read_audio_metadata
+from research_paths import check_research_location
 
 LICENSE_BY25 = "https://creativecommons.org/licenses/by/2.5/"
 LICENSE_BY40 = "https://creativecommons.org/licenses/by/4.0/"
@@ -122,10 +123,7 @@ def collect(output_dir: Path, count: int = 2, *,
     if not 1 <= count <= len(SAMPLES):
         raise ValueError("Select between one and six curated recordings")
     target = output_dir.absolute()
-    repository = Path(__file__).resolve().parents[2]
-    resolved = target.resolve(strict=False)
-    if resolved == repository or repository in resolved.parents:
-        raise ValueError("Native study recordings must be stored outside the Git repository")
+    check_research_location(target)
     if target.is_symlink() or target.exists():
         raise ValueError("Choose a new, not-yet-existing output directory")
     parent = target.parent
@@ -179,7 +177,7 @@ def collect(output_dir: Path, count: int = 2, *,
 def main() -> int:
     parser = argparse.ArgumentParser(description="Download curated Commons Polish WAV controls; NO AI calls")
     parser.add_argument("--output-dir", required=True, type=Path,
-                        help="A new subdirectory of a private chmod-700 folder, outside Git")
+                        help="A new subdirectory of chmod-700 repo/temp/ (Git-ignored) or a private external folder")
     parser.add_argument("--count", type=int, default=2, choices=range(1, 7),
                         metavar="1..6", help="Download first N of six reviewed samples; default two")
     parser.add_argument("--source-dir", type=Path,
