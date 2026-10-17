@@ -5,13 +5,32 @@ import unittest
 import wave
 from array import array
 
-from benchmark import extract_azure_native, load_manifest, polish_match, run
+from benchmark import extract_azure_native, load_manifest, polish_match, polish_target_present, run
 
 
 class BenchmarkTests(unittest.TestCase):
     def test_match_keeps_diacritics(self):
         self.assertTrue(polish_match("Dzień dobry!", "dzień dobry"))
         self.assertFalse(polish_match("zle", "źle"))
+
+    def test_target_presence_recognizes_token_but_not_whole_transcript(self):
+        for transcript in ("Czap, czapka.", "Czap-czapka.", "CZAPKA!", "czapka"):
+            self.assertTrue(polish_target_present("czapka", transcript))
+        self.assertFalse(polish_match("czapka", "Czap, czapka."))
+        self.assertFalse(polish_match("czapka", "Czap-czapka."))
+        self.assertTrue(polish_match("czapka", "CZAPKA!"))
+
+    def test_target_presence_never_fuzzes_polish_spelling_or_diacritics(self):
+        for transcript in ("Często.", "CZASTO", "ciastko", "uczysto"):
+            self.assertFalse(polish_target_present("ciasto", transcript))
+        self.assertFalse(polish_target_present("źle", "zle"))
+        self.assertTrue(polish_target_present("źle", "Powiedział źle."))
+        self.assertFalse(polish_target_present("czapka", "czapkach"))
+        self.assertFalse(polish_target_present("czapka", "czapką"))
+        self.assertFalse(polish_target_present("czapka", ""))
+        self.assertFalse(polish_target_present("", "czapka"))
+        self.assertTrue(polish_target_present("dzień dobry", "Powiedział dzień dobry!"))
+        self.assertFalse(polish_target_present("dzień dobry", "dzień piękny dobry"))
 
     def test_azure_preserves_native_scores_and_phonemes(self):
         response = {"NBest": [{"Lexical": "cześć", "PronunciationAssessment": {
