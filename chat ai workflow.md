@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-17 — actual Render Azure Speech token exchange PASS, germanywestcentral; existing resource name/F0 tier remains to verify in Azure Portal; study folder untouched
+**Updated:** 2026-10-17 — owner confirms existing Render-connected Azure Speech resource is Free tier; live token probe passes, first consented adult audio test pending; private folder unchanged
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -23,6 +23,12 @@
 3. Develop in a branch; execute available checks, report what is tested vs unverified.
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
 5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt features.
+
+## Azure F0 tier — owner confirmed in conversation (2026-10-17)
+
+Owner answered **"free tier"** when asked for the pricing tier of the Azure Speech resource currently connected to live Render Path to Polish. Treat this as **owner-confirmed Azure Speech F0**, not independently API-verified SKU or available remaining monthly consumption. Existing Render Azure STS diagnostic previously returned HTTP 200 `has_key=true`, `probe.ok=true`, `region=germanywestcentral`, configured endpoint `https://germanywestcentral.api.cognitive.microsoft.com`. Do not create a new Azure resource, change secrets, or reconfigure the existing production server. No Azure pronunciation-audio test has been performed yet.
+
+**Actual first test prerequisite:** one voluntary, consenting **adult learner original** 5–15s clean PCM16 mono 16k WAV with a complete **human-verified** Polish reference of at least four words, recorded at naturally slow/normal pace; no artificial stretching. Suggested sample: `Dzień dobry. Uczę się języka polskiego i chcę mówić coraz lepiej.` Keep the source in existing Git-ignored `repo/PathToPolish-Private-AI/` and NEVER move/rename the prior `Pl-czapka.ogg`/`Pl-ciasto.ogg` research originals. Import to a verified source manifest and prepare `sentence_study.py --min-samples 1` as **infrastructure-only sample**, not the later full 8–12 sentence model benchmark. The existing Azure `azure_pilot.py` uses an **original 1× manifest** and requires explicit `--send --approve-voice-upload --confirm-resource-f0 --confirm-no-paid-billing`, local key+region, one selected sample max 15s and a new private result output. The Render integration key is not exposed through connected read APIs, so **key transfer to Mac is not automatic**. Ask owner to record/export a WAV; do not ask them to paste credentials or tokens. Owner's F0 statement does not authorize paid/unchecked usage, private voice disclosure without consent or a new Render public endpoint.
 
 ## LIVE Azure Speech token issuance PASS from Render — owner Mac evidence (2026-10-17)
 
