@@ -35,6 +35,8 @@ test('two real private sessions join a family, choose different regions and shar
     await expect(panel.getByText('Practice contributed to your family.')).toBeVisible();
     await panel.getByRole('button',{name:'Refresh rankings'}).click();
     await expect(panel.getByText('10 weekly family XP')).toBeVisible();
+    // Server acknowledges work before React refreshes the family summary.
+    await expect(parent.getByRole('progressbar',{name:'Pomorskie unlock progress'})).toHaveAttribute('aria-valuenow','10');
     await expect(panel.getByText('pomorskie')).toBeVisible();
 
     const learner=await second.newPage();

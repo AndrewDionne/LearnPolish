@@ -118,6 +118,7 @@ export default function App() {
   const [familyConnection,setFamilyConnection] = useState<FamilyConnection|null>(null);
   const [familySummary,setFamilySummary] = useState<FamilySummary|null>(null);
   const [familySyncStatus,setFamilySyncStatus] = useState('');
+  const [familySyncVersion,setFamilySyncVersion] = useState(0);
   const changeFamilyConnection = useCallback((next:FamilyConnection|null)=>setFamilyConnection(next),[]);
   const [reviews, setReviews] = useState<ReviewSchedule>(() => {
     try { return parseReviewSchedule(localStorage.getItem(REVIEW_STORAGE_KEY)); } catch { return {}; }
@@ -241,7 +242,10 @@ export default function App() {
     // Never transmit prior backups, audio, personal lessons or client-calculated XP.
     if (familyConnection && builtIn.some(lesson=>lesson.items.some(item=>item.id===id))) {
       void shareFamilyActivity(familyConnection,id,learningMode,expedition.selectedRegion)
-        .then(accepted=>setFamilySyncStatus(accepted?'Practice contributed to your family.':'Already credited today.'))
+        .then(accepted=>{
+          setFamilySyncStatus(accepted?'Practice contributed to your family.':'Already credited today.');
+          if(accepted)setFamilySyncVersion(version=>version+1);
+        })
         .catch(()=>setFamilySyncStatus('Family sync unavailable. Your personal XP remains saved locally.'));
     }
   };
@@ -569,7 +573,7 @@ export default function App() {
           <section className="page-title"><span className="eyebrow">OPEN MAP · PRIVATE FAMILY EXPEDITION</span><h1>Your Poland expedition<span className="title-dot">.</span></h1>
             <p>Choose anywhere in Poland. No forced route, voting or adjacency rules. Every region you unlock stays open.</p></section>
           <ExpeditionMap state={expedition} onChange={setExpedition} shared={familySummary}/>
-          <FamilyPanel onConnection={changeFamilyConnection} onSummary={setFamilySummary} syncMessage={familySyncStatus}/>
+          <FamilyPanel onConnection={changeFamilyConnection} onSummary={setFamilySummary} syncMessage={familySyncStatus} syncVersion={familySyncVersion}/>
           <p className="info-footnote">Your personal/offline expedition remains in this browser. If an authorized private family service is configured and you opt in, future eligible practice also contributes to your family's separate shared map and friendly weekly rankings. The two ledgers are not merged automatically.</p>
         </>}
         {!loading && !loadError && !active && !editorOpen && page === 'profile' && <>
