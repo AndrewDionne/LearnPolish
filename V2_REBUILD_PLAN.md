@@ -377,3 +377,23 @@ No paid API access or real pronunciation grading authorized.
 
 
 This supersedes Section 16's `repo/temp/` recommendation. The owner has repeatedly shown that the **two manually downloaded original Commons Ogg files are already in `repo/PathToPolish-Private-AI/`** and explicitly instructed that **neither the files nor the directory will move**. Git ignores the exact root directory `/PathToPolish-Private-AI/`; benchmark path checks permit it and still reject tracked `assets/`, `docs/` and symlink escapes. Converted native WAV, checksum manifest, attribution and Groq transcripts go under the existing folder's importer-created child `commons-native-01/`. Docs, tests and durable workflow must use these exact relative paths from repo root and never suggest moving originals to `temp/`, `$HOME/`, or another folder. Only consented/Free-plan-confirmed explicit Groq requests, after dry preview, may upload audio. The former root `temp/` support remains for compatibility but is NOT this user's designated research location.
+
+
+## 18. Groq pilot physical 403 — read-only diagnosis and empty-output recovery
+
+Owner's Mac completed Commons Ogg-to-WAV and verified exactly 2 SHA-locked
+native controls. Two-model dry-run passed with 4 planned Groq requests
+(40 minimum billed seconds) but **no inference**. First approved live run
+returned **403 Forbidden**, with no transcriptions. Official Groq docs point to
+org/project model permissions as a specific 403 cause; they also classify
+generic 403 as permission denied. Before further uploading audio, inspect
+organization and active project **Settings → Limits** for both Whisper models
+and validate actual Free Plan/key project. New opt-in `--check-access`
+performs only a read-only GET model list (zero audio or transcription), with
+explicit warning that listing a model doesn't guarantee execution permissions.
+Error hints surface only whitelisted safe Groq denial codes, never raw
+server-body or API secret. Subsequent refused-first-call cleanup removes
+new zero-byte JSONL output, but retains genuine partial results. Owner's
+source folder is unchanged, `PathToPolish-Private-AI/`. Actual provider
+permission resolution, first successful transcripts and Polish contrast
+accuracy remain pending. No API calls made in CI.
