@@ -85,6 +85,8 @@ class GroqPilotTests(unittest.TestCase):
         self.assertEqual(len(rows), 2)
         self.assertEqual(rows[0]["audio_sha256"], rows[1]["audio_sha256"])
         self.assertEqual([x["recognized_expected_words"] for x in rows], [True, False])
+        self.assertEqual([x["reference_exact_match"] for x in rows], [True, False])
+        self.assertEqual([x["reference_present"] for x in rows], [True, False])
         self.assertEqual([x["pronunciation_score"] for x in rows], [None, None])
         self.assertNotIn("do-not-log-this-secret", output.read_text())
         self.assertEqual(output.stat().st_mode & 0o777, 0o600)
