@@ -360,7 +360,7 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
         if access:
             return access
         con = db()
-        family=con.execute("SELECT name FROM families WHERE id=?", (family_id,)).fetchone()
+        family=con.execute("SELECT name,owner_id FROM families WHERE id=?", (family_id,)).fetchone()
         # Weekly league uses UTC Monday; ISO weeks ensure identical results across devices.
         now=datetime.now(timezone.utc)
         week_start = int((now.replace(hour=0,minute=0,second=0,microsecond=0)
@@ -379,7 +379,7 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
                FROM region_goals r LEFT JOIN activities a ON a.region=r.region AND a.family_id=r.family_id
                WHERE r.family_id=? GROUP BY r.region,r.target ORDER BY r.region""",
             (family_id,)).fetchall()
-        return jsonify(group={"id":family_id,"name":family["name"]},
+        return jsonify(group={"id":family_id,"name":family["name"],"can_invite":user["id"]==family["owner_id"]},
                        members=[dict(x) for x in members],
                        regions=[dict(x) | {"unlocked":x["earned"]>=x["target"]} for x in goals],
                        recognition={"improvement":"pending_validated_evidence"},

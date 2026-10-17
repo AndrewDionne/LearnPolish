@@ -45,6 +45,8 @@ class FamilyApiTests(unittest.TestCase):
         code=self.client.post(f"/api/v2/family/groups/{gid}/invite",headers=owner).json["code"]
         self.assertEqual(self.client.post("/api/v2/family/invites/redeem",headers=child,json={"code":code}).status_code,200)
         self.assertEqual(self.client.post("/api/v2/family/invites/redeem",headers=stranger,json={"code":code}).status_code,400)
+        self.assertFalse(self.client.get(summary,headers=child).json["group"]["can_invite"])
+        self.assertTrue(self.client.get(summary,headers=owner).json["group"]["can_invite"])
         members=self.client.get(summary,headers=child).json["members"]
         self.assertEqual({person["name"] for person in members},{"Parent","Learner"})
         self.assertEqual(self.client.get(summary,headers=stranger).status_code,404)

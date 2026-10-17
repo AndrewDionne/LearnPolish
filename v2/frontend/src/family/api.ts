@@ -1,6 +1,6 @@
 /** V2 family service: deliberately disabled until explicitly configured and deployed. */
 export type FamilyConnection={token:string;groupId:number};
-export type FamilyGroup={id:number;name:string};
+export type FamilyGroup={id:number;name:string;can_invite?:boolean};
 export type FamilyMember={id:number;name:string;weekly_xp:number;active_days:number;highest_tier:number;team_xp:number};
 export type FamilySummary={
   group:FamilyGroup; members:FamilyMember[];

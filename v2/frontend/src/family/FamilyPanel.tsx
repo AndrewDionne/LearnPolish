@@ -142,7 +142,7 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage}:Props){
         <div className="family-regions">{summary.regions.length?summary.regions.map(r=>
           <div key={r.region}><span>{r.region}</span><strong>{r.earned}/{r.target} XP {r.unlocked?'✓':''}</strong></div>
         ):<p>No team XP yet. Complete a lesson to start exploring.</p>}</div>
-        <button type="button" disabled={busy} onClick={()=>void run(inviteMember)}>Create one-use family invite</button>
+        {summary.group.can_invite&&<button type="button" disabled={busy} onClick={()=>void run(inviteMember)}>Create one-use family invite</button>}
         {newInvite&&<p className="family-invite">Invitation expires in 48 hours, can be used only once, and should be shared privately.
           <code>{newInvite}</code></p>}
       </div>}
