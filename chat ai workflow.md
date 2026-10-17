@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-16 — PR #16 interactive Poland expedition, earned XP and migration merged; empirical AI testing deferred
+**Updated:** 2026-10-17 — PR #17 private family service and two-member connected journey merged; hosted rollout pending
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -23,6 +23,18 @@
 3. Develop in a branch; execute available checks, report what is tested vs unverified.
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
 5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt features.
+
+## Latest V2 family collaboration tranche — 2026-10-17
+
+**PR #17 merged** [view](https://github.com/AndrewDionne/LearnPolish/pull/17), squash commit `468329c6c96fcc55b57f7fb3b67eb4bf897e3e0a`. [CI PASS #39006527751](https://github.com/AndrewDionne/LearnPolish/actions/runs/39006527751), **47 unit / 41 general desktop-mobile Playwright / 2 connected desktop-mobile family Playwright / 4 backend tests**, offline Python benchmark safeguards PASS.
+
+**Shipped code (not yet deployed service):** isolated Flask family API in `v2/server/`, private accounts with PBKDF2-hashed passwords and 12-character minimum, login throttling, random server-hashed 7-day sessions, owner-issued single-use 48h invitations, membership checks, 12-member cap, catalog-constrained server-computed and deduplicated activity XP, permanent family region goals, shared region progress, weekly effort/consistency/highest server-known tier board. Strict explicit allowed origins and required private persistent SQLite DB/catalog. New React `v2/frontend/src/family/` with account creation/sign-in, group creation/invites, opt-in future built-in lesson contributions, private leaderboard and **My Map / Family Map** toggle showing real server region totals. Family members can independently support any region. No voice/audio, personal lessons, past offline backups or claimed client XP is uploaded automatically. No fake Most Improved winner: server returns pending-evidence marker until genuine validated outcomes exist.
+
+**Important environment/deployment boundary:** `VITE_FAMILY_API_URL` is deliberately unset in standard app builds, so offline-only mode honestly displays the unavailable-family-service message. No public service provisioned; **cross-device family groups cannot be used by actual learners until persistent TLS-hosted infrastructure is configured**. See `v2/server/README.md` for required `PTP_FAMILY_DB`, `PTP_FAMILY_CATALOG`, exact origins, backups, and operator security review. Legacy account/scoring APIs remain untouched and are not used by V2 groups. Actual completion remains client-attested: private leaderboards are for friendly motivation, not cheating-proof competition. Need production auth/privacy review, minor/parent onboarding, email verification/recovery, real device testing and deployment rollout before public usage.
+
+**Synthetic UI audit:** manually inspected connected desktop and mobile GitHub CI screenshots. Verified legible map progress, region autonomy, invitation-on-owner, two-member weekly board and mobile stack. Noted follow-up: mobile Family setup/board is tall and invites should get a compact workflow; desktop sticky sidebar capture looked visually awkward in full-page screenshot (investigate in physical review). Screenshots are CI artifacts, not physical iPhone testing.
+
+**Owner priority remains:** develop product and family UX; **defer all Whisper/Azure/AI testing** and do not author new Polish content. Next: production-capable storage/auth deployment prep, family onboarding/UX compacting, security/privacy and actual multi-device physical review. Do not claim family service is already live on Render/GitHub Pages.
 
 ## Latest delivered product tranche — 2026-10-16
 
