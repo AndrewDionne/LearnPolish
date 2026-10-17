@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-17 — PR #20 private family account lifecycle merged; backend deployment and AI testing still deferred
+**Updated:** 2026-10-17 — PR #21 private family database backup/recovery safeguards merged; deployment and AI testing still deferred
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -24,15 +24,13 @@
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
 5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt features.
 
-## Active family-service durability gate — 2026-10-17 (PR pending CI)
+## Family service storage/recovery readiness — merged 2026-10-17
 
-Branch: `feat/v2-family-durable-backup-readiness` (based on `main` `d4bcd815dba95e5afe2a4e0af9314fa92cf4f898`). The scope is operational reliability, **not** hosting or release:
-- `v2/server/private_storage.py`: startup path/owner-only 0700/0600 guard; SQLite online backups including committed WAL transactions; integrity + foreign-key checks; SHA-256 manifests; isolated **new-file-only** restore drill, no automation/cloud upload/overwriting.
-- `v2/server/family_api.py`: private DB creation before SQLite open; reject insecure existing DB/parent and symlinks.
-- `v2/server/test_private_storage.py`: permission, snapshot, tamper, WAL, symlink and restore safety regressions; existing backend, frontend, connected Playwright and offline benchmark lanes remain mandatory.
-- Operator procedure and privacy cautions in `v2/server/README.md`; this workflow and `V2_REBUILD_PLAN.md` provide future-chat continuity.
+**PR #21 merged** [view](https://github.com/AndrewDionne/LearnPolish/pull/21), squash commit `78be71629fe848829d4313a3b9939fdc9a3d0759`. [**CI PASS #39014248350**](https://github.com/AndrewDionne/LearnPolish/actions/runs/39014248350): all **four** lanes green (frontend unit/build + mobile/desktop browser, connected two-account family browsers, private backend **17 Python tests**, offline benchmark safeguards). Fixed connected browser CI fixture to use a 0700 SQLite directory rather than relaxing private storage requirements.
 
-**Status at authoring:** code pushed to feature branch; full remote CI **not yet observed**. Do not report this as merged/green before exact-head evidence. **Privacy-critical outstanding blocker:** older snapshots can resurrect accounts/contributions deleted after the snapshot. No production restore/hosted rollout before retention and erasure reconciliation policy, backup encryption/off-site setup, and guardian/verified-email/auth recovery/physical mobile work. AI testing and lesson content creation remain deferred.
+**Delivered:** `v2/server/private_storage.py` enforces private 0700 directories/0600 regular database files and rejects symlinked or insecure startup targets. SQLite online backup includes committed WAL data; checks database and foreign-key integrity, writes a private snapshot and SHA-256 manifest, and never overwrites pre-existing backup filenames. Operator verification and offline restore rehearsal target **new files only**, with tests for corruption, manifest tampering, WAL, permissions, symlinks and filename collisions. The isolated family API invokes the secure-store guard before opening SQLite. Procedure documented in `v2/server/README.md`; product stages in `V2_REBUILD_PLAN.md`.
+
+**Boundary:** This is NOT a public family deployment, scheduled/off-host/encrypted backup regime or approved production recovery. Old restores may resurrect personal data that a user subsequently erased. Before hosted accounts: private persistent TLS infrastructure with backup encryption/rotation/monitoring and deletion reconciliation, email verification/password recovery, parent/guardian consent/privacy controls, operational review and physical iOS/multi-device testing. No AI inference or lesson content added; both remain deferred by owner.
 
 ## Family account privacy lifecycle — merged 2026-10-17
 
