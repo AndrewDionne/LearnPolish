@@ -69,6 +69,18 @@ test('two real private sessions join a family, choose different regions and shar
     await expect(learner.getByRole('button',{name:'Family Map'})).toHaveAttribute('aria-pressed','true');
     await expect(learner.getByRole('progressbar',{name:'Małopolskie unlock progress'})).toHaveAttribute('aria-valuenow','10');
     await expect(lp.getByRole('listitem')).toHaveCount(2);
+    const board=lp.getByRole('group',{name:'Weekly recognition category'});
+    await expect(lp.getByRole('list',{name:'Effort leaderboard'})).toBeVisible();
+    await expect(lp.getByRole('button',{name:'Create group'})).not.toBeVisible();
+    await board.getByRole('button',{name:'Consistency'}).click();
+    await expect(lp.getByRole('list',{name:'Consistency leaderboard'})).toContainText('1 day');
+    await board.getByRole('button',{name:'Trailblazer'}).click();
+    await expect(lp.getByRole('list',{name:'Trailblazer leaderboard'})).toContainText('Tier 1');
+    await board.getByRole('button',{name:'Team contribution'}).click();
+    await expect(lp.getByRole('list',{name:'Team contribution leaderboard'})).toContainText('10 map XP');
+    await board.getByRole('button',{name:'Most improved'}).click();
+    await expect(lp.getByRole('status').filter({hasText:'no validated improvement measurements'})).toBeVisible();
+    await board.getByRole('button',{name:'Effort'}).click();
     await learner.screenshot({path:'test-results/family-connected-leaderboard.png',fullPage:true});
     // One-use invitation was consumed. It cannot grant access to a third account.
     const learnerToken=await learner.evaluate(()=>sessionStorage.getItem('ptp-v2-family-session'));
