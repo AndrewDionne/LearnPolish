@@ -15,7 +15,9 @@ class FamilyApiTests(unittest.TestCase):
             {"id":"hard","kind":"reading","difficultyTier":3,
              "items":[{"id":"hard:0","polish":"Dzień dobry"}]}
         ]}),encoding="utf-8")
-        self.app=create_app(str(root/"family.db"),str(self.catalog),("http://localhost:5173",))
+        self.verification_mail=[]
+        self.app=create_app(str(root/"family.db"),str(self.catalog),("http://localhost:5173",),
+                            verification_sender=lambda email,code:self.verification_mail.append((email,code)))
         self.client=self.app.test_client()
 
     def tearDown(self):
@@ -25,6 +27,8 @@ class FamilyApiTests(unittest.TestCase):
         details={"email":email,"name":name,"password":"Private-family-passphrase-2026"}
         response=self.client.post("/api/v2/family/signup",json=details)
         self.assertEqual(response.status_code,201,response.json)
+        self.assertEqual(self.client.post("/api/v2/family/verification/confirm",json={
+            "email":email,"code":self.verification_mail[-1][1]}).status_code,200)
         login=self.client.post("/api/v2/family/login",json=details)
         self.assertEqual(login.status_code,200,login.json)
         return {"Authorization":"Bearer "+login.json["token"]}

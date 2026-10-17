@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-17 — PR #22 secure password recovery merged; email verification, deployment and AI testing still deferred
+**Updated:** 2026-10-17 — family signup email verification under review after merged PR #22; deployment and AI testing still deferred
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -23,6 +23,17 @@
 3. Develop in a branch; execute available checks, report what is tested vs unverified.
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
 5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt features.
+
+## Email verification — implementation under CI (2026-10-17)
+
+Branch: `feat/v2-family-email-verification`; previous merged checkpoint [PR #22](https://github.com/AndrewDionne/LearnPolish/pull/22). **No production email delivery configured and no family hosting.** This tranche must pass exact-head four-lane CI before merging.
+
+- `v2/server/family_api.py`: every new family account starts **unverified**; even correct email/password cannot create bearer sessions, family groups or accept invites without mailbox code confirmation. Old persisted accounts with no verification record also require one-time verification; backend auth denies previously issued sessions while unverified, and clears those old sessions on successful confirmation. Password resets do not bypass the gate. Standalone verified metadata table avoids changing legacy user rows.
+- One-time SHA-256-only stored 256-bit codes, **30-minute** expiration, replacement on authenticated resend, email-and-code binding and enforced 3/hour/email, 20/hour/network controls for signup and resends. Authenticated-with-password resend returns generic 202 for invalid credentials/unverified unknowns; no raw code in API responses/URLs, logs or Git.
+- `v2/server/recovery_mail.py` now differentiates verification from recovery mail, retaining TLS-only provider configuration; no SMTP sender => signup disabled (503), UI create button unavailable. Private `ci_family_server.py` and `PTP_CI_VERIFICATION_OUTBOX` exist **only in GitHub Actions**, not production; connected Playwright explicitly enters inbox code before family invitation/XP test.
+- `v2/frontend/src/family/FamilyPanel.tsx`: verify/resend pending accounts before login; sign-in to old unverified account explains the verification requirement. Backend security/migration tests added. README and V2 roadmap explain the operator/release boundary.
+
+Remaining: **guardian/child onboarding and parental authority**, actual SMTP deliverability/bounce and abuse monitoring, TLS deployment, encrypted off-site backup with data-erasure reconciliation, privacy retention, iOS physical testing. Owner explicitly defers AI inference and new Polish content.
 
 ## Family password recovery — merged 2026-10-17
 

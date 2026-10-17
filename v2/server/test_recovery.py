@@ -21,8 +21,10 @@ class FamilyRecoveryTests(unittest.TestCase):
         self.database = str(folder / "family.sqlite")
         self.catalog = str(catalog)
         self.sent = []
+        self.verification_mail = []
         self.app = create_app(self.database, self.catalog, ("http://localhost:5173",),
-                              recovery_sender=lambda email, code: self.sent.append((email, code)))
+                              recovery_sender=lambda email, code: self.sent.append((email, code)),
+                              verification_sender=lambda email, code: self.verification_mail.append((email, code)))
         self.client = self.app.test_client()
         self.email = "parent@example.com"
         self.old_password = "original-private-passphrase-2026"
@@ -30,6 +32,8 @@ class FamilyRecoveryTests(unittest.TestCase):
         assert self.client.post("/api/v2/family/signup", json={
             "email": self.email, "name": "Parent", "password": self.old_password
         }).status_code == 201
+        assert self.client.post("/api/v2/family/verification/confirm",json={
+            "email":self.email,"code":self.verification_mail[-1][1]}).status_code == 200
 
     def tearDown(self):
         self.temp.cleanup()
