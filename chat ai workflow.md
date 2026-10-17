@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-17 — PR #31 curl model-list physically PASS on owner Mac; next explicit four-call v3/Turbo transcription; audio folder unchanged
+**Updated:** 2026-10-17 — first owner-run real Groq Large-v3 + Turbo curl pilot completed 4 requests; results pending review; study folder unchanged
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -23,6 +23,12 @@
 3. Develop in a branch; execute available checks, report what is tested vs unverified.
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
 5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt features.
+
+## First real two-model Whisper transcription — OWNER MAC PASS (2026-10-17)
+
+**Physical evidence from owner terminal:** after PR #31, `python3 v2/benchmarks/groq_pilot.py --manifest PathToPolish-Private-AI/commons-native-01/manifest.json --models whisper-large-v3 whisper-large-v3-turbo --transport curl --max-requests 4 --max-billed-seconds 40 --send --approve-voice-upload --confirm-free-plan --output PathToPolish-Private-AI/commons-native-01/groq-transcripts-curl-01.jsonl` exited successfully and reported `recordings: 2`, `models: [whisper-large-v3, whisper-large-v3-turbo]`, `planned_requests: 4`, `estimated_billed_seconds: 40.0`, `network_requests_performed: 4`. No HTTP or validation errors surfaced. This establishes successful **actual model transcription transport**, not pronunciation quality, accuracy, account charges, or model ranking. The two licensed Ogg source recordings and all generated WAV/JSONL files remain under the owner's **unchanged** ignored `repo/PathToPolish-Private-AI/` directory. Never ask to move files.
+
+**NEXT USER ACTION:** read only the generated result JSONL with `cat PathToPolish-Private-AI/commons-native-01/groq-transcripts-curl-01.jsonl` and paste the four non-secret rows (expected pairs `czapka` and `ciasto` for both models). **Actual transcripts have not been shown to the assistant yet; do not invent or assume accuracy.** Evaluate matched recognition, any hallucination/blank transcript, latency if available (not currently captured), and native-control limitations. Do not equate exact word transcription with phoneme-specific error detection or pronunciation grades. Before any additional provider tests, plan a controlled set of longer Polish sentences and adult learner-error recordings with human labels, per PILOT_PROTOCOL, maintaining opt-in and no paid charges.
 
 ## Owner Mac curl-model-list physical verification — PASS (2026-10-17)
 
