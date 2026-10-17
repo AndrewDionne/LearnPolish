@@ -244,6 +244,63 @@ be uncertain. Respect provider terms and creator attribution; never assume
 random web/news clips are public domain.
 
 
+## Mac first live Groq trial returned HTTP 403 — zero-upload diagnostic (2026-10-17)
+
+**Observed on owner's Mac:** the two-source Polish Commons WAV conversion and
+offline dry-run worked, with `planned_requests=4`, `estimated_billed_seconds=40`
+and `network_requests_performed=0`. Their first explicitly approved live
+Whisper request returned **HTTP 403**, before any transcript was returned.
+Do not attribute this to WAV contents or Wikimedia's separate HTTP 429.
+
+Official Groq error docs: `401` usually means missing/invalid credentials;
+`403` means permission restrictions; `429` is rate limit.
+Groq specifically returns **`model_permission_blocked_org`** or
+**`model_permission_blocked_project`** for model access denied at the
+organization or project level (org restrictions take precedence).
+Docs:
+- https://console.groq.com/docs/errors
+- https://console.groq.com/docs/model-permissions
+
+**First inspect the Console, without sending more voice:**
+- https://console.groq.com/settings/limits — Organization → Limits,
+  allow BOTH `whisper-large-v3` and `whisper-large-v3-turbo`.
+- https://console.groq.com/settings/project/limits — Project → Limits
+  for the project holding this API key, if applicable.
+- Ensure the API key belongs to the correct active organization/project,
+  and the account actually is on its intended Free Plan.
+
+**Optional read-only terminal test** (no WAV, inference or billable
+transcription; your original files never move). Make sure `GROQ_API_KEY` is
+still loaded in your current shell. From the repo root:
+
+    python3 v2/benchmarks/groq_pilot.py --check-access
+
+This performs **one GET** to the Groq model list and prints only a safe
+model-list summary, not your key. Even a successful model-list response does
+**not** guarantee transcription rights: org/project limits can still block
+a listed model. If the command itself reports HTTP 403, review the Console
+or ask Groq support. There is no automatic retry.
+
+**Output cleanup:** previous versions created an **empty** result file
+(`PathToPolish-Private-AI/commons-native-01/groq-transcripts-01.jsonl`)
+before the first refused request. Inspect safely:
+
+    ls -lh PathToPolish-Private-AI/commons-native-01/groq-transcripts-01.jsonl
+    wc -l PathToPolish-Private-AI/commons-native-01/groq-transcripts-01.jsonl
+
+Do not overwrite, rename or relocate any Ogg/WAV/manifest. If that result
+file is **zero bytes and contains zero lines**, the earlier failed call
+produced no evidence. The updated runner now automatically removes **only
+new empty result files on first failure**, while preserving partial successful
+transcriptions. You may use a **new result filename** for the next expressly
+approved attempt rather than deleting anything.
+
+Once Console model permissions are verified, the exact four-call
+Groq command in the authoritative-folder section may be retried with an
+unused result filename only after confirming actual Free Plan and voice
+upload approval. Successful native ASR recognition is not pronunciation
+scoring. This investigation has made **no live provider requests** in CI.
+
 ## Authoritative research directory: `PathToPolish-Private-AI/` (owner-selected, FINAL)
 
 **Do not move or rename existing recordings.** The owner already has the
