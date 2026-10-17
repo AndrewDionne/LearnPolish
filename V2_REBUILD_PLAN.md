@@ -422,3 +422,23 @@ after free tier/permissions/consent confirmation use explicitly opt-in
 `--transport curl --send` for the same two native WAVs and both v3/Turbo,
 new `groq-transcripts-curl-01.jsonl` under unchanged owner research folder.
 Tests are mocked; provider POST still unverified pending Mac physical trial.
+
+
+## 20. First Groq Whisper contrast: misleading single recognition flag
+
+**Actual owner Mac data:** source `czapka`: Large-v3 `Czap, czapka.`,
+Turbo `Czap-czapka.`; source `ciasto`: Large-v3 `Często.`,
+Turbo `CZASTO`. Four actual HTTP calls succeeded (min 40 billed
+audio seconds), strict normalized **whole-reference** matching was false
+for all 4, but **whole-token reference presence** is true for `czapka`
+in BOTH outputs. Neither model contained `ciasto`. Thus 0/2 strict and
+1/2 target-present for each model; no credible advantage, no pronunciation
+grades, and no evidence that the extra `Czap` was an ASR hallucination
+rather than audio content. Introduce dual metrics while preserving legacy
+strict `recognized_expected_words`. Develop `review_groq.py` to replay
+original SHA-locked WAVs and JSONL fully **offline** with provenance
+checks. The same exact research directory remains canonical
+`repo/PathToPolish-Private-AI` (never move). After review, verify actual
+recorded utterances by listening, then plan longer native sentences and
+human-rated learner sound contrasts; do NOT decide between Whisper models
+on two one-word native clips or request paid quotas.
