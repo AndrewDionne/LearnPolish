@@ -40,7 +40,7 @@ def request_json(url: str, api_key: str, *, audio: Path | None = None,
     if audio is not None and model not in ("whisper-large-v3", "whisper-large-v3-turbo"):
         raise ValueError("Only approved Whisper model names may be sent")
     args = [
-        "curl", "--silent", "--show-error", "--max-time", str(timeout),
+        "curl", "-q", "--silent", "--show-error", "--max-time", str(timeout),
         "--connect-timeout", "10", "--max-redirs", "0",
         "--proto", "=https",
         "--write-out", "\n%{http_code}",
