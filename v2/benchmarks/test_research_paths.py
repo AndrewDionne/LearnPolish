@@ -58,7 +58,7 @@ class ResearchPathTests(unittest.TestCase):
             external = pathlib.Path(base) / "elsewhere"
             external.mkdir()
             (root / "temp").symlink_to(external, target_is_directory=True)
-            with self.assertRaisesRegex(ValueError, "repo/temp/"):
+            with self.assertRaisesRegex(ValueError, "PathToPolish-Private-AI"):
                 check_research_location(root / "temp" / "manifest.json",
                                         repository=root)
 
