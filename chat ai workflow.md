@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-17 — owner-observed Groq 403 on first live Polish pilot; safe GET-model diagnostic, existing directory unchanged
+**Updated:** 2026-10-17 — PR #30 merged Groq 403 safe access diagnostics; owner next run GET-only; existing folder unchanged
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -23,6 +23,12 @@
 3. Develop in a branch; execute available checks, report what is tested vs unverified.
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
 5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt features.
+
+## PR #30 merged — Groq 403 no-audio diagnostics certified 2026-10-17
+
+**PR #30 merged** [view](https://github.com/AndrewDionne/LearnPolish/pull/30) squash `ca535f9b510440369929bf8691085d1548b5d7cf`; [four-lane **CI PASS #39040043130**](https://github.com/AndrewDionne/LearnPolish/actions/runs/39040043130) exact head `71de471b58a10a7b66702b174d56327fe907a85e`: **38 offline benchmark Python tests** plus backend, connected family browser, frontend all passed. **No actual Groq requests were run by CI/assistant**; owner's original first live audio attempt had HTTP403, no transcriptions returned.
+
+**Owner next step, no audio:** local `git switch main && git pull --ff-only origin main`, then `python3 v2/benchmarks/groq_pilot.py --check-access` with their existing local `GROQ_API_KEY`. This sends **one read-only authenticated GET /models**, no WAV/no model inference and prints whether v3 and Turbo are listed. Passing only establishes list access, NOT org/project transcription rights. Check Groq org/project Settings → Limits for both models and account Free Plan, avoid blind retries. New safe known error code hints `model_permission_blocked_org` / `model_permission_blocked_project` redacts raw provider error body; newly created zero-byte failed output now cleaned on refusal; partial successful results preserved. User's original recordings, SHA manifest, and outputs remain in their fixed **`PathToPolish-Private-AI/` in-repo ignored folder**, NEVER relocated. The previous failed run may already have left empty `commons-native-01/groq-transcripts-01.jsonl`; do not overwrite it. No confirmed provider inference/billing evidence.
 
 ## Groq first real test got HTTP 403 — field evidence and safe diagnosis (2026-10-17)
 
