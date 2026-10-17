@@ -135,24 +135,23 @@ private unless you deliberately pass three upload/plan-confirmation flags.
 
    Do not paste credentials in this chat, a GitHub issue, a shell command, or
    a file committed to the repository. This lasts only for that shell session.
-3. Export **one consenting adult** 16-kHz WAV from V2 Speak, place it in a
-   private folder outside Git, and generate a catalog-based manifest using
-   `corpus.py` above. Example folder: `$HOME/PathToPolish-Private-AI`
-   with `chmod 700 "$HOME/PathToPolish-Private-AI"`.
+3. Export **one consenting adult** 16-kHz WAV from V2 Speak into
+   `PathToPolish-Private-AI/` (ignored by Git), and generate a catalog-based
+   manifest using `corpus.py` above. Use `chmod 700 PathToPolish-Private-AI`.
 4. **Preview both model requests without upload** from the repository root:
 
        python3 v2/benchmarks/groq_pilot.py \
-         --manifest "$HOME/PathToPolish-Private-AI/manifest.json" \
+         --manifest "PathToPolish-Private-AI/manifest.json" \
          --max-requests 2 --max-billed-seconds 20
 
 5. Only **after** checking the console's free plan, adult recording consent
    and preview cap, explicitly approve the two uploads:
 
        python3 v2/benchmarks/groq_pilot.py \
-         --manifest "$HOME/PathToPolish-Private-AI/manifest.json" \
+         --manifest "PathToPolish-Private-AI/manifest.json" \
          --max-requests 2 --max-billed-seconds 20 \
          --send --approve-voice-upload --confirm-free-plan \
-         --output "$HOME/PathToPolish-Private-AI/groq-two-models-001.jsonl"
+         --output "PathToPolish-Private-AI/groq-two-models-001.jsonl"
 
    This example intentionally allows only **one recording × two models**.
    Two or more WAVs fail closed under `--max-requests 2`. Choose another
@@ -191,17 +190,17 @@ conversion. **It never uses Groq/Azure/Whisper, and does not require any key.**
 - `szwedka` — Tsca — [recording](https://commons.wikimedia.org/wiki/File:Pl-szwedka.ogg) — CC BY 4.0
 - `lato` — Derbeth — [recording](https://commons.wikimedia.org/wiki/File:Pl-lato.ogg) — CC BY 2.5
 
-Download first **two** contrast examples (one `cz`, one `ć/ci`), no API
+Use the **already downloaded** two contrast examples (one `cz`, one `ć/ci`), no API
 charges. On a Mac, run these from the **LearnPolish repo root**:
 
     command -v ffmpeg >/dev/null || brew install ffmpeg
-    mkdir -p "$HOME/PathToPolish-Private-AI"
-    chmod 700 "$HOME/PathToPolish-Private-AI"
+    chmod 700 PathToPolish-Private-AI
     python3 v2/benchmarks/public_native_samples.py \
-      --output-dir "$HOME/PathToPolish-Private-AI/commons-native-01" --count 2
+      --source-dir PathToPolish-Private-AI \
+      --output-dir PathToPolish-Private-AI/commons-native-01 --count 2
 
 Creates `commons-native-01/manifest.json`, two `native-01.wav` /
-`native-02.wav` files, and `ATTRIBUTION.txt`, all private and **outside Git**.
+`native-02.wav` files, and `ATTRIBUTION.txt`, all **Git-ignored within the repository**.
 Files are *never overwritten*. To use all six, choose a new directory and
 `--count 6` then increase your preview cap to 12 requests and 120 billed
 seconds. Do not use the V2 Speak-specific `corpus.py` on public clips:
@@ -211,7 +210,7 @@ Commons importer already generates a valid benchmark manifest.
 Validate **locally without connecting to any model**:
 
     python3 v2/benchmarks/groq_pilot.py \
-      --manifest "$HOME/PathToPolish-Private-AI/commons-native-01/manifest.json" \
+      --manifest "PathToPolish-Private-AI/commons-native-01/manifest.json" \
       --models whisper-large-v3 whisper-large-v3-turbo \
       --max-requests 4 --max-billed-seconds 40
 
@@ -220,11 +219,11 @@ enabled, and you agree to transmit these appropriately attributed
 open-licensed samples to a third-party transcription service, use:
 
     python3 v2/benchmarks/groq_pilot.py \
-      --manifest "$HOME/PathToPolish-Private-AI/commons-native-01/manifest.json" \
+      --manifest "PathToPolish-Private-AI/commons-native-01/manifest.json" \
       --models whisper-large-v3 whisper-large-v3-turbo \
       --max-requests 4 --max-billed-seconds 40 \
       --send --approve-voice-upload --confirm-free-plan \
-      --output "$HOME/PathToPolish-Private-AI/commons-native-01/groq-transcripts-01.jsonl"
+      --output "PathToPolish-Private-AI/commons-native-01/groq-transcripts-01.jsonl"
 
 This uses **your existing single `GROQ_API_KEY` for both models**. These
 two sub-two-second public clips × 2 models are still subject to Groq's
@@ -245,108 +244,69 @@ be uncertain. Respect provider terms and creator attribution; never assume
 random web/news clips are public domain.
 
 
-## Research workspace: `repo/temp/` (owner-selected)
+## Authoritative research directory: `PathToPolish-Private-AI/` (owner-selected, FINAL)
 
-Keep **temporary recordings, source clips, manifests, private reviewer labels,
-and Groq responses** in a single `temp/` folder at the repository root.
-`.gitignore` now ignores the entire root `/temp/` directory. The Commons
-importer and Groq output guard explicitly **allow ignored `repo/temp/`**
-while still refusing `repo/assets/`, `v2/`, `docs/` or other tracked locations.
-`assets/` is for reviewed, intentionally versioned app resources.
+**Do not move or rename existing recordings.** The owner already has the
+original Commons files at the following exact, repository-relative paths:
 
-From the repository root on your Mac (e.g., `~/repos/path-to-polish`):
+    PathToPolish-Private-AI/Pl-czapka.ogg
+    PathToPolish-Private-AI/Pl-ciasto.ogg
+
+The root `.gitignore` ignores the entire `/PathToPolish-Private-AI/`
+directory, and both benchmark scripts explicitly permit private WAV/JSONL
+output there (while rejecting tracked `assets/` and `docs/`).
+The previously suggested `repo/temp/` and home-directory paths are
+**superseded** by this decision. Do not ask the owner to reorganize them.
+
+Run from the repo root after syncing `main`:
 
     git switch main && git pull --ff-only origin main
-    mkdir -p temp/commons-originals
-    chmod 700 temp temp/commons-originals
-    mv -n PathToPolish-Private-AI/Pl-czapka.ogg \
-      PathToPolish-Private-AI/Pl-ciasto.ogg \
-      temp/commons-originals/
-    git check-ignore -v temp/commons-originals/Pl-czapka.ogg
-    git status --short
+    chmod 700 PathToPolish-Private-AI
+    git check-ignore -v PathToPolish-Private-AI/Pl-czapka.ogg
 
-`mv -n` is a no-overwrite move and leaves any existing destination
-unchanged; check the paths if a source file is missing. Keep your old folder
-or remove it **only when empty** via `rmdir PathToPolish-Private-AI`.
-
-Then convert the two browser-downloaded originals **completely offline**:
+Process **the original two downloaded Oggs in place** (never redownload):
 
     python3 v2/benchmarks/public_native_samples.py \
-      --source-dir "temp/commons-originals" \
-      --output-dir "temp/commons-native-01" --count 2
+      --source-dir PathToPolish-Private-AI \
+      --output-dir PathToPolish-Private-AI/commons-native-01 --count 2
 
-If `temp/commons-native-01` already exists, inspect it and select a new
-output name or `rmdir` it only if empty. The importer creates owner-private
-WAV, SHA-256-locked `manifest.json`, and `ATTRIBUTION.txt` atomically.
+The importer leaves both originals in their existing location, and creates
+the `commons-native-01/` child with standardized WAV files, checksum-locked
+`manifest.json`, and `ATTRIBUTION.txt`. It will not overwrite an existing
+output folder: inspect it first and, only if empty, use `rmdir` on that child.
 
-Groq preview (zero API calls, one key supports both models):
+Preview both Whisper models **without Groq calls**:
 
     python3 v2/benchmarks/groq_pilot.py \
-      --manifest "temp/commons-native-01/manifest.json" \
+      --manifest PathToPolish-Private-AI/commons-native-01/manifest.json \
       --models whisper-large-v3 whisper-large-v3-turbo \
       --max-requests 4 --max-billed-seconds 40
 
-After you verify the actual Groq Free Plan and approve uploading the
-two credited Commons samples, use the **same** Groq key loaded privately
-in the Mac shell, then:
+Live inference is a **separate opt-in step**, only after checking the actual
+Groq account Free Plan and approving sending these attributed Commons clips.
+Use the same `GROQ_API_KEY` for both models:
 
     python3 v2/benchmarks/groq_pilot.py \
-      --manifest "temp/commons-native-01/manifest.json" \
+      --manifest PathToPolish-Private-AI/commons-native-01/manifest.json \
       --models whisper-large-v3 whisper-large-v3-turbo \
       --max-requests 4 --max-billed-seconds 40 \
       --send --approve-voice-upload --confirm-free-plan \
-      --output "temp/commons-native-01/groq-transcripts-01.jsonl"
+      --output PathToPolish-Private-AI/commons-native-01/groq-transcripts-01.jsonl
 
-`git status` must **not** list any files under `temp/`; `git add -f` can
-override ignore rules, so do not force-add recordings/results. .gitignore is
-**not encryption or a substitute for careful backups/cloud-sync settings**.
-There is no model inference during the offline preparation and preview.
+`git status` should never show ignored Ogg/WAV/JSONL; verify
+`git check-ignore -v`. Gitignore does **not** provide encryption and can be
+bypassed by `git add -f`, so never deliberately force-add private voices or
+results. Neither conversion nor default Groq preview uploads recordings.
 
-### Wikimedia HTTP 429 — safe recovery and no-network fallback
+### Wikimedia HTTP 429 — safe recovery
 
-Wikimedia has active 2026 rate limits and may return **HTTP 429 / Retry-After**
-for direct Ogg requests, even for a two-file study. The downloader uses a
-project-identified User-Agent and deliberately makes **no automatic retry**.
-Read any `Retry-After` message and do not repeatedly send requests. The
-downloader now stages output in a temporary private directory and **removes
-that staging directory if any source or ffmpeg step fails**. It publishes the
-final `commons-native-01` directory only once the WAVs, manifest and
-attribution are complete. No failed attempt should leave a new empty folder.
+Wikimedia sometimes returns HTTP 429 on direct audio downloads. The
+downloader reports rate limits and honors `Retry-After` without automatic
+retries or evasion. It publishes only complete manifests/converted WAVs and
+cleans up failed temporary output.
 
-If an older importer already created an **empty** output directory, remove
-only that empty folder (this fails safely if it contains files):
-
-    rmdir "$HOME/PathToPolish-Private-AI/commons-native-01"
-
-After `git switch main && git pull --ff-only origin main`, re-run the
-importer once *after Wikimedia's retry interval* (or omit network entirely
-using the fallback below).
-
-**Manual browser download (no Python HTTP requests):**
-1. Open the official Commons [czapka](https://commons.wikimedia.org/wiki/File:Pl-czapka.ogg)
-   and [ciasto](https://commons.wikimedia.org/wiki/File:Pl-ciasto.ogg)
-   pages in your browser. Use each page's **Original file / Download**.
-   Do not attempt to evade a current Wikimedia throttle.
-2. Save the original Ogg files as `Pl-czapka.ogg` and `Pl-ciasto.ogg` in
-   `$HOME/PathToPolish-Private-AI/commons-originals/` (not a Git folder);
-   keep the **.ogg** originals, not converted MP3s.
-3. Prepare offline:
-
-       mkdir -p "$HOME/PathToPolish-Private-AI/commons-originals"
-       chmod 700 "$HOME/PathToPolish-Private-AI/commons-originals"
-       python3 v2/benchmarks/public_native_samples.py \
-         --output-dir "$HOME/PathToPolish-Private-AI/commons-native-01" \
-         --source-dir "$HOME/PathToPolish-Private-AI/commons-originals" \
-         --count 2
-
-The `--source-dir` path **never performs any network calls**. It verifies
-both originals are regular Ogg files with size constraints, then applies the
-usual WAV conversion, byte fingerprints, licence attribution and recording
-validation. The first two `--count 2` sources are exactly the two filenames
-above; for all six, save the additional Commons originals under their exact
-page filenames. Continue to the Groq **preview** command above. Neither
-downloading nor offline conversion calls Groq or spends API quota.
-
-Wikimedia policies:
-https://www.mediawiki.org/wiki/Wikimedia_APIs/Rate_limits
-https://foundation.wikimedia.org/wiki/Policy:Wikimedia_Foundation_User-Agent_Policy/en
+**The owner has ALREADY downloaded the two Commons originals manually.**
+Do **not** redownload them, create a second source folder or change their
+location. Use the `--source-dir PathToPolish-Private-AI` command above.
+The manual import does not contact Wikimedia. Neither conversion nor preview
+contacts Groq.
