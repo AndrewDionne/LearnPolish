@@ -84,7 +84,7 @@ def polish_target_present(reference: str, prediction: str) -> bool:
     never phonetic/fuzzy matching. Not evidence of correct pronunciation.
     """
     def words(value: str) -> list[str]:
-        return re.sub(r"[^\\wąćęłńóśźż]+", " ", value.casefold(), flags=re.UNICODE).split()
+        return re.sub(r"[^\wąćęłńóśźż]+", " ", value.casefold(), flags=re.UNICODE).split()
 
     needle = words(reference)
     haystack = words(prediction)
