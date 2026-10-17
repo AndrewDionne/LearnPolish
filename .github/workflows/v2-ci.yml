@@ -87,7 +87,7 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Launch isolated local family API
         run: |
-          mkdir -p "$RUNNER_TEMP/ptp-family"
+          install -d -m 0700 "$RUNNER_TEMP/ptp-family"
           PTP_FAMILY_DB="$RUNNER_TEMP/ptp-family/test.sqlite" \
           PTP_FAMILY_CATALOG="$GITHUB_WORKSPACE/v2/frontend/public/generated/lessons.json" \
           PTP_FAMILY_ORIGINS=http://127.0.0.1:4173 \
