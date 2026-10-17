@@ -24,6 +24,10 @@
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
 5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt features.
 
+## Owner-selected local AI research workspace: Git-ignored repo/temp (2026-10-17)
+
+The owner prefers storing the live Whisper/Azure study's temporary Ogg/WAV files, manifests, private ratings and transcript JSONL in **the same repository clone under `temp/`**, rather than an arbitrary `$HOME/PathToPolish-Private-AI` folder. **Use `repo/temp/` (not `repo/assets/`)**. The root `.gitignore` now ignores `/temp/`; `v2/benchmarks/research_paths.py` safeguards importer target and Groq output to permit **only ignored repo/temp or external directories**, rejecting repo/assets and symlink escapes. CI tests validate guards. The parent `temp/` directory must be chmod 700, outputs mode 0600, no forced `git add -f`. The existing manually downloaded `Pl-czapka.ogg`, `Pl-ciasto.ogg` currently sit in `./PathToPolish-Private-AI/` under the repository from the user's screenshot: move with `mv -n ... temp/commons-originals/` from repo root and confirm `git check-ignore -v`. Then run Commons local `--source-dir temp/commons-originals --output-dir temp/commons-native-01 --count 2`, then Groq preview `--max-requests 4 --max-billed-seconds 40`. `v2/benchmarks/README.md` contains updated exact commands. No inference or paid calls. App assets remain separate.
+
 ## Wikimedia 429 + recovery import fix — merged 2026-10-17
 
 **PR #27 merged** [view](https://github.com/AndrewDionne/LearnPolish/pull/27), squash commit `0729a34a11564e34a36fe319b3e0891af7f32083`. [**Four-lane CI PASS #39036723705**](https://github.com/AndrewDionne/LearnPolish/actions/runs/39036723705) on exact PR head `29f988e3ab4ac6cbc69183695b76bef0577aa52e`, **28 offline benchmark tests** green; family backend, connected two-member browsers, frontend desktop/mobile also green. No live Commons downloads, audio uploads or paid/Groq API calls during CI.
