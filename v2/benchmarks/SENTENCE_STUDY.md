@@ -1,6 +1,85 @@
 # V2 Polish sentence, tempo and Azure pilot — owner setup
 
-STATUS: Code prepared; no real long-sentence recordings or Azure F0 resource have been provisioned. No network calls during setup. The old one-word Commons clips are retired as model-quality evidence and remain unmoved in the existing ignored PathToPolish-Private-AI/ directory.
+STATUS (2026-10-17): 10 REAL FLEURS long-sentence WAV candidates were downloaded into the owner's private folder; 3–4 sound preliminarily clear, the rest poor-mic, including two notably quiet. F0 Azure Speech was owner-confirmed and the Render token probe succeeded. No real Azure pronunciation assessment yet. Earlier one-word Commons originals remain unchanged and are not model-quality evidence.
+
+## 2026-10-17 — Microphone-quality triage after physically reviewing first ten FLEURS clips
+
+**Owner's actual listening findings:** 3–4 of the ten downloaded recordings
+*sounded clear*. The rest had poor microphone sound and **two were
+especially quiet**. This is a preliminary, recording-quality judgement,
+not transcript verification or a fluent native-speaker's certification.
+**Do not run Azure or Groq on quiet/distorted source recordings.** Do not
+loudness-normalize bad microphone audio and call it gold-standard. Even
+an attractive RMS/peak number does not establish native Polish,
+transcript alignment or lack of distortion.
+
+Pull latest main, then get an **offline acoustic report** of original,
+unaltered WAVs. It reports RMS level, peak, near-full-scale clipping and
+long low-level sections. These are advisory, not pronunciation scores:
+
+```bash
+git switch main
+git pull --ff-only origin main
+python3 v2/benchmarks/audio_quality_review.py \
+  --manifest PathToPolish-Private-AI/sentences-source.json
+```
+
+To **replay and record microphone-quality labels interactively** directly
+from the macOS Terminal (standalone Python script, no heredoc/EOFError):
+
+```bash
+python3 v2/benchmarks/audio_quality_review.py \
+  --manifest PathToPolish-Private-AI/sentences-source.json \
+  --review \
+  --output PathToPolish-Private-AI/audio-quality-review-01.json
+```
+
+For each recording, the script plays the original using `afplay`;
+enter **c** = clear, **q** = too quiet, **d** = noisy/distorted,
+**u** = uncertain, or **r** = replay. It saves a **NEW, private**
+SHA-indexed review JSON; it **never edits, replaces or deletes** the
+original WAV or source manifest. Labels only describe recording quality:
+`native_pronunciation_verified=false`, `provider_upload_approved=false`
+remain unchanged and no Azure/Groq call is made. Do not mark the
+three or four subjectively clear clips as verified Polish without an
+independent Polish-fluent listener.
+
+**Additional candidates without overwriting batch 01** (only if needed,
+after examining the first review). New recordings are stored in a **new
+child directory of exactly the same owner-selected research root**,
+not a relocated folder:
+
+```bash
+python3 v2/benchmarks/fleurs_candidates.py \
+  --source-dir PathToPolish-Private-AI \
+  --offset 80 --count 10 --batch-name fleurs-batch-02
+```
+
+The above is **metadata preview only**. To authorize ten new public
+dataset audio downloads, explicitly append `--download`:
+
+```bash
+python3 v2/benchmarks/fleurs_candidates.py \
+  --source-dir PathToPolish-Private-AI \
+  --offset 80 --count 10 --batch-name fleurs-batch-02 --download
+```
+
+This creates only `PathToPolish-Private-AI/fleurs-batch-02/` with
+new `sentences-source.json` and unverified WAVs. If the new child
+already exists, it **refuses overwrite**. A future 03 uses a new name
+and non-overlapping offset. Avoid repeated bulk sampling of poor-mic
+source audio indefinitely: after two candidate batches, reassess the
+quality of FLEURS for this purpose and consider a higher-fidelity licensed
+native Polish corpus or recorded professional speaker with authorized
+evaluation reuse.
+
+**Native review still required:** an independent fluent Polish speaker
+must verify the actual transcript, natural and accurate articulation,
+recording completeness, no clipping, source consent/rights for Azure,
+and distinct speaker identities. Only then construct a *separate reviewed
+subset* for `sentence_study.py`. Do not falsify review flags on rejected
+samples. Azure receives exactly one original 1× WAV under F0 budget and
+explicit consent; no sound-level claims from the quality report.
 
 ## First live Azure test: VERIFIED native Polish, not learner speech
 

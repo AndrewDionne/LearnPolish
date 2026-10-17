@@ -15,6 +15,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import stat
 import subprocess
 import tempfile
@@ -224,12 +225,44 @@ def stage(destination: Path, candidates: list[dict], *,
     }
 
 
+def stage_batch(destination: Path, candidates: list[dict], batch_name: str, *,
+                opener=urlopen, converter=ffmpeg_convert,
+                research_root: Path | None = None) -> dict:
+    """Atomically place a NEW second batch child inside the SAME private root.
+
+    The first batch's existing source WAVs and sentences-source.json are
+    never overwritten. Do not create another research root.
+    """
+    folder = private_root(destination, research_root=research_root)
+    if not re.fullmatch(r"fleurs-batch-[0-9]{2}", batch_name):
+        raise ValueError("New batch must be named fleurs-batch-02, -03, etc")
+    new_folder = folder / batch_name
+    if new_folder.exists() or new_folder.is_symlink():
+        raise ValueError("Existing batch directory would be overwritten; use a NEW batch name")
+    staging = Path(tempfile.mkdtemp(prefix=".fleurs-new-batch-", dir=folder))
+    try:
+        report = stage(staging, candidates, opener=opener,
+                       converter=converter, research_root=staging)
+        # Prevent replacing a real directory even if the initial check passed.
+        if new_folder.exists() or new_folder.is_symlink():
+            raise ValueError("Batch path appeared while staging; refusing overwrite")
+        os.rename(staging, new_folder)
+        report["manifest"] = str(new_folder / "sentences-source.json")
+        report["batch_name"] = batch_name
+        return report
+    finally:
+        if staging.exists():
+            # Cleanup ONLY our temporary batch on failure.
+            shutil.rmtree(staging)
+
+
 def main() -> int:
     p = argparse.ArgumentParser(description="Bounded FLEURS Polish sentence candidates; no speech AI")
     p.add_argument("--source-dir", type=Path, required=True,
                    help="Exactly PathToPolish-Private-AI/; existing audio stays untouched")
     p.add_argument("--count", type=int, default=10, help="1–12 candidates; default 10")
     p.add_argument("--offset", type=int, default=0, help="Viewer validation split row offset")
+    p.add_argument("--batch-name", help="Fresh child of existing private root, e.g. fleurs-batch-02; never overwrite batch 01")
     p.add_argument("--download", action="store_true",
                    help="Explicitly fetch 1–12 public dataset audio files into the existing private folder")
     args = p.parse_args()
@@ -237,7 +270,8 @@ def main() -> int:
         private_root(args.source_dir)
         candidates = get_candidates(count=args.count, offset=args.offset)
         if args.download:
-            report = stage(args.source_dir, candidates)
+            report = (stage_batch(args.source_dir, candidates, args.batch_name)
+                      if args.batch_name else stage(args.source_dir, candidates))
         else:
             report = {
                 "planned_candidates": len(candidates),
@@ -245,6 +279,7 @@ def main() -> int:
                 "speech_ai_requests": 0,
                 "approximate_seconds": round(sum(c["expected_seconds"] for c in candidates), 2),
                 "ready_to_stage": True, "review_required": True,
+                "planned_batch_name": args.batch_name,
             }
     except (ValueError, RuntimeError, OSError) as error:
         p.error(str(error))

@@ -12,7 +12,7 @@ from array import array
 
 from fleurs_candidates import (
     _audio_url, _bounded_get, extract_candidates, get_candidates, private_root,
-    rows_url, stage,
+    rows_url, stage, stage_batch,
 )
 from sentence_study import validate_source
 
@@ -143,6 +143,44 @@ class NativeCandidateTests(unittest.TestCase):
         self.assertEqual(list(self.root.glob("fleurs-pl-val-*.wav")), [])
         self.assertEqual(list(self.root.glob(".fleurs-stage-*")), [])
         self.assertTrue(self.original.exists())
+
+    def test_new_second_batch_preserves_first_batch_and_publishes_new_manifest(self):
+        first = extract_candidates(self.metadata, count=2)
+        stage(self.root, first, opener=self.opener, converter=self.convert,
+              research_root=self.root)
+        original_manifest = (self.root / "sentences-source.json").read_bytes()
+        # Use non-overlapping FLEURS row indexes for the second batch.
+        second = extract_candidates({"rows": self.metadata["rows"][2:]}, count=3)
+        report = stage_batch(self.root, second, "fleurs-batch-02",
+                             opener=self.opener, converter=self.convert,
+                             research_root=self.root)
+        self.assertEqual(report["batch_name"], "fleurs-batch-02")
+        self.assertEqual(report["speech_ai_requests"], 0)
+        self.assertEqual((self.root / "sentences-source.json").read_bytes(), original_manifest)
+        self.assertEqual(self.original.read_bytes(), b"DO NOT MOVE OR REPLACE THIS SOURCE")
+        newdir = self.root / "fleurs-batch-02"
+        self.assertTrue((newdir / "sentences-source.json").exists())
+        self.assertEqual(len(json.loads((newdir / "sentences-source.json").read_text())), 3)
+        self.assertEqual(newdir.stat().st_mode & 0o777, 0o700)
+        with self.assertRaisesRegex(ValueError, "Existing batch"):
+            stage_batch(self.root, second, "fleurs-batch-02", opener=self.opener,
+                        converter=self.convert, research_root=self.root)
+        with self.assertRaisesRegex(ValueError, "must be named"):
+            stage_batch(self.root, second, "../other", opener=self.opener,
+                        converter=self.convert, research_root=self.root)
+
+    def test_failed_second_batch_is_cleaned_without_touching_first(self):
+        old = (self.root / "original-not-for-removal.ogg")
+        old.write_bytes(b"ORIGINAL")
+        def reject(*args):
+            raise OSError("fake ffmpeg failure")
+        with self.assertRaisesRegex(OSError, "fake ffmpeg failure"):
+            stage_batch(self.root, extract_candidates(self.metadata, count=1),
+                        "fleurs-batch-02", opener=self.opener,
+                        converter=reject, research_root=self.root)
+        self.assertEqual(old.read_bytes(), b"ORIGINAL")
+        self.assertFalse((self.root / "fleurs-batch-02").exists())
+        self.assertEqual(list(self.root.glob(".fleurs-new-batch-*")), [])
 
     def test_fail_closed_when_not_enough_eligible_native_sentences(self):
         short = {"rows": [dict(self.metadata["rows"][0], row=dict(self.metadata["rows"][0]["row"], num_samples=16000))]}

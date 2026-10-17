@@ -1,5 +1,27 @@
 # Polish speech/pronunciation benchmark — first increment
 
+## Microphone quality screening and subsequent native candidate batches
+
+After physically listening to 10 real FLEURS Polish candidates, the
+owner found only about 3–4 preliminarily clear; most sounded poorly
+recorded and 2 were particularly quiet. Do not mistake dataset speaker
+metadata/transcripts for gold native Polish pronunciation.
+
+`audio_quality_review.py` is **local-only**:
+```bash
+python3 v2/benchmarks/audio_quality_review.py \
+  --manifest PathToPolish-Private-AI/sentences-source.json
+```
+`--review --output PathToPolish-Private-AI/audio-quality-review-01.json`
+replays each actual WAV with `afplay` and records listener mic-quality
+labels into a **new private** file. It never auto-approves Azure, changes
+source audio, or certifies Polish pronunciation. Bounded fresh FLEURS
+batch download: `fleurs_candidates.py --source-dir PathToPolish-Private-AI
+--offset 80 --count 10 --batch-name fleurs-batch-02 [--download]`.
+This creates a new child of the **same** private root only with explicit
+download, never overwriting the first `sentences-source.json`.
+Full operator steps: [SENTENCE_STUDY.md](SENTENCE_STUDY.md).
+
 ## Native Polish sentence-candidate acquisition — no AI provider calls
 
 **New:** `fleurs_candidates.py` (plus offline non-network mock tests) can
