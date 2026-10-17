@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-17 — owner heard first FLEURS 10: 3–4 preliminarily clear, most bad-mic incl 2 quiet; offline acoustic QC + batch-02 sampling setup; no Azure PA
+**Updated:** 2026-10-17 — PR #35 MERGED: 82-test offline acoustic quality QC and safe second FLEURS batch; 3–4/10 preliminarily clear; no Azure PA yet
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -22,7 +22,15 @@
 2. Check umbrella issue and code. Choose the next unfinished acceptance checkpoint, identifying dependencies and relevant tests.
 3. Develop in a branch; execute available checks, report what is tested vs unverified.
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
-5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt feature## Owner physical FLEURS microphone quality findings and triage tranche (2026-10-17)
+5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt feature## PR #35 MERGED — quality control after poor FLEURS microphones (2026-10-17)
+
+[PR #35](https://github.com/AndrewDionne/LearnPolish/pull/35) **MERGED** squash `f1a8c5219f0d4de8ea836f837adf147f9009a0fa`. Four-lane [CI #39069635400](https://github.com/AndrewDionne/LearnPolish/actions/runs/39069635400) **PASS** at exact PR head `8604099a8b6b75aedfecd254df049d641b197282`: **82 offline benchmark tests PASS**, frontend + private-family-backend + family-connected-browser all PASS. First CI caught oversensitive peak-level warning, fixed before final CI; users should sync merged main only.
+
+**Features:** new `v2/benchmarks/audio_quality_review.py` reads original SHA-locked, unaltered WAVs, reports RMS/peak dBFS, possible clipping, extended low-level windows, and optionally plays each WAV on Mac in standalone interactive mode (`--review --output <new ignored private JSON>`; c/q/d/u labels) without prior heredoc EOFError. Human mic-quality labels are separate from native pronunciation certification; no source/manifest/approval flag changes, no provider uploads. `fleurs_candidates.py` supports fresh `--batch-name fleurs-batch-02 --offset 80` child under SAME fixed `PathToPolish-Private-AI/` root, explicit `--download` required and no existing batch files overwritten. No second batch fetched and no Azure PA attempted. Docs in `SENTENCE_STUDY.md` / benchmark README.
+
+**Immediate owner next:** `git switch main && git pull --ff-only origin main`; then `python3 v2/benchmarks/audio_quality_review.py --manifest PathToPolish-Private-AI/sentences-source.json` for offline report and/or with `--review --output PathToPolish-Private-AI/audio-quality-review-01.json` to tag exactly which original clips are clear/quiet/distorted. These microphone labels are NOT Native Polish transcript verification. Do not improve bad clips via gain normalization to claim pristine data; do not send unverified source to Azure or Groq. If too few clear recordings, use batch-02 only on explicit request; after second weak batch change sourcing strategy. The 3–4 promising first-batch clips remain possible quality candidates pending independent fluent/native Polish linguistic validation and third-party consent.
+
+## Owner physical FLEURS microphone quality findings and triage tranche (2026-10-17)
 
 **Owner actually listened to the ten downloaded Polish FLEURS WAVs.** About **3–4 sounded clear**; **most had poor microphone quality**, with **two particularly quiet**. This is a subjective recording-quality result only: user is not asked to independently certify native pronunciation or transcript fidelity; **0 clips** certified for Azure model baseline. Do NOT infer specific bad clip IDs, since the owner supplied counts but not filenames. No Azure PA, no new Groq calls. Work remains native-speaker listening certification plus source/rights checks.
 
