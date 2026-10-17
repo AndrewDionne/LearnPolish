@@ -316,7 +316,7 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
         mode = data.get("mode")
         region = data.get("region")
         # NEVER accept client-supplied XP, difficulty, dates, outcomes or arbitrary item IDs.
-        if not isinstance(item,str) or item not in known or mode not in MODES or region not in REGIONS:
+        if not isinstance(item,str) or item not in known or not isinstance(mode,str) or mode not in MODES or not isinstance(region,str) or region not in REGIONS:
             return fail("invalid_activity")
         con = db()
         now = _now()
