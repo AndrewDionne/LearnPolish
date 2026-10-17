@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-17 — first owner Groq v3/Turbo four transcripts reviewed; strict equality vs target presence issue, offline analysis tranche; folder unchanged
+**Updated:** 2026-10-17 — PR #32 merged offline review and dual strict/target ASR recognition metrics; actual Groq evidence preserved; study folder unchanged
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -23,6 +23,22 @@
 3. Develop in a branch; execute available checks, report what is tested vs unverified.
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
 5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt features.
+
+## PR #32 merged — verified two-word result metrics and offline reviewer (2026-10-17)
+
+**[PR #32 merged](https://github.com/AndrewDionne/LearnPolish/pull/32)**, squash `fac760f5fe6329a497b7fbcccb431506b4d4f66f`. [Four-lane **CI PASS #39056856013**](https://github.com/AndrewDionne/LearnPolish/actions/runs/39056856013) at exact PR head `834213c93762ee27fe29cda67bf0783254b3ca0e`: **53 offline benchmark tests PASS** plus frontend, private-family backend and connected-browser regressions all green. The first CI attempt caught a mis-escaped regex and was corrected; only the green head was merged.
+
+**Observed actual Groq comparison (not synthetic):** `czapka` was included by both Large-v3 (`Czap, czapka.`) and Turbo (`Czap-czapka.`), though neither response equals the *entire expected reference*. Both failed to transcribe `ciasto` exactly (Large-v3 `Często.`, Turbo `CZASTO`). Therefore `reference_exact_match=0/2` and `reference_present=1/2` for **each model**; can't rank either or grade pronunciation from two sub-1.5s native clips. `reference_present` is contiguous word detection only with Polish diacritic discrimination; no fuzzy spelling credit. Old `recognized_expected_words` remains unchanged as strict equality for downstream compatibility.
+
+**Next physical owner action:** `git switch main && git pull --ff-only origin main`, then:
+
+```bash
+python3 v2/benchmarks/review_groq.py \
+  --manifest PathToPolish-Private-AI/commons-native-01/manifest.json \
+  --results PathToPolish-Private-AI/commons-native-01/groq-transcripts-curl-01.jsonl
+```
+
+Offline local review validates actual source WAV SHA-256/reference/model pair, emits both scores, and makes **zero requests, uploads or file writes**. To establish what was actually spoken before asserting model hallucination, listen locally with `afplay PathToPolish-Private-AI/commons-native-01/native-01.wav` and `afplay PathToPolish-Private-AI/commons-native-01/native-02.wav` and compare to verified source labels. Preserve original folder exactly. Further study: longer native sentences with verified reference, independently reviewed adult learner mistakes; no new paid calls authorized without confirmation.
 
 ## First actual v3 vs Turbo results — strict-match bug identified; offline replay (2026-10-17)
 
