@@ -3,6 +3,7 @@ import json
 import pathlib
 import tempfile
 import unittest
+import urllib.error
 import wave
 from array import array
 
@@ -72,6 +73,70 @@ class NativeAudioTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,"Unusable"):
             collect(target,fetcher=self.fetcher,converter=silent_converter)
         self.assertFalse((target/"manifest.json").exists())
+
+    def test_429_respects_retry_after_without_any_automatic_retry(self):
+        calls=[]
+        def throttled(request, timeout):
+            calls.append(request)
+            self.assertIn("github.com/AndrewDionne/LearnPolish",
+                          request.get_header("User-agent"))
+            self.assertEqual(timeout,20)
+            raise urllib.error.HTTPError(request.full_url,429,"Too Many Requests",
+                                         {"Retry-After":"180"},None)
+        with self.assertRaisesRegex(ValueError,"Retry-After: 180"):
+            get_audio(SAMPLES[0][3],opener=throttled)
+        self.assertEqual(len(calls),1)
+
+    def test_429_and_failed_conversion_leave_no_partial_folder(self):
+        target=self.root/"throttled"
+        def denied(_):
+            raise ValueError("Wikimedia Commons returned HTTP 429")
+        with self.assertRaisesRegex(ValueError,"HTTP 429"):
+            collect(target,fetcher=denied,converter=self.converter)
+        self.assertFalse(target.exists())
+        self.assertEqual(list(self.root.glob(".ptp-commons-staging-*")),[])
+        seen=[0]
+        def fail_second(source,destination):
+            seen[0]+=1
+            if seen[0]==2:
+                raise OSError("ffmpeg failed")
+            self.converter(source,destination)
+        with self.assertRaisesRegex(OSError,"ffmpeg failed"):
+            collect(target,fetcher=self.fetcher,converter=fail_second)
+        self.assertFalse(target.exists())
+        self.assertEqual(list(self.root.glob(".ptp-commons-staging-*")),[])
+
+    def test_local_commons_originals_skip_network_entirely(self):
+        manual=self.root/"manual"
+        manual.mkdir()
+        (manual/"Pl-czapka.ogg").write_bytes(b"OggS fake first")
+        (manual/"Pl-ciasto.ogg").write_bytes(b"OggS fake second")
+        def unexpected(_):
+            raise AssertionError("Local originals MUST NOT make network requests")
+        target=self.root/"converted-locally"
+        rows=collect(target,count=2,fetcher=unexpected,
+                     converter=self.converter,source_dir=manual)
+        self.assertEqual([x["reference"] for x in rows],["czapka","ciasto"])
+        self.assertTrue((target/"manifest.json").is_file())
+        self.assertFalse((target/"originals").exists())
+        # User-supplied originals remain untouched.
+        self.assertTrue((manual/"Pl-czapka.ogg").exists())
+
+    def test_manual_folder_rejects_missing_symlinked_and_invalid_audio(self):
+        manual=self.root/"manual"
+        manual.mkdir()
+        with self.assertRaisesRegex(ValueError,"missing"):
+            collect(self.root/"out",count=1,converter=self.converter,source_dir=manual)
+        self.assertFalse((self.root/"out").exists())
+        (manual/"Pl-czapka.ogg").write_bytes(b"not an ogg")
+        with self.assertRaisesRegex(ValueError,"valid-header Ogg"):
+            collect(self.root/"out",count=1,converter=self.converter,source_dir=manual)
+        self.assertFalse((self.root/"out").exists())
+        (manual/"Pl-czapka.ogg").unlink()
+        (manual/"Pl-czapka.ogg").symlink_to(self.root/"elsewhere")
+        with self.assertRaisesRegex(ValueError,"missing or symlinked"):
+            collect(self.root/"out",count=1,converter=self.converter,source_dir=manual)
+        self.assertFalse((self.root/"out").exists())
 
     def test_fixed_source_list_rejects_arbitrary_urls(self):
         with self.assertRaisesRegex(ValueError,"pre-reviewed"):

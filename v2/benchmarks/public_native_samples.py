@@ -18,6 +18,7 @@ import tempfile
 from typing import Callable
 import urllib.parse
 import urllib.request
+import urllib.error
 
 from benchmark import read_audio_metadata
 
@@ -41,23 +42,57 @@ SAMPLES = (
      "https://upload.wikimedia.org/wikipedia/commons/9/9e/Pl-lato.ogg"),
 )
 MAX_SOURCE_BYTES = 2_000_000
+AGENT = "PathToPolishResearch/1.1 (https://github.com/AndrewDionne/LearnPolish; small manual research downloader)"
 
 
-def get_audio(url: str) -> bytes:
-    """Fetch known Commons audio only, with a strict response cap."""
+def checked_ogg(body: bytes) -> bytes:
+    if len(body) > MAX_SOURCE_BYTES or not body.startswith(b"OggS"):
+        raise ValueError("Expected a small valid-header Ogg audio file (maximum 2 MB)")
+    return body
+
+
+def from_local_folder(source_dir: Path, url: str) -> bytes:
+    # Files are downloaded manually using each source's official Commons page.
+    filename = urllib.parse.unquote(url.rsplit("/", 1)[-1])
+    path = source_dir / filename
+    if path.is_symlink() or not path.is_file():
+        raise ValueError("Local Commons original missing or symlinked: " + filename)
+    with path.open("rb") as stream:
+        body = stream.read(MAX_SOURCE_BYTES + 1)
+    return checked_ogg(body)
+
+
+def rate_limit_message(error: urllib.error.HTTPError) -> str:
+    retry_after = error.headers.get("Retry-After", "") if error.headers else ""
+    # An opaque HTTP response header is untrusted, so don't echo control chars.
+    delay = "".join(ch for ch in retry_after if ch.isprintable())[:100]
+    return ("Wikimedia Commons returned HTTP 429 (rate limited). "
+            "Stop automated requests and respect Wikimedia's Retry-After"
+            + (": " + delay if delay else " / wait for the restriction to clear")
+            + ". To avoid automatic requests, manually download the original "
+              "Ogg files from their Commons pages and use --source-dir.")
+
+
+def get_audio(url: str, opener: Callable | None = None) -> bytes:
+    """One allowlisted Wikimedia request only; never retry or evade 429."""
     if url not in {entry[3] for entry in SAMPLES}:
         raise ValueError("Only the six pre-reviewed Commons audio URLs are permitted")
     request = urllib.request.Request(url, headers={
-        "User-Agent": "PathToPolishResearch/1.0 (non-automated small audio evaluation)",
+        "User-Agent": AGENT,
         "Accept": "audio/ogg,application/ogg,application/octet-stream",
     })
-    with urllib.request.urlopen(request, timeout=20) as response:
-        if urllib.parse.urlparse(response.geturl()).hostname != "upload.wikimedia.org":
-            raise ValueError("Audio download redirected outside Wikimedia")
-        body = response.read(MAX_SOURCE_BYTES + 1)
-    if len(body) > MAX_SOURCE_BYTES or not body.startswith(b"OggS"):
-        raise ValueError("Commons original is not a small Ogg audio file")
-    return body
+    try:
+        with (opener or urllib.request.urlopen)(request, timeout=20) as response:
+            if urllib.parse.urlparse(response.geturl()).hostname != "upload.wikimedia.org":
+                raise ValueError("Audio download redirected outside Wikimedia")
+            body = response.read(MAX_SOURCE_BYTES + 1)
+    except urllib.error.HTTPError as error:
+        if error.code == 429:
+            raise ValueError(rate_limit_message(error)) from None
+        raise ValueError("Wikimedia download failed with HTTP " + str(error.code)) from None
+    except urllib.error.URLError:
+        raise ValueError("Wikimedia download failed (network unavailable)") from None
+    return checked_ogg(body)
 
 
 def to_wav(source: Path, destination: Path) -> None:
@@ -77,8 +112,13 @@ def _write_private(path: Path, content: str) -> None:
 
 def collect(output_dir: Path, count: int = 2, *,
             fetcher: Callable[[str], bytes] = get_audio,
-            converter: Callable[[Path, Path], None] = to_wav) -> list[dict]:
-    """Create new 0700 directory only. Abort on collisions or unusable clips."""
+            converter: Callable[[Path, Path], None] = to_wav,
+            source_dir: Path | None = None) -> list[dict]:
+    """Stage privately; publish only after ALL sources are ready.
+
+    On HTTP 429, bad audio, ffmpeg failure or disk error, the staging directory
+    disappears automatically. No empty or partially populated destination.
+    """
     if not 1 <= count <= len(SAMPLES):
         raise ValueError("Select between one and six curated recordings")
     target = output_dir.absolute()
@@ -91,15 +131,18 @@ def collect(output_dir: Path, count: int = 2, *,
     parent = target.parent
     if not parent.is_dir() or parent.is_symlink() or stat.S_IMODE(parent.stat().st_mode) & 0o077:
         raise ValueError("Parent private AI folder must exist, be 0700 and not a symlink")
-    target.mkdir(mode=0o700)
+    if source_dir is not None and (source_dir.is_symlink() or not source_dir.is_dir()):
+        raise ValueError("--source-dir must be an existing regular folder")
     rows = []
     sources = []
-    with tempfile.TemporaryDirectory(prefix="ptp-commons-", dir=target) as work:
-        tmp = Path(work)
+    with tempfile.TemporaryDirectory(prefix=".ptp-commons-staging-", dir=parent) as work:
+        stage = Path(work)
+        originals = stage / "originals"
+        originals.mkdir(mode=0o700)
         for i, (word, author, license_url, url) in enumerate(SAMPLES[:count], 1):
-            original = tmp / f"{i:02d}.ogg"
-            original.write_bytes(fetcher(url))
-            path = target / f"native-{i:02d}.wav"
+            original = originals / f"{i:02d}.ogg"
+            original.write_bytes(from_local_folder(source_dir, url) if source_dir else fetcher(url))
+            path = stage / f"native-{i:02d}.wav"
             converter(original, path)
             if path.is_symlink():
                 raise ValueError("Audio converter created a symlink")
@@ -120,8 +163,16 @@ def collect(output_dir: Path, count: int = 2, *,
             })
             sources.append(f"{word} — {author} — {page} — {license_url}\n"
                            "Modification: re-encoded to mono 16k PCM16 WAV with added silence.\n")
-    _write_private(target / "manifest.json", json.dumps(rows, ensure_ascii=False, indent=2) + "\n")
-    _write_private(target / "ATTRIBUTION.txt", "\n".join(sources))
+        _write_private(stage / "manifest.json", json.dumps(rows, ensure_ascii=False, indent=2) + "\n")
+        _write_private(stage / "ATTRIBUTION.txt", "\n".join(sources))
+        # Never publish private original Oggs; retain only standardized WAVs
+        # and their provenance/fingerprints.
+        for original in originals.iterdir():
+            original.unlink()
+        originals.rmdir()
+        if target.exists() or target.is_symlink():
+            raise ValueError("Destination appeared while preparing samples; choose a new name")
+        os.rename(stage, target)
     return rows
 
 
@@ -131,9 +182,11 @@ def main() -> int:
                         help="A new subdirectory of a private chmod-700 folder, outside Git")
     parser.add_argument("--count", type=int, default=2, choices=range(1, 7),
                         metavar="1..6", help="Download first N of six reviewed samples; default two")
+    parser.add_argument("--source-dir", type=Path,
+                        help="Use manually downloaded official Commons Ogg originals; no network requests")
     args = parser.parse_args()
     try:
-        result = collect(args.output_dir, args.count)
+        result = collect(args.output_dir, args.count, source_dir=args.source_dir)
     except (OSError, ValueError, subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
         parser.error(str(error))
     print(f"Ready: {len(result)} native-Polish controls; no Whisper/Groq/Azure calls.")

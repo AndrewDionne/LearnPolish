@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-17 — PR #26 Commons native-Polish sample importer merged; Groq real API and paid inference not yet run, guardian profiles paused
+**Updated:** 2026-10-17 — address owner-observed Commons 429/empty-dir importer defect; Groq inference not run, guardian profiles paused
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -23,6 +23,14 @@
 3. Develop in a branch; execute available checks, report what is tested vs unverified.
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
 5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt features.
+
+## Commons HTTP 429 download recovery — patch under CI 2026-10-17
+
+**Owner physical finding:** on Mac, `public_native_samples.py --count 2` gets Wikimedia HTTP **429**, and the prior importer creates an empty `commons-native-01` which blocks safe retry. No Groq requests/key involvement. Wikimedia 2026 policies require meaningful contact/project User-Agent, respect 429 `Retry-After` and never evade throttle (https://www.mediawiki.org/wiki/Wikimedia_APIs/Rate_limits).
+
+**Repair:** importer now identifies itself with a public GitHub project URL, surfaces 429 + `Retry-After` with actionable safe instructions and **does not retry automatically**. Downloads/conversions run in a private staging folder and atomically appear at target only after all WAVs, SHA manifest and attribution succeed; failures leave **no empty/partial target**. Adds `--source-dir` to process two named original Commons Ogg files manually obtained via browser, with zero Python network requests; validates regular file/no symlink, 2 MB cap and Ogg header before ffmpeg. Mocked regression tests cover response throttling and cleanup (including ffmpeg fail), offline fallback, malformed/missing originals. Study README contains exact Mac recovery commands.
+
+**Do not repeat HTTP requests until retry interval has elapsed.** Existing empty folder from old version can be removed safely by `rmdir`, no recursive deletion. Groq preview and API spend guards unchanged. No real downloaded Oggs or live AI inference in CI.
 
 ## Licensed native-Polish audio controls — merged 2026-10-17
 
