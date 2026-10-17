@@ -20,6 +20,9 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
   const [email,setEmail]=useState('');
   const [password,setPassword]=useState('');
   const [recoveryAvailable,setRecoveryAvailable]=useState(false);
+  const [verificationAvailable,setVerificationAvailable]=useState(false);
+  const [pendingVerification,setPendingVerification]=useState(false);
+  const [verificationCode,setVerificationCode]=useState('');
   const [recoveryMode,setRecoveryMode]=useState(false);
   const [recoveryRequested,setRecoveryRequested]=useState(false);
   const [recoveryCode,setRecoveryCode]=useState('');
@@ -41,9 +44,10 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
   useEffect(()=>{
     if(!FAMILY_API||token)return;
     let active=true;
-    void familyRequest<{password_recovery_available:boolean}>('/api/v2/family/health')
-      .then(data=>{if(active)setRecoveryAvailable(data.password_recovery_available===true);})
-      .catch(()=>{if(active)setRecoveryAvailable(false);});
+    void familyRequest<{password_recovery_available:boolean;email_verification_available:boolean}>('/api/v2/family/health')
+      .then(data=>{if(active){setRecoveryAvailable(data.password_recovery_available===true);
+        setVerificationAvailable(data.email_verification_available===true);}})
+      .catch(()=>{if(active){setRecoveryAvailable(false);setVerificationAvailable(false);}});
     return ()=>{active=false;};
   },[token]);
   useEffect(()=>{
@@ -97,12 +101,35 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
     setEnabled(next);try{sessionStorage.setItem('ptp-v2-family-sharing',next?'yes':'no');}catch{}
   };
   const login=async()=>{
-    const data=await familyRequest<{token:string}>('/api/v2/family/login','POST',{email,password});
-    saveSession(data.token);setPassword('');setStatus('Signed in. Choose or create a family.');
+    let data:{token:string};
+    try{
+      data=await familyRequest<{token:string}>('/api/v2/family/login','POST',{email,password});
+    }catch(e){
+      if(e instanceof Error&&e.message==='email verification required'){
+        setPendingVerification(true);
+        setStatus('Confirm your email address to activate this family account.');
+        return;
+      }
+      throw e;
+    }
+    saveSession(data.token);setPassword('');setPendingVerification(false);
+    setStatus('Signed in. Choose or create a family.');
   };
   const signUp=async()=>{
     await familyRequest('/api/v2/family/signup','POST',{email,name,password});
+    setPendingVerification(true);
+    setVerificationCode('');
+    setStatus('Check your email for a one-time verification code.');
+  };
+  const verifyEmail=async()=>{
+    await familyRequest('/api/v2/family/verification/confirm','POST',
+      {email,code:verificationCode.trim()});
+    setVerificationCode('');setPendingVerification(false);
     await login();
+  };
+  const resendVerification=async()=>{
+    await familyRequest('/api/v2/family/verification/resend','POST',{email,password});
+    setStatus('If these are the pending account credentials, a new code has been emailed.');
   };
   const requestRecovery=async()=>{
     await familyRequest('/api/v2/family/recovery/request','POST',{email});
@@ -156,7 +183,24 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
     <div className="family-heading"><div><span className="eyebrow">PRIVATE FAMILY EXPEDITION</span><h2>Learn together</h2></div>
       {token&&<button type="button" onClick={()=>void run(logout)} disabled={busy}>Sign out</button>}</div>
     {!token ? <div className="family-auth">
-      {recoveryMode?<div className="family-recovery">
+      {pendingVerification?<div className="family-verification">
+        <h3>Verify your email</h3>
+        <p>Enter the code sent to your mailbox within 30 minutes. Family invitations,
+          shared XP and account access require verified email.</p>
+        <label>Email<input type="email" value={email} autoComplete="email"
+          onChange={e=>setEmail(e.target.value)}/></label>
+        <label>Verification code<input value={verificationCode} autoComplete="off"
+          onChange={e=>setVerificationCode(e.target.value.trim())}/></label>
+        <div className="family-actions">
+          <button type="button" disabled={busy||!verificationCode.trim()}
+            onClick={()=>void run(verifyEmail)}>Verify email</button>
+          <button type="button" disabled={busy||!email.trim()||!password}
+            onClick={()=>void run(resendVerification)}>Resend code</button>
+        </div>
+        <button type="button" disabled={busy} onClick={()=>{
+          setPendingVerification(false);setVerificationCode('');setError('');setStatus('');
+        }}>Back to sign in</button>
+      </div>:recoveryMode?<div className="family-recovery">
         <h3>Recover family account</h3>
         <p>Request a private email code. Codes expire in 15 minutes and can be used only once.</p>
         <label>Email<input type="email" autoComplete="email" value={email}
@@ -179,8 +223,9 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
         <label>Email<input type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)}/></label>
         <label>Password<input type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)}/></label>
         <div className="family-actions"><button type="button" disabled={busy} onClick={()=>void run(login)}>Sign in</button>
-          <button type="button" disabled={busy} onClick={()=>void run(signUp)}>Create account</button></div>
-        <small>New passwords require at least 12 characters. Your account is private to this service.</small>
+          <button type="button" disabled={busy||!verificationAvailable} onClick={()=>void run(signUp)}>Create account</button></div>
+        <small>New passwords require at least 12 characters. Email confirmation is required before family access.</small>
+        {!verificationAvailable&&<p className="family-note">New family accounts are unavailable until secure verification email delivery is configured.</p>}
         {recoveryAvailable&&<button type="button" disabled={busy} onClick={()=>{
           setRecoveryMode(true);setError('');setStatus('');}}>Forgot password?</button>}
       </>}
