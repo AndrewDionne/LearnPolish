@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-17 — owner listened to first native one-word clips and retired them as model-quality evidence; next test longer verified speech; study folder unchanged
+**Updated:** 2026-10-17 — plan 1× vs optional pitch-preserving slower speech plus Azure pl-PL pronunciation baseline; natural verified corpus first, no provider calls; folder unchanged
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -23,6 +23,19 @@
 3. Develop in a branch; execute available checks, report what is tested vs unverified.
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
 5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt features.
+
+## Research design direction: slower speech + Azure pl-PL parallel baseline (2026-10-17)
+
+**Owner exploration:** Slowing playback might improve Polish Whisper transcription because beginners speak slowly anyway; asked whether to bring Azure into research now. **Recommended hypothesis-driven design, NOT yet coded, sourced or tested:**
+
+1. Distinguish learner-friendly **playback-speed control** (may use 0.75–1.0×) from **model input transformations** (never infer a pronunciation grade from processed audio). A genuinely slow-speaking learner is NOT acoustically equivalent to offline time-stretch of a native sample; slowed playback should remain an optional learner UI feature and offline diagnostic.
+2. For new **human-verified, naturally spoken Polish sentence recordings** (not existing two too-short Commons words), A/B each immutable source at **1.00× original**, **0.85×**, and optionally **0.75×** pitch-preserving time stretch (FFmpeg `atempo=0.85` / `atempo=0.75`, https://ffmpeg.org/ffmpeg-filters.html#atempo). Preserve untouched 1× originals; give each derivative its own checksum/provenance/timing; model same reference; reject distorted/clipped/stretch artifacts on independent listening. Include **naturally slowly spoken** learner speech as separate original recordings at 1×. Do not multiply API costs until free-tier and user approval reverified; start local offline preparation.
+3. **Bring Azure Speech Pronunciation Assessment `pl-PL` into parallel baseline now**, but distinguish roles: Groq Whisper Large-v3/Turbo = transcription and known-text recognition; Azure = scripted reference-based pronunciation **accuracy, fluency, completeness, word miscue and phoneme accuracy scores**. Microsoft docs confirm Polish locale among 33 PA locales, but **named expected phoneme output is supported only for en-US (IPA), en-US/zh-CN (SAPI); for Polish, scores can lack phoneme names; spoken phoneme candidates, syllable groups and prosody are en-US-only**. We must inspect and preserve real raw `pl-PL` JSON and test whether its scores are useful on native speaker vs rated adult learner Polish contrast errors rather than promising Polish phoneme explanations. Docs https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support?tabs=pronunciation-assessment and https://learn.microsoft.com/en-us/azure/ai-services/speech-service/how-to-pronunciation-assessment#supported-features-per-locale .
+4. **Do NOT feed stretched audio to Azure for a fair pronunciation-grade comparison.** Its fluency/speed-related signals can be confounded by artificial time processing. Use **unaltered 1× naturally recorded learner audio**, same SHA as recognition engines, with native listener labels; natural slower learner speech is in-scope. For exploratory transcription tempo tests, only Groq ASR variants get tempo derivatives, not phonetic grading.
+5. **Costs:** Azure Speech F0 published 5 hours of free real-time STT per month (https://azure.microsoft.com/en-us/pricing/details/speech/), but verify **actual user Azure resource SKU F0, feature entitlement, current use and no S0/paid consumption** before a single PA call. Implement isolated credential handling, raw response capture and small budget hard stop after free-tier confirmation. No Azure account, keys, resource or paid calls assumed; avoid any external voice uploads absent explicit informed consent.
+6. Model-selection gate: test at least 8–12 intact 5–15s **natural sentence** controls with independently listened exact transcripts; 2+ voices where permitted; originals vs optional tempo transforms; then adult learner clips with independent ratings. Separate ASR WER from PA per-word/phoneme accuracy agreement and calibration. No more single-word Groq tests. No code/design commitments on artificial slowing until natural-corpus evidence.
+
+**Never relocate** the user's `repo/PathToPolish-Private-AI/` folder or previously imported native files. Previous four Groq requests completed successfully but their word clips remain smoke tests only.
 
 ## Native one-word test retired for model-selection — owner listening review 2026-10-17
 
