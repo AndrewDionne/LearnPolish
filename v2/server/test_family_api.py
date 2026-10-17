@@ -60,6 +60,8 @@ class FamilyApiTests(unittest.TestCase):
         self.assertEqual(send(stranger,"basic:0","learn","pomorskie").status_code,404)
         self.assertEqual(send(owner,"fake:3","learn","pomorskie").status_code,400)
         self.assertEqual(send(owner,"basic:0","learn","fictional").status_code,400)
+        self.assertEqual(send(owner,"basic:0",[],"pomorskie").status_code,400)
+        self.assertEqual(send(owner,"basic:0","learn",[]).status_code,400)
         first=send(owner,"basic:0","learn","pomorskie",
                    xp=100000,tier=5,improvementXp=5000,created_at="2020-01-01")
         self.assertEqual(first.status_code,201)
