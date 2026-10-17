@@ -147,3 +147,18 @@ or promise exact `cz`/ `ć` coaching until a phonetic method validates it.
 Only once adult pilot evidence is sufficient should we decide whether to
 ship Azure scores, use Whisper for recognition alongside a separate scorer,
 or keep pronunciation feedback qualitative and repeat/listen-focused.
+
+
+## Ready-to-run Groq comparison (added 2026-10-17)
+
+After consented adult WAV capture, reference-verified `manifest.json` and
+two-pass human labels, `groq_pilot.py` now makes it possible to compare
+**Whisper Large v3** and **Large v3 Turbo** on the same SHA-256-locked bytes.
+Its default is preview-only with zero API calls. Use the [benchmark README]
+(README.md#groq-whisper-large-v3--turbo--explicit-free-tier-research-runner)
+for exact Mac key entry, account-free-tier confirmation and one-recording,
+two-model hard-capped execution commands.
+
+Transcripts from either model measure word recognition **only**. They cannot
+show that a particular Polish phoneme was articulated correctly. Both models
+share one Groq API key and account; no live evaluation has been run in CI.
