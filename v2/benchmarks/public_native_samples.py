@@ -82,6 +82,10 @@ def collect(output_dir: Path, count: int = 2, *,
     if not 1 <= count <= len(SAMPLES):
         raise ValueError("Select between one and six curated recordings")
     target = output_dir.absolute()
+    repository = Path(__file__).resolve().parents[2]
+    resolved = target.resolve(strict=False)
+    if resolved == repository or repository in resolved.parents:
+        raise ValueError("Native study recordings must be stored outside the Git repository")
     if target.is_symlink() or target.exists():
         raise ValueError("Choose a new, not-yet-existing output directory")
     parent = target.parent
