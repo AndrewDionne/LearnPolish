@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-17 — PR #27 Commons 429 importer recovery merged; Groq inference not run, guardian profiles paused
+**Updated:** 2026-10-17 — PR #28 ignored repo/temp private research workspace merged; real Groq inference not yet run
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -23,6 +23,14 @@
 3. Develop in a branch; execute available checks, report what is tested vs unverified.
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
 5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt features.
+
+## Repo/temp study workspace — merged 2026-10-17
+
+**PR #28 merged** [view](https://github.com/AndrewDionne/LearnPolish/pull/28), squash commit `b4ee7d8a4719fae1b5e3771a654ae9d063ad31e0`. [**All four CI jobs PASS #39037897459**](https://github.com/AndrewDionne/LearnPolish/actions/runs/39037897459) at exact PR head `5c86b0e9b5c873d53350ef6e68d53b30e23f6cc2` including **32 benchmark Python unit tests**. Frontend desktop/mobile, connected family-browser and private-family backend regressions also passed.
+
+**Owner layout now authoritative:** private and temporary AI-study audio/manifests/Whisper results in root **`repo/temp/`** (ignored by `.gitignore`, not `repo/assets/`). `v2/benchmarks/research_paths.py` explicitly permits only ignored repo/temp or external private folders and rejects tracked project source/assets (including symlink escapes). `public_native_samples.py` and `groq_pilot.py` now accept local repo/temp output. Ignore is not encryption or robust against `git add -f`; keep 0700 folders, 0600 output files and don't force-stage voice data.
+
+**Physical step on Mac:** existing original Wikimedia `Pl-czapka.ogg`, `Pl-ciasto.ogg` were downloaded into `./PathToPolish-Private-AI/` inside repo. After `git switch main && git pull --ff-only origin main`, `mkdir -p temp/commons-originals && chmod 700 temp temp/commons-originals`, then `mv -n PathToPolish-Private-AI/Pl-czapka.ogg PathToPolish-Private-AI/Pl-ciasto.ogg temp/commons-originals/`, `git check-ignore -v temp/commons-originals/Pl-czapka.ogg` and `git status --short`. Run importer with `--source-dir temp/commons-originals --output-dir temp/commons-native-01 --count 2`, then preview Groq v3+Turbo `--manifest temp/commons-native-01/manifest.json --max-requests 4 --max-billed-seconds 40`. No private uploads or API inference until explicit user approval with their own Groq Console Free Plan check. README updated with exact commands.
 
 ## Owner-selected local AI research workspace: Git-ignored repo/temp (2026-10-17)
 
