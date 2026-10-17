@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-17 — PR #17 private family service and two-member connected journey merged; hosted rollout pending
+**Updated:** 2026-10-17 — PR #19 multi-category family recognition merged; hosted family service and AI testing still deferred
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -23,6 +23,16 @@
 3. Develop in a branch; execute available checks, report what is tested vs unverified.
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
 5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt features.
+
+## Follow-up family reliability and reward UX — 2026-10-17
+
+**PR #18 merged** [view](https://github.com/AndrewDionne/LearnPolish/pull/18), commit `946d77ffca32b6192ba12c218b1e69aed48e3373`; [CI PASS #39007280451](https://github.com/AndrewDionne/LearnPolish/actions/runs/39007280451): **47 unit, 41 general browser passes / 3 connected-only skips, 2 actual connected family Playwright passes**, backend security and Python safeguards pass. Mobile trace found group summary GET racing an accepted POST: UI displayed stale 0 XP despite accepted work. Fixed by **post-acknowledgement refresh** and request-generation gating so late summaries cannot overwrite newer results or a new selected group. Deterministic delayed-write two-account browser test now passes. No AI calls.
+
+**PR #19 merged** [view](https://github.com/AndrewDionne/LearnPolish/pull/19), commit `112c45c5657f3f7cfdbbc4bd8bff6a58a829e3e3`; [CI PASS #39007780208](https://github.com/AndrewDionne/LearnPolish/actions/runs/39007780208): **50 unit, 41 general browser passes / 3 connected-only skips, 2 connected family Playwright passes**, family backend and benchmark safeguards green. Adds five friendly weekly recognition views: **Effort** (server eligible XP), **Consistency** (separate practice days), **Trailblazer** (highest published lesson tier *attempted*, explicitly not mastery), **Team contribution** (expedition XP), and **Most Improved** (honest no-data explanation, no fabricated score until verified comparable evidence). Ties share rank; inactive members receive no fictional championship. Existing group management inputs collapsed into an accessible disclosure while a group is selected. No change to XP scoring; AI explicitly deferred.
+
+**Synthetic visual review:** inspected real GitHub connected-mobile screenshots from PRs #18/#19. The 16-region map, current family-region progress, two-member scoreboard and independent destinations were visible and visually coherent. PR #19 materially reduces long empty group creation/invite controls while connected; filters wrap in two columns on mobile. A “Skip to main content” accessibility control appeared in the full-page capture near the board; may be screenshot focus/scroll artifact, not yet diagnosed or observed on a physical device. Verify focus/skip-link presentation in later synthetic/physical testing. Do not claim physical iPhone/VoiceOver certification.
+
+**Next engineering gates:** secure deployed dedicated family service, private persistent DB and backups, verified TLS and exact origin/CORS, parent/minor privacy UX, invite/email verification and password recovery, data retention controls, appropriate offline-to-family sync recovery, and real multi-device tests. Current V2 family service remains an **undeployed opt-in integration**; no public account credentials should be collected until deployment review. Real pronunciation model evaluation and new lesson-content work remain **deferred by owner**.
 
 ## Latest V2 family collaboration tranche — 2026-10-17
 
