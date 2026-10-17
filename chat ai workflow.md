@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-17 — family signup email verification under review after merged PR #22; deployment and AI testing still deferred
+**Updated:** 2026-10-17 — PR #23 family email verification merged; guardian privacy/deployment and AI testing still deferred
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -24,16 +24,13 @@
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
 5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt features.
 
-## Email verification — implementation under CI (2026-10-17)
+## Family email verification — merged 2026-10-17
 
-Branch: `feat/v2-family-email-verification`; previous merged checkpoint [PR #22](https://github.com/AndrewDionne/LearnPolish/pull/22). **No production email delivery configured and no family hosting.** This tranche must pass exact-head four-lane CI before merging.
+**PR #23 merged** [view](https://github.com/AndrewDionne/LearnPolish/pull/23), squash commit `87cb214a9993e74cff49141f0878c0a023644a45`. [**CI PASS #39018174378**](https://github.com/AndrewDionne/LearnPolish/actions/runs/39018174378) on exact PR head `5211e4c8d177deed90243da0866af9e19cfda68c`. Four mandatory lanes green: **31 Python backend tests**, frontend TypeScript/unit/build and desktop/mobile browser checks, genuine connected two-member desktop/mobile family journey with email verification before invitation/XP, and offline-only benchmark safeguards. CI uses a GitHub Actions-only private synthetic mail outbox, NOT production SMTP.
 
-- `v2/server/family_api.py`: every new family account starts **unverified**; even correct email/password cannot create bearer sessions, family groups or accept invites without mailbox code confirmation. Old persisted accounts with no verification record also require one-time verification; backend auth denies previously issued sessions while unverified, and clears those old sessions on successful confirmation. Password resets do not bypass the gate. Standalone verified metadata table avoids changing legacy user rows.
-- One-time SHA-256-only stored 256-bit codes, **30-minute** expiration, replacement on authenticated resend, email-and-code binding and enforced 3/hour/email, 20/hour/network controls for signup and resends. Authenticated-with-password resend returns generic 202 for invalid credentials/unverified unknowns; no raw code in API responses/URLs, logs or Git.
-- `v2/server/recovery_mail.py` now differentiates verification from recovery mail, retaining TLS-only provider configuration; no SMTP sender => signup disabled (503), UI create button unavailable. Private `ci_family_server.py` and `PTP_CI_VERIFICATION_OUTBOX` exist **only in GitHub Actions**, not production; connected Playwright explicitly enters inbox code before family invitation/XP test.
-- `v2/frontend/src/family/FamilyPanel.tsx`: verify/resend pending accounts before login; sign-in to old unverified account explains the verification requirement. Backend security/migration tests added. README and V2 roadmap explain the operator/release boundary.
+**Delivered:** family signup creates an **inactive/unverified** account and dispatches a verification code only when secure operator SMTP is configured. Server maintains hash-only 256-bit one-use codes with 30-minute validity; email/account binding, resend requiring account password, per-email/network throttling, invalidation on resend and reuse protection. Login and existing bearer sessions require verified mailbox ownership, including legacy accounts that have no verification record; confirmation revokes pre-verification sessions. Password reset cannot bypass verification. A dedicated verification message and React confirmation/resend UI make two-member onboarding complete end-to-end. Missing email sender disables new signup and hides Create Account functionality. Tests cover expiry/replay, failed mail cleanup, legacy migration/session invalidation, throttle, reset isolation, connected family XP, and mobile/desktop flows.
 
-Remaining: **guardian/child onboarding and parental authority**, actual SMTP deliverability/bounce and abuse monitoring, TLS deployment, encrypted off-site backup with data-erasure reconciliation, privacy retention, iOS physical testing. Owner explicitly defers AI inference and new Polish content.
+**Release boundary:** SMTP provider not configured; no real outbound/deliverability/bounce testing. Existing unverified users would need email verification if a live historical database were ever migrated. **Mailbox ownership does NOT mean age or guardian consent.** Next priority: guardian-created child profiles/consent and private family ownership rules, safely handling member removal/erasure and account recovery. Then real hosted TLS/persistent storage, mail abuse monitoring, encrypted offsite backups and deletion reconciliation, physical iOS/Safari/VoiceOver review, broader security/privacy incident and retention review. Owner continues to defer AI evaluation and new lessons.
 
 ## Family password recovery — merged 2026-10-17
 
