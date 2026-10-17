@@ -2,6 +2,45 @@
 
 STATUS: Code prepared; no real long-sentence recordings or Azure F0 resource have been provisioned. No network calls during setup. The old one-word Commons clips are retired as model-quality evidence and remain unmoved in the existing ignored PathToPolish-Private-AI/ directory.
 
+## First live Azure test: VERIFIED native Polish, not learner speech
+
+**Binding owner instruction (2026-10-17):** The first physical
+pronunciation-assessment test must be a **correctly pronounced, naturally
+recorded Polish sentence by a fluent native speaker**, independently
+listened to by a fluent Polish reviewer. Do NOT ask the owner to record a
+beginner-level Polish phrase to establish the engine's positive baseline.
+Do NOT use the two old truncated/ambiguous Commons word clips, assume that
+dataset transcription proves good pronunciation, or treat TTS as the sole
+gold reference.
+
+1. Find licensed native Polish full-sentence recordings (~5–15 seconds,
+   4+ words) with exact reference text. Candidate: FLEURS Polish
+   `google/fleurs`, `pl_pl`, [CC BY 4.0 source](https://huggingface.co/datasets/google/fleurs).
+   This is a **candidate**: individual clips must still pass independent
+   native-human listening for natural articulation, completeness, speech
+   clarity, no clipped starts/ends and precise transcript alignment.
+   Document attribution, speaker anonymity/rights and service-upload
+   permission.
+2. Prepare the unchanged original WAVs and verified references under
+   the existing Git-ignored `PathToPolish-Private-AI/`; do not move older
+   recordings. `native_control` is already an accepted speaker role in
+   `sentence_study.py` and `azure_pilot.py`.
+3. First run offline source audit and 1× freeze; **first Azure test uses
+   only one verified unmodified native original**. Azure's F0 pricing is
+   owner-confirmed, but check actual quota/eligibility and use the explicit
+   one-call consent and zero-paid gates. The Azure SDK result is uncalibrated
+   evidence: examine whether genuinely good Polish gets sensible
+   accuracy/fluency/completeness scores without assuming an answer.
+4. After repeatable native controls, compare natural learner recordings
+   with known human-labelled sound errors. Artificial 0.85×/0.75× slowed
+   audio may be compared through Whisper transcription only; it does NOT
+   substitute for naturally slow native or learner speech in a
+   pronunciation-grade test.
+
+**Current status:** Native source audio not yet imported/human certified;
+no Azure speech-audio request yet. Do not imply the forthcoming FLEURS
+dataset is already validated or downloaded.
+
 ## A. Required real sentence inputs
 
 Use exactly the existing repo-root PathToPolish-Private-AI/ folder, never relocate source files. Add actual human-reviewed 16-kHz mono PCM16 WAV files (5–15 seconds, at least 4 reference words), plus a manually curated PathToPolish-Private-AI/sentences-source.json. The main trial needs 8–12 clean intact Polish utterances and at least 2 anonymous speakers. Include both naturally normal and naturally slow utterances from consenting adults. For each sample include:
