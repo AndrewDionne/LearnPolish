@@ -221,6 +221,11 @@ def run(manifest: Path, *, sample_ids: tuple[str, ...] = (),
                 "sample_id": clip["id"], "engine": "azure-pl-PL-scripted",
                 "audio_sha256": clip["sha256"], "reference": clip["reference"],
                 "azure_native": native, "raw_azure_json": raw,
+                "azure_sdk_diagnostic": {
+                    key: evidence.get(key)
+                    for key in ("azure_result_reason", "azure_no_match_reason",
+                                "azure_cancellation_reason", "azure_error_code")
+                },
                 "status": evidence["status"],
                 "native_speech_human_verified": False,
                 "exploratory_only": True,
@@ -248,6 +253,8 @@ def summarize(output: Path) -> dict:
             native = row.get("azure_native") or {}
             entry["azure_scores_uncalibrated"] = native.get("scores") if isinstance(native, dict) else None
             entry["transcript"] = native.get("transcript") if isinstance(native, dict) else None
+            entry["reason"] = native.get("reason") if isinstance(native, dict) else None
+            entry["azure_sdk_diagnostic"] = row.get("azure_sdk_diagnostic")
         result.append(entry)
     return {"completed_model_rows": len(rows), "comparison": result,
             "important": "ASR word error rate is NOT pronunciation accuracy; Azure scores NOT native-calibrated"}

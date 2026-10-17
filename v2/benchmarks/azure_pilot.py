@@ -64,6 +64,47 @@ def checked_recording(manifest: Path, sample_id: str) -> tuple[dict, Path, dict]
     return row, audio, metadata
 
 
+# Expose ONLY allowlisted Azure SDK enumeration names. Never serialize untrusted
+# cancellation_details.error_details, result.text, session IDs or exceptions.
+_NO_MATCH_NAMES = ("NotRecognized", "InitialSilenceTimeout", "InitialBabbleTimeout",
+                   "KeywordNotRecognized", "EndSilenceTimeout")
+_CANCELLATION_NAMES = ("Error", "EndOfStream", "CancelledByUser")
+_ERROR_NAMES = ("NoError", "AuthenticationFailure", "BadRequest", "ConnectionFailure",
+                "Forbidden", "RuntimeError", "ServiceError", "ServiceTimeout",
+                "ServiceUnavailable", "TooManyRequests", "EmbeddedModelError",
+                "ServiceRedirectPermanent", "ServiceRedirectTemporary")
+
+
+def _safe_enum_name(enum_type: object, value: object, allowed: tuple[str, ...]) -> str:
+    for name in allowed:
+        member = getattr(enum_type, name, None)
+        if member is not None and value == member:
+            return name
+    return "Unknown"
+
+
+def azure_recognition_diagnostic(result: object, speechsdk: object) -> dict:
+    """Sanitized, structured Azure NoMatch/Canceled details; zero network."""
+    reason = getattr(result, "reason", None)
+    if reason == speechsdk.ResultReason.NoMatch:
+        details = getattr(result, "no_match_details", None)
+        nm = _safe_enum_name(getattr(speechsdk, "NoMatchReason", None),
+                             getattr(details, "reason", None), _NO_MATCH_NAMES)
+        return {"status": "inconclusive", "reason": "Azure returned NoMatch",
+                "azure_result_reason": "NoMatch", "azure_no_match_reason": nm}
+    if reason == speechsdk.ResultReason.Canceled:
+        details = getattr(result, "cancellation_details", None)
+        cancelled = _safe_enum_name(getattr(speechsdk, "CancellationReason", None),
+                                     getattr(details, "reason", None), _CANCELLATION_NAMES)
+        error = _safe_enum_name(getattr(speechsdk, "CancellationErrorCode", None),
+                                getattr(details, "error_code", None), _ERROR_NAMES)
+        return {"status": "inconclusive", "reason": "Azure canceled speech recognition",
+                "azure_result_reason": "Canceled", "azure_cancellation_reason": cancelled,
+                "azure_error_code": error}
+    return {"status": "inconclusive", "reason": "Azure returned unsupported recognition result",
+            "azure_result_reason": "Other"}
+
+
 def azure_scripted_assess(audio: Path, reference: str, key: str, region: str) -> dict:
     """One SDK recognize_once call; never echoes provider exception internals."""
     try:
@@ -85,7 +126,7 @@ def azure_scripted_assess(audio: Path, reference: str, key: str, region: str) ->
         assessment.apply_to(recognizer)
         result = recognizer.recognize_once()
         if result.reason != speechsdk.ResultReason.RecognizedSpeech:
-            return {"status": "inconclusive", "reason": "Azure did not recognize complete speech"}
+            return azure_recognition_diagnostic(result, speechsdk)
         text = result.properties.get(speechsdk.PropertyId.SpeechServiceResponse_JsonResult)
         if not isinstance(text, str) or not text:
             return {"status": "inconclusive", "reason": "Azure returned no detailed response"}
@@ -158,6 +199,10 @@ def run(manifest: Path, sample_id: str, *, send: bool = False,
                 "status": payload["status"],
                 "raw_azure_json": payload.get("raw_azure_json"),
                 "reason": payload.get("reason"),
+                "azure_result_reason": payload.get("azure_result_reason"),
+                "azure_no_match_reason": payload.get("azure_no_match_reason"),
+                "azure_cancellation_reason": payload.get("azure_cancellation_reason"),
+                "azure_error_code": payload.get("azure_error_code"),
                 "assessment_is_human_calibrated": False,
             }
             json.dump(output_row, stream, ensure_ascii=False, indent=2)
