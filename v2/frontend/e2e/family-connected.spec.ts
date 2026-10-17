@@ -4,7 +4,7 @@ import {test,expect} from '@playwright/test';
 test.skip(!process.env.VITE_FAMILY_API_URL, 'Requires the backend-enabled family integration job');
 
 test('two real private sessions join a family, choose different regions and share weekly XP', async ({browser},testInfo)=>{
-  const projectTag=testInfo.project.name.replace(/[^a-z0-9]/gi,'').toLowerCase();
+  const projectTag=testInfo.project.name.replace(/[^a-z0-9]/gi,'').toLowerCase()+'r'+testInfo.retry;
   const first=await browser.newContext();
   const second=await browser.newContext();
   try{
@@ -32,6 +32,7 @@ test('two real private sessions join a family, choose different regions and shar
     await parent.getByRole('button',{name:/Reveal meaning/}).click();
     await parent.getByRole('button',{name:/Got it/}).click();
     await parent.getByRole('button',{name:'Expedition'}).first().click();
+    await expect(panel.getByText('Practice contributed to your family.')).toBeVisible();
     await panel.getByRole('button',{name:'Refresh rankings'}).click();
     await expect(panel.getByText('10 weekly family XP')).toBeVisible();
     await expect(panel.getByText('pomorskie')).toBeVisible();
@@ -55,6 +56,7 @@ test('two real private sessions join a family, choose different regions and shar
     await learner.getByRole('button',{name:/Reveal meaning/}).click();
     await learner.getByRole('button',{name:/Got it/}).click();
     await learner.getByRole('button',{name:'Expedition'}).first().click();
+    await expect(lp.getByText('Practice contributed to your family.')).toBeVisible();
     await lp.getByRole('button',{name:'Refresh rankings'}).click();
     await expect(lp.getByText('20 weekly family XP')).toBeVisible();
     await expect(lp.getByText('pomorskie')).toBeVisible();
