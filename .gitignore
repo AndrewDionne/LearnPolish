@@ -106,3 +106,7 @@ ptp-speech-v1--*.wav
 # Private research scratch space inside this clone: never stage voice/audio/API results.
 # This is a git-accident guard, NOT security against git add -f or backups.
 /temp/
+
+# Owner's FINAL fixed on-disk Polish research directory (recordings and AI outputs).
+# Keep this exact path in place; ignored files must not be added to Git.
+/PathToPolish-Private-AI/
