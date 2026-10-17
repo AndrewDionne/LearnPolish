@@ -1,6 +1,8 @@
 import {useEffect,useRef,useState} from 'react';
 import {FAMILY_API,familyRequest} from './api';
 import type {FamilyConnection,FamilyGroup,FamilySummary} from './api';
+import {rankFamily,recognitionLabel,RECOGNITION_CATEGORIES} from './recognition';
+import type {RecognitionCategory} from './recognition';
 
 type Props={onConnection:(connection:FamilyConnection|null)=>void;
             onSummary:(summary:FamilySummary|null)=>void;
@@ -21,6 +23,7 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
   const [error,setError]=useState('');
   const [status,setStatus]=useState('');
   const [busy,setBusy]=useState(false);
+  const [recognitionCategory,setRecognitionCategory]=useState<RecognitionCategory>('effort');
   // Ignore earlier summary fetches that finish after a refresh or group change.
   const summaryRequestId=useRef(0);
   const initialSync=useRef(syncVersion);
@@ -131,12 +134,15 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
         </select></label>
         <button type="button" disabled={!group||busy} onClick={()=>void run(()=>refresh())}>Refresh rankings</button>
       </div>
-      <div className="family-setup">
-        <div><label>New family group<input value={familyName} maxLength={50} onChange={e=>setFamilyName(e.target.value)}/></label>
-          <button type="button" disabled={busy||familyName.trim().length<3} onClick={()=>void run(create)}>Create group</button></div>
-        <div><label>Private invitation code<input value={invite} onChange={e=>setInvite(e.target.value)} autoComplete="off"/></label>
-          <button type="button" disabled={busy||!invite.trim()} onClick={()=>void run(redeem)}>Join family</button></div>
-      </div>
+      <details className="family-management" open={!group}>
+        <summary>{group?'Manage groups and invitations':'Create or join your family'}</summary>
+        <div className="family-setup">
+          <div><label>New family group<input value={familyName} maxLength={50} onChange={e=>setFamilyName(e.target.value)}/></label>
+            <button type="button" disabled={busy||familyName.trim().length<3} onClick={()=>void run(create)}>Create group</button></div>
+          <div><label>Private invitation code<input value={invite} onChange={e=>setInvite(e.target.value)} autoComplete="off"/></label>
+            <button type="button" disabled={busy||!invite.trim()} onClick={()=>void run(redeem)}>Join family</button></div>
+        </div>
+      </details>
       {group>0&&<div className="family-contribute">
         <label><input type="checkbox" checked={enabled} onChange={e=>toggle(e.target.checked)}/>
           Contribute my <strong>future completed practice</strong> to this family</label>
@@ -148,11 +154,26 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
         <h3>{summary.group.name}</h3>
         <div className="family-totals"><span>{summary.totals.weekly_xp} weekly family XP</span>
           <span>{summary.totals.regions_unlocked}/16 regions opened</span></div>
-        <h4>Friendly weekly effort board</h4>
-        <ol>{summary.members.map(m=><li key={m.id}><strong>{m.name}</strong><span>{m.weekly_xp} XP</span>
-          <small>{m.active_days} active days · highest tier {m.highest_tier || '—'}</small></li>)}</ol>
-        <p className="family-note">Improvement recognition will appear only when verified learning evidence is available.
-          Rankings reflect declared completed activities, not independently observed study sessions.</p>
+        <div className="family-recognition" aria-label="Family weekly recognition">
+          <h4>Our family's weekly highlights</h4>
+          <div className="family-board-filters" role="group" aria-label="Weekly recognition category">
+            {RECOGNITION_CATEGORIES.map(category=><button key={category.id} type="button"
+              aria-pressed={recognitionCategory===category.id}
+              onClick={()=>setRecognitionCategory(category.id)}>{category.label}</button>)}
+          </div>
+          <p className="family-note">{RECOGNITION_CATEGORIES.find(x=>x.id===recognitionCategory)?.description}</p>
+          {recognitionCategory==='improvement'
+            ? <p role="status" className="family-recognition-pending">Most-improved recognition will use verified change from each learner's previous comparable performance. This family has no validated improvement measurements yet; no ranking is assigned.</p>
+            : <ol aria-label={RECOGNITION_CATEGORIES.find(x=>x.id===recognitionCategory)?.label+' leaderboard'}>
+                {rankFamily(summary.members,recognitionCategory).map(({member,score,rank})=>
+                  <li key={member.id}>
+                    <strong>{rank===null?'—':rank+'.'} {member.name}</strong>
+                    <span>{recognitionLabel(recognitionCategory,score)}</span>
+                    <small>{member.active_days} practice days · tier {member.highest_tier||'—'} attempted · {member.team_xp} map XP</small>
+                  </li>)}
+              </ol>}
+          <p className="family-note">Friendly comparisons, based on member-declared completed practice validated against the built-in catalog. Difficulty indicates material attempted, not demonstrated mastery.</p>
+        </div>
         <h4>Regions funded together</h4>
         <div className="family-regions">{summary.regions.length?summary.regions.map(r=>
           <div key={r.region}><span>{r.region}</span><strong>{r.earned}/{r.target} XP {r.unlocked?'✓':''}</strong></div>
