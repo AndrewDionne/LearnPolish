@@ -1,5 +1,47 @@
 # Polish speech/pronunciation benchmark — first increment
 
+## 2026-10-17 — sentence-tempo study + gated Azure research setup
+
+See [SENTENCE_STUDY.md](SENTENCE_STUDY.md) for complete Mac commands and
+human review/free-tier requirements.
+
+New offline sentence workflow:
+- `sentence_study.py` audits real, untouched 5–15s mono 16k WAVs with 4+
+  independently checked words, verified rights, adult consent where applicable,
+  no clipped speech, 8–12 sentences / two speaker IDs (smaller datasets only
+  with explicit `--min-samples` for infrastructure smoke testing).
+- `--prepare --output-dir PathToPolish-Private-AI/sentence-study-01` publishes
+  a NEW private study child with hashed original copies and optionally
+  pitch-preserved `0.85×` / `0.75×` FFmpeg variants; sources never moved,
+  no downloads, no uploads, no overwritten directories.
+- `groq_pilot.py` permits up to 25-second audio for slower variants, but
+  still requires explicit hard-capped `--send`, consent and Free Plan
+  confirmation. Longer natural sentences and tempo variants have NOT yet
+  been physically collected or transcribed.
+
+New Azure Polish **scripted** pronunciation baseline:
+- `azure_pilot.py` selects exactly one independently reviewed **1× original**
+  WAV by `--sample-id` (NOT the time-stretched manifests), checks original
+  SHA, provenance, approved provider use and 5–15s limit.
+- Default is offline `preview`, no Speech SDK dependency or API key.
+  Live one-request `pl-PL` assessment requires all explicit
+  `--send --approve-voice-upload --confirm-resource-f0 --confirm-no-paid-billing`
+  gates, a privately set Azure key/region, optional SDK install and a NEW
+  non-overwriting 0600 raw-JSON evidence file.
+- Azure F0 resource **not yet provisioned or connected**. No raw scores
+  available or calibrated: `pl-PL` does NOT provide named Polish phonemes
+  equivalently to `en-US`; raw audio is mandatory for PA scoring.
+  Consult Microsoft locale and pronunciation SDK documentation linked in
+  SENTENCE_STUDY.md and independently verify Free Plan resource/billing
+  before any actual API calls. No real Azure or Groq requests were made
+  while developing this setup.
+
+**The owner-selected private location remains exactly
+`repo/PathToPolish-Private-AI/`; existing original Oggs and prior JSONL
+are never moved or overwritten.**
+
+
+
 A **replayable, free-first benchmark harness**. On 2026-10-17 the owner completed **four real Groq Whisper ASR transcription requests** on two licensed native-Polish Commons clips (v3 and Turbo). This is real ASR evidence, not learner-pronunciation quality. CI tests remain mocked and make no remote calls. No Azure comparative test or independent adult learner human-rated corpus has yet been completed.
 
 ## Corpus manifest

@@ -111,7 +111,7 @@ def prepare(manifest: Path, models: tuple[str, ...], max_requests: int,
         meta = read_audio_metadata(sample.audio)
         if sample.audio_sha256 and sample.audio_sha256 != meta["audio_sha256"]:
             raise ValueError("Recording changed since corpus creation: " + sample.id)
-        if not meta["valid_signal"] or not 0.6 <= meta["seconds"] <= 12:
+        if not meta["valid_signal"] or not 0.6 <= meta["seconds"] <= 25:
             raise ValueError("Unusable audio; re-record before upload: " + sample.id)
         if sample.audio.stat().st_size > 25_000_000:
             raise ValueError("Audio exceeds Groq free-tier 25MB per-file cap")

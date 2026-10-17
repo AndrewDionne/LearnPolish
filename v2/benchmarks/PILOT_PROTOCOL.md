@@ -1,7 +1,7 @@
 # Polish pronunciation AI pilot — controlled study protocol (2026-10-17)
 
 **Research-only, not an AI provider decision or a production pronunciation grader.**
-No real Whisper or Azure inference has been run. All experiments must be explicit,
+The owner has completed four real Groq Whisper ASR requests on two native one-word clips, subsequently retired as meaningful model-quality evidence. No Azure inference has run. All experiments must be explicit,
 consented and free-first: **no paid API calls, upgraded plans, auto top-up, or silent model downloads**.
 GitHub is the continuity record, never the storage location for identifiable voices.
 
@@ -167,3 +167,8 @@ share one Groq API key and account; no live evaluation has been run in CI.
 ## Owner fixed research folder (2026-10-17)
 
 **Authoritative local location is the exact repository-root `PathToPolish-Private-AI/` directory, with existing `Pl-czapka.ogg` and `Pl-ciasto.ogg` unmoved.** Git ignores it; do not ask the owner to move, rename, or duplicate these originals. Process them using `public_native_samples.py --source-dir PathToPolish-Private-AI --output-dir PathToPolish-Private-AI/commons-native-01 --count 2`, then preview v3/Turbo on the generated manifest. Other directories mentioned in historic protocols are superseded for this user's local test.
+
+
+## Follow-up: natural-sentence tempo + Azure pilot now implemented (2026-10-17)
+
+The original 12 isolated-word prompts above are **historical protocol content** and are NOT the active comparative corpus. Use the new [sentence/tempo/Azure procedure](SENTENCE_STUDY.md): independently heard, intact 5–15s 4+-word Polish utterances; 8–12 for meaningful native-speech ASR, 2+ speakers, human reference and rights review; original 1× vs pitch-stretched 0.85×/0.75× for ASR only; actual naturally slow adult learner speech as separate originals. Azure pl-PL pronunciation scoring only on unchanged natural adult audio, with owner-checked actual Azure Speech F0 and explicit upload/free-tier gates. New tools are infrastructure setup; no real corpus is present and Azure provider calls were not made in CI. All audio stays in the existing immutable owner's PathToPolish-Private-AI directory.
