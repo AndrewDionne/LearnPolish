@@ -65,7 +65,7 @@ handling, provider retention review and deletion controls before recording.
 1. Record each selected word using the V2 **Speak** mode. Click
    **Save 16 kHz WAV for private AI test** for each take. A normal lesson
    attempt does not upload/export automatically.
-2. Place WAV exports in an **unshared private folder in ignored `repo/temp/` or outside the repository**,
+2. Place WAV exports in an **unshared private folder in ignored `repo/temp/` or inside the Git-ignored `PathToPolish-Private-AI/` directory (owner-selected) or an external private folder**,
    without names, accounts or children’s identifiers. Each filename encodes its
    catalog item ID and capture time; IDs and intended text might be visible
    in filenames, so an independent listener should not see filenames or
@@ -162,3 +162,8 @@ two-model hard-capped execution commands.
 Transcripts from either model measure word recognition **only**. They cannot
 show that a particular Polish phoneme was articulated correctly. Both models
 share one Groq API key and account; no live evaluation has been run in CI.
+
+
+## Owner fixed research folder (2026-10-17)
+
+**Authoritative local location is the exact repository-root `PathToPolish-Private-AI/` directory, with existing `Pl-czapka.ogg` and `Pl-ciasto.ogg` unmoved.** Git ignores it; do not ask the owner to move, rename, or duplicate these originals. Process them using `public_native_samples.py --source-dir PathToPolish-Private-AI --output-dir PathToPolish-Private-AI/commons-native-01 --count 2`, then preview v3/Turbo on the generated manifest. Other directories mentioned in historic protocols are superseded for this user's local test.

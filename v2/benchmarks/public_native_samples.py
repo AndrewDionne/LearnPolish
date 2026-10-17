@@ -177,7 +177,7 @@ def collect(output_dir: Path, count: int = 2, *,
 def main() -> int:
     parser = argparse.ArgumentParser(description="Download curated Commons Polish WAV controls; NO AI calls")
     parser.add_argument("--output-dir", required=True, type=Path,
-                        help="A new subdirectory of chmod-700 repo/temp/ (Git-ignored) or a private external folder")
+                        help="A new subdirectory of the ignored PathToPolish-Private-AI/ or private external folder")
     parser.add_argument("--count", type=int, default=2, choices=range(1, 7),
                         metavar="1..6", help="Download first N of six reviewed samples; default two")
     parser.add_argument("--source-dir", type=Path,
