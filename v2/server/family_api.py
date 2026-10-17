@@ -17,6 +17,7 @@ from datetime import datetime, timezone
 from functools import wraps
 
 from flask import Flask, g, jsonify, request
+from private_storage import prepare_database
 
 REGIONS = frozenset((
     "dolnośląskie", "kujawsko-pomorskie", "lubelskie", "lubuskie",
@@ -113,8 +114,9 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
     app = Flask(__name__)
     app.config["MAX_CONTENT_LENGTH"] = 16_000
     app.config["JSON_SORT_KEYS"] = True
-    path = str(Path(path).resolve())
-    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    # Never let SQLite create a potentially world-readable account database.
+    # Existing directories/files must already be owner-private; reject symlinks.
+    path = prepare_database(path)
     with sqlite3.connect(path) as con:
         con.execute("PRAGMA foreign_keys=ON")
         con.executescript(DDL)
