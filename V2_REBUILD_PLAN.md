@@ -336,6 +336,9 @@ full sample licences, account gating and API commands live in
 
 ## 15. Wikimedia Commons 429 field repair
 
+**Merged:** [PR #27](https://github.com/AndrewDionne/LearnPolish/pull/27), commit `0729a34a11564e34a36fe319b3e0891af7f32083`, [four-lane CI PASS #39036723705](https://github.com/AndrewDionne/LearnPolish/actions/runs/39036723705), 28 offline benchmark tests. Local importer 429 handling and transactionality synthetically certified; actual Wikimedia source availability after rate-limit and Groq transcription results still unverified.
+
+
 During Mac physical trial of the licensed native-audio pilot, HTTP 429 from
 `upload.wikimedia.org` left an empty output directory which prevented a
 subsequent attempt. The downloader now recognizes provider throttle, includes
