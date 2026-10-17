@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-17 — owner requests immediate exploratory FLEURS 3-model comparison; bounded one-command V3/Turbo/Azure trial being certified; no inference yet
+**Updated:** 2026-10-17 — PR #36 MERGED 88 offline tests: first three-engine 2-clips×(Whisper V3/Turbo/Azure F0) experimental pilot ready for owner's Mac; real provider calls NOT yet run
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -22,7 +22,25 @@
 2. Check umbrella issue and code. Choose the next unfinished acceptance checkpoint, identifying dependencies and relevant tests.
 3. Develop in a branch; execute available checks, report what is tested vs unverified.
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
-5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt feature## THREE MODEL INITIAL LIVE TRIAL — owner requests action NOW (2026-10-17)
+5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt feature## PR #36 MERGED — first 3-engine Polish trial ready for owner Mac (2026-10-17)
+
+[PR #36](https://github.com/AndrewDionne/LearnPolish/pull/36) **MERGED** squash `a1f35fe26b8f0845c5444455bd56cd5353ad43e8`, exact head `621c67f75cc7108e707f5ced67309cdf07e187f1`, [CI #39071797504](https://github.com/AndrewDionne/LearnPolish/actions/runs/39071797504) **4 jobs PASS** including **88 offline benchmark tests**. This is the FIRST ready-to-run all-three-model pilot. No live Azure or Groq inference was run by GitHub/assistant; user's Mac has the public FLEURS WAVs and is needed for inference. **Owner expressly prioritizes first exploratory triplet results NOW**, don't request more audio auditing or linguist certification before the preliminary test.
+
+**Exact operator document:** `v2/benchmarks/THREE_MODEL_PILOT.md`. Sync `git pull --ff-only origin main` then `python3 -m pip install azure-cognitiveservices-speech` (locally), preview `python3 v2/benchmarks/three_model_pilot.py --manifest PathToPolish-Private-AI/sentences-source.json` (offline, displays 2 selected original WAV names & SHA). For real run, existing `GROQ_API_KEY`, `AZURE_SPEECH_KEY` and `AZURE_SPEECH_REGION=germanywestcentral` must be privately exported on Mac, not leaked via chat or unsafe legacy Render bearer-token endpoint. Owner F0-confirmed Azure resource; owner must check Groq and Azure free quota/account billing state. Full bounded send:
+
+```bash
+python3 v2/benchmarks/three_model_pilot.py \
+  --manifest PathToPolish-Private-AI/sentences-source.json \
+  --max-requests 6 --max-groq-billed-seconds 60 \
+  --max-azure-audio-seconds 30 \
+  --send --approve-public-audio-upload \
+  --confirm-groq-free --confirm-azure-f0 --confirm-no-paid-billing \
+  --output PathToPolish-Private-AI/preliminary-three-model-01.jsonl
+```
+
+Only two original `google/fleurs` public Polish 16k PCM16 WAVs; 2 × each of Groq Whisper large-v3 and Turbo + Azure `pl-PL` scripted PA; explicit no retries, private new SHA-matched result rows. Preserves original files and source flags. Run report shows Groq transcript/WER (recognition ONLY) vs Azure raw pronunciation scores (not native-calibrated). Stop after any failure; partial successes remain in results file. Summarize later with `python3 v2/benchmarks/three_model_pilot.py --summarize PathToPolish-Private-AI/preliminary-three-model-01.jsonl`. If CLI SDK or key missing, help owner install/locate privately; do NOT treat the existing successful Azure token probe as actual pronunciation assessment evidence. **Next:** user runs above code and shares output excluding credentials, then interpret results and debug provider errors, not create another paperwork tranche.
+
+## THREE MODEL INITIAL LIVE TRIAL — owner requests action NOW (2026-10-17)
 
 Owner rejected further gold-standard perfection before **at least a preliminary physical comparison**. Build `v2/benchmarks/three_model_pilot.py` + offline tests and **[THREE_MODEL_PILOT.md](v2/benchmarks/THREE_MODEL_PILOT.md)** operator instructions. Use already downloaded, publicly licensed FLEURS Polish 5–15s original unmodified WAVs: default 2 top basic acoustic candidates, explicit `--sample-id` override. Per WAV do Groq Whisper large-v3, Groq Whisper large-v3-turbo, and Azure existing Speech F0 `pl-PL` pronunciation scoring. At most **6 requests** across 2 audio clips, no automatic retry, explicit maximum 60 Groq billed seconds and 30 Azure input seconds; Groq transcription WER clearly separate from Azure pronunciation metrics; raw Azure JSON + transcripts to NEW private SHA-indexed 0600 JSONL; partial results survive provider errors. Dataset transcript is NOT independent Polish listener-certified and recording quality is mixed; distinguish preliminary integration test from model-accuracy judgment. **Do not require native-speaker certification to perform this initial exploratory experiment.** Keep all original source review booleans and stricter `azure_pilot.py` intact.
 
