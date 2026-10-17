@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-17 — live Render Path to Polish Azure Speech integration located; token-only test/actual Azure F0 tier require owner verification; existing study folder untouched
+**Updated:** 2026-10-17 — actual Render Azure Speech token exchange PASS, germanywestcentral; existing resource name/F0 tier remains to verify in Azure Portal; study folder untouched
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -23,6 +23,14 @@
 3. Develop in a branch; execute available checks, report what is tested vs unverified.
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
 5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt features.
+
+## LIVE Azure Speech token issuance PASS from Render — owner Mac evidence (2026-10-17)
+
+**The existing Azure connection works:** owner ran `curl -sS --max-time 60 -w '\\nHTTP status: %{http_code}\\n' 'https://path-to-polish.onrender.com/api/azure/diag?probe=1'`. It returned **HTTP 200** and `{"endpoint":"https://germanywestcentral.api.cognitive.microsoft.com","has_key":true,"ok":true,"probe":{"ok":true},"region":"germanywestcentral"}`. Render has Azure Speech key and region set, and Azure STS accepted a **token exchange**. **No audio was sent, no PA/STT was run, no inference-grade evidence exists.** The Azure Speech service is configured for **Germany West Central**, not necessarily priced F0. Existing Render compute being free is irrelevant to Azure pricing.
+
+**NEXT OWNER GATE:** Azure Portal → Azure AI Speech/Speech resource in **Germany West Central** → resource **Name** and **Pricing tier F0 vs S0**, current Speech usage and no paid resource consumption. Owner should report resource name and tier, **never a key**. The regional endpoint is not a resource-specific ID, so cannot infer resource name, SKU or remaining quota from successful token issuer. Don't create a second resource or use V2 `azure_pilot.py --send` until tier and consent verified. Existing `azure_pilot.py` requires local `AZURE_SPEECH_KEY` and region; Render secrets are not exposed to GitHub assistant/Render read tools. A later test needs one consented natural-length 1× Polish adult WAV with human-verified spoken reference, a new private output file, and explicit F0/no-paid/upload flags. The prior `Pl-czapka.ogg` and `Pl-ciasto.ogg` remain transport-smoke recordings, NOT model evaluation.
+
+**Security priority:** legacy Flask speech token route(s) are currently public and can issue usable short-lived Azure Speech credentials; mitigate with auth and metering carefully to avoid breaking V1 lesson flows before broad V2 expansion. Never retrieve/share public token in chat or logs. No Render secrets/resource changes made.
 
 ## Existing Render Azure Speech integration discovered — credentials/tier require safe probe (2026-10-17)
 
