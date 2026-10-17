@@ -315,6 +315,9 @@ reproducible human/Azure comparison requirements.
 
 ## 14. Licence-grounded native Polish recognition controls
 
+**Merged in [PR #26](https://github.com/AndrewDionne/LearnPolish/pull/26)** (SHA `378926c6075548ecc4ae28c9b87b1f87cc4e5e20`, [four-lane CI PASS #39035992396](https://github.com/AndrewDionne/LearnPolish/actions/runs/39035992396), **24 offline benchmark tests**). Live Commons downloading and actual Groq transcription still await local execution by the owner; source verification was public webpage/license review, not audio inference.
+
+
 Native Polish baseline now starts with **public, human-spoken, transcript-known
 pronunciation words** from Wikimedia Commons, avoiding both unconsented learner
 audio and unlicensed YouTube/news clips. The public control importer downloads
