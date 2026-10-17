@@ -24,6 +24,16 @@
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
 5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt features.
 
+## Active family-service durability gate — 2026-10-17 (PR pending CI)
+
+Branch: `feat/v2-family-durable-backup-readiness` (based on `main` `d4bcd815dba95e5afe2a4e0af9314fa92cf4f898`). The scope is operational reliability, **not** hosting or release:
+- `v2/server/private_storage.py`: startup path/owner-only 0700/0600 guard; SQLite online backups including committed WAL transactions; integrity + foreign-key checks; SHA-256 manifests; isolated **new-file-only** restore drill, no automation/cloud upload/overwriting.
+- `v2/server/family_api.py`: private DB creation before SQLite open; reject insecure existing DB/parent and symlinks.
+- `v2/server/test_private_storage.py`: permission, snapshot, tamper, WAL, symlink and restore safety regressions; existing backend, frontend, connected Playwright and offline benchmark lanes remain mandatory.
+- Operator procedure and privacy cautions in `v2/server/README.md`; this workflow and `V2_REBUILD_PLAN.md` provide future-chat continuity.
+
+**Status at authoring:** code pushed to feature branch; full remote CI **not yet observed**. Do not report this as merged/green before exact-head evidence. **Privacy-critical outstanding blocker:** older snapshots can resurrect accounts/contributions deleted after the snapshot. No production restore/hosted rollout before retention and erasure reconciliation policy, backup encryption/off-site setup, and guardian/verified-email/auth recovery/physical mobile work. AI testing and lesson content creation remain deferred.
+
 ## Family account privacy lifecycle — merged 2026-10-17
 
 **PR #20 merged** [view](https://github.com/AndrewDionne/LearnPolish/pull/20), squash commit `4be22fc642668dd143972a66f71d1ee677ac57cb`, [CI PASS #39011403128](https://github.com/AndrewDionne/LearnPolish/actions/runs/39011403128): **50 Vitest, 41 general desktop/mobile browser passes / 3 connected-only skips, 2 actual connected two-account desktop/mobile passes, 8 backend security tests**, offline benchmark safeguards PASS. Adds a compact private-family UI disclosure and authenticated family-service operations for owner-only revocation of all unused invites, transfer ownership to an existing member, explicit member withdrawal and server-linked activity erasure, one-user account data export without session/password secrets, reauthenticated password change with full session invalidation, and explicitly confirmed account deletion (blocks owners until they transfer a group with members). Consumed invite codes do not become reusable following account erasure. Backend tests cover unauthorized outsiders, membership boundaries, duplicate score guards, erasure, transfer, revocation and account lifecycle.

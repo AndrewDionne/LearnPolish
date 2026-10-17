@@ -39,3 +39,41 @@ Authenticated APIs, without automatic sharing or deletion:
 Privacy precedence: member departure/deletion erases their server-linked contributions and may reduce shared XP or undo a prior region unlock; personal offline data is unaffected. Erasure is intentionally more important than the normal permanent-unlock game mechanic.
 
 This is not privacy certification or live deployment. Parent/guardian policies, verified email, password recovery, retention, secure hosted storage, and production review remain open.
+
+
+## Private database and tested recovery preparation
+
+Startup now requires the **immediate database directory** to be owned by the service user
+with permissions `0700`, and its SQLite database to be a regular non-symlink
+owner-private file (`0600`). A new database is pre-created securely before
+SQLite touches it. An existing insecure file/directory **fails closed**; audit
+ownership/location before fixing permissions. Use an **absolute** database path.
+Do not point the family API at `/tmp` itself or an ephemeral app filesystem.
+
+The standard-library operator tool requires a **separate private backup directory**:
+
+```bash
+python v2/server/private_storage.py backup --database /private/family/live/family.sqlite --directory /private/family/backups
+python v2/server/private_storage.py verify --backup /private/family/backups/<backup-name>.sqlite
+python v2/server/private_storage.py restore-drill --backup /private/family/backups/<backup-name>.sqlite --target /private/family/rehearsal/restore.sqlite
+```
+
+The live backup uses SQLite's online backup API (including committed WAL data),
+checks SQLite integrity/foreign keys, writes a SHA-256 size/filename manifest, and
+will not overwrite existing snapshots. Restore rehearsals accept only matching
+verified snapshots and **never overwrite an existing target**. The tool does not
+delete, schedule, copy to cloud, or deploy a database. Run the restore drill on an
+**isolated offline path**, not a mounted live-service path. CI tests exercise
+successful backup/recovery, concurrent WAL commits, tampering, permissions,
+symlinks and no-overwrite behavior.
+
+**Deployment remains blocked.** These backups include sensitive user/account
+records, password hashes, and session hashes. The checksum detects corruption,
+not malicious modifications; encrypt private off-host copies and manage backup
+keys, access, rotation and retention before deployment. Restoring an earlier
+snapshot can resurrect previously deleted accounts, revoked invitations, or
+erased learning contributions. No production restore is authorized without
+deletion/consent reconciliation and a verified privacy/retention plan. Also
+pending: TLS hosting, persistent disk/restore monitoring, account email
+verification and recovery, parent/guardian controls, operator incident review,
+and real multi-device/physical iOS tests. No production family accounts yet.
