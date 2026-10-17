@@ -1,4 +1,22 @@
 import {test,expect} from '@playwright/test';
+import {existsSync,readFileSync} from 'node:fs';
+
+async function verificationCode(email:string):Promise<string>{
+  const outbox=process.env.PTP_CI_VERIFICATION_OUTBOX;
+  if(!outbox)throw new Error('Private CI verification outbox not configured');
+  let code='';
+  await expect.poll(()=>{
+    if(!existsSync(outbox))return '';
+    const lines=readFileSync(outbox,'utf8').trim().split('\n');
+    for(const line of lines.reverse()){
+      try{const entry=JSON.parse(line) as {email:string;code:string};
+        if(entry.email===email){code=entry.code;return code;}}
+      catch{/* concurrent partial write; retry */}
+    }
+    return '';
+  },{timeout:10000}).not.toBe('');
+  return code;
+}
 
 // The isolated connected job sets this value and starts a local family API.
 test.skip(!process.env.VITE_FAMILY_API_URL, 'Requires the backend-enabled family integration job');
@@ -17,6 +35,10 @@ test('two real private sessions join a family, choose different regions and shar
     await panel.getByLabel('Email').fill('explorera+'+projectTag+'@example.test');
     await panel.getByLabel('Password').fill('Secure-family-passphrase-2026');
     await panel.getByRole('button',{name:'Create account'}).click();
+    await expect(panel.getByRole('heading',{name:'Verify your email'})).toBeVisible();
+    await panel.getByLabel('Verification code').fill(
+      await verificationCode('explorera+'+projectTag+'@example.test'));
+    await panel.getByRole('button',{name:'Verify email'}).click();
     await expect(panel.getByRole('button',{name:'Create group'})).toBeVisible();
     await panel.getByLabel('New family group').fill('Weekend explorers');
     await panel.getByRole('button',{name:'Create group'}).click();
@@ -51,6 +73,10 @@ test('two real private sessions join a family, choose different regions and shar
     await lp.getByLabel('Email').fill('explorerb+'+projectTag+'@example.test');
     await lp.getByLabel('Password').fill('Secure-family-passphrase-2026');
     await lp.getByRole('button',{name:'Create account'}).click();
+    await expect(lp.getByRole('heading',{name:'Verify your email'})).toBeVisible();
+    await lp.getByLabel('Verification code').fill(
+      await verificationCode('explorerb+'+projectTag+'@example.test'));
+    await lp.getByRole('button',{name:'Verify email'}).click();
     await lp.getByLabel('Private invitation code').fill(invitation!);
     await lp.getByRole('button',{name:'Join family'}).click();
     await expect(lp.getByRole('heading',{name:'Weekend explorers'})).toBeVisible();
@@ -142,4 +168,16 @@ test('family sign-in offers an email-code recovery journey only when delivery is
   await expect(panel.getByRole('button',{name:'Sign in'})).toBeVisible();
   await expect(panel.getByText('Password reset. Sign in with your new password.')).toBeVisible();
   await page.screenshot({path:'test-results/family-recovery.png',fullPage:true});
+});
+
+test('unconfigured verification delivery blocks new family signup',async ({page})=>{
+  await page.route('**/api/v2/family/health',route=>route.fulfill({
+    status:200,contentType:'application/json',
+    body:JSON.stringify({ok:true,password_recovery_available:false,email_verification_available:false})
+  }));
+  await page.goto('/');
+  await page.getByRole('button',{name:'Expedition'}).first().click();
+  const panel=page.getByRole('region',{name:'Family expedition'});
+  await expect(panel.getByRole('button',{name:'Create account'})).toBeDisabled();
+  await expect(panel.getByText(/accounts are unavailable until secure verification/)).toBeVisible();
 });
