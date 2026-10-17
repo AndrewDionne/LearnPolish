@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-17 — address owner-observed Commons 429/empty-dir importer defect; Groq inference not run, guardian profiles paused
+**Updated:** 2026-10-17 — PR #27 Commons 429 importer recovery merged; Groq inference not run, guardian profiles paused
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -24,13 +24,13 @@
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
 5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt features.
 
-## Commons HTTP 429 download recovery — patch under CI 2026-10-17
+## Wikimedia 429 + recovery import fix — merged 2026-10-17
 
-**Owner physical finding:** on Mac, `public_native_samples.py --count 2` gets Wikimedia HTTP **429**, and the prior importer creates an empty `commons-native-01` which blocks safe retry. No Groq requests/key involvement. Wikimedia 2026 policies require meaningful contact/project User-Agent, respect 429 `Retry-After` and never evade throttle (https://www.mediawiki.org/wiki/Wikimedia_APIs/Rate_limits).
+**PR #27 merged** [view](https://github.com/AndrewDionne/LearnPolish/pull/27), squash commit `0729a34a11564e34a36fe319b3e0891af7f32083`. [**Four-lane CI PASS #39036723705**](https://github.com/AndrewDionne/LearnPolish/actions/runs/39036723705) on exact PR head `29f988e3ab4ac6cbc69183695b76bef0577aa52e`, **28 offline benchmark tests** green; family backend, connected two-member browsers, frontend desktop/mobile also green. No live Commons downloads, audio uploads or paid/Groq API calls during CI.
 
-**Repair:** importer now identifies itself with a public GitHub project URL, surfaces 429 + `Retry-After` with actionable safe instructions and **does not retry automatically**. Downloads/conversions run in a private staging folder and atomically appear at target only after all WAVs, SHA manifest and attribution succeed; failures leave **no empty/partial target**. Adds `--source-dir` to process two named original Commons Ogg files manually obtained via browser, with zero Python network requests; validates regular file/no symlink, 2 MB cap and Ogg header before ffmpeg. Mocked regression tests cover response throttling and cleanup (including ffmpeg fail), offline fallback, malformed/missing originals. Study README contains exact Mac recovery commands.
+**Resolved observed Mac defect:** Wikimedia Commons original-Ogg request replied HTTP **429**. Earlier `public_native_samples.py` created `commons-native-01` before its first HTTP call, leaving an empty directory on failure and blocking retry. Now a single identified HTTP request respects `Retry-After`, never auto-retries/evades rate-limit, and emits a helpful manual/offline alternative. Native WAV files, SHA manifest and author attribution are prepared privately/transactionally and appear at the final path ONLY on full success; errors automatically clean staging. `--source-dir` consumes known manually downloaded `Pl-czapka.ogg` and `Pl-ciasto.ogg` locally, without any HTTP requests, with file magic/size/symlink safeguards. Old empty output can be removed safely with `rmdir`; do not use recursive deletion or repeatedly retry 429.
 
-**Do not repeat HTTP requests until retry interval has elapsed.** Existing empty folder from old version can be removed safely by `rmdir`, no recursive deletion. Groq preview and API spend guards unchanged. No real downloaded Oggs or live AI inference in CI.
+**Next user action:** `git switch main && git pull --ff-only origin main`, `rmdir "$HOME/PathToPolish-Private-AI/commons-native-01"` (ONLY if still empty), then choose manual Commons page download into `$HOME/PathToPolish-Private-AI/commons-originals` and `--source-dir`, OR respect `Retry-After` before trying automated download again. Documentation and full commands in `v2/benchmarks/README.md`. Keep single Groq key private; Groq v3/Turbo test runs separately and only with explicit consent/free-plan flags.
 
 ## Licensed native-Polish audio controls — merged 2026-10-17
 
