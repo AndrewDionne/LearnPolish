@@ -91,7 +91,8 @@ jobs:
           PTP_FAMILY_DB="$RUNNER_TEMP/ptp-family/test.sqlite" \
           PTP_FAMILY_CATALOG="$GITHUB_WORKSPACE/v2/frontend/public/generated/lessons.json" \
           PTP_FAMILY_ORIGINS=http://127.0.0.1:4173 \
-            nohup python "$GITHUB_WORKSPACE/v2/server/family_api.py" > "$RUNNER_TEMP/ptp-family/server.log" 2>&1 &
+          PTP_CI_VERIFICATION_OUTBOX="$RUNNER_TEMP/ptp-family/verification.jsonl" \
+            nohup python "$GITHUB_WORKSPACE/v2/server/ci_family_server.py" > "$RUNNER_TEMP/ptp-family/server.log" 2>&1 &
           for i in $(seq 1 30); do
             if curl -fsS http://127.0.0.1:8016/api/v2/family/health; then exit 0; fi
             sleep 1
@@ -101,6 +102,7 @@ jobs:
       - name: Connected family signup/invite/XP browser journeys
         env:
           VITE_FAMILY_API_URL: http://127.0.0.1:8016
+          PTP_CI_VERIFICATION_OUTBOX: ${{ runner.temp }}/ptp-family/verification.jsonl
         run: npx playwright test e2e/family-connected.spec.ts
       - name: Upload connected evidence
         if: always()
