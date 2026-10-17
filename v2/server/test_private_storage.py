@@ -5,6 +5,7 @@ from pathlib import Path
 import sqlite3
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from private_storage import (
     backup_database, prepare_database, restore_rehearsal, verify_backup,
@@ -102,6 +103,14 @@ class PrivateStorageTests(unittest.TestCase):
         shortcut.symlink_to(self.backups, target_is_directory=True)
         with self.assertRaises(ValueError):
             backup_database(str(self.database), str(shortcut))
+
+    def test_name_collision_preserves_original_backup_and_manifest(self):
+        with patch("private_storage.secrets.token_hex", return_value="fixed-snapshot"):
+            first = backup_database(str(self.database), str(self.backups))
+            with self.assertRaises(FileExistsError):
+                backup_database(str(self.database), str(self.backups))
+        self.assertTrue(first.with_name(first.name + ".json").exists())
+        self.assertGreater(verify_backup(str(first))["size"], 0)
 
     def test_invalid_manifest_does_not_allow_recovery(self):
         snapshot = backup_database(str(self.database), str(self.backups))
