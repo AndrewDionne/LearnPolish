@@ -17,29 +17,29 @@ Pull latest main, then get an **offline acoustic report** of original,
 unaltered WAVs. It reports RMS level, peak, near-full-scale clipping and
 long low-level sections. These are advisory, not pronunciation scores:
 
-\`\`\`bash
+```bash
 git switch main
 git pull --ff-only origin main
 python3 v2/benchmarks/audio_quality_review.py \
   --manifest PathToPolish-Private-AI/sentences-source.json
-\`\`\`
+```
 
 To **replay and record microphone-quality labels interactively** directly
 from the macOS Terminal (standalone Python script, no heredoc/EOFError):
 
-\`\`\`bash
+```bash
 python3 v2/benchmarks/audio_quality_review.py \
   --manifest PathToPolish-Private-AI/sentences-source.json \
   --review \
   --output PathToPolish-Private-AI/audio-quality-review-01.json
-\`\`\`
+```
 
-For each recording, the script plays the original using \`afplay\`;
+For each recording, the script plays the original using `afplay`;
 enter **c** = clear, **q** = too quiet, **d** = noisy/distorted,
 **u** = uncertain, or **r** = replay. It saves a **NEW, private**
 SHA-indexed review JSON; it **never edits, replaces or deletes** the
 original WAV or source manifest. Labels only describe recording quality:
-\`native_pronunciation_verified=false\`, \`provider_upload_approved=false\`
+`native_pronunciation_verified=false`, `provider_upload_approved=false`
 remain unchanged and no Azure/Groq call is made. Do not mark the
 three or four subjectively clear clips as verified Polish without an
 independent Polish-fluent listener.
@@ -49,23 +49,23 @@ after examining the first review). New recordings are stored in a **new
 child directory of exactly the same owner-selected research root**,
 not a relocated folder:
 
-\`\`\`bash
+```bash
 python3 v2/benchmarks/fleurs_candidates.py \
   --source-dir PathToPolish-Private-AI \
   --offset 80 --count 10 --batch-name fleurs-batch-02
-\`\`\`
+```
 
 The above is **metadata preview only**. To authorize ten new public
-dataset audio downloads, explicitly append \`--download\`:
+dataset audio downloads, explicitly append `--download`:
 
-\`\`\`bash
+```bash
 python3 v2/benchmarks/fleurs_candidates.py \
   --source-dir PathToPolish-Private-AI \
   --offset 80 --count 10 --batch-name fleurs-batch-02 --download
-\`\`\`
+```
 
-This creates only \`PathToPolish-Private-AI/fleurs-batch-02/\` with
-new \`sentences-source.json\` and unverified WAVs. If the new child
+This creates only `PathToPolish-Private-AI/fleurs-batch-02/` with
+new `sentences-source.json` and unverified WAVs. If the new child
 already exists, it **refuses overwrite**. A future 03 uses a new name
 and non-overlapping offset. Avoid repeated bulk sampling of poor-mic
 source audio indefinitely: after two candidate batches, reassess the
@@ -77,7 +77,7 @@ evaluation reuse.
 must verify the actual transcript, natural and accurate articulation,
 recording completeness, no clipping, source consent/rights for Azure,
 and distinct speaker identities. Only then construct a *separate reviewed
-subset* for \`sentence_study.py\`. Do not falsify review flags on rejected
+subset* for `sentence_study.py`. Do not falsify review flags on rejected
 samples. Azure receives exactly one original 1× WAV under F0 budget and
 explicit consent; no sound-level claims from the quality report.
 
