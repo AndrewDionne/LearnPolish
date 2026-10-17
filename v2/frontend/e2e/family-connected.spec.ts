@@ -58,9 +58,10 @@ test('two real private sessions join a family, choose different regions and shar
     await expect(lp.getByRole('listitem')).toHaveCount(2);
     await learner.screenshot({path:'test-results/family-connected-leaderboard.png',fullPage:true});
     // One-use invitation was consumed. It cannot grant access to a third account.
+    const learnerToken=await learner.evaluate(()=>sessionStorage.getItem('ptp-v2-family-session'));
     const replay=await learner.request.post('http://127.0.0.1:8016/api/v2/family/invites/redeem',
-      {data:{code:invitation}});
-    expect(replay.status()).toBe(401);
+      {headers:{Authorization:'Bearer '+learnerToken},data:{code:invitation}});
+    expect(replay.status()).toBe(400);
   }finally{
     await first.close();await second.close();
   }
