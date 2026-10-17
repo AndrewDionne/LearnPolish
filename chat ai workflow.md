@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-17 — FLEURS native Polish bounded candidate-sourcing setup; first Azure test still requires independent native review; F0 and token probe verified; folder unchanged
+**Updated:** 2026-10-17 — PR #34 MERGED FLEURS native Polish candidate importer, 75 offline tests; owner metadata-only preview next, native listener validation and Azure PA still pending
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -22,7 +22,25 @@
 2. Check umbrella issue and code. Choose the next unfinished acceptance checkpoint, identifying dependencies and relevant tests.
 3. Develop in a branch; execute available checks, report what is tested vs unverified.
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
-5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt feature## FLEURS Polish candidate acquisition tranche (2026-10-17)
+5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt feature## PR #34 MERGED — Native Polish candidate research acquisition (2026-10-17)
+
+**[PR #34 merged](https://github.com/AndrewDionne/LearnPolish/pull/34)** as squash `14cef14929607e779c695c48833955d3f48451e1`. [CI #39063909403](https://github.com/AndrewDionne/LearnPolish/actions/runs/39063909403) **four jobs PASS** on exact PR head `f0a8d08efc2455f9c5c5cf315a3b37bfd9946cb0`: **75 offline benchmark tests** plus Python family, frontend desktop/mobile journeys and connected family-browser tests all passed. New `v2/benchmarks/fleurs_candidates.py` + `test_fleurs_candidates.py` stage up to 12 Polish `google/fleurs` `pl_pl` 5–15-second recorded sentence *candidates*; preview only fetches dataset metadata; `--download` downloads real public FLEURS media into **unchanged existing `PathToPolish-Private-AI/` root**, refusing overwrite and leaving old Commons Oggs untouched. New `sentences-source.json` is **NOT validated native gold**: reviewer and provider approval flags are false, speaker identity unverified; `sentence_study.py` MUST reject this until actual independent Polish listener verifies voice, complete transcript and pronunciation. These tests do NOT pull real media; all network simulated by mocks. No live Azure PA yet.
+
+**Immediate owner action**, from Mac `path-to-polish` root:
+```bash
+git switch main
+git pull --ff-only origin main
+chmod 700 PathToPolish-Private-AI
+command -v ffmpeg
+python3 v2/benchmarks/fleurs_candidates.py --source-dir PathToPolish-Private-AI --count 10
+```
+If this metadata-only preview succeeds, owner may explicitly request the **actual publicly licensed audio download** (no model usage):
+```bash
+python3 v2/benchmarks/fleurs_candidates.py --source-dir PathToPolish-Private-AI --count 10 --download
+```
+The next gate is a **fluent native Polish listener** marking good/correct, complete, unclipped speech and independently verifying source transcripts and source rights; do not claim this has occurred or substitute dataset metadata or TTS for fluent verification. Then prepare SHA-locked original 1× and only then use owner-approved single Azure F0 PA check, with local private credential provided by owner (Render's secret cannot be read via assistant Render connector). No original file moves.
+
+## FLEURS Polish candidate acquisition tranche (2026-10-17)
 
 **User asked to continue after requiring genuine, native-human-verified Polish positive controls first.** Implemented `v2/benchmarks/fleurs_candidates.py` to scout up to 12 actual recorded `google/fleurs` `pl_pl` validation sentences via Hugging Face's dataset-viewer `/rows` public API with metadata-only preview, bounded and explicit `--download`, no model/provider inference. FLEURS dataset card lists CC BY 4.0 (https://huggingface.co/datasets/google/fleurs). The algorithm filters `raw_transcription` (at least 4 words) and dataset 16k length 5–15 seconds; converts selected cached assets using local FFmpeg 16k PCM16; validates duration/signal and SHA; stages atomically to **existing owner's fixed Git-ignored repo-root `PathToPolish-Private-AI/`**, creating only unverified new `fleurs-pl-val-XXXXX.wav` and `sentences-source.json`. Pre-existing Commons Ogg/WAV/results NEVER moved or overwritten. Any HTTP error stops; no retries or evasion.
 
