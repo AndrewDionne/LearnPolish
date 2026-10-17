@@ -245,6 +245,63 @@ be uncertain. Respect provider terms and creator attribution; never assume
 random web/news clips are public domain.
 
 
+## Research workspace: `repo/temp/` (owner-selected)
+
+Keep **temporary recordings, source clips, manifests, private reviewer labels,
+and Groq responses** in a single `temp/` folder at the repository root.
+`.gitignore` now ignores the entire root `/temp/` directory. The Commons
+importer and Groq output guard explicitly **allow ignored `repo/temp/`**
+while still refusing `repo/assets/`, `v2/`, `docs/` or other tracked locations.
+`assets/` is for reviewed, intentionally versioned app resources.
+
+From the repository root on your Mac (e.g., `~/repos/path-to-polish`):
+
+    git switch main && git pull --ff-only origin main
+    mkdir -p temp/commons-originals
+    chmod 700 temp temp/commons-originals
+    mv -n PathToPolish-Private-AI/Pl-czapka.ogg \
+      PathToPolish-Private-AI/Pl-ciasto.ogg \
+      temp/commons-originals/
+    git check-ignore -v temp/commons-originals/Pl-czapka.ogg
+    git status --short
+
+`mv -n` is a no-overwrite move and leaves any existing destination
+unchanged; check the paths if a source file is missing. Keep your old folder
+or remove it **only when empty** via `rmdir PathToPolish-Private-AI`.
+
+Then convert the two browser-downloaded originals **completely offline**:
+
+    python3 v2/benchmarks/public_native_samples.py \
+      --source-dir "temp/commons-originals" \
+      --output-dir "temp/commons-native-01" --count 2
+
+If `temp/commons-native-01` already exists, inspect it and select a new
+output name or `rmdir` it only if empty. The importer creates owner-private
+WAV, SHA-256-locked `manifest.json`, and `ATTRIBUTION.txt` atomically.
+
+Groq preview (zero API calls, one key supports both models):
+
+    python3 v2/benchmarks/groq_pilot.py \
+      --manifest "temp/commons-native-01/manifest.json" \
+      --models whisper-large-v3 whisper-large-v3-turbo \
+      --max-requests 4 --max-billed-seconds 40
+
+After you verify the actual Groq Free Plan and approve uploading the
+two credited Commons samples, use the **same** Groq key loaded privately
+in the Mac shell, then:
+
+    python3 v2/benchmarks/groq_pilot.py \
+      --manifest "temp/commons-native-01/manifest.json" \
+      --models whisper-large-v3 whisper-large-v3-turbo \
+      --max-requests 4 --max-billed-seconds 40 \
+      --send --approve-voice-upload --confirm-free-plan \
+      --output "temp/commons-native-01/groq-transcripts-01.jsonl"
+
+`git status` must **not** list any files under `temp/`; `git add -f` can
+override ignore rules, so do not force-add recordings/results. .gitignore is
+**not encryption or a substitute for careful backups/cloud-sync settings**.
+There is no model inference during the offline preparation and preview.
+
 ### Wikimedia HTTP 429 — safe recovery and no-network fallback
 
 Wikimedia has active 2026 rate limits and may return **HTTP 429 / Retry-After**
