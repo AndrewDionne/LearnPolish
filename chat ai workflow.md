@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-17 — PR #29 merged: use owner's existing PathToPolish-Private-AI folder in place; no relocation
+**Updated:** 2026-10-17 — owner-observed Groq 403 on first live Polish pilot; safe GET-model diagnostic, existing directory unchanged
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -23,6 +23,12 @@
 3. Develop in a branch; execute available checks, report what is tested vs unverified.
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
 5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt features.
+
+## Groq first real test got HTTP 403 — field evidence and safe diagnosis (2026-10-17)
+
+User's **local machine physical evidence**: original `PathToPolish-Private-AI/Pl-czapka.ogg` / `Pl-ciasto.ogg` imported successfully to `commons-native-01`, manifest and attribution generated; dry Groq two-model preview passed (2 WAVs, 4 requests planned, 40 sec minimum billed, zero calls). First owner-approved real run returned **HTTP 403** before result; no real transcription grade exists. **Never ask to move files.** 
+Official Groq docs `https://console.groq.com/docs/errors` and `https://console.groq.com/docs/model-permissions` confirm forbidden-model 403, codes `model_permission_blocked_org` or `model_permission_blocked_project`. Owner needs to inspect org Settings > Limits and project Settings > Limits to allow both Whisper models, plus Free Plan/account identity, BEFORE another audio request; a 403 can have other account restrictions too.
+In-flight corrective capability: `v2/benchmarks/groq_pilot.py --check-access` performs **GET /models only**, requires Mac local `GROQ_API_KEY`, no WAV upload/inference, and reports read-only available model IDs with caveat listing ≠ model execution rights. Actual HTTPError parser only reveals allowlisted permission codes and generic hints, **never raw Groq body or key**. New failed-first-call empty output cleanup avoids blocking future user trial; partial successful records remain preserved. README carries exact single-command diagnostic, expected zero-byte old-result observation, Console links. Provider transcript evidence not yet obtained; do not assume account upgrade or paid usage.
 
 ## PR #29 certified — owner's research folder NEVER moves (2026-10-17)
 

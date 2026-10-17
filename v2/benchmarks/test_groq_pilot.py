@@ -1,11 +1,13 @@
 import json
+import io
+import urllib.error
 from pathlib import Path
 import tempfile
 import unittest
 import wave
 from array import array
 
-from groq_pilot import prepare, run, transcribe, MODELS
+from groq_pilot import prepare, run, transcribe, check_access, MODELS
 
 
 class GroqPilotTests(unittest.TestCase):
@@ -90,6 +92,82 @@ class GroqPilotTests(unittest.TestCase):
             run(self.manifest, MODELS, send=True,
                 approve_voice_upload=True, confirm_free_plan=True,
                 api_key="dummy", output=output, transcriber=fake)
+
+    def test_403_organization_and_project_codes_are_safe_and_actionable(self):
+        forbidden = [
+            ("model_permission_blocked_org", "organization level"),
+            ("model_permission_blocked_project", "project level"),
+        ]
+        for code, label in forbidden:
+            def deny(request, timeout):
+                payload = {"error": {
+                    "code": code, "type": "permissions_error",
+                    "message": "Secret content should never print. key=do-not-log",
+                }}
+                raise urllib.error.HTTPError(
+                    request.full_url, 403, "Forbidden", {},
+                    io.BytesIO(json.dumps(payload).encode("utf-8")))
+            with self.assertRaisesRegex(RuntimeError, code) as captured:
+                transcribe(self.wave, "whisper-large-v3", "do-not-log", opener=deny)
+            self.assertIn(label, str(captured.exception))
+            self.assertNotIn("do-not-log", str(captured.exception))
+            self.assertNotIn("Secret content", str(captured.exception))
+
+    def test_403_without_recognized_error_code_never_echoes_response(self):
+        def deny(request, timeout):
+            return_code = b'{"error":{"message":"secret contents of private audio"}}'
+            raise urllib.error.HTTPError(request.full_url, 403, "Forbidden", {},
+                                         io.BytesIO(return_code))
+        with self.assertRaisesRegex(RuntimeError, "HTTP 403") as captured:
+            transcribe(self.wave, "whisper-large-v3", "key", opener=deny)
+        self.assertNotIn("private audio", str(captured.exception))
+
+    def test_read_only_access_check_sends_no_audio_and_no_transcriptions(self):
+        requests = []
+        class FakeResponse:
+            def __enter__(self): return self
+            def __exit__(self, *args): pass
+            def read(self, limit):
+                return json.dumps({"data": [
+                    {"id": "whisper-large-v3"},
+                    {"id": "whisper-large-v3-turbo"}]}).encode("utf-8")
+        def fake_access(request, timeout):
+            requests.append(request)
+            self.assertEqual(request.get_method(), "GET")
+            self.assertEqual(request.full_url, "https://api.groq.com/openai/v1/models")
+            self.assertEqual(request.get_header("Authorization"), "Bearer dummy")
+            self.assertEqual(timeout, 15)
+            self.assertIsNone(request.data)
+            return FakeResponse()
+        result = check_access("dummy", opener=fake_access)
+        self.assertEqual(len(requests), 1)
+        self.assertEqual(result["models_listed"], dict.fromkeys(MODELS, True))
+        self.assertTrue(result["no_audio_sent"])
+        self.assertTrue(result["no_transcription_requests"])
+        self.assertIn("still be blocked", result["important"])
+
+    def test_failed_first_call_removes_empty_result_but_preserves_partial(self):
+        output = self.root / "attempt-01.jsonl"
+        def blocked(*args):
+            raise RuntimeError("Groq returned HTTP 403")
+        with self.assertRaisesRegex(RuntimeError, "HTTP 403"):
+            run(self.manifest, MODELS, send=True, approve_voice_upload=True,
+                confirm_free_plan=True, api_key="private", output=output,
+                transcriber=blocked)
+        self.assertFalse(output.exists())
+        calls = []
+        def once(audio, model, key):
+            calls.append(model)
+            if len(calls) == 2:
+                raise RuntimeError("Groq returned HTTP 403")
+            return "cześć"
+        with self.assertRaisesRegex(RuntimeError, "HTTP 403"):
+            run(self.manifest, MODELS, send=True, approve_voice_upload=True,
+                confirm_free_plan=True, api_key="private", output=output,
+                transcriber=once)
+        self.assertEqual(calls, list(MODELS))
+        self.assertTrue(output.exists())
+        self.assertEqual(len(output.read_text().splitlines()), 1)
 
     def test_rejects_changed_wav_and_different_models(self):
         import hashlib
