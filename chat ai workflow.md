@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-17 — PR #19 multi-category family recognition merged; hosted family service and AI testing still deferred
+**Updated:** 2026-10-17 — PR #20 private family account lifecycle merged; backend deployment and AI testing still deferred
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -23,6 +23,12 @@
 3. Develop in a branch; execute available checks, report what is tested vs unverified.
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
 5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt features.
+
+## Family account privacy lifecycle — merged 2026-10-17
+
+**PR #20 merged** [view](https://github.com/AndrewDionne/LearnPolish/pull/20), squash commit `4be22fc642668dd143972a66f71d1ee677ac57cb`, [CI PASS #39011403128](https://github.com/AndrewDionne/LearnPolish/actions/runs/39011403128): **50 Vitest, 41 general desktop/mobile browser passes / 3 connected-only skips, 2 actual connected two-account desktop/mobile passes, 8 backend security tests**, offline benchmark safeguards PASS. Adds a compact private-family UI disclosure and authenticated family-service operations for owner-only revocation of all unused invites, transfer ownership to an existing member, explicit member withdrawal and server-linked activity erasure, one-user account data export without session/password secrets, reauthenticated password change with full session invalidation, and explicitly confirmed account deletion (blocks owners until they transfer a group with members). Consumed invite codes do not become reusable following account erasure. Backend tests cover unauthorized outsiders, membership boundaries, duplicate score guards, erasure, transfer, revocation and account lifecycle.
+
+**Owner's important tradeoff:** Withdrawn consent/data deletion removes that member's server contributions. In this exceptional case, previously opened group regions may lose XP and appear locked; the privacy erasure obligation overrides normal permanent-unlock game rules. Their local/offline XP and learning data remain untouched. UI requires explicit confirmation and makes this consequence clear. No public family service deployed, no AI inference, no paid calls and no new content. **Next gates:** secure hosted private persistent storage/TLS and backups, invite delivery/email verification, account recovery, parent/minor controls, retention policy, operational/incident review and physical iOS testing. Server-side study-completion attestation remains weaker than actual cheat-proof ranking.
 
 ## Follow-up family reliability and reward UX — 2026-10-17
 
