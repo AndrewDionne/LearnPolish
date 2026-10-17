@@ -404,6 +404,9 @@ accuracy remain pending. No API calls made in CI.
 
 ## 19. Confirmed transport discrepancy — curl GET 200, urllib GET 403
 
+**Implemented:** [PR #31 merged](https://github.com/AndrewDionne/LearnPolish/pull/31), squash `9847ca9ca088f333d9057ba9568d809451335c01`, [four-lane CI #39048991462 PASS](https://github.com/AndrewDionne/LearnPolish/actions/runs/39048991462) including 45 offline benchmark tests. User must still run `--check-access --transport curl` on Mac; real transcription POST has not yet succeeded or been observed. Audio unchanged in existing in-repo ignored private research folder.
+
+
 Owner's physical Mac call to Groq **GET /openai/v1/models via curl** returned
 HTTP **200 application/json**, using the same current account/key for which
 Python urllib GET and first transcription POST got HTTP403. This does not
