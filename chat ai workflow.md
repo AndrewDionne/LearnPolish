@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-17 — PR #24 Polish pronunciation research pilot preparation merged; guardian profiles paused; real inference and paid usage not approved
+**Updated:** 2026-10-17 — PR #25 Groq Whisper v3/Turbo opt-in research runner merged; guardian profiles paused; real inference/paid usage unapproved
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -24,9 +24,13 @@
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
 5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt features.
 
-## Groq Whisper v3 / Turbo — ready to connect without exposing key (2026-10-17)
+## Groq Whisper two-model pilot — merged 2026-10-17
 
-Owner says a Groq API key is available **on their own Mac**, NOT supplied to ChatGPT or GitHub. Current official Groq Speech-to-Text docs list both `whisper-large-v3` and `whisper-large-v3-turbo`, the `/openai/v1/audio/transcriptions` endpoint, free-tier 25MB audio size limit and **minimum ten billed seconds per request**; check actual Groq Console Free Plan/rate limits/billing before ANY upload. Previous harness only had `whisper-local` and `azure-raw`; **new** `v2/benchmarks/groq_pilot.py` supports both models on identical local WAVs. Default preview performs **zero network requests**. Live requires `--send --approve-voice-upload --confirm-free-plan`, an environment `GROQ_API_KEY`, private new output JSONL outside Git, checked audio SHA/format/caps, and explicit max requests/billed seconds. No auto retries, unapproved billing, API keys in Git, or generated phonetic scores. `test_groq_pilot.py` mocks network and validates safeguards. Owner's next step: export one adult consented V2 Speak 16-kHz WAV to `$HOME/PathToPolish-Private-AI`, generate private corpus, run preview with `--max-requests 2 --max-billed-seconds 20`; only then enable explicit two-model upload after account Free Plan and privacy confirmation. `v2/benchmarks/README.md` contains exact commands. No real API call from ChatGPT or CI; guardian profiles paused.
+**PR #25 merged** [view](https://github.com/AndrewDionne/LearnPolish/pull/25), squash SHA `e585dc77b3bbe38ec0f7c46daf6e0a848b5d3243`, [**four-lane CI PASS #39021508148**](https://github.com/AndrewDionne/LearnPolish/actions/runs/39021508148) on exact head `fe0dc14a43fb26d77914039d96c03dd4da076a79`. **19 offline benchmark tests** green including 6 new mocked Groq protocol/consent/budget/privacy tests; all family backend/connected browser/frontend regressions green. No real API requests, audio uploads or AI inference.
+
+**Implemented:** `v2/benchmarks/groq_pilot.py` standard-library HTTPS Groq transcription client for **both `whisper-large-v3` and `whisper-large-v3-turbo`** on identical 16k PCM16 SHA-256-locked adult WAV corpus. **Default preview makes zero requests**, doesn't need key. Live requires all `--send --approve-voice-upload --confirm-free-plan`, explicit `GROQ_API_KEY` only in Mac environment (not Git), mandatory private output outside repository (0700 directory / 0600 file), hard preflight request and min-billed-second caps and no automatic retries. Returns ASR recognition-only outcomes, `pronunciation_score: null`, no fabricated phoneme feedback. The free-plan confirmation requires user checking actual account settings; code CANNOT guarantee their cloud account won't bill. No paid provider calls approved.
+
+**Next user action:** Mac Terminal key loaded with hidden `read -rs GROQ_API_KEY`, adult consented V2 Speak WAV private export, `corpus.py` generates manifest, preview exactly **one recording × two models** with `--max-requests 2 --max-billed-seconds 20`, then explicit upload only after checking Groq Free Plan, no billing, and voice consent. Exact paste-safe CLI in `v2/benchmarks/README.md`. Azure raw `pl-PL` provider and human Polish labels still outstanding; no actual model quality decision. Guardian family profiles paused.
 
 ## Polish AI pronunciation pilot preparation — merged 2026-10-17
 
