@@ -249,3 +249,25 @@ guardian approvals and minor account lifecycle, email-provider abuse/bounces,
 encrypted off-host backup and privacy-preserving restores, persistent TLS
 service, native mobile testing, incident/retention review. Pronunciation AI
 and content authoring remain owner-deferred.
+
+
+## 11. Verified mailbox before family membership — 2026-10-17
+
+**Active end-to-end tranche:** refuse new family account registration when secure
+mail delivery is unconfigured; create accounts as pending until the recipient enters
+a single-use emailed code; reject sign-in and **all private family access** until
+verification. Include an authenticated credential-based resend for pre-existing
+unverified accounts, 30-minute bounded codes, attempts per email/network, code
+invalidation and old-session revocation. CI simulates the private mailbox and
+requires each of two independent browser learners to verify before joining a
+group; backend checks legacy persisted users and reset/password separation.
+
+**Acceptance:** four GitHub V2 CI lanes green on the same PR head, with browser
+desktop/mobile family collaboration, new security tests and offline benchmark
+safeguards. No production SMTP is provisioned, so production registration is
+deliberately closed. **Mailbox verification does not establish that a learner is
+an adult, or that a parent consents**; verified parent/guardian authority,
+child-associated account/data rights, safe invitations, external mail
+deliverability monitoring, deletion reconciliation, TLS persistent hosting,
+and physical Safari tests remain separate release gates. No AI testing or
+new course authoring in this tranche.
