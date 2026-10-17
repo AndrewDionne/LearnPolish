@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-17 — OWNER CORRECTION: first Azure PA test MUST use verified native Polish positive controls, not learner recordings; F0 owner-confirmed and token probe passes; folder unchanged
+**Updated:** 2026-10-17 — FLEURS native Polish bounded candidate-sourcing setup; first Azure test still requires independent native review; F0 and token probe verified; folder unchanged
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -22,7 +22,15 @@
 2. Check umbrella issue and code. Choose the next unfinished acceptance checkpoint, identifying dependencies and relevant tests.
 3. Develop in a branch; execute available checks, report what is tested vs unverified.
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
-5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt feature## 2026-10-17 — Owner correction: NATIVE Polish positive control FIRST (binding benchmark requirement)
+5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt feature## FLEURS Polish candidate acquisition tranche (2026-10-17)
+
+**User asked to continue after requiring genuine, native-human-verified Polish positive controls first.** Implemented `v2/benchmarks/fleurs_candidates.py` to scout up to 12 actual recorded `google/fleurs` `pl_pl` validation sentences via Hugging Face's dataset-viewer `/rows` public API with metadata-only preview, bounded and explicit `--download`, no model/provider inference. FLEURS dataset card lists CC BY 4.0 (https://huggingface.co/datasets/google/fleurs). The algorithm filters `raw_transcription` (at least 4 words) and dataset 16k length 5–15 seconds; converts selected cached assets using local FFmpeg 16k PCM16; validates duration/signal and SHA; stages atomically to **existing owner's fixed Git-ignored repo-root `PathToPolish-Private-AI/`**, creating only unverified new `fleurs-pl-val-XXXXX.wav` and `sentences-source.json`. Pre-existing Commons Ogg/WAV/results NEVER moved or overwritten. Any HTTP error stops; no retries or evasion.
+
+**Review gates are critical:** all generated JSON rows default `reference_verified_by_human=false`, `audio_audited_unclipped=false`, `provider_upload_approved=false`, `speaker_id=REQUIRES_NATIVE_REVIEW`, `review_status=UNVERIFIED_NEEDS_NATIVE_LISTENER`. No row automatically qualifies for `sentence_study.py` or `azure_pilot.py`. A fluent native reviewer must **actually listen** to audio, reject mistranscribed/unnatural/clipped/repeated clips, confirm two distinguishable voices and copyright/third-party provider processing rights, explicitly amend and approve retained samples. Dataset speaker `gender` cannot establish speaker identity/native status. Only THEN run `sentence_study.py` offline source audit and 1× freeze, and an explicitly approved one-sample F0 Azure `pl-PL` positive control. No Azure test has been performed by this tranche. Do not ask owner to record learner Polish instead. No source dataset audio has been downloaded by assistant or in CI; tests use in-memory mocked media.
+
+**Next Mac operator step** (documented in `SENTENCE_STUDY.md`): `git pull --ff-only origin main`, then `python3 v2/benchmarks/fleurs_candidates.py --source-dir PathToPolish-Private-AI --count 10` for metadata-only preview; optional `--download` creates genuine *unverified* candidates. Confirm `ffmpeg` is installed. If dataset API unavailable, report error and do not misrepresent candidates as present.
+
+## 2026-10-17 — Owner correction: NATIVE Polish positive control FIRST (binding benchmark requirement)
 
 **Owner rejected the suggestion to begin the real Azure pronunciation test with the owner's own developing Polish pronunciation.** The FIRST real Azure `pl-PL` PA benchmark must use **authentic, clearly articulated native-speaker Polish**, not learner, distorted, clipped, or isolated-word speech. The objective is to verify that Azure awards appropriate high accuracy for genuinely good spoken Polish and that its word/phoneme evidence aligns with expert listening. Do not label any unverified corpus clip as gold-standard just because a dataset includes a transcription.
 
