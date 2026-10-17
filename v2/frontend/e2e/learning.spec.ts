@@ -431,7 +431,7 @@ test('interactive open map permits distant choice and restores destination on re
  await page.reload();
  await page.getByRole('button',{name:'Expedition'}).first().click();
  await expect(page.getByRole('heading',{name:'Pomorskie'})).toBeVisible();
- await expect(page.getByText(/Single-learner preview/)).toBeVisible();
+ await expect(page.getByText(/Your personal XP and map are saved locally/)).toBeVisible();
  await page.screenshot({path:'test-results/open-poland-expedition.png',fullPage:true});
 });
 

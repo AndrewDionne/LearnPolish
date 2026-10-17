@@ -1,5 +1,8 @@
 import {test,expect} from '@playwright/test';
 
+// The isolated connected job sets this value and starts a local family API.
+test.skip(!process.env.VITE_FAMILY_API_URL, 'Requires the backend-enabled family integration job');
+
 test('two real private sessions join a family, choose different regions and share weekly XP', async ({browser},testInfo)=>{
   const projectTag=testInfo.project.name.replace(/[^a-z0-9]/gi,'').toLowerCase();
   const first=await browser.newContext();
