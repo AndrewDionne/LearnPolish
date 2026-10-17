@@ -87,6 +87,17 @@ test('two real private sessions join a family, choose different regions and shar
     const replay=await learner.request.post('http://127.0.0.1:8016/api/v2/family/invites/redeem',
       {headers:{Authorization:'Bearer '+learnerToken},data:{code:invitation}});
     expect(replay.status()).toBe(400);
+    // Member withdrawal controls work in a connected family UI.
+    const learnerPrivacy=lp.getByTestId('family-privacy');
+    await learnerPrivacy.locator('summary').click();
+    learner.once('dialog',dialog=>dialog.accept());
+    await learnerPrivacy.getByRole('button',{name:'Leave this family'}).click();
+    await expect(lp.getByRole('heading',{name:'Weekend explorers'})).toHaveCount(0);
+    await panel.getByRole('button',{name:'Refresh rankings'}).click();
+    await expect(panel.getByText('10 weekly family XP')).toBeVisible();
+    const parentPrivacy=panel.getByTestId('family-privacy');
+    await parentPrivacy.locator('summary').click();
+    await expect(parentPrivacy.getByRole('button',{name:'Revoke unused invitations'})).toBeVisible();
   }finally{
     await first.close();await second.close();
   }
