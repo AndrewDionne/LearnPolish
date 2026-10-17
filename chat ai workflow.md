@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-17 — owner Mac FLEURS metadata preview AND download PHYSICAL PASS: 10 sentence clips/81.96s approx, no Azure/Groq calls; next independent native listening review
+**Updated:** 2026-10-17 — owner heard first FLEURS 10: 3–4 preliminarily clear, most bad-mic incl 2 quiet; offline acoustic QC + batch-02 sampling setup; no Azure PA
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -22,7 +22,17 @@
 2. Check umbrella issue and code. Choose the next unfinished acceptance checkpoint, identifying dependencies and relevant tests.
 3. Develop in a branch; execute available checks, report what is tested vs unverified.
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
-5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt feature## Owner Mac actual FLEURS candidate acquisition — PHYSICAL PASS (2026-10-17)
+5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt feature## Owner physical FLEURS microphone quality findings and triage tranche (2026-10-17)
+
+**Owner actually listened to the ten downloaded Polish FLEURS WAVs.** About **3–4 sounded clear**; **most had poor microphone quality**, with **two particularly quiet**. This is a subjective recording-quality result only: user is not asked to independently certify native pronunciation or transcript fidelity; **0 clips** certified for Azure model baseline. Do NOT infer specific bad clip IDs, since the owner supplied counts but not filenames. No Azure PA, no new Groq calls. Work remains native-speaker listening certification plus source/rights checks.
+
+**Response:** implement `v2/benchmarks/audio_quality_review.py` for offline PCM16 acoustic metrics (RMS and peak dBFS, possible clipped-sample fraction, quiet 200ms windows), optional `--review` terminal `afplay` with simple **clear/too_quiet/noisy_or_distorted/uncertain** labels, stored as non-overwriting SHA-locked owner-private 0600 `audio-quality-review-01.json`. Nothing edits the FLEURS `sentences-source.json`, WAVs or native approval flags; automatic level hints can NOT prove phonetic quality or speaker nativeness. Low-quality WAVs should be excluded, not artificially volume-normalized to boost scores. Prior EOFError stemmed from `python3 - <<'PY'` consuming stdin: standalone script is interactive-safe.
+
+**Further controlled sampling:** add `--batch-name fleurs-batch-02 --offset 80` to existing `fleurs_candidates.py`, creating independent **new child** within exact existing Git-ignored `PathToPolish-Private-AI/` root; never overwrite first batch or move original Ogg/WAV/JSON. Metadata-only default; `--download` requires explicit operator opt-in and acquires only up to 12 public source recordings, not model inference; native review/approval remains false. Do not endlessly source weak microphone clips; after second batch reconsider higher fidelity human native speech providers and any reuse limitations. Mac review instructions in `SENTENCE_STUDY.md`.
+
+**Certification gate:** PR + four-lane CI before merging. No owner Mac quality analysis or second audio download performed by the assistant, as the local private files cannot be remotely accessed. Next user action after sync: local read-only audio quality report, and/or interactive labels, send redacted measurements/quality summary; retain F0 and consent gates before one native original Azure assessment.
+
+## Owner Mac actual FLEURS candidate acquisition — PHYSICAL PASS (2026-10-17)
 
 **Physical terminal evidence from owner** after `main` fast-forward `db934db..a509646`:
 1. `python3 v2/benchmarks/fleurs_candidates.py --source-dir PathToPolish-Private-AI --count 10` returned `planned_candidates=10`, `source=google/fleurs pl_pl validation`, `audio_downloads=0`, `speech_ai_requests=0`, `approximate_seconds=81.96`, `ready_to_stage=true`, `review_required=true`.
