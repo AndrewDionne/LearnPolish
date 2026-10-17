@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-17 — PR #33 MERGED: reviewed natural-sentence tempo experiment and Azure F0 gated one-call pilot; real corpus/resource pending, user folder unchanged
+**Updated:** 2026-10-17 — live Render Path to Polish Azure Speech integration located; token-only test/actual Azure F0 tier require owner verification; existing study folder untouched
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -23,6 +23,20 @@
 3. Develop in a branch; execute available checks, report what is tested vs unverified.
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
 5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt features.
+
+## Existing Render Azure Speech integration discovered — credentials/tier require safe probe (2026-10-17)
+
+**Owner asked to identify/reuse the Azure Speech resource behind live Render Path to Polish and test it.** Connected Render workspace `tea-d16gj76mcj7s73c497j0`, live service `srv-d3ic1u6mcj7s7394c2bg`, [Render dashboard](https://dashboard.render.com/web/srv-d3ic1u6mcj7s7394c2bg), host `https://path-to-polish.onrender.com`, repo `AndrewDionne/LearnPolish` `main`, auto-deploy yes, Python web service, **Render plan free and Render region Frankfurt** (the latter is NOT proof of Azure region or Azure pricing tier). [Render deployment](https://dashboard.render.com/web/srv-d3ic1u6mcj7s7394c2bg/deploys/dep-db9sc9m7bikc73e2lq3g) `db934db7b9a6fb69ad2a1badb3e5432baa121e9e` LIVE at 2026-10-17 19:03Z. Second legacy `flashcards` service `srv-d16gommmcj7s73c4fjog` on Ohio is suspended, do not use it as current backend.
+
+**Existing production code:** `app/config.py` reads `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION` or `AZURE_REGION` and optional `AZURE_SPEECH_ENDPOINT`; `app/__init__.py` `_azure_env` supports backup aliases and provides `GET /api/azure/diag` (non-secret presence/region/endpoint) and `GET /api/azure/diag?probe=1` (server-side Azure STS short-lived token exchange, returns ONLY probe true/false, no audio, no speech inference). `app/tts.py` supports Azure Polish TTS if provider env is selected; legacy `app/practice.py` and `app/reading.py` include Azure pronunciation SDK calls with `pl-PL` and historically controversial custom grade blending. V2 Azure raw score research remains independently gated and unconnected.
+
+**No proof yet that live Render actually has those environment variables set:** connected Render tools can show service/deploys/logs but cannot read existing env variable values or verify Azure Portal resource/SKU. The web fetch to live diag was not accessible from assistant environment; do not claim an Azure token test passed. Recent Render Azure-related logs yielded no entries; this does not prove absent credentials. Prior historical region examples `canadaeast`/`germanywestcentral` are NOT verified current Render values. **Next safe user-run single non-transcription probe from their Mac (no key in output):**
+```bash
+curl -fsS --max-time 60 'https://path-to-polish.onrender.com/api/azure/diag?probe=1'
+```
+Response expected `{"ok":true,"has_key":true,"region":"<actual-region>","endpoint":null|"<configured-endpoint>","probe":{"ok":true}}`. Probe issues temporary Azure Speech access token server-side, **does not include that token in its response** and does no audio/STT/PA/TTS work. It does NOT prove resource F0 SKU or no paid usage. If no key/region or probe fails, inspect **Render Dashboard -> Path to Polish -> Environment**. For resource name/tier and feature permission, look at **Azure Portal -> Speech resource -> Overview (name, location, pricing F0 vs S0), Keys & Endpoint** without copying secrets; do not authorize a real audio call if F0/no-charge cannot be verified. Free Render compute != Free Azure Speech tier.
+
+**Security finding:** legacy Render Python Flask also exposes unauthenticated `/api/azure/token`, `/api/token/azure`, `/api/speech_token` routes that can issue temporary Azure bearer tokens to any caller; risk of third-party use/consumption. Prior to enabling general-user V2 Azure scoring, scope these routes to authenticated/rate-limited authorized sessions and set account use caps, accounting for legacy practice/reading clients. Do NOT print/store tokens or secrets in chat, logs, GitHub or browser screenshots. No change to these potentially legacy-critical routes was made in this discovery.
 
 ## PR #33 MERGED — Azure F0 one-call + human-audited Polish sentence tempo setup (2026-10-17)
 
