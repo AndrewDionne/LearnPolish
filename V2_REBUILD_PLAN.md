@@ -350,3 +350,19 @@ files *without network calls*, preserving existing 16k WAV conversion,
 immutable checksums and CC author/licence metadata. Mock tests cover 429,
 offline source validation and cleanup. Real-media retrieval and Groq testing
 on the user's Mac remain the acceptance gate. See README recovery section.
+
+
+## 16. AI study workspace — owner-selected repository temp
+
+Owner requested storing native Polish source media, normalized WAV controls,
+manifests and model output **under the actual LearnPolish repository**, not in
+a disconnected Mac home folder. Standardize on the root **`temp/` directory
+ignored by Git** (NOT `assets/`, reserved for intentionally published app
+resources). Update Commons importer and Groq result placement guards to
+allow this specific ignored directory while rejecting tracked repo paths and
+symlink escapes. Require private mode 0700 folders and 0600 result files;
+`.gitignore` is not encryption and can be overridden with `git add -f`.
+CLI in `v2/benchmarks/README.md` migrates the two downloaded Oggs from the
+older in-repo `PathToPolish-Private-AI` into `temp/commons-originals/` and
+then runs 2-word Commons conversion/Groq v3-Turbo dry-run entirely locally.
+No paid API access or real pronunciation grading authorized.
