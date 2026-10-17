@@ -41,6 +41,92 @@ gold reference.
 no Azure speech-audio request yet. Do not imply the forthcoming FLEURS
 dataset is already validated or downloaded.
 
+## FLEURS Polish candidate importer (NEW; source material still needs human certification)
+
+Google FLEURS is a real recorded multilingual speech dataset, including
+`pl_pl`. The dataset card declares **CC BY 4.0**. We use the public
+[Hugging Face Dataset Viewer rows API](https://huggingface.co/docs/dataset-viewer/en/rows)
+to inspect bounded Polish validation rows, and their short-lived cached
+audio links to fetch candidate WAVs **only upon explicit `--download`**.
+No Hugging Face account/token, bulk Parquet shard, or Python dataset package
+is required. Neither command uploads anything to Azure or Groq. If
+Hugging Face denies requests, stop; do not bypass provider access controls.
+
+**From Mac repo root**, leave the existing `Pl-czapka.ogg`,
+`Pl-ciasto.ogg`, `commons-native-01/`, and their prior results untouched.
+
+```bash
+git switch main
+git pull --ff-only origin main
+chmod 700 PathToPolish-Private-AI
+command -v ffmpeg
+python3 v2/benchmarks/fleurs_candidates.py \
+  --source-dir PathToPolish-Private-AI --count 10
+```
+
+The preview fetches **only one public dataset metadata page** (no media,
+no voice upload, no inference). It considers recorded duration (5–15s,
+from 16k FLEURS sample count) and requires at least four words in
+`raw_transcription`, to skip old-style word fragments.
+
+If the preview succeeds, **explicit candidate download**:
+
+```bash
+python3 v2/benchmarks/fleurs_candidates.py \
+  --source-dir PathToPolish-Private-AI --count 10 --download
+```
+
+This fetches **at most 10 public dataset audio clips** from trusted
+`datasets-server.huggingface.co` cached-assets, converts with FFmpeg
+into 16k PCM16 WAV, validates signal and duration, and atomically
+publishes only new `fleurs-pl-val-XXXXX.wav` files plus
+`PathToPolish-Private-AI/sentences-source.json`. No overwrite, existing
+file move, Azure/Groq inference or paid request. If a download fails, no
+partly finished manifest is published. Every WAV has SHA-256 and a
+traceable FLEURS row/split/reference/license entry. All new audio and
+manifest remain Git-ignored and owner-private.
+
+**CRITICAL: staged candidates are NOT yet verified correct native Polish.**
+The generated manifest intentionally sets
+`reference_verified_by_human=false`,
+`audio_audited_unclipped=false`,
+`provider_upload_approved=false`,
+`speaker_id="REQUIRES_NATIVE_REVIEW"`, and
+`review_status="UNVERIFIED_NEEDS_NATIVE_LISTENER"`. A dataset
+transcription, gender field or audio file's existence alone is NOT proof
+that a recording is by a native Polish speaker or pronounced accurately.
+Do not run Azure or Groq against them yet.
+
+Have an **independent fluent native Polish listener** listen to each
+WAV, check that the full sentence is indeed spoken naturally and
+correctly, transcript punctuation/words align, no clipped or repeated
+words, clean microphone, and assign distinct anonymous real
+`speaker_id` values based on actual distinguishable voices. If a clip
+doesn't pass, exclude it rather than edit its expected text to make it
+appear correct. Confirm FLEURS attribution/rights and third-party Azure
+processing permission. Only for approved retained clips, manually
+change the two review booleans to `true`, replace speaker ID, change
+`review_status` to `NATIVE_HUMAN_VERIFIED`, and explicitly approve
+provider upload **only when appropriate**. The JSON list must then
+contain **8–12 passing distinct recordings from at least two confirmed
+voices**; otherwise collect another verified set, using a different
+`--offset` and a **fresh output/manifest name** rather than overwriting
+any existing file.
+
+Then run the current offline gate:
+
+```bash
+python3 v2/benchmarks/sentence_study.py \
+  --manifest PathToPolish-Private-AI/sentences-source.json
+```
+
+After this passes, use existing `sentence_study.py --prepare` to freeze
+the 1× positive-control WAVs and create 0.85× pitch-preserved Whisper
+variants. The **first Azure sample must be ONE unmodified 1×
+native-human-approved clip**, on the owner-confirmed Germany West Central
+F0 Speech resource, using explicit consent/free allowance gates. None of
+this native verification can be automated or faked with ASR/TTS.
+
 ## A. Required real sentence inputs
 
 Use exactly the existing repo-root PathToPolish-Private-AI/ folder, never relocate source files. Add actual human-reviewed 16-kHz mono PCM16 WAV files (5–15 seconds, at least 4 reference words), plus a manually curated PathToPolish-Private-AI/sentences-source.json. The main trial needs 8–12 clean intact Polish utterances and at least 2 anonymous speakers. Include both naturally normal and naturally slow utterances from consenting adults. For each sample include:
