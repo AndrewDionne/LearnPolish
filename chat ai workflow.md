@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-17 — plan 1× vs optional pitch-preserving slower speech plus Azure pl-PL pronunciation baseline; natural verified corpus first, no provider calls; folder unchanged
+**Updated:** 2026-10-17 — sentence tempo and gated Azure pl-PL pilot infrastructure implemented; real corpus/resource pending, audio folder unchanged
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -23,6 +23,15 @@
 3. Develop in a branch; execute available checks, report what is tested vs unverified.
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
 5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt features.
+
+## Tranche: sentence tempo + Azure pl-PL pilot setup implementation (2026-10-17)
+
+**Owner instruction: set up both slower recognition and an Azure Polish baseline.** Delivered in feature branch (CI/merge details updated after certification):
+- `v2/benchmarks/sentence_study.py` validates 5–15s 16k PCM16 WAVs, 4+ independently verified Polish words, independent unclipped listening, source license/consent and provider upload status, 8–12 reviewed controls across ≥2 anonymous speakers by default. New output is an **atomic private child** of existing Git-ignored owner folder and includes SHA-frozen 1× original copy plus pitch-preserved 0.85×, optionally 0.75×, FFmpeg tempo variants with original/derivative hashes. No source WAVs move, no network.
+- `groq_pilot.py` extends max allowed WAV duration to 25s so natural 15s source slowed to ~20s remains valid; all original explicit model/request/audio budget/consent gates retained.
+- `v2/benchmarks/azure_pilot.py` provides 1-sample explicit `--sample-id` **read-only/offline preview**, 1× unmodified SHA-locked audio only, refuses stretched WAV; optional SDK used only after single-call `--send --approve-voice-upload --confirm-resource-f0 --confirm-no-paid-billing`, environment-based key/region, max 15s and NEW private raw response JSON. No API/client accounts assumed; no Azure inference in tests; Polish does not yield named IPA phoneme identification like en-US.
+- `v2/benchmarks/SENTENCE_STUDY.md` supplies exact Mac operator steps, real human-verified source manifest schema, no-spend defaults, Free Plan verification and upcoming corpus requirements. **REAL source sentences and Azure F0 resource not yet supplied/connected, so no model-quality test or Azure grading evidence exists.**
+- User's `repo/PathToPolish-Private-AI/` remains permanent and unchanged. Existing `Pl-czapka.ogg`, `Pl-ciasto.ogg`, results and manifest are never moved or overwritten. No paid calls or real voice uploads authorized in the setup.
 
 ## Research design direction: slower speech + Azure pl-PL parallel baseline (2026-10-17)
 
