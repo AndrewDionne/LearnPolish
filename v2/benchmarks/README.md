@@ -244,6 +244,58 @@ be uncertain. Respect provider terms and creator attribution; never assume
 random web/news clips are public domain.
 
 
+## Owner Mac HTTP transport: curl 200 / urllib 403 (2026-10-17)
+
+Physical evidence from the same Terminal/key/account:
+- Python `urllib`: **HTTP 403 on BOTH** GET `/models` and initial POST transcription.
+- macOS `curl`: **HTTP 200 application/json on GET `/models`**.
+
+This establishes a client/request-path difference, **not** the exact cause
+(User-Agent, TLS fingerprint, intermediary filtering, etc. remain unproven).
+It also does NOT prove that a curl *transcription* will be permitted.
+Do not change keys, create new directories, bypass provider access policies,
+or retry the rejected Python POST.
+
+The benchmark now has an **explicit `--transport curl`** option, with the
+same backend model allowlist, exact-WAV source checks, cap preflight, approval
+flags, one-request-at-a-time/no retries, and 0600 non-overwriting results.
+No third-party Python SDK installation required; macOS already has curl.
+The implementation invokes curl without a shell, disables any user `.curlrc`,
+and supplies the authorization header through **curl config on stdin rather
+than process arguments**. Only allowlisted Groq URLs are reachable; keys and
+full provider error bodies are not echoed or stored in result JSON.
+
+**First step — read-only model access, no audio or model inference:**
+
+    git switch main && git pull --ff-only origin main
+    test -n "$GROQ_API_KEY" && echo "Groq key available in this Terminal"
+    python3 v2/benchmarks/groq_pilot.py --check-access --transport curl
+
+The response must list `whisper-large-v3` and
+`whisper-large-v3-turbo` as `true` before attempting model comparison.
+A listed model can still be restricted by your actual Groq account or project;
+if the curl request is rejected, inspect your Console and contact Groq rather
+than attempting to bypass provider controls. This GET does not upload WAVs
+or consume transcription allowance.
+
+**Optional later stage, ONLY after Free Plan and model permissions are checked
+and you explicitly approve sending licensed Commons audio to Groq:**
+
+    python3 v2/benchmarks/groq_pilot.py \
+      --manifest PathToPolish-Private-AI/commons-native-01/manifest.json \
+      --models whisper-large-v3 whisper-large-v3-turbo \
+      --max-requests 4 --max-billed-seconds 40 \
+      --transport curl \
+      --send --approve-voice-upload --confirm-free-plan \
+      --output PathToPolish-Private-AI/commons-native-01/groq-transcripts-curl-01.jsonl
+
+The previous failed urllib POST may have left an empty
+`groq-transcripts-01.jsonl`; use the **new, distinct results filename above**
+rather than overwriting or deleting anything. Audio files **remain exactly
+where the owner put them** in the ignored `PathToPolish-Private-AI/` directory.
+This code is tested with mocked subprocess responses only; real curl
+transcription results have NOT yet been observed.
+
 ## Mac first live Groq trial returned HTTP 403 — zero-upload diagnostic (2026-10-17)
 
 **Observed on owner's Mac:** the two-source Polish Commons WAV conversion and
