@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-17 — PR #32 merged offline review and dual strict/target ASR recognition metrics; actual Groq evidence preserved; study folder unchanged
+**Updated:** 2026-10-17 — owner listened to first native one-word clips and retired them as model-quality evidence; next test longer verified speech; study folder unchanged
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -23,6 +23,16 @@
 3. Develop in a branch; execute available checks, report what is tested vs unverified.
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
 5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt features.
+
+## Native one-word test retired for model-selection — owner listening review 2026-10-17
+
+**Owner personally listened to both source files**, and has now made the decisive research-design call: **these two isolated, ~1.3–1.5-second audio clips are too short and too specific to be useful for selecting a Polish recognition or pronunciation engine. Stop expanding single-word Commons testing.** Details:
+- `Pl-czapka.ogg`: source really contains a **clipped initial word/syllable followed by the full word**. Both Whisper transcriptions contain extra `Czap` material (`Czap, czapka.` / `Czap-czapka.`); this is **consistent with actual source speech**, and must NOT be labelled model hallucination or an ASR error without native-human verification of the exact utterance.
+- `Pl-ciasto.ogg`: source sounds **cleaner**, but the owner **cannot reliably verify the utterance by ear**, so `ciasto` as ground-truth spoken reference is not independently confirmed by the owner. v3's `Często.` vs Turbo's `CZASTO` cannot be interpreted as a reliable accuracy ranking.
+- The earlier `reference_exact_match=0/2` and `reference_present=1/2` calculations **remain mechanically correct for written labels**, but these numbers are **not suitable ASR quality evidence or model ranking** with unverified, truncated or too-short clips.
+- **Disposition:** keep the existing recordings, manifest, attribution and four saved Groq JSONL rows as a **transport, privacy, SHA/provenance, budget and offline-analysis smoke test ONLY**. No new API calls/repeated short-word tests; do not treat the metric fractions as accuracy estimates, and do not tune scoring to make these clips pass.
+- **Next corpus gate (design, not collected or tested):** small but balanced set of **natural-length, uninterrupted Polish sentences/short exchanges** (initial target roughly 5–15s each, ~8–12 samples), **native-speaker-verified transcripts and audible utterances**, multiple speakers/delivery styles, copyright/license provenance and SHA-256 locked source WAVs. Include sufficient context and relevant Polish contrasts. Validate reference text and no clipping/disfluency **before provider uploads**. On the **same audio**, compare Large-v3 and Turbo recognition (whole sentence/word-error and targeted confusion analysis), but keep this work separate from **adult learner mispronunciation** clips with independent native-human pronunciation labels and any Azure `pl-PL` phonetic-assessment baseline. No ASR transcription alone becomes a pronunciation grade.
+- **Owner's local path is immutable:** keep study source and output in existing Git-ignored `repo/PathToPolish-Private-AI/`. No moves or arbitrary new directories, no paid tests without explicit approval.
 
 ## PR #32 merged — verified two-word result metrics and offline reviewer (2026-10-17)
 
