@@ -19,6 +19,11 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
   const [name,setName]=useState('');
   const [email,setEmail]=useState('');
   const [password,setPassword]=useState('');
+  const [recoveryAvailable,setRecoveryAvailable]=useState(false);
+  const [recoveryMode,setRecoveryMode]=useState(false);
+  const [recoveryRequested,setRecoveryRequested]=useState(false);
+  const [recoveryCode,setRecoveryCode]=useState('');
+  const [recoveryPassword,setRecoveryPassword]=useState('');
   const [familyName,setFamilyName]=useState('');
   const [invite,setInvite]=useState('');
   const [newInvite,setNewInvite]=useState('');
@@ -33,6 +38,14 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
   useEffect(()=>{
     onConnection(enabled&&token&&group&&FAMILY_API?{token,groupId:group}:null);
   },[enabled,token,group,onConnection]);
+  useEffect(()=>{
+    if(!FAMILY_API||token)return;
+    let active=true;
+    void familyRequest<{password_recovery_available:boolean}>('/api/v2/family/health')
+      .then(data=>{if(active)setRecoveryAvailable(data.password_recovery_available===true);})
+      .catch(()=>{if(active)setRecoveryAvailable(false);});
+    return ()=>{active=false;};
+  },[token]);
   useEffect(()=>{
     if(!token||!FAMILY_API)return;
     let active=true;
@@ -91,6 +104,17 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
     await familyRequest('/api/v2/family/signup','POST',{email,name,password});
     await login();
   };
+  const requestRecovery=async()=>{
+    await familyRequest('/api/v2/family/recovery/request','POST',{email});
+    setRecoveryRequested(true);
+    setStatus('If an account exists for this email, a one-use recovery code has been sent.');
+  };
+  const completeRecovery=async()=>{
+    await familyRequest('/api/v2/family/recovery/complete','POST',
+      {code:recoveryCode.trim(),new_password:recoveryPassword});
+    setRecoveryCode('');setRecoveryPassword('');setRecoveryMode(false);setRecoveryRequested(false);
+    setPassword('');setStatus('Password reset. Sign in with your new password.');
+  };
   const clearAccountSession=()=>{
     saveSession('');pickGroup(0);setGroups([]);setSummary(null);onSummary(null);toggle(false);
     setNewInvite('');setUserId(0);setStatus('Signed out of the private family service.');
@@ -132,13 +156,34 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
     <div className="family-heading"><div><span className="eyebrow">PRIVATE FAMILY EXPEDITION</span><h2>Learn together</h2></div>
       {token&&<button type="button" onClick={()=>void run(logout)} disabled={busy}>Sign out</button>}</div>
     {!token ? <div className="family-auth">
-      <p>Use your own private account to create or join your family's Poland expedition.</p>
-      <label>Display name<input value={name} onChange={e=>setName(e.target.value)} autoComplete="nickname" maxLength={48}/></label>
-      <label>Email<input type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)}/></label>
-      <label>Password<input type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)}/></label>
-      <div className="family-actions"><button type="button" disabled={busy} onClick={()=>void run(login)}>Sign in</button>
-        <button type="button" disabled={busy} onClick={()=>void run(signUp)}>Create account</button></div>
-      <small>New passwords require at least 12 characters. Your account is private to this service.</small>
+      {recoveryMode?<div className="family-recovery">
+        <h3>Recover family account</h3>
+        <p>Request a private email code. Codes expire in 15 minutes and can be used only once.</p>
+        <label>Email<input type="email" autoComplete="email" value={email}
+          onChange={e=>setEmail(e.target.value)}/></label>
+        <button type="button" disabled={busy||!email.trim()}
+          onClick={()=>void run(requestRecovery)}>Email recovery code</button>
+        {recoveryRequested&&<>
+          <label>Recovery code<input value={recoveryCode} autoComplete="off"
+            onChange={e=>setRecoveryCode(e.target.value.trim())}/></label>
+          <label>New password<input type="password" autoComplete="new-password"
+            value={recoveryPassword} onChange={e=>setRecoveryPassword(e.target.value)}/></label>
+          <button type="button" disabled={busy||!recoveryCode||recoveryPassword.length<12}
+            onClick={()=>void run(completeRecovery)}>Set new password</button>
+        </>}
+        <button type="button" disabled={busy} onClick={()=>{setRecoveryMode(false);setRecoveryCode('');
+          setRecoveryPassword('');setRecoveryRequested(false);setError('');setStatus('');}}>Back to sign in</button>
+      </div>:<>
+        <p>Use your own private account to create or join your family's Poland expedition.</p>
+        <label>Display name<input value={name} onChange={e=>setName(e.target.value)} autoComplete="nickname" maxLength={48}/></label>
+        <label>Email<input type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)}/></label>
+        <label>Password<input type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)}/></label>
+        <div className="family-actions"><button type="button" disabled={busy} onClick={()=>void run(login)}>Sign in</button>
+          <button type="button" disabled={busy} onClick={()=>void run(signUp)}>Create account</button></div>
+        <small>New passwords require at least 12 characters. Your account is private to this service.</small>
+        {recoveryAvailable&&<button type="button" disabled={busy} onClick={()=>{
+          setRecoveryMode(true);setError('');setStatus('');}}>Forgot password?</button>}
+      </>}
     </div> : <div className="family-connected">
       <div className="family-group-actions">
         <label>Your family group<select aria-label="Choose family group" value={group} onChange={e=>pickGroup(Number(e.target.value))}>

@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-17 — PR #21 private family database backup/recovery safeguards merged; deployment and AI testing still deferred
+**Updated:** 2026-10-17 — password recovery tranche in progress after merged PR #21; deployment and AI testing still deferred
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -23,6 +23,18 @@
 3. Develop in a branch; execute available checks, report what is tested vs unverified.
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
 5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt features.
+
+## Active password recovery tranche — 2026-10-17 (CI pending)
+
+**Feature branch:** `feat/v2-family-password-recovery`; next end-to-end family access checkpoint following PR #21. This is **not** public deployment or completed email verification.
+
+- `v2/server/recovery_mail.py`: operator-configured authenticated SMTP over certificate-validated implicit TLS; no SMTP credentials, reset codes or user emails committed to GitHub. Missing sender disables recovery; incomplete configuration fails API startup.
+- `v2/server/family_api.py`: generic account-enumeration-resistant reset request, private hashed 256-bit single-use code (15-minute TTL), per-email/network rate limits, session invalidation on completed reset, and outstanding-code revocation for password changes/deletion. No codes in URLs/logs.
+- `v2/frontend/src/family/FamilyPanel.tsx`: capability-checked sign-in recovery form requiring emailed code, not a token-bearing link; usable on mobile.
+- `v2/server/test_recovery.py` plus connected-browser mocked-delivery journey. Usual four V2 CI lanes must pass **on exact PR head** before merge.
+- Operator contract documented in `v2/server/README.md`.
+
+**Important limits:** existing signup email remains unverified, with no signup confirmation gate; do not imply that password recovery proves address ownership at registration. No SMTP account/delivery test, bounce/abuse controls, child/guardian consent handling, encrypted offsite backups, persistent hosted service or physical iOS test. AI comparison and new content remain deferred. After merging, next checkpoint: true mailbox verification and guardian/minor privacy design, without enabling public accounts prematurely.
 
 ## Family service storage/recovery readiness — merged 2026-10-17
 

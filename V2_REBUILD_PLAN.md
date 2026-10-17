@@ -230,3 +230,22 @@ and parent/guardian authority for minors; documented retention/deletion and
 post-restore erasure reconciliation (old snapshots could resurrect erased data);
 live multi-device reconnection testing; actual iOS Safari/VoiceOver UX. AI
 pronunciation evaluation and further lesson writing remain owner-deferred.
+
+
+## 10. Private family account recovery checkpoint — 2026-10-17
+
+**Next capability slice in development:** a real recovery journey for someone who
+can no longer sign in to an existing family account. Secure SMTP-delivered
+one-use 15-minute codes (hashed at rest), generic reset requests without
+account enumeration, request limits, complete session/token invalidation,
+accessible browser recovery form, and synthetic delivery/unit/browser tests.
+
+**Acceptance:** exact-head backend/frontend/connected-browser/benchmark CI pass
+before merge. Host configuration must be explicit: no SMTP means no recovery
+claim or working reset endpoint; no real email messages or user data in CI.
+**Do not confuse this with registration email verification**, which is still a
+separate release requirement. Follow-up release gates: verified-email signup,
+guardian approvals and minor account lifecycle, email-provider abuse/bounces,
+encrypted off-host backup and privacy-preserving restores, persistent TLS
+service, native mobile testing, incident/retention review. Pronunciation AI
+and content authoring remain owner-deferred.

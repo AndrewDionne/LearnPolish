@@ -15,9 +15,11 @@ import sqlite3
 import time
 from datetime import datetime, timezone
 from functools import wraps
+from typing import Callable
 
 from flask import Flask, g, jsonify, request
 from private_storage import prepare_database
+from recovery_mail import configured_sender
 
 REGIONS = frozenset((
     "dolnośląskie", "kujawsko-pomorskie", "lubelskie", "lubuskie",
@@ -65,6 +67,14 @@ CREATE INDEX IF NOT EXISTS activities_week ON activities(family_id,created_at,us
 CREATE TABLE IF NOT EXISTS login_throttle(
  identity TEXT PRIMARY KEY, failures INTEGER NOT NULL, first_at INTEGER NOT NULL
 );
+CREATE TABLE IF NOT EXISTS password_reset_tokens(
+ token_hash TEXT PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id),
+ expires_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS password_reset_user ON password_reset_tokens(user_id);
+CREATE TABLE IF NOT EXISTS recovery_throttle(
+ identity TEXT PRIMARY KEY, attempts INTEGER NOT NULL, first_at INTEGER NOT NULL
+);
 """
 
 
@@ -86,7 +96,8 @@ def _json():
 
 
 def create_app(database_path: str | None = None, catalog_path: str | None = None,
-               allowed_origins: tuple[str, ...] | None = None) -> Flask:
+               allowed_origins: tuple[str, ...] | None = None,
+               recovery_sender: Callable[[str, str], None] | None = None) -> Flask:
     path = database_path or os.environ.get("PTP_FAMILY_DB")
     catalog = catalog_path or os.environ.get("PTP_FAMILY_CATALOG")
     if not path or not catalog or path == ":memory:":
@@ -111,6 +122,7 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
     )
     if any("*" in x or not x.startswith(("https://", "http://localhost:", "http://127.0.0.1:")) for x in origins):
         raise RuntimeError("Family origins must be exact HTTPS or local development URLs")
+    mail_sender = recovery_sender or configured_sender()
     app = Flask(__name__)
     app.config["MAX_CONTENT_LENGTH"] = 16_000
     app.config["JSON_SORT_KEYS"] = True
@@ -189,7 +201,8 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
 
     @app.get("/api/v2/family/health")
     def health():
-        return jsonify(ok=True, version=1, catalog_items=len(known))
+        return jsonify(ok=True, version=1, catalog_items=len(known),
+                       password_recovery_available=mail_sender is not None)
 
     @app.post("/api/v2/family/signup")
     def signup():
@@ -236,6 +249,83 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
         token = secrets.token_urlsafe(32)
         con.execute("INSERT INTO sessions VALUES(?,?,?)", (_hash(token),row["id"],now+7*86400))
         return jsonify(token=token, user={"id":row["id"],"name":row["name"]})
+
+    def recovery_limit(identity: str, threshold: int, window: int, now: int) -> bool:
+        """Bound mail requests for both destination and requesting network."""
+        con = db()
+        row = con.execute(
+            "SELECT attempts,first_at FROM recovery_throttle WHERE identity=?", (identity,)
+        ).fetchone()
+        fresh = not row or now - row["first_at"] >= window
+        attempts = 1 if fresh else row["attempts"] + 1
+        first = now if fresh else row["first_at"]
+        con.execute("INSERT OR REPLACE INTO recovery_throttle VALUES(?,?,?)",
+                    (identity, attempts, first))
+        return attempts > threshold
+
+    @app.post("/api/v2/family/recovery/request")
+    def request_recovery():
+        if mail_sender is None:
+            return fail("password_recovery_unavailable", 503)
+        value = _json().get("email")
+        if not isinstance(value, str) or not EMAIL.fullmatch(value.strip().lower()):
+            return fail("invalid_email")
+        email = value.strip().lower()
+        now = _now()
+        con = db()
+        # Never include email, token, SMTP exception, or account existence in response/logs.
+        con.execute("BEGIN IMMEDIATE")
+        con.execute("DELETE FROM password_reset_tokens WHERE expires_at<=?", (now,))
+        con.execute("DELETE FROM recovery_throttle WHERE first_at<?", (now-3600,))
+        limited_email = recovery_limit("email:"+_hash(email), 3, 3600, now)
+        limited_ip = recovery_limit("network:"+_hash(str(request.remote_addr)), 20, 3600, now)
+        row = con.execute("SELECT id FROM users WHERE email=?", (email,)).fetchone()
+        if not row or limited_email or limited_ip:
+            con.commit()
+            return jsonify(accepted=True), 202
+        code = secrets.token_urlsafe(32)
+        token_hash = _hash(code)
+        con.execute("DELETE FROM password_reset_tokens WHERE user_id=?", (row["id"],))
+        con.execute("INSERT INTO password_reset_tokens VALUES(?,?,?)",
+                    (token_hash, row["id"], now+900))
+        con.commit()
+        try:
+            mail_sender(email, code)
+        except Exception:
+            # Do not expose delivery success or existence; discard undelivered token.
+            con.execute("DELETE FROM password_reset_tokens WHERE token_hash=?", (token_hash,))
+        return jsonify(accepted=True), 202
+
+    @app.post("/api/v2/family/recovery/complete")
+    def complete_recovery():
+        if mail_sender is None:
+            return fail("password_recovery_unavailable", 503)
+        data = _json()
+        code = data.get("code")
+        password = data.get("new_password")
+        if (not isinstance(code, str) or
+                re.fullmatch(r"[A-Za-z0-9_-]{43}", code) is None or
+                not isinstance(password, str) or not 12 <= len(password) <= 256):
+            return fail("invalid_or_expired_code")
+        con = db()
+        now = _now()
+        con.execute("BEGIN IMMEDIATE")
+        row = con.execute(
+            """SELECT t.user_id,u.salt,u.password_hash
+               FROM password_reset_tokens t JOIN users u ON t.user_id=u.id
+               WHERE t.token_hash=? AND t.expires_at>?""",
+            (_hash(code), now)
+        ).fetchone()
+        if not row:
+            con.rollback()
+            return fail("invalid_or_expired_code")
+        salt = secrets.token_hex(16)
+        con.execute("UPDATE users SET salt=?, password_hash=? WHERE id=?",
+                    (salt, _password(password, salt), row["user_id"]))
+        con.execute("DELETE FROM sessions WHERE user_id=?", (row["user_id"],))
+        con.execute("DELETE FROM password_reset_tokens WHERE user_id=?", (row["user_id"],))
+        con.commit()
+        return jsonify(reset=True, sign_in_again=True)
 
     @app.post("/api/v2/family/logout")
     @auth
@@ -478,6 +568,7 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
         con.execute("UPDATE users SET salt=?,password_hash=? WHERE id=?",
                     (salt, _password(new, salt), user["id"]))
         con.execute("DELETE FROM sessions WHERE user_id=?", (user["id"],))
+        con.execute("DELETE FROM password_reset_tokens WHERE user_id=?", (user["id"],))
         con.commit()
         return jsonify(changed=True, sign_in_again=True)
 
@@ -509,6 +600,7 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
         con.execute("DELETE FROM activities WHERE user_id=?", (user["id"],))
         con.execute("DELETE FROM members WHERE user_id=?", (user["id"],))
         con.execute("DELETE FROM sessions WHERE user_id=?", (user["id"],))
+        con.execute("DELETE FROM password_reset_tokens WHERE user_id=?", (user["id"],))
         con.execute("DELETE FROM users WHERE id=?", (user["id"],))
         con.commit()
         return jsonify(deleted=True)

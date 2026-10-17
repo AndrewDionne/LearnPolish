@@ -102,3 +102,44 @@ test('two real private sessions join a family, choose different regions and shar
     await first.close();await second.close();
   }
 });
+
+
+test('family sign-in offers an email-code recovery journey only when delivery is available', async ({page})=>{
+  let issued=false;
+  let reset=false;
+  await page.route('**/api/v2/family/health',route=>route.fulfill({
+    status:200,contentType:'application/json',body:JSON.stringify({
+      ok:true,version:1,catalog_items:2,password_recovery_available:true
+    })
+  }));
+  await page.route('**/api/v2/family/recovery/request',async route=>{
+    const body=route.request().postDataJSON() as {email:string};
+    expect(body.email).toBe('parent@example.test');
+    issued=true;
+    await route.fulfill({status:202,contentType:'application/json',body:'{"accepted":true}'});
+  });
+  await page.route('**/api/v2/family/recovery/complete',async route=>{
+    const body=route.request().postDataJSON() as {code:string;new_password:string};
+    expect(body.code).toBe('A'.repeat(43));
+    expect(body.new_password).toBe('renewed-secure-passphrase-2026');
+    expect(route.request().url()).not.toContain(body.code);
+    reset=true;
+    await route.fulfill({status:200,contentType:'application/json',
+      body:'{"reset":true,"sign_in_again":true}'});
+  });
+  await page.goto('/');
+  await page.getByRole('button',{name:'Expedition'}).first().click();
+  const panel=page.getByRole('region',{name:'Family expedition'});
+  await panel.getByRole('button',{name:'Forgot password?'}).click();
+  await panel.getByLabel('Email').fill('parent@example.test');
+  await panel.getByRole('button',{name:'Email recovery code'}).click();
+  await expect(panel.getByText(/If an account exists/)).toBeVisible();
+  expect(issued).toBe(true);
+  await panel.getByLabel('Recovery code').fill('A'.repeat(43));
+  await panel.getByLabel('New password').fill('renewed-secure-passphrase-2026');
+  await panel.getByRole('button',{name:'Set new password'}).click();
+  expect(reset).toBe(true);
+  await expect(panel.getByRole('button',{name:'Sign in'})).toBeVisible();
+  await expect(panel.getByText('Password reset. Sign in with your new password.')).toBeVisible();
+  await page.screenshot({path:'test-results/family-recovery.png',fullPage:true});
+});
