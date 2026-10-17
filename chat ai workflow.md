@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-17 — Polish pronunciation AI study resumed at no-spend adult pilot preparation; guardian profiles paused, live API inference unapproved
+**Updated:** 2026-10-17 — PR #24 Polish pronunciation research pilot preparation merged; guardian profiles paused; real inference and paid usage not approved
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -23,6 +23,16 @@
 3. Develop in a branch; execute available checks, report what is tested vs unverified.
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
 5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt features.
+
+## Polish AI pronunciation pilot preparation — merged 2026-10-17
+
+**PR #24 merged** [view](https://github.com/AndrewDionne/LearnPolish/pull/24), squash commit `183d759a736257dcd0600e64b03f6017f8b94e61`. [**CI PASS #39020355029**](https://github.com/AndrewDionne/LearnPolish/actions/runs/39020355029) exact PR head `6b6419dd3ad5c03b66fbcf8ccb6c54ac1d9bd24b`: all four lanes green (benchmark **13 Python tests**, private-family backend, frontend build/unit and desktop/mobile browser regression, connected two-account family browsers). No AI model inference or paid service use.
+
+**Shipped:** `v2/benchmarks/PILOT_PROTOCOL.md` 12-stimulus x two-take adult Polish contrast corpus plan, consenting private WAVs, blind-first native reviewer and then reference-aware sound-error assessment, paired immutable-source model comparisons and provider quota/privacy gates. `v2/benchmarks/pilot_labels.py` writes deliberately **ungraded, private, never-overwritten** human-label sheets with exact WAV SHA-256 fingerprints; validates complete reviews, error tags and capture quality. `test_pilot_labels.py` regression covers incomplete labels, hash drift, tags/quality, identifiers. No child recordings. Existing app permits explicit private 16-kHz WAV export; existing corpus/dry-run and comparison scripts remain available.
+
+**Important researched limit:** Microsoft documents `pl-PL` pronunciation assessment but named phoneme identity, spoken alternatives, syllable and prosody diagnostics are constrained to English (and some SAPI Chinese); Polish phoneme scores must not be converted into invented `sz` versus `ś` claims. Whisper large-v3 is a transcription comparison, not a pronunciation grading engine; Groq Free quotas must be confirmed in the actual account. **No consented WAVs, real human ratings or actual Whisper/Azure score results yet.**
+
+**Next user-visible action:** help user export ~12–24 adult Speak WAV takes to a private folder and run offline `corpus.py` + `pilot_labels.py`. Then obtain independent native-Polish reviewer judgments. Only after checking configured free/no-spend accounts and explicit approval, run actual model evaluation on the same audio. Guardian-managed profiles are paused; new course content not expanded.
 
 ## Polish AI pronunciation study — reactivated pilot 2026-10-17
 
