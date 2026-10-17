@@ -331,6 +331,8 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
             return fail("invalid_or_expired_code")
         con.execute("INSERT INTO email_verifications VALUES(?,?)",(record["id"],now))
         con.execute("DELETE FROM verification_tokens WHERE user_id=?", (record["id"],))
+        # Legacy unverified sessions must never revive automatically after verification.
+        con.execute("DELETE FROM sessions WHERE user_id=?", (record["id"],))
         con.commit()
         return jsonify(verified=True),200
 
