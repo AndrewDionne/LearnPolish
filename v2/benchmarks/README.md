@@ -111,3 +111,63 @@ but does not advertise Polish **phoneme names**, **spoken-phoneme alternatives**
 An array of phoneme-level *scores* alone does not explain whether a learner
 said `sz` instead of `ś`. Whisper large-v3 remains an ASR recognition
 baseline, not a phonetic grader. No provider results or audio corpus exist yet.
+
+
+## Groq Whisper Large v3 + Turbo — explicit free-tier research runner
+
+`groq_pilot.py` tests **both Groq Whisper models** against the same consented adult
+WAV bytes and stores model-specific recognition results, **never phonetic grades**.
+It uses the standard Python library; no `pip install groq` required.
+**Preview is the default and sends zero API requests.** All recordings remain
+private unless you deliberately pass three upload/plan-confirmation flags.
+
+1. In Groq Console, verify **Free Plan** on your real account and that no paid
+   billing / auto-top-up is enabled. Free rate limits and paid model list differ;
+   do not assume published free quotas apply to an upgraded account.
+2. In a **Mac zsh Terminal session**, enter the secret without command history
+   or printing it:
+
+       printf "Paste Groq key: "
+       read -rs GROQ_API_KEY
+       echo
+       export GROQ_API_KEY
+       test -n "$GROQ_API_KEY" && echo "Groq API key loaded"
+
+   Do not paste credentials in this chat, a GitHub issue, a shell command, or
+   a file committed to the repository. This lasts only for that shell session.
+3. Export **one consenting adult** 16-kHz WAV from V2 Speak, place it in a
+   private folder outside Git, and generate a catalog-based manifest using
+   `corpus.py` above. Example folder: `$HOME/PathToPolish-Private-AI`
+   with `chmod 700 "$HOME/PathToPolish-Private-AI"`.
+4. **Preview both model requests without upload** from the repository root:
+
+       python3 v2/benchmarks/groq_pilot.py \
+         --manifest "$HOME/PathToPolish-Private-AI/manifest.json" \
+         --max-requests 2 --max-billed-seconds 20
+
+5. Only **after** checking the console's free plan, adult recording consent
+   and preview cap, explicitly approve the two uploads:
+
+       python3 v2/benchmarks/groq_pilot.py \
+         --manifest "$HOME/PathToPolish-Private-AI/manifest.json" \
+         --max-requests 2 --max-billed-seconds 20 \
+         --send --approve-voice-upload --confirm-free-plan \
+         --output "$HOME/PathToPolish-Private-AI/groq-two-models-001.jsonl"
+
+   This example intentionally allows only **one recording × two models**.
+   Two or more WAVs fail closed under `--max-requests 2`. Choose another
+   unique output filename on later runs; existing outputs are never overwritten.
+   Only a user who has explicitly checked the provider account can claim that
+   no paid billing is enabled: software cannot enforce cloud-account status.
+
+The runner validates WAV type, usable level, duration, SHA-256, 25MB free-plan
+file cap, hard API call count and *minimum ten billed seconds per request*.
+It sends only audio, model, Polish language and decoding settings; it does
+**not** prompt Whisper with target text. Results are written `0600` into
+a private `0700` directory; the key is never written or echoed. It sends
+**no automatic retries** on errors/rate limits and does not log provider
+response bodies on HTTP failure. If an error occurs mid-run, the file may
+contain partial successful results and must be reviewed before resuming.
+
+Official documentation: https://console.groq.com/docs/speech-to-text ,
+https://console.groq.com/docs/rate-limits .
