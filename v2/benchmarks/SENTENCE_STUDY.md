@@ -2,6 +2,10 @@
 
 STATUS (2026-10-17): 10 REAL FLEURS long-sentence WAV candidates were downloaded into the owner's private folder; 3–4 sound preliminarily clear, the rest poor-mic, including two notably quiet. F0 Azure Speech was owner-confirmed and the Render token probe succeeded. No real Azure pronunciation assessment yet. Earlier one-word Commons originals remain unchanged and are not model-quality evidence.
 
+## Preliminary ALL-THREE model experiment — do it now
+
+**Owner explicitly approved a preliminary comparison without more corpus perfection work.** Two of the existing public FLEURS Polish original WAVs are selected for a bounded **six-request** triplet: Groq Whisper large-v3, Groq Whisper large-v3-turbo, and existing Azure Germany West Central Speech F0 `pl-PL` scripted PA. This exploratory trial is *not* calibrated native pronunciation ground truth. See **[THREE_MODEL_PILOT.md](THREE_MODEL_PILOT.md)** for exact one-command Mac preview and execution, required local credentials, and provider free-tier/upload acknowledgments. No private user voice uploaded or calls made by CI. The earlier 8–12 sample human-certified requirement is reserved for later actual *validation*, not a reason to delay this preliminary smoke comparison.
+
 ## 2026-10-17 — Microphone-quality triage after physically reviewing first ten FLEURS clips
 
 **Owner's actual listening findings:** 3–4 of the ten downloaded recordings
