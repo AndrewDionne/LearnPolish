@@ -225,8 +225,9 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
         row = con.execute("SELECT id,name,email,salt,password_hash FROM users WHERE email=?", (email,)).fetchone()
         valid = row is not None and hmac.compare_digest(_password(pw, row["salt"]), row["password_hash"])
         if not valid:
-            first = now if not throttle or now-throttle["first_at"] >= 900 else throttle["first_at"]
-            count = 1 if first == now else throttle["failures"]+1
+            fresh = not throttle or now-throttle["first_at"] >= 900
+            first = now if fresh else throttle["first_at"]
+            count = 1 if fresh else throttle["failures"]+1
             con.execute("INSERT OR REPLACE INTO login_throttle VALUES(?,?,?)", (key,count,first))
             return fail("invalid_credentials", 401)
         con.execute("DELETE FROM login_throttle WHERE identity=?", (key,))
