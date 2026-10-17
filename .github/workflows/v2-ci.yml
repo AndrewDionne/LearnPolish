@@ -51,6 +51,68 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  private-family-backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install isolated family API dependencies
+        run: python -m pip install "Flask==3.1.1"
+      - name: Test family membership, access control, XP integrity and invite behavior
+        run: python -m unittest discover -s v2/server -p 'test_*.py' -v
+
+  family-connected-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: v2/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install family service and frontend dependencies
+        run: |
+          python -m pip install "Flask==3.1.1"
+          npm install --no-audit --no-fund
+          npm run content
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Launch isolated local family API
+        run: |
+          mkdir -p "$RUNNER_TEMP/ptp-family"
+          PTP_FAMILY_DB="$RUNNER_TEMP/ptp-family/test.sqlite" \
+          PTP_FAMILY_CATALOG="$GITHUB_WORKSPACE/v2/frontend/public/generated/lessons.json" \
+          PTP_FAMILY_ORIGINS=http://127.0.0.1:4173 \
+            nohup python "$GITHUB_WORKSPACE/v2/server/family_api.py" > "$RUNNER_TEMP/ptp-family/server.log" 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8016/api/v2/family/health; then exit 0; fi
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/ptp-family/server.log"
+          exit 1
+      - name: Connected family signup/invite/XP browser journeys
+        env:
+          VITE_FAMILY_API_URL: http://127.0.0.1:8016
+        run: npx playwright test e2e/family-connected.spec.ts
+      - name: Upload connected evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v2-connected-family-evidence
+          path: |
+            v2/frontend/test-results/**/*.png
+            v2/frontend/test-results/**/*.zip
+          if-no-files-found: ignore
+          retention-days: 7
+
   benchmark-harness:
     runs-on: ubuntu-latest
     timeout-minutes: 5

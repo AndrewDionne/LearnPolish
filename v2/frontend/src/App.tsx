@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Lesson, LessonItem, LessonKind } from './model';
 import { lessonLabel, parseManifest } from './model';
 import { useLessonAudio } from './audio';
@@ -18,6 +18,9 @@ import { MAX_BACKUP_BYTES, makeBackup, parseBackup } from './backup';
 import { GOLD_STORAGE_KEY, parseGold } from './gold';
 import type { RewardMode } from './gold';
 import ExpeditionMap from './expedition/ExpeditionMap';
+import FamilyPanel from './family/FamilyPanel';
+import {shareFamilyActivity} from './family/api';
+import type {FamilyConnection,FamilySummary} from './family/api';
 import { EXPEDITION_STORAGE_KEY, awardXp, emptyExpedition, nextRegionCost,
   parseExpedition, regionTotal, setXpGoal, unlockedRegions, xpSummary } from './expedition/expedition';
 import type { LearningTier, VerifiedOutcome } from './expedition/expedition';
@@ -112,6 +115,10 @@ export default function App() {
     catch { return emptyExpedition(); }
   });
   const [selfGoalDraft, setSelfGoalDraft] = useState('500');
+  const [familyConnection,setFamilyConnection] = useState<FamilyConnection|null>(null);
+  const [familySummary,setFamilySummary] = useState<FamilySummary|null>(null);
+  const [familySyncStatus,setFamilySyncStatus] = useState('');
+  const changeFamilyConnection = useCallback((next:FamilyConnection|null)=>setFamilyConnection(next),[]);
   const [reviews, setReviews] = useState<ReviewSchedule>(() => {
     try { return parseReviewSchedule(localStorage.getItem(REVIEW_STORAGE_KEY)); } catch { return {}; }
   });
@@ -226,9 +233,18 @@ export default function App() {
     setIndex(next === 'read' ? safeReadingPosition(readingPositions, active.id, active.items.length) : 0);
     setRevealed(false); setTranslationOpen(false); setListenGuess(null); setReadGuess(null); setListenRevealed(false); setFinished(false);
   };
-  const earn = (id: string, learningMode: RewardMode, outcome?: VerifiedOutcome) =>
-    setExpedition(previous => awardXp(previous, id, learningMode, new Date().toISOString(),
+  const earn = (id: string, learningMode: RewardMode, outcome?: VerifiedOutcome) => {
+    const timestamp = new Date().toISOString();
+    setExpedition(previous => awardXp(previous, id, learningMode, timestamp,
       (active?.difficultyTier ?? 1) as LearningTier, outcome));
+    // Account holders explicitly opt in to sharing only NEW practice in their family.
+    // Never transmit prior backups, audio, personal lessons or client-calculated XP.
+    if (familyConnection && builtIn.some(lesson=>lesson.items.some(item=>item.id===id))) {
+      void shareFamilyActivity(familyConnection,id,learningMode,expedition.selectedRegion)
+        .then(accepted=>setFamilySyncStatus(accepted?'Practice contributed to your family.':'Already credited today.'))
+        .catch(()=>setFamilySyncStatus('Family sync unavailable. Your personal XP remains saved locally.'));
+    }
+  };
   const record = (remembered: boolean) => {
     if (!current) return;
     const at = new Date().toISOString();
@@ -550,10 +566,11 @@ export default function App() {
         </>}
 
         {!loading && !loadError && !active && !editorOpen && page === 'expedition' && <>
-          <section className="page-title"><span className="eyebrow">SHARED ADVENTURE · LOCAL PREVIEW</span><h1>Your Poland expedition<span className="title-dot">.</span></h1>
+          <section className="page-title"><span className="eyebrow">OPEN MAP · PRIVATE FAMILY EXPEDITION</span><h1>Your Poland expedition<span className="title-dot">.</span></h1>
             <p>Choose anywhere in Poland. No forced route, voting or adjacency rules. Every region you unlock stays open.</p></section>
-          <ExpeditionMap state={expedition} onChange={setExpedition}/>
-          <p className="info-footnote">Local-only progress today. Secure private family groups, member-specific destinations, synchronized XP and friendly leaderboards will follow as one connected capability.</p>
+          <ExpeditionMap state={expedition} onChange={setExpedition} shared={familySummary}/>
+          <FamilyPanel onConnection={changeFamilyConnection} onSummary={setFamilySummary} syncMessage={familySyncStatus}/>
+          <p className="info-footnote">Your personal/offline expedition remains in this browser. If an authorized private family service is configured and you opt in, future eligible practice also contributes to your family's separate shared map and friendly weekly rankings. The two ledgers are not merged automatically.</p>
         </>}
         {!loading && !loadError && !active && !editorOpen && page === 'profile' && <>
           <section className="page-title"><span className="eyebrow">YOUR JOURNEY</span><h1>Learning progress<span className="title-dot">.</span></h1><p>Your achievements are saved in this browser while we develop secure accounts and sync.</p></section>

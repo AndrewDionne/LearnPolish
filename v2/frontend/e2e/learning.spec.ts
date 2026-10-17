@@ -431,7 +431,7 @@ test('interactive open map permits distant choice and restores destination on re
  await page.reload();
  await page.getByRole('button',{name:'Expedition'}).first().click();
  await expect(page.getByRole('heading',{name:'Pomorskie'})).toBeVisible();
- await expect(page.getByText(/Single-learner preview/)).toBeVisible();
+ await expect(page.getByText(/Your personal XP and map are saved locally/)).toBeVisible();
  await page.screenshot({path:'test-results/open-poland-expedition.png',fullPage:true});
 });
 
@@ -463,4 +463,15 @@ test('late microphone permission after leaving Speak stops tracks and cannot awa
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('ptp-v2-expedition') || '{}'));
   expect(saved.events).toHaveLength(0);
   expect(browserErrors).toEqual([]);
+});
+
+
+test('unconfigured private family service shows an honest disabled state, not invented leaderboard',async ({page})=>{
+  await page.goto('/');
+  await page.getByRole('button',{name:'Expedition'}).first().click();
+  const section=page.getByRole('region',{name:'Family expedition'});
+  await expect(section).toContainText('not configured yet');
+  await expect(section).toContainText('No pretend family accounts or rankings');
+  await expect(section.getByRole('button',{name:'Sign in'})).toHaveCount(0);
+  await page.screenshot({path:'test-results/family-disabled-expedition.png',fullPage:true});
 });
