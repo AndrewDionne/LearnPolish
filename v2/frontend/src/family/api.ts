@@ -14,7 +14,7 @@ export function familyServiceUrl(value:string|undefined):string|null{
   try{
     const uri=new URL(value);
     const local=uri.hostname==='localhost'||uri.hostname==='127.0.0.1';
-    if((uri.protocol==='https:'||(local&&uri.protocol==='http:')) &&
+    if(!uri.hostname.includes('*') && (uri.protocol==='https:'||(local&&uri.protocol==='http:')) &&
         !uri.username&&!uri.password&&!uri.search&&!uri.hash&&uri.pathname==='/'){
       return uri.origin;
     }
