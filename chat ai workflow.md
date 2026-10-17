@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-17 — PR #25 Groq Whisper v3/Turbo opt-in research runner merged; guardian profiles paused; real inference/paid usage unapproved
+**Updated:** 2026-10-17 — PR #26 Commons native-Polish sample importer merged; Groq real API and paid inference not yet run, guardian profiles paused
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -24,9 +24,13 @@
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
 5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt features.
 
-## Licensed Polish public native-audio pilot — next operator action (2026-10-17)
+## Licensed native-Polish audio controls — merged 2026-10-17
 
-Owner requests native Polish speech sourced from internet rather than recording every evaluation stimulus. New `v2/benchmarks/public_native_samples.py` curates **six individually verified Wikimedia Commons pronunciation recordings** (czapka, ciasto, źle, łyżka, szwedka, lato), each with exact original audio URL, word, author, CC BY 2.5/4.0 licence and attribution. Explicit local download + `ffmpeg` conversion yields 16-kHz WAV with tiny-sample silence padding, immutable SHA-256 manifest and `ATTRIBUTION.txt`, all in a fresh private directory outside Git. No API inference. Offline tests mock network/conversion. **First two sounds → Groq v3 + Turbo uses four requests and min 40 billed seconds**; one `GROQ_API_KEY` for both. Real upload still only user-confirmed Groq Free Plan/no billing plus `--send --approve-voice-upload --confirm-free-plan`; do not handle key in Git or chat. `v2/benchmarks/README.md` gives full exact Mac commands. Public clips are **native ASR sanity controls, not non-native learner pronunciation ground truth**, and the tiny words can cause recognition errors unrelated to sound quality. Additional longer speech options: Mozilla Common Voice Polish v27 CC0 (download ~4.49 GB; no rehost or speaker identification), Google FLEURS Polish CC BY 4.0; generic YouTube/news media not assumed permitted. Guardian profiles remain paused.
+**PR #26 merged** [view](https://github.com/AndrewDionne/LearnPolish/pull/26), squash commit `378926c6075548ecc4ae28c9b87b1f87cc4e5e20`. [**CI PASS #39035992396**](https://github.com/AndrewDionne/LearnPolish/actions/runs/39035992396) exact head `55c8256c6ae97a8c4ba64e2c97c5bed413232e74`: four mandatory jobs green, including **24 offline benchmark Python tests**, family backend, connected two-member browser and frontend desktop/mobile browsers.
+
+**Shipped:** `v2/benchmarks/public_native_samples.py` curates six checked Wikimedia Commons human-spoken Polish words (czapka, ciasto, źle, łyżka, szwedka, lato), author and individually available CC BY 2.5/4.0 links. Explicit opt-in download from fixed Commons original URLs, convert locally with ffmpeg to mono PCM16 16 kHz, pad 250ms leading/500ms trailing silence for tiny utterances; create fresh owner-private folder **outside Git**, SHA-256-locked standard `manifest.json`, `ATTRIBUTION.txt`. Zero Groq/Azure calls during preparation. Tests mock network and conversion; **live end-user download has not been exercised from assistant's restricted network**, so avoid stating successful real sample fetch until owner runs CLI.
+
+**Operator's next step:** update local `main`, `brew install ffmpeg` if absent, private `$HOME/PathToPolish-Private-AI` (0700), run `public_native_samples.py --output-dir "$HOME/PathToPolish-Private-AI/commons-native-01" --count 2`; preview both Groq models via `groq_pilot.py --manifest ... --models whisper-large-v3 whisper-large-v3-turbo --max-requests 4 --max-billed-seconds 40`. **One Groq API key for both models**, stored only in Mac environment. Only after checking account Free Plan and licence terms, live invocation must opt in to `--send --approve-voice-upload --confirm-free-plan` and provide private output; no automatic billable calls. Exact paste-ready commands in `v2/benchmarks/README.md`. Source clips are very short **native-speaker ASR controls**, not learner-pronunciation or phoneme-grading evidence. For longer native sentences, expand later to CC0 Polish Mozilla Common Voice or CC BY FLEURS with known transcript; avoid random copyright-protected news/YouTube. Guardian account work remains paused for research.
 
 ## Groq Whisper two-model pilot — merged 2026-10-17
 
