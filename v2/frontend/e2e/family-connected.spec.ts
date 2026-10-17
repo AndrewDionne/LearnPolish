@@ -25,6 +25,11 @@ test('two real private sessions join a family, choose different regions and shar
     const invitation=await panel.locator('.family-invite code').textContent();
     expect(invitation?.length).toBeGreaterThan(25);
     await panel.getByRole('checkbox',{name:/Contribute my/}).check();
+    // Delayed writes expose the former race: screen snapshot may load before credit commits.
+    await parent.route('**/api/v2/family/groups/*/activity',async route=>{
+      await new Promise(resolve=>setTimeout(resolve,450));
+      await route.continue();
+    });
     await parent.getByLabel('Explore another region').selectOption('pomorskie');
     await parent.getByRole('button',{name:'Library'}).first().click();
     await parent.getByRole('searchbox',{name:'Search lessons'}).fill('Conversation 1');
@@ -33,8 +38,9 @@ test('two real private sessions join a family, choose different regions and shar
     await parent.getByRole('button',{name:/Got it/}).click();
     await parent.getByRole('button',{name:'Expedition'}).first().click();
     await expect(panel.getByText('Practice contributed to your family.')).toBeVisible();
-    await panel.getByRole('button',{name:'Refresh rankings'}).click();
-    await expect(panel.getByText('10 weekly family XP')).toBeVisible();
+    await expect(panel.getByText('10 weekly family XP')).toBeVisible({timeout:10000});
+    // Server acknowledges work before React refreshes the family summary.
+    await expect(parent.getByRole('progressbar',{name:'Pomorskie unlock progress'})).toHaveAttribute('aria-valuenow','10');
     await expect(panel.getByText('pomorskie')).toBeVisible();
 
     const learner=await second.newPage();
@@ -57,8 +63,7 @@ test('two real private sessions join a family, choose different regions and shar
     await learner.getByRole('button',{name:/Got it/}).click();
     await learner.getByRole('button',{name:'Expedition'}).first().click();
     await expect(lp.getByText('Practice contributed to your family.')).toBeVisible();
-    await lp.getByRole('button',{name:'Refresh rankings'}).click();
-    await expect(lp.getByText('20 weekly family XP')).toBeVisible();
+    await expect(lp.getByText('20 weekly family XP')).toBeVisible({timeout:10000});
     await expect(lp.getByText('pomorskie')).toBeVisible();
     await expect(lp.getByText('małopolskie')).toBeVisible();
     await expect(learner.getByRole('button',{name:'Family Map'})).toHaveAttribute('aria-pressed','true');
