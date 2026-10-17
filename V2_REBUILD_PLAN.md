@@ -205,3 +205,28 @@ The V2 frontend, migrated library, basic Learn UI and offline-only benchmark har
 4. Expand genuine Read/Listen exercises, audited Polish sound comparisons, responsive screenshot and iOS Safari review, then offline downloads and progress sync by roadmap gates.
 
 **Change management:** Update this plan when a material product/architecture choice is made. Record benchmark evidence and acceptance results in linked issues/PRs. Keep GitHub the authoritative continuity source.
+
+
+## 9. Family service pre-deployment reliability checkpoint — 2026-10-17
+
+The private family API and learning collaboration are merged through PR #20, but
+the service is **not live**. Next incremental gate is secure durable storage and
+rehearsed recovery **before** choosing public hosting, accounts or email delivery.
+
+**Backup-readiness tranche in progress** (`feat/v2-family-durable-backup-readiness`):
+- Owner-private directory/file validation (0700/0600) and explicit path checks before SQLite startup; fail closed rather than silently accepting world-readable account data.
+- SQLite online snapshot from the live store, with WAL-safe committed data, integrity/foreign-key checks, SHA-256 size manifest and no-overwrite backup names.
+- Offline operator-only recovery rehearsal to an entirely new file, verified before restore.
+- Tests for permissions/symlink rejection, tamper detection, WAL data, and non-overwriting restore; instructions in `v2/server/README.md`.
+
+**Acceptance condition:** backend regression and all usual V2 CI lanes must pass
+on the PR head before merge. This creates a backup rehearsal tool, **not**
+a production backup schedule, off-host encrypted storage, key rotation, disaster
+recovery RTO/RPO guarantee or approved deployment.
+
+**Next release blockers after this checkpoint:** persistent TLS deployment and
+DB operational monitoring; authenticated email verification/recovery; consent
+and parent/guardian authority for minors; documented retention/deletion and
+post-restore erasure reconciliation (old snapshots could resurrect erased data);
+live multi-device reconnection testing; actual iOS Safari/VoiceOver UX. AI
+pronunciation evaluation and further lesson writing remain owner-deferred.
