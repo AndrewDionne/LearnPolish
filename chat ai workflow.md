@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-17 — PR #34 MERGED FLEURS native Polish candidate importer, 75 offline tests; owner metadata-only preview next, native listener validation and Azure PA still pending
+**Updated:** 2026-10-17 — owner Mac FLEURS metadata preview AND download PHYSICAL PASS: 10 sentence clips/81.96s approx, no Azure/Groq calls; next independent native listening review
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -22,7 +22,15 @@
 2. Check umbrella issue and code. Choose the next unfinished acceptance checkpoint, identifying dependencies and relevant tests.
 3. Develop in a branch; execute available checks, report what is tested vs unverified.
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
-5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt feature## PR #34 MERGED — Native Polish candidate research acquisition (2026-10-17)
+5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt feature## Owner Mac actual FLEURS candidate acquisition — PHYSICAL PASS (2026-10-17)
+
+**Physical terminal evidence from owner** after `main` fast-forward `db934db..a509646`:
+1. `python3 v2/benchmarks/fleurs_candidates.py --source-dir PathToPolish-Private-AI --count 10` returned `planned_candidates=10`, `source=google/fleurs pl_pl validation`, `audio_downloads=0`, `speech_ai_requests=0`, `approximate_seconds=81.96`, `ready_to_stage=true`, `review_required=true`.
+2. Same command **with `--download`** returned `candidate_count=10`, manifest `/Users/andrewdionne/MY CODE/repos/path-to-polish/PathToPolish-Private-AI/sentences-source.json`, `source_existing_files_moved=0`, `speech_ai_requests=0`, `provider_upload_approved=false`, status `UNVERIFIED — native-speaker listening required before any Azure/Groq assessment`. Real public FLEURS sentence WAV acquisition is now **physically confirmed**. All existing Commons source files and earlier result JSONL preserved. No Azure/Groq uploads or scoring happened, and no paid inference was performed.
+
+**NOW STOP before Azure/Groq:** the ten downloaded public speech clips have **NOT** been independently inspected for native speaker quality, complete/no clipped utterances, transcript alignment, source licensing suitability for Azure processing, or independent speaker identities. The program correctly sets `reference_verified_by_human=false`, `audio_audited_unclipped=false`, `provider_upload_approved=false` and unknown speaker. Do NOT flip these booleans automatically, make up reviewer approval, or run `sentence_study.py --prepare`/`azure_pilot.py --send` yet. The user previously could not reliably judge a Polish audio label; engage a fluent Polish-speaking reviewer to check each WAV against its `reference` and reject bad clips. **No user file moves/renames**. Start with local review commands reading JSON and `afplay` and save any independent notes privately. Only once reviewed and explicitly authorized can 1× original positive control go into owner-confirmed Germany West Central Azure F0 account.
+
+## PR #34 MERGED — Native Polish candidate research acquisition (2026-10-17)
 
 **[PR #34 merged](https://github.com/AndrewDionne/LearnPolish/pull/34)** as squash `14cef14929607e779c695c48833955d3f48451e1`. [CI #39063909403](https://github.com/AndrewDionne/LearnPolish/actions/runs/39063909403) **four jobs PASS** on exact PR head `f0a8d08efc2455f9c5c5cf315a3b37bfd9946cb0`: **75 offline benchmark tests** plus Python family, frontend desktop/mobile journeys and connected family-browser tests all passed. New `v2/benchmarks/fleurs_candidates.py` + `test_fleurs_candidates.py` stage up to 12 Polish `google/fleurs` `pl_pl` 5–15-second recorded sentence *candidates*; preview only fetches dataset metadata; `--download` downloads real public FLEURS media into **unchanged existing `PathToPolish-Private-AI/` root**, refusing overwrite and leaving old Commons Oggs untouched. New `sentences-source.json` is **NOT validated native gold**: reviewer and provider approval flags are false, speaker identity unverified; `sentence_study.py` MUST reject this until actual independent Polish listener verifies voice, complete transcript and pronunciation. These tests do NOT pull real media; all network simulated by mocks. No live Azure PA yet.
 
