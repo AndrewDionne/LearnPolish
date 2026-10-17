@@ -77,6 +77,23 @@ def polish_match(reference: str, prediction: str) -> bool:
     return norm(reference) == norm(prediction)
 
 
+def polish_target_present(reference: str, prediction: str) -> bool:
+    """Whether the exact reference word(s) occur contiguously in ASR output.
+
+    Case-insensitive and punctuation-tolerant, but diacritic-sensitive and
+    never phonetic/fuzzy matching. Not evidence of correct pronunciation.
+    """
+    def words(value: str) -> list[str]:
+        return re.sub(r"[^\\wąćęłńóśźż]+", " ", value.casefold(), flags=re.UNICODE).split()
+
+    needle = words(reference)
+    haystack = words(prediction)
+    return bool(needle) and any(
+        haystack[i:i + len(needle)] == needle
+        for i in range(len(haystack) - len(needle) + 1)
+    )
+
+
 def extract_azure_native(raw: dict) -> dict:
     """Preserve native scores as reported; NO legacy duration/word-error multipliers."""
     top = (raw.get("NBest") or [{}])[0]
