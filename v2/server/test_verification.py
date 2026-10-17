@@ -123,7 +123,8 @@ class VerificationTests(unittest.TestCase):
         self.assertEqual(self.client.post("/api/v2/family/verification/resend",json={
             "email":self.address,"password":self.secret}).status_code,202)
         self.assertEqual(self.verify().status_code,200)
-        self.assertEqual(self.client.get("/api/v2/family/me",headers=bearer).status_code,200)
+        self.assertEqual(self.client.get("/api/v2/family/me",headers=bearer).status_code,401)
+        self.assertEqual(self.login().status_code,200)
 
     def test_reset_does_not_bypass_unverified_email_gate(self):
         self.signup()
