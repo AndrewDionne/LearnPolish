@@ -325,3 +325,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .family-invite code{display:block;margin-top:12px;user-select:all;font-size:12px}
 .family-error{color:#993c3c!important}
 @media(max-width:760px){.family-panel{padding:18px}.family-setup,.family-auth{grid-template-columns:1fr}.family-setup>div{flex-direction:column;align-items:stretch}.family-group-actions{flex-direction:column;align-items:stretch}}
+
+.expedition-view-toggle{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.expedition-view-toggle button{border:1px solid #a6cac0;background:#fff;color:#2b7367;border-radius:8px;min-height:44px;padding:10px 18px;font-size:12px;font-weight:750}
+.expedition-view-toggle button[aria-pressed=true]{background:#176e69;color:#fff;border-color:#176e69}

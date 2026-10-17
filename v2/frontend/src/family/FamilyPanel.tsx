@@ -3,9 +3,10 @@ import {FAMILY_API,familyRequest} from './api';
 import type {FamilyConnection,FamilyGroup,FamilySummary} from './api';
 
 type Props={onConnection:(connection:FamilyConnection|null)=>void;
+            onSummary:(summary:FamilySummary|null)=>void;
             syncMessage:string};
 
-export default function FamilyPanel({onConnection,syncMessage}:Props){
+export default function FamilyPanel({onConnection,onSummary,syncMessage}:Props){
   const [token,setToken]=useState(()=>{try{return sessionStorage.getItem('ptp-v2-family-session')||'';}catch{return '';}});
   const [group,setGroup]=useState(()=>{try{return Number(sessionStorage.getItem('ptp-v2-family-group'))||0;}catch{return 0;}});
   const [enabled,setEnabled]=useState(()=>{try{return sessionStorage.getItem('ptp-v2-family-sharing')==='yes';}catch{return false;}});
@@ -36,13 +37,13 @@ export default function FamilyPanel({onConnection,syncMessage}:Props){
   const refresh=async(t=token,g=group)=>{
     if(!t||!g)return;
     const data=await familyRequest<FamilySummary>('/api/v2/family/groups/'+g+'/summary','GET',undefined,t);
-    setSummary(data);
+    setSummary(data);onSummary(data);
   };
   useEffect(()=>{
     if(!token||!group||!FAMILY_API)return;
     let active=true;
     void familyRequest<FamilySummary>('/api/v2/family/groups/'+group+'/summary','GET',undefined,token)
-      .then(data=>{if(active)setSummary(data);})
+      .then(data=>{if(active)setSummary(data);onSummary(data);})
       .catch(()=>{if(active){setError('Unable to load this private family group.');setEnabled(false);}});
     return ()=>{active=false;};
   },[token,group]);
@@ -56,7 +57,7 @@ export default function FamilyPanel({onConnection,syncMessage}:Props){
     setToken(value);try{sessionStorage.setItem('ptp-v2-family-session',value);}catch{/* private browsing */}
   };
   const pickGroup=(id:number)=>{
-    setGroup(id);setSummary(null);setEnabled(false);
+    setGroup(id);setSummary(null);onSummary(null);setEnabled(false);
     try{sessionStorage.setItem('ptp-v2-family-group',String(id));sessionStorage.removeItem('ptp-v2-family-sharing');}catch{}
   };
   const toggle=(next:boolean)=>{
@@ -72,7 +73,7 @@ export default function FamilyPanel({onConnection,syncMessage}:Props){
   };
   const logout=async()=>{
     try{await familyRequest('/api/v2/family/logout','POST',undefined,token);}finally{
-      saveSession('');pickGroup(0);setGroups([]);setSummary(null);toggle(false);setNewInvite('');
+      saveSession('');pickGroup(0);setGroups([]);setSummary(null);onSummary(null);toggle(false);setNewInvite('');
     }
   };
   const create=async()=>{

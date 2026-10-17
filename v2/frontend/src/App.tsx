@@ -20,7 +20,7 @@ import type { RewardMode } from './gold';
 import ExpeditionMap from './expedition/ExpeditionMap';
 import FamilyPanel from './family/FamilyPanel';
 import {shareFamilyActivity} from './family/api';
-import type {FamilyConnection} from './family/api';
+import type {FamilyConnection,FamilySummary} from './family/api';
 import { EXPEDITION_STORAGE_KEY, awardXp, emptyExpedition, nextRegionCost,
   parseExpedition, regionTotal, setXpGoal, unlockedRegions, xpSummary } from './expedition/expedition';
 import type { LearningTier, VerifiedOutcome } from './expedition/expedition';
@@ -116,6 +116,7 @@ export default function App() {
   });
   const [selfGoalDraft, setSelfGoalDraft] = useState('500');
   const [familyConnection,setFamilyConnection] = useState<FamilyConnection|null>(null);
+  const [familySummary,setFamilySummary] = useState<FamilySummary|null>(null);
   const [familySyncStatus,setFamilySyncStatus] = useState('');
   const changeFamilyConnection = useCallback((next:FamilyConnection|null)=>setFamilyConnection(next),[]);
   const [reviews, setReviews] = useState<ReviewSchedule>(() => {
@@ -565,10 +566,10 @@ export default function App() {
         </>}
 
         {!loading && !loadError && !active && !editorOpen && page === 'expedition' && <>
-          <section className="page-title"><span className="eyebrow">SHARED ADVENTURE · LOCAL PREVIEW</span><h1>Your Poland expedition<span className="title-dot">.</span></h1>
+          <section className="page-title"><span className="eyebrow">OPEN MAP · PRIVATE FAMILY EXPEDITION</span><h1>Your Poland expedition<span className="title-dot">.</span></h1>
             <p>Choose anywhere in Poland. No forced route, voting or adjacency rules. Every region you unlock stays open.</p></section>
-          <ExpeditionMap state={expedition} onChange={setExpedition}/>
-          <FamilyPanel onConnection={changeFamilyConnection} syncMessage={familySyncStatus}/>
+          <ExpeditionMap state={expedition} onChange={setExpedition} shared={familySummary}/>
+          <FamilyPanel onConnection={changeFamilyConnection} onSummary={setFamilySummary} syncMessage={familySyncStatus}/>
           <p className="info-footnote">Your personal/offline expedition remains in this browser. If an authorized private family service is configured and you opt in, future eligible practice also contributes to your family's separate shared map and friendly weekly rankings. The two ledgers are not merged automatically.</p>
         </>}
         {!loading && !loadError && !active && !editorOpen && page === 'profile' && <>

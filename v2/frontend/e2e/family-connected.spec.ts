@@ -1,6 +1,7 @@
 import {test,expect} from '@playwright/test';
 
-test('two real private sessions join a family, choose different regions and share weekly XP', async ({browser})=>{
+test('two real private sessions join a family, choose different regions and share weekly XP', async ({browser},testInfo)=>{
+  const projectTag=testInfo.project.name.replace(/[^a-z0-9]/gi,'').toLowerCase();
   const first=await browser.newContext();
   const second=await browser.newContext();
   try{
@@ -10,7 +11,7 @@ test('two real private sessions join a family, choose different regions and shar
     const panel=parent.getByRole('region',{name:'Family expedition'});
     await expect(panel.getByRole('button',{name:'Create account'})).toBeVisible();
     await panel.getByLabel('Display name').fill('Explorer A');
-    await panel.getByLabel('Email').fill('explorera@example.test');
+    await panel.getByLabel('Email').fill('explorera+'+projectTag+'@example.test');
     await panel.getByLabel('Password').fill('Secure-family-passphrase-2026');
     await panel.getByRole('button',{name:'Create account'}).click();
     await expect(panel.getByRole('button',{name:'Create group'})).toBeVisible();
@@ -37,7 +38,7 @@ test('two real private sessions join a family, choose different regions and shar
     await learner.getByRole('button',{name:'Expedition'}).first().click();
     const lp=learner.getByRole('region',{name:'Family expedition'});
     await lp.getByLabel('Display name').fill('Explorer B');
-    await lp.getByLabel('Email').fill('explorerb@example.test');
+    await lp.getByLabel('Email').fill('explorerb+'+projectTag+'@example.test');
     await lp.getByLabel('Password').fill('Secure-family-passphrase-2026');
     await lp.getByRole('button',{name:'Create account'}).click();
     await lp.getByLabel('Private invitation code').fill(invitation!);
@@ -55,6 +56,8 @@ test('two real private sessions join a family, choose different regions and shar
     await expect(lp.getByText('20 weekly family XP')).toBeVisible();
     await expect(lp.getByText('pomorskie')).toBeVisible();
     await expect(lp.getByText('małopolskie')).toBeVisible();
+    await expect(learner.getByRole('button',{name:'Family Map'})).toHaveAttribute('aria-pressed','true');
+    await expect(learner.getByRole('progressbar',{name:'Małopolskie unlock progress'})).toHaveAttribute('aria-valuenow','10');
     await expect(lp.getByRole('listitem')).toHaveCount(2);
     await learner.screenshot({path:'test-results/family-connected-leaderboard.png',fullPage:true});
     // One-use invitation was consumed. It cannot grant access to a third account.
