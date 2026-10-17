@@ -102,3 +102,7 @@ docs/static/*
 v2/benchmarks/private/
 v2/benchmarks/recordings/
 ptp-speech-v1--*.wav
+
+# Private research scratch space inside this clone: never stage voice/audio/API results.
+# This is a git-accident guard, NOT security against git add -f or backups.
+/temp/
