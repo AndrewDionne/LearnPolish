@@ -85,9 +85,12 @@ def choose_source(manifest: Path, sample_ids: tuple[str, ...] = (),
         if path.is_symlink() or not path.is_file():
             raise ValueError("FLEURS source WAV missing or symlink")
         audio = read_audio_metadata(path)
-        if (row.get("audio_sha256") != audio["audio_sha256"] or
-                not audio["valid_signal"] or not 5 <= audio["seconds"] <= 15):
-            raise ValueError("FLEURS source changed or outside 5–15 seconds")
+        if row.get("audio_sha256") != audio["audio_sha256"]:
+            raise ValueError("FLEURS source checksum changed; stop without any uploads")
+        # A weak candidate does not invalidate the other public recordings.
+        # Skip it, never silently upload silence or wrong-duration media.
+        if not audio["valid_signal"] or not 5 <= audio["seconds"] <= 15:
+            continue
         acoustic = measure_wav(path)
         selected.append({
             "id": sid, "reference": ref, "path": path,
