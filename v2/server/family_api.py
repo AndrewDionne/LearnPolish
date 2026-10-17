@@ -264,6 +264,13 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
         con = db()
         now = _now()
         con.execute("BEGIN IMMEDIATE")
+        con.execute("DELETE FROM verification_throttle WHERE first_at<?",(now-3600,))
+        limited_email = verification_limit("registration:email:"+_hash(email),3,now)
+        limited_network = verification_limit(
+            "registration:network:"+_hash(str(request.remote_addr)),20,now)
+        if limited_email or limited_network:
+            con.commit()
+            return fail("too_many_attempts",429)
         try:
             user_id = con.execute(
                 "INSERT INTO users(email,name,salt,password_hash) VALUES(?,?,?,?)",
