@@ -1,5 +1,19 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
+## PR #37 MERGED — isolate Azure speech failure safely (2026-10-18)
+
+[PR #37](https://github.com/AndrewDionne/LearnPolish/pull/37) **MERGED** squash `cc094878a998ec9d79658ffc685693fefc4aad1e`. Exact-head [CI #39074910591](https://github.com/AndrewDionne/LearnPolish/actions/runs/39074910591) **all 4 lanes PASSED**, including **95 offline benchmark unit tests** at head `efb61c29261ad94749a07f721fdd3f2879607401`. No Azure/Groq live inference performed by these GitHub tests.
+
+**NEXT IMMEDIATE PHYSICAL TASK:** user sync local `main` via `git switch main && git pull --ff-only origin main`. Keep existing private `PathToPolish-Private-AI/.venv-speech-test/bin/python`, original FLEURS WAV/manifest and existing exported Mac Azure key. Preview offline:
+```bash
+PathToPolish-Private-AI/.venv-speech-test/bin/python v2/benchmarks/azure_retest.py --manifest PathToPolish-Private-AI/sentences-source.json --sample-id fleurs-pl-val-00003
+```
+After confirming Azure Speech resource F0, free remaining quota, no paid billing and explicit public FLEURS third-party audio consent, execute exactly **one Azure 5.64s** request:
+```bash
+PathToPolish-Private-AI/.venv-speech-test/bin/python v2/benchmarks/azure_retest.py --manifest PathToPolish-Private-AI/sentences-source.json --sample-id fleurs-pl-val-00003 --max-requests 1 --max-audio-seconds 10 --send --approve-public-audio-upload --confirm-azure-f0 --confirm-no-paid-billing --output PathToPolish-Private-AI/azure-sdk-diagnostic-01.jsonl
+```
+Returns sanitized SDK reason `NoMatch` or `Canceled`, standard no-match / cancellation / error codes, or actual Azure scores. **Zero Groq calls**, no repeat four successful Whisper transcriptions, no changes to prior `preliminary-three-model-01.jsonl`. The retest has NOT happened yet. Ask for sanitized CLI output, **not** credentials or free-form provider error logs. Only then fix underlying failure based on evidence. Full operator [THREE_MODEL_PILOT.md](v2/benchmarks/THREE_MODEL_PILOT.md).
+
 ## First live Azure inconclusive reason: fix & narrow retest (2026-10-18)
 
 Owner's actual offline inspection of prior six-request 3-engine results:
@@ -29,7 +43,7 @@ getting working model integration over perfect native human corpus;
 no added linguistic certification barrier on exploratory public voice.
 
 
-**Updated:** 2026-10-18 — live Azure inconclusive both clips, SDK Canceled vs NoMatch diagnostic fix and ONE Azure-only retest awaiting physical run
+**Updated:** 2026-10-18 — PR #37 MERGED, all four CI PASS incl 95 offline tests: one Azure-only source 00003 retest with safe SDK NoMatch vs Canceled codes; physical result pending
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
