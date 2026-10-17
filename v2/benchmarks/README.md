@@ -171,3 +171,75 @@ contain partial successful results and must be reviewed before resuming.
 
 Official documentation: https://console.groq.com/docs/speech-to-text ,
 https://console.groq.com/docs/rate-limits .
+
+
+## Curated, licensed **public native-Polish** recordings (no private speech needed)
+
+Before collecting a learner's voice, we can run a **native-ASR sanity test**
+with six human-recorded Polish pronunciations from Wikimedia Commons. These
+are individual words—not news/podcasts—and each has an explicit **known word,
+recording author, CC BY 2.5 or CC BY 4.0 licensing** and source-page citation.
+The importer fetches the original Ogg audio and uses local `ffmpeg` to
+convert it to 16-kHz mono PCM16 WAV, adding 250 ms leading and 500 ms trailing
+silence to preserve very short clips. The byte fingerprint is computed *after*
+conversion. **It never uses Groq/Azure/Whisper, and does not require any key.**
+
+- `czapka` — Rogra — [recording](https://commons.wikimedia.org/wiki/File:Pl-czapka.ogg) — CC BY 2.5
+- `ciasto` — Frizabela — [recording](https://commons.wikimedia.org/wiki/File:Pl-ciasto.ogg) — CC BY 2.5
+- `źle` — Derbeth — [recording](https://commons.wikimedia.org/wiki/File:Pl-%C5%BAle.ogg) — CC BY 2.5
+- `łyżka` — Derbeth — [recording](https://commons.wikimedia.org/wiki/File:Pl-%C5%82y%C5%BCka.ogg) — CC BY 2.5
+- `szwedka` — Tsca — [recording](https://commons.wikimedia.org/wiki/File:Pl-szwedka.ogg) — CC BY 4.0
+- `lato` — Derbeth — [recording](https://commons.wikimedia.org/wiki/File:Pl-lato.ogg) — CC BY 2.5
+
+Download first **two** contrast examples (one `cz`, one `ć/ci`), no API
+charges. On a Mac, run these from the **LearnPolish repo root**:
+
+    command -v ffmpeg >/dev/null || brew install ffmpeg
+    mkdir -p "$HOME/PathToPolish-Private-AI"
+    chmod 700 "$HOME/PathToPolish-Private-AI"
+    python3 v2/benchmarks/public_native_samples.py \
+      --output-dir "$HOME/PathToPolish-Private-AI/commons-native-01" --count 2
+
+Creates `commons-native-01/manifest.json`, two `native-01.wav` /
+`native-02.wav` files, and `ATTRIBUTION.txt`, all private and **outside Git**.
+Files are *never overwritten*. To use all six, choose a new directory and
+`--count 6` then increase your preview cap to 12 requests and 120 billed
+seconds. Do not use the V2 Speak-specific `corpus.py` on public clips:
+it expects distinct `ptp-speech-v1--...` lesson-export filenames. The
+Commons importer already generates a valid benchmark manifest.
+
+Validate **locally without connecting to any model**:
+
+    python3 v2/benchmarks/groq_pilot.py \
+      --manifest "$HOME/PathToPolish-Private-AI/commons-native-01/manifest.json" \
+      --models whisper-large-v3 whisper-large-v3-turbo \
+      --max-requests 4 --max-billed-seconds 40
+
+Only if your Groq **account really is Free Plan**, has no paid billing
+enabled, and you agree to transmit these appropriately attributed
+open-licensed samples to a third-party transcription service, use:
+
+    python3 v2/benchmarks/groq_pilot.py \
+      --manifest "$HOME/PathToPolish-Private-AI/commons-native-01/manifest.json" \
+      --models whisper-large-v3 whisper-large-v3-turbo \
+      --max-requests 4 --max-billed-seconds 40 \
+      --send --approve-voice-upload --confirm-free-plan \
+      --output "$HOME/PathToPolish-Private-AI/commons-native-01/groq-transcripts-01.jsonl"
+
+This uses **your existing single `GROQ_API_KEY` for both models**. These
+two sub-two-second public clips × 2 models are still subject to Groq's
+**10-second minimum billed-audio usage each**, or at least 40 billed seconds
+total. A small, free-tier-limited evaluation can still encounter rate limits,
+and code cannot inspect your cloud billing settings. Do not claim any
+pronunciation-grade result: these are **native speech recognition controls**
+only. Their brevity makes them intentionally demanding ASR cases; follow
+them with full sentences from a transcription-licensed corpus.
+
+For longer, varied, transcript-aligned Polish speech, consider **Mozilla
+Common Voice scripted Polish** (CC0, current version 27.0, but the full
+4.49 GB download is large and dataset conditions prohibit rehosting or
+speaker identification) and **Google FLEURS Polish `pl_pl`** (CC BY 4.0).
+These have authentic spoken sentences and known text, unlike typical
+YouTube news/podcasts, where reuse rights and word-level transcripts can
+be uncertain. Respect provider terms and creator attribution; never assume
+random web/news clips are public domain.

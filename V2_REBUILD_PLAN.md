@@ -311,3 +311,21 @@ outside the repository. Backend-only mocked tests prohibit surprise uploads;
 a completed free-account setup still does NOT constitute AI accuracy evidence.
 See `v2/benchmarks/README.md` and issue #1 for exact operator steps and
 reproducible human/Azure comparison requirements.
+
+
+## 14. Licence-grounded native Polish recognition controls
+
+Native Polish baseline now starts with **public, human-spoken, transcript-known
+pronunciation words** from Wikimedia Commons, avoiding both unconsented learner
+audio and unlicensed YouTube/news clips. The public control importer downloads
+reviewed CC-BY recordings, uses local ffmpeg to standardize them to 16k PCM16,
+and writes the **same manifest contract** used by the Groq two-model runner
+with immutable checksums and preserved source authors/licences. By default
+two words test `cz` and `ci`; this means 2 recordings × 2 Whisper engines
+= 4 requests and at least 40 billed seconds of provider quota. No new key
+for Turbo. The corpus is a native **ASR** control only, not evidence of
+phoneme-level grading or learner intelligibility. Later expand to longer
+open-licensed sentences (Common Voice/FLEURS) and consented learner recordings
+with independent sound-error assessment. Exact no-network preparation,
+full sample licences, account gating and API commands live in
+`v2/benchmarks/README.md`.
