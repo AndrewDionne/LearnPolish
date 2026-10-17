@@ -96,6 +96,115 @@ class FamilyApiTests(unittest.TestCase):
         allowed=self.client.get("/api/v2/family/health",headers={"Origin":"http://localhost:5173"})
         self.assertEqual(allowed.headers.get("Access-Control-Allow-Origin"),"http://localhost:5173")
 
+
+    def test_revoke_invites_and_owner_transfer_then_leave(self):
+        owner, child, stranger, gid = self.family()
+        base = f"/api/v2/family/groups/{gid}"
+        invite = self.client.post(base + "/invite", headers=owner).json["code"]
+        self.assertEqual(self.client.post(base+"/invites/revoke",headers=child).status_code,404)
+        self.assertEqual(self.client.post(base+"/invites/revoke",headers=stranger).status_code,404)
+        self.assertEqual(self.client.post(base+"/invites/revoke",headers=owner).json["revoked"],1)
+        self.assertEqual(self.client.post("/api/v2/family/invites/redeem",
+                          headers=child,json={"code":invite}).status_code,400)
+        valid = self.client.post(base+"/invite",headers=owner).json["code"]
+        self.assertEqual(self.client.post("/api/v2/family/invites/redeem",
+                          headers=child,json={"code":valid}).status_code,200)
+        self.assertEqual(self.client.post(base+"/leave",headers=owner).status_code,409)
+        self.assertEqual(self.client.post(base+"/transfer",headers=stranger,
+                          json={"new_owner_id":2}).status_code,404)
+        self.assertEqual(self.client.post(base+"/transfer",headers=child,
+                          json={"new_owner_id":2}).status_code,403)
+        self.assertEqual(self.client.post(base+"/transfer",headers=owner,
+                          json={"new_owner_id":99999}).status_code,400)
+        self.assertEqual(self.client.post(base+"/transfer",headers=owner,
+                          json={"new_owner_id":"2"}).status_code,400)
+        user_id=self.client.get("/api/v2/family/me",headers=child).json["user"]["id"]
+        transferred=self.client.post(base+"/transfer",headers=owner,json={"new_owner_id":user_id})
+        self.assertEqual(transferred.status_code,200)
+        self.assertTrue(self.client.get(base+"/summary",headers=child).json["group"]["can_invite"])
+        self.assertEqual(self.client.post(base+"/leave",headers=owner).status_code,200)
+        self.assertEqual(self.client.get(base+"/summary",headers=owner).status_code,404)
+        # Last owner can close the entire group; nothing readable remains.
+        ended=self.client.post(base+"/leave",headers=child)
+        self.assertEqual(ended.status_code,200)
+        self.assertTrue(ended.json["family_deleted"])
+        self.assertEqual(self.client.get(base+"/summary",headers=child).status_code,404)
+        self.assertEqual(self.client.post("/api/v2/family/invites/redeem",
+                          headers=stranger,json={"code":valid}).status_code,400)
+
+    def test_leave_erases_member_activity_and_shared_region_credit(self):
+        owner, child, stranger, gid = self.family()
+        base=f"/api/v2/family/groups/{gid}"
+        invitation=self.client.post(base+"/invite",headers=owner).json["code"]
+        self.client.post("/api/v2/family/invites/redeem",headers=child,json={"code":invitation})
+        endpoint=base+"/activity"
+        self.assertEqual(self.client.post(endpoint,headers=child,json={
+            "item_id":"basic:0","mode":"learn","region":"pomorskie"}).status_code,201)
+        self.assertEqual(self.client.get(base+"/summary",headers=owner).json["regions"][0]["earned"],10)
+        left=self.client.post(base+"/leave",headers=child)
+        self.assertEqual(left.status_code,200)
+        self.assertEqual(left.json["removed_activities"],1)
+        fresh=self.client.get(base+"/summary",headers=owner).json
+        self.assertEqual([member["name"] for member in fresh["members"]],["Parent"])
+        self.assertEqual(fresh["regions"][0]["earned"],0)
+        self.assertEqual(self.client.post(endpoint,headers=child,json={
+            "item_id":"basic:0","mode":"read","region":"pomorskie"}).status_code,404)
+
+    def test_account_export_password_change_deletion_and_forced_revocation(self):
+        owner, child, stranger, gid = self.family()
+        base=f"/api/v2/family/groups/{gid}"
+        code=self.client.post(base+"/invite",headers=owner).json["code"]
+        self.client.post("/api/v2/family/invites/redeem",headers=child,json={"code":code})
+        self.client.post(base+"/activity",headers=child,json={
+            "item_id":"hard:0","mode":"read","region":"małopolskie"})
+        exported=self.client.get("/api/v2/family/account/export",headers=child)
+        self.assertEqual(exported.status_code,200)
+        self.assertEqual(exported.json["profile"]["name"],"Learner")
+        self.assertEqual(exported.json["activities"][0]["xp"],19)
+        self.assertNotIn("password_hash",exported.json)
+        self.assertNotIn("token",exported.json)
+        self.assertEqual(self.client.get("/api/v2/family/account/export",headers=stranger)
+                         .json["activities"],[])
+        changed=self.client.post("/api/v2/family/account/password",headers=child,json={
+            "current_password":"Private-family-passphrase-2026",
+            "new_password":"Updated-secure-passphrase-2026"})
+        self.assertEqual(changed.status_code,200)
+        self.assertEqual(self.client.get("/api/v2/family/me",headers=child).status_code,401)
+        self.assertEqual(self.client.post("/api/v2/family/login",json={
+            "email":"child@example.com","password":"Private-family-passphrase-2026"}).status_code,401)
+        renewed=self.client.post("/api/v2/family/login",json={
+            "email":"child@example.com","password":"Updated-secure-passphrase-2026"})
+        child={"Authorization":"Bearer "+renewed.json["token"]}
+        bad=self.client.post("/api/v2/family/account/delete",headers=child,json={
+            "password":"wrong","confirmation":"DELETE MY ACCOUNT"})
+        self.assertEqual(bad.status_code,401)
+        bad=self.client.post("/api/v2/family/account/delete",headers=child,json={
+            "password":"Updated-secure-passphrase-2026","confirmation":"please"})
+        self.assertEqual(bad.status_code,400)
+        removed=self.client.post("/api/v2/family/account/delete",headers=child,json={
+            "password":"Updated-secure-passphrase-2026","confirmation":"DELETE MY ACCOUNT"})
+        self.assertEqual(removed.status_code,200)
+        self.assertEqual(self.client.get("/api/v2/family/me",headers=child).status_code,401)
+        group=self.client.get(base+"/summary",headers=owner).json
+        self.assertEqual(len(group["members"]),1)
+        self.assertEqual(group["regions"][0]["earned"],0)
+        # Used invite MUST NOT reactivate when redeemed account is deleted.
+        self.assertEqual(self.client.post("/api/v2/family/invites/redeem",headers=stranger,
+                          json={"code":code}).status_code,400)
+        blocked=self.client.post("/api/v2/family/account/delete",headers=owner,json={
+            "password":"Private-family-passphrase-2026","confirmation":"DELETE MY ACCOUNT"})
+        self.assertEqual(blocked.status_code,200)  # sole owner closes empty group
+        self.assertEqual(self.client.get(base+"/summary",headers=stranger).status_code,404)
+
+    def test_account_deletion_cannot_abandon_other_members(self):
+        owner, child, _, gid=self.family()
+        code=self.client.post(f"/api/v2/family/groups/{gid}/invite",headers=owner).json["code"]
+        self.client.post("/api/v2/family/invites/redeem",headers=child,json={"code":code})
+        failure=self.client.post("/api/v2/family/account/delete",headers=owner,json={
+            "password":"Private-family-passphrase-2026","confirmation":"DELETE MY ACCOUNT"})
+        self.assertEqual(failure.status_code,409)
+        self.assertEqual(self.client.get("/api/v2/family/me",headers=owner).status_code,200)
+
     def test_fail_closed_config(self):
         with self.assertRaises(RuntimeError):
             create_app(None,None)
