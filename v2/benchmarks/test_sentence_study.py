@@ -22,7 +22,7 @@ class SentenceStudyTests(unittest.TestCase):
                 out.setnchannels(1)
                 out.setsampwidth(2)
                 out.setframerate(16000)
-                out.writeframes(array("h", [900] * (16000 * 5)).tobytes())
+                out.writeframes(array("h", [900 + i] * (16000 * 5)).tobytes())
             self.rows.append({
                 "id": f"sentence-{i:02d}", "audio": path.name,
                 "reference": "To jest sprawdzona polska wypowiedź.",
