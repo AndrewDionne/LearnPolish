@@ -275,6 +275,9 @@ new course authoring in this tranche.
 
 ## 12. Pronunciation AI research resumed — pilot protocol (2026-10-17)
 
+**Pilot readiness shipped:** [PR #24](https://github.com/AndrewDionne/LearnPolish/pull/24) merged (`183d759a736257dcd0600e64b03f6017f8b94e61`); [all four CI jobs PASS #39020355029](https://github.com/AndrewDionne/LearnPolish/actions/runs/39020355029), 13 offline benchmark tests. No recordings/human/model evidence yet, and no live provider calls authorized.
+
+
 Priority shifted from future guardian profiles to an **adult-only, consented
 pronunciation engine study**. No prior production or model accuracy is
 demonstrated. Use the no-spend reproducible 12-stimulus x 2-take pilot in
