@@ -1,5 +1,24 @@
 # Path to Polish V2 — Rebuild Scope and Delivery Plan
 
+## 28. Azure PA: generic inconclusive fix and one-call diagnostic (2026-10-18)
+
+First real three-model physical test yielded four actual Groq
+transcriptions (V3 and Turbo both successful) and two Azure
+`inconclusive` responses with no detailed JSON. Offline review
+exposed the generic `Azure did not recognize complete speech` reason
+for FLEURS 00003 and 00009. This collapsed actual SDK `NoMatch`
+and `Canceled`, so root cause cannot be inferred. Add allowlisted
+SDK reason diagnostic in `azure_pilot.py` and a **single** request
+Azure-only exploratory `azure_retest.py` for existing, unchanged
+public FLEURS original 00003 (5.64s) after free-tier & upload
+approvals. Store safe cancellation/no-match enums or actual
+uncalibrated scores in NEW private JSONL, never raw free-text error
+details, never repeat four Groq calls; source and original results
+untouched. Human-certified stricter benchmark path unchanged. Mac
+instructions in `THREE_MODEL_PILOT.md`; only owner may execute
+physical provider request, CI mocked offline.
+
+
 **Status:** V2 development active (2026-10-16). Initial foundation/Library→Learn capability merged in [PR #3](https://github.com/AndrewDionne/LearnPolish/pull/3), commit `c89010c4fd6c603f885c996d51231f8148037fea`; personal lesson editor/import/export merged in [PR #4](https://github.com/AndrewDionne/LearnPolish/pull/4), commit `5bd2649013aa565f86c2c93bcbc036d73c5381a9`. T0/T1 gates remain partial; Read/Listen and verified offline PWA capability have now been merged in PRs #5 and #6, but release gates remain open; see [umbrella issue #2](https://github.com/AndrewDionne/LearnPolish/issues/2) for checkpoints and CI evidence.
 **Repository:** `AndrewDionne/LearnPolish` (retain; do not create a second repository).
 **Owner's product decision:** The current application is unused and may be replaced without preserving its existing runtime behaviour or uptime. Preserve useful learning content and historical source, **not** legacy design or architecture.
