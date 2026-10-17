@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-17 — PR #28 ignored repo/temp private research workspace merged; real Groq inference not yet run
+**Updated:** 2026-10-17 — owner-fixed in-repo PathToPolish-Private-AI folder is authoritative; no relocation; real Groq inference not yet run
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -23,6 +23,21 @@
 3. Develop in a branch; execute available checks, report what is tested vs unverified.
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
 5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt features.
+
+## Owner's FINAL local research folder: repo/PathToPolish-Private-AI (2026-10-17)
+
+**User correction overrides the previous `repo/temp/` proposal and all home-folder suggestions.** The owner's two manually downloaded WAV-source originals **currently live in and MUST REMAIN** at `./PathToPolish-Private-AI/Pl-czapka.ogg` and `./PathToPolish-Private-AI/Pl-ciasto.ogg` under the Git repo root. **Do not ask for file moves or new directories; do not rename or relocate them.** All local study outputs also go in this same folder, in child `commons-native-01` created automatically by importer only after success.
+
+**Implemented:** root `.gitignore` ignores `/PathToPolish-Private-AI/` and safeguards permit this particular repository-local directory for Commons conversion and Groq transcript output; tracked `assets/`, `docs/`, symlink escapes remain rejected. Parent chmod 700 and separate child permissions protect local files, but Git ignore is not encryption; never force-stage private data. Older `repo/temp/` is still accepted for backward compatibility but is **not the chosen path**; ALL prior instructions to move/download/change locations are obsolete. **Only commands to give owner from repo root** (after syncing Git):
+
+```bash
+chmod 700 PathToPolish-Private-AI
+git check-ignore -v PathToPolish-Private-AI/Pl-czapka.ogg
+python3 v2/benchmarks/public_native_samples.py --source-dir PathToPolish-Private-AI --output-dir PathToPolish-Private-AI/commons-native-01 --count 2
+python3 v2/benchmarks/groq_pilot.py --manifest PathToPolish-Private-AI/commons-native-01/manifest.json --models whisper-large-v3 whisper-large-v3-turbo --max-requests 4 --max-billed-seconds 40
+```
+
+Only owner-approved later live invocation makes Groq requests; no unapproved calls. If `commons-native-01` exists, inspect rather than overwrite. Previous documentation sections mentioning `repo/temp/` are historical and superseded by this entry. User has expressly rejected any further relocation suggestion.
 
 ## Repo/temp study workspace — merged 2026-10-17
 
