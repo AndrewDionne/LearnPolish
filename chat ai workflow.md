@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-17 — password recovery tranche in progress after merged PR #21; deployment and AI testing still deferred
+**Updated:** 2026-10-17 — PR #22 secure password recovery merged; email verification, deployment and AI testing still deferred
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -24,17 +24,13 @@
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
 5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt features.
 
-## Active password recovery tranche — 2026-10-17 (CI pending)
+## Family password recovery — merged 2026-10-17
 
-**Feature branch:** `feat/v2-family-password-recovery`; next end-to-end family access checkpoint following PR #21. This is **not** public deployment or completed email verification.
+**PR #22 merged** [view](https://github.com/AndrewDionne/LearnPolish/pull/22), squash commit `9b5d974ebc2c8baa588ce168385a98ce42e91fe3`; [**CI PASS #39017210836**](https://github.com/AndrewDionne/LearnPolish/actions/runs/39017210836) on exact PR head `2d1cf78c66ceca2073efb55a43d0e9b965a6c411`. Four jobs green: frontend TypeScript/unit/build + desktop/mobile browser regressions, private family backend **24 Python security tests**, connected two-member desktop/mobile browser journeys including mocked-delivery recovery UI, and offline benchmark safeguards.
 
-- `v2/server/recovery_mail.py`: operator-configured authenticated SMTP over certificate-validated implicit TLS; no SMTP credentials, reset codes or user emails committed to GitHub. Missing sender disables recovery; incomplete configuration fails API startup.
-- `v2/server/family_api.py`: generic account-enumeration-resistant reset request, private hashed 256-bit single-use code (15-minute TTL), per-email/network rate limits, session invalidation on completed reset, and outstanding-code revocation for password changes/deletion. No codes in URLs/logs.
-- `v2/frontend/src/family/FamilyPanel.tsx`: capability-checked sign-in recovery form requiring emailed code, not a token-bearing link; usable on mobile.
-- `v2/server/test_recovery.py` plus connected-browser mocked-delivery journey. Usual four V2 CI lanes must pass **on exact PR head** before merge.
-- Operator contract documented in `v2/server/README.md`.
+**Delivered:** `v2/server/recovery_mail.py` supports explicit authenticated TLS SMTP configuration via environment secrets, no plaintext token in logs or URLs. `v2/server/family_api.py` adds generic response to recovery requests, 256-bit one-use email codes with SHA-256-only storage and 15-minute TTL, email/network request limits, invalidation on reissue, password change/account deletion, password reset + all active session revocation. Mail delivery errors discard undelivered codes and do not expose account existence. Recovery is disabled and marked unavailable when no sender is configured; incomplete SMTP configuration fails startup. React sign-in gets capability-gated **Forgot password?** with manually entered code. `v2/server/test_recovery.py`, connected browser test, README and V2 roadmap updated.
 
-**Important limits:** existing signup email remains unverified, with no signup confirmation gate; do not imply that password recovery proves address ownership at registration. No SMTP account/delivery test, bounce/abuse controls, child/guardian consent handling, encrypted offsite backups, persistent hosted service or physical iOS test. AI comparison and new content remain deferred. After merging, next checkpoint: true mailbox verification and guardian/minor privacy design, without enabling public accounts prematurely.
+**Release boundary:** No SMTP provider has been provisioned, no real outbound email/deliverability certified, **signup email ownership is NOT verified**, and family accounts remain undeployed. Verified email at registration, recovery abuse/bounce/monitoring, parent/guardian/minor authorization, secure persistent TLS hosting, encrypted offsite backups/deletion reconciliation, real multi-device iPhone UX and release/privacy review remain next gates. No Whisper/Azure/AI testing, graded speech claims or new learning content (owner-deferred).
 
 ## Family service storage/recovery readiness — merged 2026-10-17
 
