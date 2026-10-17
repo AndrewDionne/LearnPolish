@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-17 — PR #23 family email verification merged; guardian privacy/deployment and AI testing still deferred
+**Updated:** 2026-10-17 — Polish pronunciation AI study resumed at no-spend adult pilot preparation; guardian profiles paused, live API inference unapproved
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -23,6 +23,16 @@
 3. Develop in a branch; execute available checks, report what is tested vs unverified.
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
 5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt features.
+
+## Polish AI pronunciation study — reactivated pilot 2026-10-17
+
+**Owner priority change:** Pause further guardian-family profile implementation and assist with the pronunciation AI study. This **restarts research preparation**, not automatic paid inference, API quotas, model downloads or voice upload. No actual benchmark outcome exists yet.
+
+**Evidence/source review:** official Microsoft docs currently list Azure Polish `pl-PL` Pronunciation Assessment, BUT **named phonemes, spoken-phoneme alternatives, syllable groups and prosody** have English-focused locale restrictions; Polish may return **score-only** phoneme information. Whisper large-v3 (local/Groq) is speech-to-text, not a pronunciation-quality grader. Groq Free lists a recurring rate-limited Whisper v3 tier but actual account entitlements/billing still need confirmation. See [`v2/benchmarks/PILOT_PROTOCOL.md`](v2/benchmarks/PILOT_PROTOCOL.md) with official URLs.
+
+**Next immediate evidence gate:** With separately consenting **adult** voices, collect ~24 intentional short Polish contrast takes each (12 stimuli x 2), optional native controls, no child audio. Use existing Speak's user-clicked private 16-kHz WAV exports and `v2/benchmarks/corpus.py` to generate SHA-256-locked manifest; dry-run first. New `v2/benchmarks/pilot_labels.py` scaffolds intentionally unrated separate private reviewer sheets and checks complete human labels against frozen WAV fingerprints. Independent Polish fluent reviewer listens blind first, target-aware second. No private voice WAVs or human files in Git; no real Azure, Groq or Whisper inference performed in this tranche.
+
+**Provider stage only after evidence:** explicit local pre-downloaded faster-whisper model OR approved Groq account free quota, repaired Azure `pl-PL` raw results using identical WAVs/reference with approved F0/billing caps. A correctly recognized word cannot be awarded a phoneme grade; actual sound-error localization requires a separate evidence-backed path. Scope remains no-new-lessons, no automatic public deployment. GitHub issue #1 is the study authority.
 
 ## Family email verification — merged 2026-10-17
 
