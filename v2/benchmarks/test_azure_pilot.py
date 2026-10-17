@@ -128,7 +128,7 @@ class AzurePilotTests(unittest.TestCase):
         self.save()
         with self.assertRaisesRegex(ValueError, "EXACTLY one"):
             run(self.manifest, "sentence-01", max_requests=2)
-        with self.assertRaisesRegex(ValueError, "exceeds"):
+        with self.assertRaisesRegex(ValueError, "hard cap"):
             run(self.manifest, "sentence-01", max_audio_seconds=5.0 - 0.01)
 
     def test_rejects_wrong_sample_id_and_source_path_escape(self):
