@@ -94,6 +94,8 @@ def backup_database(source: str, directory: str) -> Path:
     manifest = root / (name + ".json")
     pending = _temporary_path(root, ".family-backup-")
     pending_manifest = None
+    backup_written = False
+    manifest_written = False
     try:
         with _readonly(database) as original, sqlite3.connect(str(pending)) as snapshot:
             original.backup(snapshot)
@@ -105,6 +107,7 @@ def backup_database(source: str, directory: str) -> Path:
         with pending.open("rb") as stream:
             os.fsync(stream.fileno())
         os.link(pending, backup)  # exclusive: never replace an older backup
+        backup_written = True
         pending_manifest = _temporary_path(root, ".family-manifest-")
         with pending_manifest.open("w", encoding="utf-8") as stream:
             json.dump(data, stream, sort_keys=True, indent=2)
@@ -112,11 +115,15 @@ def backup_database(source: str, directory: str) -> Path:
             stream.flush()
             os.fsync(stream.fileno())
         os.link(pending_manifest, manifest)
+        manifest_written = True
         verify_backup(str(backup))
         return backup
     except Exception:
-        backup.unlink(missing_ok=True)
-        manifest.unlink(missing_ok=True)
+        # A filename collision must never delete somebody else's existing backup.
+        if backup_written:
+            backup.unlink(missing_ok=True)
+        if manifest_written:
+            manifest.unlink(missing_ok=True)
         raise
     finally:
         pending.unlink(missing_ok=True)
