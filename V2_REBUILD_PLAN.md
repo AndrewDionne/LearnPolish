@@ -373,4 +373,7 @@ No paid API access or real pronunciation grading authorized.
 
 ## 17. FINAL owner choice: preserve existing PathToPolish-Private-AI in place
 
+**Implemented, CI-certified and merged:** [PR #29](https://github.com/AndrewDionne/LearnPolish/pull/29), `6ba0f17d38165101ee83e24c87b4686a50c17162`; [CI #39038820449 four-lane PASS](https://github.com/AndrewDionne/LearnPolish/actions/runs/39038820449) including **34 benchmark Python tests**. Actual owner Mac import/preview remains unverified and requires no file move.
+
+
 This supersedes Section 16's `repo/temp/` recommendation. The owner has repeatedly shown that the **two manually downloaded original Commons Ogg files are already in `repo/PathToPolish-Private-AI/`** and explicitly instructed that **neither the files nor the directory will move**. Git ignores the exact root directory `/PathToPolish-Private-AI/`; benchmark path checks permit it and still reject tracked `assets/`, `docs/` and symlink escapes. Converted native WAV, checksum manifest, attribution and Groq transcripts go under the existing folder's importer-created child `commons-native-01/`. Docs, tests and durable workflow must use these exact relative paths from repo root and never suggest moving originals to `temp/`, `$HOME/`, or another folder. Only consented/Free-plan-confirmed explicit Groq requests, after dry preview, may upload audio. The former root `temp/` support remains for compatibility but is NOT this user's designated research location.
