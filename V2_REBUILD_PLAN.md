@@ -332,3 +332,18 @@ open-licensed sentences (Common Voice/FLEURS) and consented learner recordings
 with independent sound-error assessment. Exact no-network preparation,
 full sample licences, account gating and API commands live in
 `v2/benchmarks/README.md`.
+
+
+## 15. Wikimedia Commons 429 field repair
+
+During Mac physical trial of the licensed native-audio pilot, HTTP 429 from
+`upload.wikimedia.org` left an empty output directory which prevented a
+subsequent attempt. The downloader now recognizes provider throttle, includes
+a descriptive public project URL in User-Agent, surfaces `Retry-After`, does
+**not** retry or bypass the limit, and stages files transactionally so failed
+downloads/conversions do not leave half-populated research directories.
+The `--source-dir` option imports manually downloaded original Commons Ogg
+files *without network calls*, preserving existing 16k WAV conversion,
+immutable checksums and CC author/licence metadata. Mock tests cover 429,
+offline source validation and cleanup. Real-media retrieval and Groq testing
+on the user's Mac remain the acceptance gate. See README recovery section.
