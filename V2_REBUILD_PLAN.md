@@ -213,14 +213,14 @@ The private family API and learning collaboration are merged through PR #20, but
 the service is **not live**. Next incremental gate is secure durable storage and
 rehearsed recovery **before** choosing public hosting, accounts or email delivery.
 
-**Backup-readiness tranche in progress** (`feat/v2-family-durable-backup-readiness`):
+**Backup-readiness tranche merged** ([PR #21](https://github.com/AndrewDionne/LearnPolish/pull/21), commit `78be71629fe848829d4313a3b9939fdc9a3d0759`, [four-lane CI PASS #39014248350](https://github.com/AndrewDionne/LearnPolish/actions/runs/39014248350), 17 family backend tests):
 - Owner-private directory/file validation (0700/0600) and explicit path checks before SQLite startup; fail closed rather than silently accepting world-readable account data.
 - SQLite online snapshot from the live store, with WAL-safe committed data, integrity/foreign-key checks, SHA-256 size manifest and no-overwrite backup names.
 - Offline operator-only recovery rehearsal to an entirely new file, verified before restore.
 - Tests for permissions/symlink rejection, tamper detection, WAL data, and non-overwriting restore; instructions in `v2/server/README.md`.
 
-**Acceptance condition:** backend regression and all usual V2 CI lanes must pass
-on the PR head before merge. This creates a backup rehearsal tool, **not**
+**Acceptance:** backend regression and all usual V2 CI lanes passed
+on the exact PR head before merge. This creates a backup rehearsal tool, **not**
 a production backup schedule, off-host encrypted storage, key rotation, disaster
 recovery RTO/RPO guarantee or approved deployment.
 
