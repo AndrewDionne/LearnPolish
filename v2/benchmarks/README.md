@@ -1,5 +1,22 @@
 # Polish speech/pronunciation benchmark — first increment
 
+## Native Polish sentence-candidate acquisition — no AI provider calls
+
+**New:** `fleurs_candidates.py` (plus offline non-network mock tests) can
+fetch at most 12 real Polish FLEURS (`pl_pl`, validation split) clips
+from the dataset viewer. Preview only fetches a metadata page, download
+requires explicit `--download`. It writes into the existing
+`PathToPolish-Private-AI/` **without moving/renaming any original file**,
+does not overwrite an existing source manifest, and stamps all candidates
+with SHA and full attribution, **UNVERIFIED review flags** and
+`provider_upload_approved=false`.
+See [SENTENCE_STUDY.md](SENTENCE_STUDY.md#fleurs-polish-candidate-importer-new-source-material-still-needs-human-certification)
+for exact Mac commands and native-speaker review requirements.
+**Dataset files are not independently human-certified; no Azure audio
+sent or grade obtained in this tranche.**
+
+
+
 ## 2026-10-17 — sentence-tempo study + gated Azure research setup
 
 See [SENTENCE_STUDY.md](SENTENCE_STUDY.md) for complete Mac commands and
