@@ -65,7 +65,7 @@ handling, provider retention review and deletion controls before recording.
 1. Record each selected word using the V2 **Speak** mode. Click
    **Save 16 kHz WAV for private AI test** for each take. A normal lesson
    attempt does not upload/export automatically.
-2. Place WAV exports in an **unshared private folder OUTSIDE this repository**,
+2. Place WAV exports in an **unshared private folder in ignored `repo/temp/` or outside the repository**,
    without names, accounts or children’s identifiers. Each filename encodes its
    catalog item ID and capture time; IDs and intended text might be visible
    in filenames, so an independent listener should not see filenames or
