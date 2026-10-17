@@ -426,6 +426,9 @@ Tests are mocked; provider POST still unverified pending Mac physical trial.
 
 ## 20. First Groq Whisper contrast: misleading single recognition flag
 
+**Delivered:** [PR #32 merged](https://github.com/AndrewDionne/LearnPolish/pull/32), squash `fac760f5fe6329a497b7fbcccb431506b4d4f66f`; [CI #39056856013 all four jobs PASS](https://github.com/AndrewDionne/LearnPolish/actions/runs/39056856013), **53 offline benchmark tests**. Separate strict full-reference match from target-word detection, preserving historic output field. Offline verified review command available `v2/benchmarks/review_groq.py`. Owner audio verification and wider corpus remain pending.
+
+
 **Actual owner Mac data:** source `czapka`: Large-v3 `Czap, czapka.`,
 Turbo `Czap-czapka.`; source `ciasto`: Large-v3 `Często.`,
 Turbo `CZASTO`. Four actual HTTP calls succeeded (min 40 billed
