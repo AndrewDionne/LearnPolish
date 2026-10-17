@@ -71,6 +71,17 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens(
  token_hash TEXT PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id),
  expires_at INTEGER NOT NULL
 );
+CREATE TABLE IF NOT EXISTS email_verifications(
+ user_id INTEGER PRIMARY KEY REFERENCES users(id), verified_at INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS verification_tokens(
+ token_hash TEXT PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id),
+ expires_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS verification_token_user ON verification_tokens(user_id);
+CREATE TABLE IF NOT EXISTS verification_throttle(
+ identity TEXT PRIMARY KEY, attempts INTEGER NOT NULL, first_at INTEGER NOT NULL
+);
 CREATE INDEX IF NOT EXISTS password_reset_user ON password_reset_tokens(user_id);
 CREATE TABLE IF NOT EXISTS recovery_throttle(
  identity TEXT PRIMARY KEY, attempts INTEGER NOT NULL, first_at INTEGER NOT NULL
@@ -97,7 +108,8 @@ def _json():
 
 def create_app(database_path: str | None = None, catalog_path: str | None = None,
                allowed_origins: tuple[str, ...] | None = None,
-               recovery_sender: Callable[[str, str], None] | None = None) -> Flask:
+               recovery_sender: Callable[[str, str], None] | None = None,
+               verification_sender: Callable[[str, str], None] | None = None) -> Flask:
     path = database_path or os.environ.get("PTP_FAMILY_DB")
     catalog = catalog_path or os.environ.get("PTP_FAMILY_CATALOG")
     if not path or not catalog or path == ":memory:":
@@ -122,7 +134,8 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
     )
     if any("*" in x or not x.startswith(("https://", "http://localhost:", "http://127.0.0.1:")) for x in origins):
         raise RuntimeError("Family origins must be exact HTTPS or local development URLs")
-    mail_sender = recovery_sender or configured_sender()
+    mail_sender = recovery_sender or configured_sender("recovery")
+    signup_sender = verification_sender or configured_sender("verification")
     app = Flask(__name__)
     app.config["MAX_CONTENT_LENGTH"] = 16_000
     app.config["JSON_SORT_KEYS"] = True
@@ -181,6 +194,7 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
                 return fail("invalid_session", 401)
             user = db().execute(
                 """SELECT u.id,u.name,u.email FROM sessions s JOIN users u ON u.id=s.user_id
+                   JOIN email_verifications v ON v.user_id=u.id
                    WHERE s.token_hash=? AND s.expiry>?""", (_hash(token), _now())
             ).fetchone()
             if not user:
@@ -202,27 +216,123 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
     @app.get("/api/v2/family/health")
     def health():
         return jsonify(ok=True, version=1, catalog_items=len(known),
-                       password_recovery_available=mail_sender is not None)
+                       password_recovery_available=mail_sender is not None,
+                       email_verification_available=signup_sender is not None)
+
+    def verification_limit(identity: str, threshold: int, now: int) -> bool:
+        con = db()
+        row = con.execute("SELECT attempts,first_at FROM verification_throttle WHERE identity=?",
+                          (identity,)).fetchone()
+        fresh = not row or now-row["first_at"] >= 3600
+        attempts = 1 if fresh else row["attempts"] + 1
+        con.execute("INSERT OR REPLACE INTO verification_throttle VALUES(?,?,?)",
+                    (identity, attempts, now if fresh else row["first_at"]))
+        return attempts > threshold
+
+    def issue_verification(user_id: int, email: str, now: int) -> bool:
+        """Persist a hashed, replaceable proof of mailbox control before mailing."""
+        con = db()
+        code = secrets.token_urlsafe(32)
+        hashed = _hash(code)
+        con.execute("DELETE FROM verification_tokens WHERE user_id=?", (user_id,))
+        con.execute("INSERT INTO verification_tokens VALUES(?,?,?)",
+                    (hashed, user_id, now+1800))
+        try:
+            signup_sender(email, code)
+        except Exception:
+            con.execute("DELETE FROM verification_tokens WHERE token_hash=?", (hashed,))
+            return False
+        return True
 
     @app.post("/api/v2/family/signup")
     def signup():
+        if signup_sender is None:
+            return fail("email_verification_unavailable", 503)
         data = _json()
-        email = str(data.get("email", "")).strip().lower()
-        password = data.get("password", "")
-        name = str(data.get("name", "")).strip()
-        if not EMAIL.fullmatch(email) or not isinstance(password, str) or len(password) < 12 or len(password) > 256 or not 1 <= len(name) <= 48:
+        email = data.get("email")
+        password = data.get("password")
+        name = data.get("name")
+        if (not isinstance(email,str) or not isinstance(name,str) or
+                not isinstance(password,str)):
+            return fail("invalid_registration")
+        email = email.strip().lower()
+        name = name.strip()
+        if (not EMAIL.fullmatch(email) or not 12 <= len(password) <= 256 or
+                not 1 <= len(name) <= 48):
             return fail("invalid_registration")
         salt = secrets.token_hex(16)
         con = db()
+        now = _now()
+        con.execute("BEGIN IMMEDIATE")
         try:
-            con.execute("BEGIN IMMEDIATE")
-            con.execute("INSERT INTO users(email,name,salt,password_hash) VALUES(?,?,?,?)",
-                        (email, name, salt, _password(password, salt)))
-            con.commit()
+            user_id = con.execute(
+                "INSERT INTO users(email,name,salt,password_hash) VALUES(?,?,?,?)",
+                (email,name,salt,_password(password,salt))).lastrowid
         except sqlite3.IntegrityError:
             con.rollback()
-            return fail("account_unavailable", 409)
-        return jsonify(created=True), 201
+            return fail("account_unavailable",409)
+        # A pending signup never becomes an authenticated family member.
+        # Mail failure removes the incomplete account to allow a clean retry.
+        if not issue_verification(user_id,email,now):
+            con.execute("DELETE FROM users WHERE id=?", (user_id,))
+            con.commit()
+            return fail("verification_delivery_unavailable",503)
+        con.commit()
+        return jsonify(created=True,verification_required=True),201
+
+    @app.post("/api/v2/family/verification/resend")
+    def resend_verification():
+        if signup_sender is None:
+            return fail("email_verification_unavailable",503)
+        data = _json()
+        email = data.get("email")
+        password = data.get("password")
+        if not isinstance(email,str) or not EMAIL.fullmatch(email.strip().lower()) or not isinstance(password,str):
+            return fail("invalid_credentials",401)
+        email = email.strip().lower()
+        con = db()
+        now = _now()
+        con.execute("BEGIN IMMEDIATE")
+        con.execute("DELETE FROM verification_throttle WHERE first_at<?", (now-3600,))
+        by_email = verification_limit("email:"+_hash(email),3,now)
+        by_network = verification_limit("network:"+_hash(str(request.remote_addr)),20,now)
+        row = con.execute("""SELECT u.id,u.salt,u.password_hash,v.verified_at
+                             FROM users u LEFT JOIN email_verifications v ON v.user_id=u.id
+                             WHERE u.email=?""",(email,)).fetchone()
+        if (not row or row["verified_at"] is not None or by_email or by_network or
+                not hmac.compare_digest(_password(password,row["salt"]),row["password_hash"])):
+            con.commit()
+            return jsonify(accepted=True),202
+        issue_verification(row["id"],email,now)
+        con.commit()
+        return jsonify(accepted=True),202
+
+    @app.post("/api/v2/family/verification/confirm")
+    def confirm_verification():
+        if signup_sender is None:
+            return fail("email_verification_unavailable",503)
+        data = _json()
+        email = data.get("email")
+        code = data.get("code")
+        if (not isinstance(email,str) or not EMAIL.fullmatch(email.strip().lower()) or
+                not isinstance(code,str) or re.fullmatch(r"[A-Za-z0-9_-]{43}",code) is None):
+            return fail("invalid_or_expired_code")
+        con = db()
+        now = _now()
+        con.execute("BEGIN IMMEDIATE")
+        record = con.execute(
+            """SELECT u.id FROM verification_tokens t
+               JOIN users u ON u.id=t.user_id
+               LEFT JOIN email_verifications v ON v.user_id=u.id
+               WHERE u.email=? AND t.token_hash=? AND t.expires_at>? AND v.user_id IS NULL""",
+            (email.strip().lower(),_hash(code),now)).fetchone()
+        if not record:
+            con.rollback()
+            return fail("invalid_or_expired_code")
+        con.execute("INSERT INTO email_verifications VALUES(?,?)",(record["id"],now))
+        con.execute("DELETE FROM verification_tokens WHERE user_id=?", (record["id"],))
+        con.commit()
+        return jsonify(verified=True),200
 
     @app.post("/api/v2/family/login")
     def login():
@@ -237,7 +347,10 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
         now = _now()
         if throttle and throttle["failures"] >= 8 and now - throttle["first_at"] < 900:
             return fail("too_many_attempts", 429)
-        row = con.execute("SELECT id,name,email,salt,password_hash FROM users WHERE email=?", (email,)).fetchone()
+        row = con.execute("""SELECT u.id,u.name,u.email,u.salt,u.password_hash,
+                             v.verified_at FROM users u
+                             LEFT JOIN email_verifications v ON v.user_id=u.id
+                             WHERE u.email=?""", (email,)).fetchone()
         valid = row is not None and hmac.compare_digest(_password(pw, row["salt"]), row["password_hash"])
         if not valid:
             fresh = not throttle or now-throttle["first_at"] >= 900
@@ -245,6 +358,8 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
             count = 1 if fresh else throttle["failures"]+1
             con.execute("INSERT OR REPLACE INTO login_throttle VALUES(?,?,?)", (key,count,first))
             return fail("invalid_credentials", 401)
+        if row["verified_at"] is None:
+            return fail("email_verification_required", 403)
         con.execute("DELETE FROM login_throttle WHERE identity=?", (key,))
         token = secrets.token_urlsafe(32)
         con.execute("INSERT INTO sessions VALUES(?,?,?)", (_hash(token),row["id"],now+7*86400))
@@ -601,6 +716,8 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
         con.execute("DELETE FROM members WHERE user_id=?", (user["id"],))
         con.execute("DELETE FROM sessions WHERE user_id=?", (user["id"],))
         con.execute("DELETE FROM password_reset_tokens WHERE user_id=?", (user["id"],))
+        con.execute("DELETE FROM verification_tokens WHERE user_id=?", (user["id"],))
+        con.execute("DELETE FROM email_verifications WHERE user_id=?", (user["id"],))
         con.execute("DELETE FROM users WHERE id=?", (user["id"],))
         con.commit()
         return jsonify(deleted=True)
