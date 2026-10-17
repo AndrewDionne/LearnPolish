@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-17 — PR #36 MERGED 88 offline tests: first three-engine 2-clips×(Whisper V3/Turbo/Azure F0) experimental pilot ready for owner's Mac; real provider calls NOT yet run
+**Updated:** 2026-10-18 — PHYSICAL first 6-request 3-engine experiment COMPLETE: Groq V3 and Turbo transcribed two clips, Azure PA inconclusive both; offline reason triage next
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -22,7 +22,40 @@
 2. Check umbrella issue and code. Choose the next unfinished acceptance checkpoint, identifying dependencies and relevant tests.
 3. Develop in a branch; execute available checks, report what is tested vs unverified.
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
-5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt feature## PR #36 MERGED — first 3-engine Polish trial ready for owner Mac (2026-10-17)
+5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt feature## PHYSICAL FIRST THREE-ENGINE EXPERIMENT — SUCCESSFUL Groq, Azure INCONCLUSIVE (2026-10-18)
+
+**Owner's ACTUAL Mac Terminal live evidence** (NOT mocks or dry runs): after storing new `GROQ_API_KEY` in Mac Keychain under service `PathToPolish-Groq-API-Key`, a Groq `GET /models` read-only check returned both `whisper-large-v3=true`, `whisper-large-v3-turbo=true`. Azure Speech environment key, Speech region (`germanywestcentral`) were already AVAILABLE via local `.zshrc`. Homebrew-managed Python prevented system-wide pip; owner successfully created isolated **`PathToPolish-Private-AI/.venv-speech-test/`**, installed `azure-cognitiveservices-speech`, SDK import verification `Azure Speech SDK ready`. First attempt to send failed at local environment check with ZERO provider requests; owner reloaded Groq key from macOS Keychain using `security find-generic-password -a "$USER" -s "PathToPolish-Groq-API-Key" -w`, exported region, verified ALL THREE required environment variables READY WITHOUT printing key.
+
+**FIRST REAL SIX-REQUEST RUN FINISHED**, CLI `v2/benchmarks/three_model_pilot.py --manifest PathToPolish-Private-AI/sentences-source.json --max-requests 6 --max-groq-billed-seconds 60 --max-azure-audio-seconds 30 --send --approve-public-audio-upload --confirm-groq-free --confirm-azure-f0 --confirm-no-paid-billing --output PathToPolish-Private-AI/preliminary-three-model-01.jsonl` returned `status=EXPLORATORY_COMPLETE`, `network_calls_performed=6`, `persisted_result_rows=6`; exact original public FLEURS WAVs were used, no other audio altered, no request retries. `00003` duration 5.64s SHA `f6242c4173c0853b6bf71b2ce9d6cbebdfa61196e604b8900ddefd0b7684dbbe`, `00009` duration 9.18s SHA `574bf3b348bba301313ec6e529c9e723d9db7de050a61fe23cdc35790305b913`. Groq estimated billable audio 40 seconds, Azure planned input audio 14.82 seconds; no claim charged or not.
+
+**Actual outcomes by clip and engine:**
+
+| Clip | Groq Whisper large-v3 | Groq Whisper large-v3-turbo | Azure `pl-PL` |
+|---|---|---|---|
+| `fleurs-pl-val-00003` | `ok` WER=0.0833 (8.33%) | `ok` WER=0.0000 (0%) | `inconclusive`, scores `null`, transcript `null` |
+| `fleurs-pl-val-00009` | `ok` WER=0.1818 (18.18%) | `ok` WER=0.0909 (9.09%) | `inconclusive`, scores `null`, transcript `null` |
+
+On BOTH of these real short clips Turbo was more transcription-exact to FLEURS reference than non-Turbo large-v3 (too-small, acoustically heterogeneous unverified sample, NOT population superiority). No Whisper phonetic grades exist; Azure PA returned **no usable pronunciation result** on either; zero Azure accuracy/fluency/completeness to compare, NOT proof of bad Polish. Azure physical SDK invocation took place but response status was inconclusive, with detailed rejection/speech reason not present in printed summary. Next immediate task is **inspect existing private saved JSONL Azure `azure_native.reason` and whether `raw_azure_json` exists** by offline read-only Python; DO NOT request another Azure inference yet, DO NOT reset key or create new resource. Current Azure helper `azure_scripted_assess()` maps all non-RecognizedSpeech outcomes to generic `Azure did not recognize complete speech` and absent detailed JSON to generic `Azure returned no detailed response`; if this is reason, enhance SAFE SDK cancellation/NoMatch diagnostics (e.g. enumerated codes only, no exception body/key) then a **single** tightly capped retest only if needed and owner confirms current free quota. Azure official locale support docs expressly list `pl-PL` for pronunciation assessment.
+
+**Owner offline diagnostic requested** (no network/no keys):
+```bash
+python3 - <<'PY'
+import json
+from pathlib import Path
+p=Path("PathToPolish-Private-AI/preliminary-three-model-01.jsonl")
+for line in p.read_text(encoding="utf-8").splitlines():
+    row=json.loads(line)
+    if row.get("engine")=="azure-pl-PL-scripted":
+        native=row.get("azure_native") or {}
+        print(row["sample_id"],"status:",row.get("status"),
+              "reason:",native.get("reason","Not recorded"),
+              "raw Azure JSON:",bool(row.get("raw_azure_json")))
+PY
+```
+
+**Privacy/billing:** Keys stored only in Mac zsh environment and Keychain; never in chat/GitHub/research JSONL. Source public CC BY4 FLEURS recordings and user explicitly affirmed upload/free-plan flags; no external private user recordings handled. No additional provider calls until diagnosis. All evidence from user pasted terminal, not independently re-run by assistant.
+
+## PR #36 MERGED — first 3-engine Polish trial ready for owner Mac (2026-10-17)
 
 [PR #36](https://github.com/AndrewDionne/LearnPolish/pull/36) **MERGED** squash `a1f35fe26b8f0845c5444455bd56cd5353ad43e8`, exact head `621c67f75cc7108e707f5ced67309cdf07e187f1`, [CI #39071797504](https://github.com/AndrewDionne/LearnPolish/actions/runs/39071797504) **4 jobs PASS** including **88 offline benchmark tests**. This is the FIRST ready-to-run all-three-model pilot. No live Azure or Groq inference was run by GitHub/assistant; user's Mac has the public FLEURS WAVs and is needed for inference. **Owner expressly prioritizes first exploratory triplet results NOW**, don't request more audio auditing or linguist certification before the preliminary test.
 
