@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-17 — sentence tempo and gated Azure pl-PL pilot infrastructure implemented; real corpus/resource pending, audio folder unchanged
+**Updated:** 2026-10-17 — PR #33 MERGED: reviewed natural-sentence tempo experiment and Azure F0 gated one-call pilot; real corpus/resource pending, user folder unchanged
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -23,6 +23,14 @@
 3. Develop in a branch; execute available checks, report what is tested vs unverified.
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
 5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt features.
+
+## PR #33 MERGED — Azure F0 one-call + human-audited Polish sentence tempo setup (2026-10-17)
+
+**[PR #33](https://github.com/AndrewDionne/LearnPolish/pull/33) merged** as squash `639851486d3ce5a5930323d176366ad630543c56`. [Exact-head **four-lane CI PASS #39060466366**](https://github.com/AndrewDionne/LearnPolish/actions/runs/39060466366), PR head `29b2113a75b0f29502b689a383ea69037d2b562a`; **68 offline benchmark tests** plus frontend, private-family backend and connected-family-browser jobs all green.
+
+**Shipped:** `v2/benchmarks/sentence_study.py` (strict 5–15s adult human-verifiable sentence corpus, per-file reviewed Polish text/unclipped audio, ≥8 and two speakers for real recognition test, rights/consent flags, atomic 1× snapshot and FFmpeg 0.85×/0.75× variant output without moving originals, full SHA and durations); `azure_pilot.py` (reference-conditioned `pl-PL` scripted PA, single SHA-locked **unaltered 1×** WAV per attempt, offline no-key/no-SDK preview, explicit F0/consent/no-paid-billing hard gates, raw result JSON 0600, no sound-name overclaims); Groq runner allows max 25s clips for slower 15s speech; tests; `SENTENCE_STUDY.md` instructions. **No Azure subscription/key/resource, no real sentence corpus, no paid calls and no live Azure scores were obtained.** Only CI mocks. Existing `PathToPolish-Private-AI/` location **does not move**; old individual-word clips/results remain intact as transport smoke evidence.
+
+**Next owner-side prerequisite:** decide how to supply 8–12 properly licensed, independently heard full Polish sentences (16k PCM16 5–15s, at least two speakers; natural normal and natural slow controls) and an actual Azure Speech `F0` subscription/key/region with verified eligible pronunciation allowance and no billable S0. Do NOT call Azure yet or paste any key. First follow `v2/benchmarks/SENTENCE_STUDY.md`: write owner-private `PathToPolish-Private-AI/sentences-source.json` that references those real WAVs (do not falsify reviewed flags), `sentence_study.py --manifest ...` to audit offline and optionally `--prepare --output-dir PathToPolish-Private-AI/sentence-study-01 --speeds 0.85`; audit actual output by ear. Azure default `azure_pilot.py --manifest .../sentence-study-01/manifest.json --sample-id <real-id>` is dry preview with 0 network/cost. Real Azure requires owner check/explicit send. All source content must remain private.
 
 ## Tranche: sentence tempo + Azure pl-PL pilot setup implementation (2026-10-17)
 
