@@ -2,6 +2,7 @@ import {useEffect,useRef,useState} from 'react';
 import {FAMILY_API,familyRequest} from './api';
 import type {FamilyConnection,FamilyGroup,FamilySummary} from './api';
 import {rankFamily,recognitionLabel,RECOGNITION_CATEGORIES} from './recognition';
+import FamilyPrivacyControls from './FamilyPrivacyControls';
 import type {RecognitionCategory} from './recognition';
 
 type Props={onConnection:(connection:FamilyConnection|null)=>void;
@@ -13,6 +14,7 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
   const [group,setGroup]=useState(()=>{try{return Number(sessionStorage.getItem('ptp-v2-family-group'))||0;}catch{return 0;}});
   const [enabled,setEnabled]=useState(()=>{try{return sessionStorage.getItem('ptp-v2-family-sharing')==='yes';}catch{return false;}});
   const [groups,setGroups]=useState<FamilyGroup[]>([]);
+  const [userId,setUserId]=useState(0);
   const [summary,setSummary]=useState<FamilySummary|null>(null);
   const [name,setName]=useState('');
   const [email,setEmail]=useState('');
@@ -34,8 +36,8 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
   useEffect(()=>{
     if(!token||!FAMILY_API)return;
     let active=true;
-    void familyRequest<{families:FamilyGroup[]}>('/api/v2/family/me','GET',undefined,token)
-      .then(data=>{if(active)setGroups(data.families);})
+    void familyRequest<{families:FamilyGroup[];user:{id:number}}>('/api/v2/family/me','GET',undefined,token)
+      .then(data=>{if(active){setGroups(data.families);setUserId(data.user.id);}})
       .catch(()=>{if(active){setError('Session expired — sign in again.');setEnabled(false);}});
     return ()=>{active=false;};
   },[token]);
@@ -89,11 +91,21 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
     await familyRequest('/api/v2/family/signup','POST',{email,name,password});
     await login();
   };
-  const logout=async()=>{
-    try{await familyRequest('/api/v2/family/logout','POST',undefined,token);}finally{
-      saveSession('');pickGroup(0);setGroups([]);setSummary(null);onSummary(null);toggle(false);setNewInvite('');
-    }
+  const clearAccountSession=()=>{
+    saveSession('');pickGroup(0);setGroups([]);setSummary(null);onSummary(null);toggle(false);
+    setNewInvite('');setUserId(0);setStatus('Signed out of the private family service.');
   };
+  const logout=async()=>{
+    try{await familyRequest('/api/v2/family/logout','POST',undefined,token);}
+    finally{clearAccountSession();}
+  };
+  const leaveFamily=()=>{
+    setGroups(previous=>previous.filter(value=>value.id!==group));
+    pickGroup(0);setNewInvite('');
+    setStatus('Left family. Previously contributed shared activity was erased.');
+  };
+  const revoked=()=>{setNewInvite('');};
+
   const create=async()=>{
     const data=await familyRequest<FamilyGroup>('/api/v2/family/groups','POST',{name:familyName},token);
     setGroups(current=>[...current,data]);pickGroup(data.id);setFamilyName('');
@@ -182,6 +194,11 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
         {newInvite&&<p className="family-invite">Invitation expires in 48 hours, can be used only once, and should be shared privately.
           <code>{newInvite}</code></p>}
       </div>}
+      <FamilyPrivacyControls token={token} groupId={group} canInvite={!!summary?.group.can_invite}
+        userId={userId} members={summary?.members??[]}
+        onLeave={leaveFamily}
+        onTransfer={()=>{void refresh().catch(()=>setError('Unable to refresh ownership status.'));}}
+        onRevoke={revoked} onSignedOut={clearAccountSession}/>
     </div>}
     {error&&<p role="alert" className="family-error">{error}</p>}
     {status&&<p role="status">{status}</p>}
