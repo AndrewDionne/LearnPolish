@@ -1,32 +1,34 @@
-"""Placement policy for local pronunciation-study files.
+"""Placement policy for local Path to Polish research files.
 
-Users can keep research files in Git-ignored repository `temp/` or any
-other private directory outside Git. Never write generated recordings,
-model results or provider response files to tracked assets/source.
+The owner's established and FINAL local research directory is the repository
+root PathToPolish-Private-AI/. Keep original recordings exactly where they are.
+The grandfathered temp/ folder and external private folders still work.
 
-Gitignore prevents accidental staging; it is NOT encryption or protection
-from `git add -f`, backup/sync software, or deliberately forced tracking.
+Gitignore is not encryption and can be bypassed with git add -f.
 """
 from __future__ import annotations
 
 from pathlib import Path
 
+RESEARCH_DIRS = ("PathToPolish-Private-AI", "temp")
+
 
 def check_research_location(path: Path, repository: Path | None = None) -> None:
+    """Reject writes into tracked repository paths and symlink escapes."""
     root = repository.resolve() if repository else Path(__file__).resolve().parents[2]
     target = path.absolute()
     resolved = target.resolve(strict=False)
-    temp = root / "temp"
-    # Both the lexical and resolved path must reside under exactly repo/temp
-    # whenever either address points into Git. Reject symlink escapes and
-    # even external symlinks that resolve into tracked repository folders.
     in_repo = target == root or root in target.parents
     resolved_in_repo = resolved == root or root in resolved.parents
-    if in_repo or resolved_in_repo:
-        valid_target = temp in target.parents
-        valid_resolved = temp in resolved.parents
-        if (not valid_target or not valid_resolved or temp.is_symlink()):
-            raise ValueError(
-                "Keep research data outside Git or under ignored repo/temp/; "
-                "repo/assets/ and other tracked folders are not permitted"
-            )
+    if not (in_repo or resolved_in_repo):
+        return  # Private folders entirely outside the repository remain supported.
+    for name in RESEARCH_DIRS:
+        folder = root / name
+        if (folder in target.parents and folder in resolved.parents and
+                not folder.is_symlink()):
+            return
+    raise ValueError(
+        "Research files in this repository belong in "
+        "PathToPolish-Private-AI/ (or the grandfathered ignored temp/), "
+        "not assets/, docs/, or other tracked source folders"
+    )
