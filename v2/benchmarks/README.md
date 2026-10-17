@@ -1,6 +1,6 @@
 # Polish speech/pronunciation benchmark — first increment
 
-A **replayable, free-first benchmark harness**. **No service accounts are connected. No API calls, Whisper inference, or real learner recordings have been executed.** The smoke tests use synthetic WAV samples only. Benchmark outcomes must not be claimed before real recordings/human labels exist.
+A **replayable, free-first benchmark harness**. On 2026-10-17 the owner completed **four real Groq Whisper ASR transcription requests** on two licensed native-Polish Commons clips (v3 and Turbo). This is real ASR evidence, not learner-pronunciation quality. CI tests remain mocked and make no remote calls. No Azure comparative test or independent adult learner human-rated corpus has yet been completed.
 
 ## Corpus manifest
 
@@ -243,6 +243,59 @@ YouTube news/podcasts, where reuse rights and word-level transcripts can
 be uncertain. Respect provider terms and creator attribution; never assume
 random web/news clips are public domain.
 
+
+## First real native-control results — offline dual-metric review (2026-10-17)
+
+The owner successfully ran **both Groq Whisper models** against two
+unchanged licensed native Polish recordings with `--transport curl`.
+Four HTTP transcriptions completed (2 recordings × 2 models; minimum billed
+40 seconds against the owner's separately checked allowance).
+The saved file remains in the owner's final chosen Git-ignored workspace:
+`PathToPolish-Private-AI/commons-native-01/groq-transcripts-curl-01.jsonl`.
+
+| Reference | Large v3 reported | Turbo reported |
+|---|---|---|
+| `czapka` | `Czap, czapka.` | `Czap-czapka.` |
+| `ciasto` | `Często.` | `CZASTO` |
+
+The old `recognized_expected_words` was strict equality of the **entire
+transcript**, not the target's occurrence in additional words. It marked
+all four false. That is technically correct for strict equality, but
+misleading if interpreted as a target-detection result.
+
+We therefore expose **two independent, reproducible ASR signals**:
+- `reference_exact_match`: the complete normalized transcript matches the
+  full written reference (punctuation/case ignored; diacritics preserved).
+  **0/2 for both models** in this two-word study.
+- `reference_present`: the written reference appears as contiguous
+  exact token(s), even among other words/stumbles/hyphens, with Polish
+  diacritics preserved and **NO fuzzy/phonetic matching**.
+  **1/2 for both models**: `czapka` found; `ciasto` not found.
+
+These are **not percentages for model selection or pronunciation grades**.
+The two clips are exceptionally short, the labels have not been verified
+by independently listening to the files, and the original `Czap` fragments
+may actually be present in the native audio. A one-letter edit such as
+`CZASTO` vs `ciasto` is **not** evidence of better speech recognition or
+phoneme-level pronunciation assessment.
+
+**Replay the original four saved responses offline with no new API calls,
+audio uploads, changed files or results overwrites**:
+
+    python3 v2/benchmarks/review_groq.py \
+      --manifest PathToPolish-Private-AI/commons-native-01/manifest.json \
+      --results PathToPolish-Private-AI/commons-native-01/groq-transcripts-curl-01.jsonl
+
+This re-verifies the original WAV SHA-256 fingerprint and exact reference,
+detects unexpected/missing/duplicate engine rows, and prints the two
+corrected recognition signals alongside the original legacy flag.
+Future new Groq result JSONL also includes `reference_exact_match` and
+`reference_present` without breaking the historical field. Nothing
+makes external requests during this review. **Next research gate**:
+listen to native audio, confirm actual spoken content, add longer reference-
+aligned native sentences and independently human-labelled adult mispronunciation
+contrasts before choosing a pronunciation scoring method. Preserve voice privacy,
+the existing research folder, and no-paid-spend policy.
 
 ## Owner Mac HTTP transport: curl 200 / urllib 403 (2026-10-17)
 
