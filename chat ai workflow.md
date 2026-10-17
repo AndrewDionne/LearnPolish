@@ -1,6 +1,35 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-18 — PHYSICAL first 6-request 3-engine experiment COMPLETE: Groq V3 and Turbo transcribed two clips, Azure PA inconclusive both; offline reason triage next
+## First live Azure inconclusive reason: fix & narrow retest (2026-10-18)
+
+Owner's actual offline inspection of prior six-request 3-engine results:
+`fleurs-pl-val-00003` and `00009` both `status=inconclusive`,
+`reason="Azure did not recognize complete speech"`,
+`Raw Azure response present: False`. The prior Azure SDK code used
+this generic result for BOTH `NoMatch` (speech not recognized) and
+`Canceled` (service/auth/network/capacity); no true root cause can be
+inferred from old results. F0 Azure Speech key/region are already
+available privately on Mac. Do not ask owner to reset them, create
+new Speech resource or re-run 4 successful Groq transcripts.
+
+Fix: `azure_recognition_diagnostic` in `azure_pilot.py` serializes
+allowlisted SDK `NoMatch` / `Canceled` / no-match reason /
+cancellation reason / error code, NEVER untrusted
+`cancellation_details.error_details`, session identifiers or secret
+data. New `v2/benchmarks/azure_retest.py` does one public FLEURS
+original 00003 **Azure-only** exploratory call, max ONE request and
+10s cap, with F0/public upload/no-paid flags, preserves existing source
+and initial six-result JSONL. Separate fresh private result file
+`PathToPolish-Private-AI/azure-sdk-diagnostic-01.jsonl`. Its
+**default preview sends NOTHING**, and it requires no Groq key.
+Tests and exact instructions in `v2/benchmarks/THREE_MODEL_PILOT.md`.
+No provider call has been executed by code development; owner runs
+actual retest on Mac after PR CI/merge. User specifically values
+getting working model integration over perfect native human corpus;
+no added linguistic certification barrier on exploratory public voice.
+
+
+**Updated:** 2026-10-18 — live Azure inconclusive both clips, SDK Canceled vs NoMatch diagnostic fix and ONE Azure-only retest awaiting physical run
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
