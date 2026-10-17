@@ -87,3 +87,27 @@ The fastest route from **consented real Speak recordings** to a reference-verifi
 5. For an actual evaluation, run Whisper large-v3 from a predownloaded local model and obtain correct Azure `pl-PL` native phoneme-assessment responses on the identical WAVs, using independently verified free/no-spend settings. Add independent native-human labels and run `compare.py`.
 
 **Privacy:** Never commit or automatically upload learner recordings. Export is explicit on each usable take; normal recording is transient. The filename establishes the *intended phrase*, not that the learner pronounced it correctly. SHA-256 locks the local input bytes; provider execution provenance still needs real evidence, and no Azure request is claimed here.
+
+
+## Active adult research pilot — 2026-10-17
+
+See **[PILOT_PROTOCOL.md](PILOT_PROTOCOL.md)** for the immediate research
+handoff. It supplies a compact Polish sound-contrast recording matrix,
+explicit adult consent/privacy limits, blinded-first/target-aware-second human
+review, native-speaker controls, the provider no-spend gates and evidence-based
+acceptance criteria. The new standard-library `pilot_labels.py` generates
+ungraded **private human evaluation sheets** from the SHA-256-locked manifest
+and validates completed reviews without any provider calls. It refuses to
+overwrite existing human ratings.
+
+Example:
+
+    python v2/benchmarks/pilot_labels.py init --manifest /private/polish-pilot/manifest.json --labels /private/polish-pilot/human-rater-a.json
+    python v2/benchmarks/pilot_labels.py check --manifest /private/polish-pilot/manifest.json --labels /private/polish-pilot/human-rater-a.json
+
+**Locale note:** Azure supports Polish (`pl-PL`) pronunciation assessment
+but does not advertise Polish **phoneme names**, **spoken-phoneme alternatives**,
+**syllable grouping**, or **prosody assessment** as offered for `en-US`.
+An array of phoneme-level *scores* alone does not explain whether a learner
+said `sz` instead of `ś`. Whisper large-v3 remains an ASR recognition
+baseline, not a phonetic grader. No provider results or audio corpus exist yet.
