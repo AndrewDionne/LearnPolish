@@ -381,6 +381,9 @@ This supersedes Section 16's `repo/temp/` recommendation. The owner has repeated
 
 ## 18. Groq pilot physical 403 — read-only diagnosis and empty-output recovery
 
+**Merged:** [PR #30](https://github.com/AndrewDionne/LearnPolish/pull/30), squash `ca535f9b510440369929bf8691085d1548b5d7cf`; [CI #39040043130 four jobs PASS](https://github.com/AndrewDionne/LearnPolish/actions/runs/39040043130), **38 offline benchmark tests**. Next owner action is GET-only `groq_pilot.py --check-access`, not another audio upload or file relocation. Provider entitlement root cause still unverified.
+
+
 Owner's Mac completed Commons Ogg-to-WAV and verified exactly 2 SHA-locked
 native controls. Two-model dry-run passed with 4 planned Groq requests
 (40 minimum billed seconds) but **no inference**. First approved live run
