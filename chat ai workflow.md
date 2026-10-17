@@ -1,6 +1,6 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-**Updated:** 2026-10-17 — owner-fixed in-repo PathToPolish-Private-AI folder is authoritative; no relocation; real Groq inference not yet run
+**Updated:** 2026-10-17 — PR #29 merged: use owner's existing PathToPolish-Private-AI folder in place; no relocation
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
@@ -23,6 +23,19 @@
 3. Develop in a branch; execute available checks, report what is tested vs unverified.
 4. Merge only when acceptance evidence and repository policy permit; keep issues/checklist and this workflow current.
 5. In the user summary, state actual files/PRs/commit changes and next step, without claiming unrun tests or unbuilt features.
+
+## PR #29 certified — owner's research folder NEVER moves (2026-10-17)
+
+**Merged [PR #29](https://github.com/AndrewDionne/LearnPolish/pull/29)** as squash `6ba0f17d38165101ee83e24c87b4686a50c17162`; [exact-head four-lane PASS #39038820449](https://github.com/AndrewDionne/LearnPolish/actions/runs/39038820449) on `107258c5bdc2b3628d6d76e9c63c10cff83791e9`, **34 offline benchmark Python tests**, private-family backend, connected family browser and frontend all success.
+
+The owner's original `repo/PathToPolish-Private-AI/Pl-ciasto.ogg` and `Pl-czapka.ogg` stay **where they already are**, no moving/renaming/recreating. Root `.gitignore` now ignores the exact folder; path guards allow output inside `PathToPolish-Private-AI/commons-native-01`. Older `repo/temp/` location remains supported for other workflows but is **NOT** this user's location; every former `mv` or alternate-path directive is obsolete. Exact operator command from repo root after Git pull and `chmod 700 PathToPolish-Private-AI`:
+
+```bash
+python3 v2/benchmarks/public_native_samples.py --source-dir PathToPolish-Private-AI --output-dir PathToPolish-Private-AI/commons-native-01 --count 2
+python3 v2/benchmarks/groq_pilot.py --manifest PathToPolish-Private-AI/commons-native-01/manifest.json --models whisper-large-v3 whisper-large-v3-turbo --max-requests 4 --max-billed-seconds 40
+```
+
+No voice uploads or real Groq API calls performed in this change; preview is offline. Do not ask owner to move files again.
 
 ## Owner's FINAL local research folder: repo/PathToPolish-Private-AI (2026-10-17)
 
