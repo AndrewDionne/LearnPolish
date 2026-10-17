@@ -21,7 +21,66 @@ from benchmark import load_manifest, polish_match, read_audio_metadata
 from research_paths import check_research_location
 
 GROQ_ENDPOINT = "https://api.groq.com/openai/v1/audio/transcriptions"
+GROQ_MODELS_ENDPOINT = "https://api.groq.com/openai/v1/models"
 MODELS = ("whisper-large-v3", "whisper-large-v3-turbo")
+PERMISSION_HINTS = {
+    "model_permission_blocked_org":
+        "This model is blocked at the organization level. Check Groq Console > Settings > Organization > Limits.",
+    "model_permission_blocked_project":
+        "This model is blocked at the project level. Check Groq Console > Settings > Projects > Limits.",
+}
+
+
+def describe_http_error(error: urllib.error.HTTPError) -> str:
+    """Only print documented, allowlisted Groq codes; never raw server text."""
+    code = None
+    try:
+        body = json.loads(error.read(4096))
+        details = body.get("error") if isinstance(body, dict) else None
+        if isinstance(details, dict):
+            candidate = details.get("code")
+            if isinstance(candidate, str) and candidate in PERMISSION_HINTS:
+                code = candidate
+    except (ValueError, UnicodeError, OSError, TypeError):
+        pass
+    if code:
+        return (f"Groq returned HTTP {error.code}; code={code}. "
+                f"{PERMISSION_HINTS[code]} No automatic retry.")
+    if error.code == 403:
+        return ("Groq returned HTTP 403 (permission denied). Check organization and "
+                "project model permissions in Groq Console. This may also be an "
+                "account/policy restriction; use API logs/support for details. No automatic retry.")
+    if error.code == 401:
+        return ("Groq returned HTTP 401 (invalid or missing credentials). "
+                "Verify GROQ_API_KEY locally without revealing it. No automatic retry.")
+    return f"Groq returned HTTP {error.code}; no automatic retry."
+
+
+def check_access(api_key: str, opener: Callable | None = None) -> dict:
+    """Read-only list-models check: zero voice upload and zero inference."""
+    if not api_key:
+        raise ValueError("Load GROQ_API_KEY in this Terminal session; do not paste it into chat")
+    request = urllib.request.Request(
+        GROQ_MODELS_ENDPOINT, method="GET",
+        headers={"Authorization": "Bearer " + api_key})
+    try:
+        with (opener or urllib.request.urlopen)(request, timeout=15) as response:
+            body = json.loads(response.read(262144))
+    except urllib.error.HTTPError as error:
+        raise RuntimeError(describe_http_error(error)) from None
+    except (urllib.error.URLError, TimeoutError):
+        raise RuntimeError("Groq model-access check failed to connect; no retries") from None
+    if not isinstance(body, dict) or not isinstance(body.get("data"), list):
+        raise ValueError("Unexpected Groq model-list response")
+    available = {item["id"] for item in body["data"]
+                 if isinstance(item, dict) and isinstance(item.get("id"), str)}
+    return {"api_authentication": "model-list request accepted",
+            "models_listed": {model: model in available for model in MODELS},
+            "no_audio_sent": True,
+            "no_transcription_requests": True,
+            "important": ("Listed models can still be blocked by organization/project "
+                          "permissions. A successful GET does not prove inference access "
+                          "or free-plan/billing status.")}
 
 
 def prepare(manifest: Path, models: tuple[str, ...], max_requests: int,
@@ -80,8 +139,9 @@ def transcribe(audio_path: Path, model: str, api_key: str,
         with (opener or urllib.request.urlopen)(request, timeout=45) as response:
             payload = json.loads(response.read(65536))
     except urllib.error.HTTPError as error:
-        # Never echo remote body: it may contain user text or implementation details.
-        raise RuntimeError(f"Groq returned HTTP {error.code}; no automatic retry") from None
+        # Never echo remote body or arbitrary error.message: both untrusted and
+        # may contain private reference text. Report documented codes only.
+        raise RuntimeError(describe_http_error(error)) from None
     except (urllib.error.URLError, TimeoutError):
         raise RuntimeError("Groq connection failed; no automatic retry") from None
     if not isinstance(payload, dict) or not isinstance(payload.get("text"), str):
@@ -121,28 +181,44 @@ def run(manifest: Path, models: tuple[str, ...], max_requests: int = 4,
         raise ValueError("A private --output JSONL path is required for live evaluation")
     # Create private results file before the first API request, to persist each
     # successful result even if the next request fails or is rate limited.
-    with _private_output(output) as stream:
-        for sample, meta in checked:
-            for model in models:
-                transcript = transcriber(sample.audio, model, api_key)
-                result = {"id": sample.id, "reference": sample.reference,
-                          "engine": "groq-" + model, "model": model,
-                          "audio_seconds": round(meta["seconds"], 3),
-                          "audio_sha256": meta["audio_sha256"],
-                          "status": "ok" if transcript else "inconclusive",
-                          "transcript": transcript,
-                          "recognized_expected_words": (
-                              polish_match(sample.reference, transcript) if transcript else None),
-                          "pronunciation_score": None}
-                stream.write(json.dumps(result, ensure_ascii=False) + "\n")
-                stream.flush()
-                summary["network_requests_performed"] += 1
+    stream = _private_output(output)
+    created = os.fstat(stream.fileno())
+    try:
+        with stream:
+            for sample, meta in checked:
+                for model in models:
+                    transcript = transcriber(sample.audio, model, api_key)
+                    result = {"id": sample.id, "reference": sample.reference,
+                              "engine": "groq-" + model, "model": model,
+                              "audio_seconds": round(meta["seconds"], 3),
+                              "audio_sha256": meta["audio_sha256"],
+                              "status": "ok" if transcript else "inconclusive",
+                              "transcript": transcript,
+                              "recognized_expected_words": (
+                                  polish_match(sample.reference, transcript) if transcript else None),
+                              "pronunciation_score": None}
+                    stream.write(json.dumps(result, ensure_ascii=False) + "\n")
+                    stream.flush()
+                    summary["network_requests_performed"] += 1
+    except Exception:
+        # The first rejected request must not strand a zero-byte result that
+        # blocks the next run. Never delete partial successes or other files.
+        try:
+            current = os.stat(output, follow_symlinks=False)
+            if (current.st_dev == created.st_dev and current.st_ino == created.st_ino
+                    and current.st_size == 0):
+                os.unlink(output)
+        except OSError:
+            pass
+        raise
     return summary
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Groq Polish ASR pilot (default NO UPLOAD)")
-    parser.add_argument("--manifest", required=True, type=Path)
+    parser.add_argument("--manifest", type=Path)
+    parser.add_argument("--check-access", action="store_true",
+                        help="Read-only Groq GET /models; no audio upload or inference")
     parser.add_argument("--models", nargs="+", choices=MODELS, default=list(MODELS))
     parser.add_argument("--max-requests", type=int, default=4)
     parser.add_argument("--max-billed-seconds", type=float, default=40)
@@ -154,6 +230,14 @@ def main() -> int:
     parser.add_argument("--output", type=Path, help="New 0600 JSONL in PathToPolish-Private-AI/ or private external directory")
     args = parser.parse_args()
     try:
+        if args.check_access:
+            if args.send or args.output:
+                raise ValueError("--check-access cannot be combined with --send or --output")
+            report = check_access(os.environ.get("GROQ_API_KEY", ""))
+            print(json.dumps(report, indent=2))
+            return 0
+        if args.manifest is None:
+            raise ValueError("--manifest is required unless --check-access is selected")
         report = run(args.manifest.resolve(), tuple(args.models), args.max_requests,
                      args.max_billed_seconds, send=args.send,
                      approve_voice_upload=args.approve_voice_upload,
