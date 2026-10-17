@@ -234,13 +234,13 @@ pronunciation evaluation and further lesson writing remain owner-deferred.
 
 ## 10. Private family account recovery checkpoint — 2026-10-17
 
-**Next capability slice in development:** a real recovery journey for someone who
+**Capability merged** in [PR #22](https://github.com/AndrewDionne/LearnPolish/pull/22) (commit `9b5d974ebc2c8baa588ce168385a98ce42e91fe3`, [four-lane CI PASS #39017210836](https://github.com/AndrewDionne/LearnPolish/actions/runs/39017210836), 24 backend security tests): a real recovery journey for someone who
 can no longer sign in to an existing family account. Secure SMTP-delivered
 one-use 15-minute codes (hashed at rest), generic reset requests without
 account enumeration, request limits, complete session/token invalidation,
 accessible browser recovery form, and synthetic delivery/unit/browser tests.
 
-**Acceptance:** exact-head backend/frontend/connected-browser/benchmark CI pass
+**Acceptance:** exact-head backend/frontend/connected-browser/benchmark CI passed
 before merge. Host configuration must be explicit: no SMTP means no recovery
 claim or working reset endpoint; no real email messages or user data in CI.
 **Do not confuse this with registration email verification**, which is still a
