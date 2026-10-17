@@ -243,3 +243,53 @@ These have authentic spoken sentences and known text, unlike typical
 YouTube news/podcasts, where reuse rights and word-level transcripts can
 be uncertain. Respect provider terms and creator attribution; never assume
 random web/news clips are public domain.
+
+
+### Wikimedia HTTP 429 — safe recovery and no-network fallback
+
+Wikimedia has active 2026 rate limits and may return **HTTP 429 / Retry-After**
+for direct Ogg requests, even for a two-file study. The downloader uses a
+project-identified User-Agent and deliberately makes **no automatic retry**.
+Read any `Retry-After` message and do not repeatedly send requests. The
+downloader now stages output in a temporary private directory and **removes
+that staging directory if any source or ffmpeg step fails**. It publishes the
+final `commons-native-01` directory only once the WAVs, manifest and
+attribution are complete. No failed attempt should leave a new empty folder.
+
+If an older importer already created an **empty** output directory, remove
+only that empty folder (this fails safely if it contains files):
+
+    rmdir "$HOME/PathToPolish-Private-AI/commons-native-01"
+
+After `git switch main && git pull --ff-only origin main`, re-run the
+importer once *after Wikimedia's retry interval* (or omit network entirely
+using the fallback below).
+
+**Manual browser download (no Python HTTP requests):**
+1. Open the official Commons [czapka](https://commons.wikimedia.org/wiki/File:Pl-czapka.ogg)
+   and [ciasto](https://commons.wikimedia.org/wiki/File:Pl-ciasto.ogg)
+   pages in your browser. Use each page's **Original file / Download**.
+   Do not attempt to evade a current Wikimedia throttle.
+2. Save the original Ogg files as `Pl-czapka.ogg` and `Pl-ciasto.ogg` in
+   `$HOME/PathToPolish-Private-AI/commons-originals/` (not a Git folder);
+   keep the **.ogg** originals, not converted MP3s.
+3. Prepare offline:
+
+       mkdir -p "$HOME/PathToPolish-Private-AI/commons-originals"
+       chmod 700 "$HOME/PathToPolish-Private-AI/commons-originals"
+       python3 v2/benchmarks/public_native_samples.py \
+         --output-dir "$HOME/PathToPolish-Private-AI/commons-native-01" \
+         --source-dir "$HOME/PathToPolish-Private-AI/commons-originals" \
+         --count 2
+
+The `--source-dir` path **never performs any network calls**. It verifies
+both originals are regular Ogg files with size constraints, then applies the
+usual WAV conversion, byte fingerprints, licence attribution and recording
+validation. The first two `--count 2` sources are exactly the two filenames
+above; for all six, save the additional Commons originals under their exact
+page filenames. Continue to the Groq **preview** command above. Neither
+downloading nor offline conversion calls Groq or spends API quota.
+
+Wikimedia policies:
+https://www.mediawiki.org/wiki/Wikimedia_APIs/Rate_limits
+https://foundation.wikimedia.org/wiki/Policy:Wikimedia_Foundation_User-Agent_Policy/en
