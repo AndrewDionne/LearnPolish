@@ -1,5 +1,22 @@
 # Path to Polish V2 — Rebuild Scope and Delivery Plan
 
+## 29. Azure physical Canceled/Error/Unknown: Python SDK cancellation field fix (2026-10-18)
+
+First real Azure-only Polish FLEURS 00003 retest returned
+Canceled/Error/Unknown and no scores. That narrows category to
+SDK cancellation, not NoMatch. Investigation found a reproducible
+implementation error: Python CancellationDetails.code was ignored
+because code read error_code instead. Fix documented .code property,
+allowlisted error codes, no free-form provider error text or secrets.
+Add Azure STS authorization probe that sends ZERO audio, outputs only
+safe status and never reads the issued token. If credential probe
+authorized and free F0 quota/upload consent confirmed, allow ONE new
+Azure-only original clip request with fresh private 02 output to
+capture the actual SDK error. Do not duplicate Groq, move private
+recordings, assume problem is Polish, or add paid resources.
+Full steps in v2/benchmarks/THREE_MODEL_PILOT.md.
+
+
 ## 28. Azure PA: generic inconclusive fix and one-call diagnostic (2026-10-18)
 
 First real three-model physical test yielded four actual Groq
