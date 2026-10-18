@@ -149,6 +149,7 @@ class FamilyApiTests(unittest.TestCase):
         invite=self.client.post(base+"/invite",headers=owner).json["code"]
         self.assertEqual(self.client.post("/api/v2/family/invites/redeem",
                           headers=learner,json={"code":invite}).status_code,200)
+        spare=self.client.post(base+"/invite",headers=owner).json["code"]
         activity={"item_id":"basic:0","mode":"learn","region":"pomorskie"}
         self.assertEqual(self.client.post(base+"/activity",headers=learner,json=activity).status_code,201)
         self.assertEqual(self.client.get(base+"/summary",headers=owner).json["regions"][0]["earned"],10)
@@ -167,6 +168,9 @@ class FamilyApiTests(unittest.TestCase):
         self.assertEqual(removed.status_code,200)
         self.assertTrue(removed.json["removed"])
         self.assertEqual(removed.json["removed_activities"],1)
+        self.assertEqual(removed.json["revoked_invites"],1)
+        self.assertEqual(self.client.post("/api/v2/family/invites/redeem",
+                          headers=stranger,json={"code":spare}).status_code,400)
         self.assertEqual(self.client.post(endpoint,headers=owner,
                           json={"member_id":learner_id}).status_code,404)
         summary=self.client.get(base+"/summary",headers=owner).json
