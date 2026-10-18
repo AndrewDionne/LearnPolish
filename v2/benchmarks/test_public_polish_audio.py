@@ -9,6 +9,7 @@ class PublicPolishAudioTests(unittest.TestCase):
         self.assertEqual([r["text"] for r in SOURCES],["Dzień dobry","Dobry wieczór"])
         self.assertEqual([r["author"] for r in SOURCES],["Julo","SirPL0"])
         self.assertTrue(all(r["license"]=="Public domain" for r in SOURCES))
+        self.assertTrue(all(len(r["original_sha256"])==64 for r in SOURCES))
         self.assertTrue(all(r["url"].startswith("https://upload.wikimedia.org/wikipedia/commons/")
                             for r in SOURCES))
 
