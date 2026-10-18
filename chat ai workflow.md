@@ -1,14 +1,14 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-## Family onboarding and invitation privacy tranche — 2026-10-18 (PR pending)
+## PR #41 MERGED — family onboarding and invitation privacy (2026-10-18)
 
-After merged [PR #40](https://github.com/AndrewDionne/LearnPolish/pull/40) introduced gated opt-in Azure Speak, prioritize coherent family UI rather than more provider probing. Work branch `feat/v2-family-onboarding-invite-ux`:
+**[PR #41](https://github.com/AndrewDionne/LearnPolish/pull/41) MERGED** (squash `857c364a6e07701f789c1213934a846f5fdd3284`) after all four V2 checks **PASS** on exact head `fceab1d0eef3e33efab7a13ae5a679741b0d3816`: [CI #39157847662](https://github.com/AndrewDionne/LearnPolish/actions/runs/39157847662) (frontend type/unit/build + desktop/mobile, private connected browser, private backend, offline benchmarks). Following PR #40's opt-in Azure integration, this is a useful family UI/privacy increment, not another provider experiment:
 - Distinct returning-learner **Sign in** view (email/password, recovery) versus **Create account** view (display name, verified-email signup), with unchanged secure verification and recovery endpoints. New-account route remains the initial view to preserve the established connected-browser signup journey; sign-in is one deliberate selection.
 - A generated **one-use** invitation has a direct Copy control (manual select fallback if clipboard access is unavailable). Changing or leaving groups discards the code and copied state. In-flight invite responses are tied to a request generation so they cannot reveal a code belonging to the previously selected family. Team activity sharing remains opt-in per group.
 - Dedicated connected-browser regression exercises the two account views, two family contexts, group-switch code clearing, and **out-of-order invitation response**. Existing account verification/recovery, cross-device family XP and privacy tests remain required.
 - No key, recording, account, invite token, personal user data or paid provider requests were committed. Private family server is STILL UNDEPLOYED and pronunciation scores remain **uncalibrated**; this tranche does not authorize child accounts, hosted email, Render cutover, or physical iOS certification.
 
-**Release gate:** four V2 CI lanes pass on exact feature head before merge. Verify PR and CI evidence on GitHub; afterward update this checkpoint with PR and merge SHA. Next high-value action: parent/guardian authorization model and safe invite UX, then real multi-device private deployment/readiness review without repeating unnecessary Azure tests.
+**Release gate MET:** four V2 CI lanes green on the exact PR head before merge. No live private family server, child/guardian authority, SMTP configuration, operational backup, real iOS/VoiceOver review, calibrated scores or deployed Azure calls were certified. **Next high-value tranche:** parent/guardian authority and safer family membership/invitation controls, followed by bounded private TLS-hosted multi-device deployment readiness and real phone UX. Avoid needless Azure reruns. Keep GitHub `main` authoritative; local Mac sync is `git switch main && git pull --ff-only origin main`.
 
 
 ## PR #40 MERGED — real Azure pronunciation feedback wired behind private V2 account (2026-10-18)
