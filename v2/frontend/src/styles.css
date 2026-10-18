@@ -299,8 +299,18 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .family-panel button:disabled{opacity:.5;cursor:not-allowed}
 .family-panel label{display:grid;gap:7px;font-size:12px;color:#426471;font-weight:700}
 .family-panel input:not([type=checkbox]),.family-panel select{width:100%;height:44px;min-width:0;background:white;border:1px solid #bad2d8;border-radius:9px;padding:9px;color:#244c56;font-size:13px}
-.family-auth{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;max-width:750px}
+.family-auth{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;max-width:490px}
 .family-auth>p,.family-auth>small,.family-actions{grid-column:1/-1}
+.family-auth-heading{display:grid;gap:12px}
+.family-auth-heading p{margin:0}
+.family-auth-switch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;background:#e7f0ef;border:1px solid #d6e5e2;border-radius:12px;padding:5px}
+.family-panel .family-auth-switch button{min-width:0;border-color:transparent;background:transparent;color:#386660}
+.family-panel .family-auth-switch button[aria-pressed=true]{background:#fff;color:#14655d;border-color:#b9d1cc;box-shadow:0 1px 4px rgba(14,65,60,.09)}
+.family-panel .family-auth-switch button:focus-visible{outline:3px solid #197f74;outline-offset:1px}
+.family-auth .family-verification,.family-auth .family-recovery{grid-column:1/-1;display:grid;gap:12px}
+.family-auth .family-verification h3,.family-auth .family-recovery h3{margin:0}
+.family-auth .family-recovery-link{justify-self:start}
+.family-auth .family-actions button{flex:1}
 .family-auth small,.family-note{font-size:11px;color:#627883}
 .family-actions{display:flex;gap:9px;flex-wrap:wrap}
 .family-group-actions{display:flex;gap:10px;align-items:end}
@@ -322,7 +332,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .family-regions{display:grid;gap:7px;margin:10px 0 20px}
 .family-regions>div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid #e1eae8;padding:9px;font-size:12px}
 .family-invite{border:1px solid #e5c897;background:#fff9ea;padding:15px;border-radius:11px;overflow-wrap:anywhere}
-.family-invite code{display:block;margin-top:12px;user-select:all;font-size:12px}
+.family-invite code{display:block;margin:12px 0;user-select:all;font-size:12px;overflow-wrap:anywhere;color:#304a4a}
+.family-invite button{min-width:160px}
+.family-invite p{margin:0}
 .family-error{color:#993c3c!important}
 @media(max-width:760px){.family-panel{padding:18px}.family-setup,.family-auth{grid-template-columns:1fr}.family-setup>div{flex-direction:column;align-items:stretch}.family-group-actions{flex-direction:column;align-items:stretch}}
 
