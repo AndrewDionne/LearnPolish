@@ -56,6 +56,32 @@ class AzureReasonTests(unittest.TestCase):
             self.assertNotIn("DO-NOT-LOG", str(out))
             self.assertNotIn("speech text here", str(out))
 
+    def test_sdk_documented_code_property_is_used_even_when_error_code_is_absent(self):
+        # Reproduce actual Speech SDK CancellationDetails: the error enum
+        # lives at .code; the previous implementation always returned Unknown.
+        for code, expected in (("AUTH", "AuthenticationFailure"),
+                               ("CONNECTION", "ConnectionFailure"),
+                               ("LIMIT", "TooManyRequests"),
+                               ("SERVICE", "ServiceError")):
+            result = SimpleNamespace(
+                reason="CANCELED",
+                cancellation_details=SimpleNamespace(
+                    reason="ERR", code=code,
+                    error_details="do-not-log-private-key-or-speech"))
+            out = azure_recognition_diagnostic(result, mock_sdk())
+            self.assertEqual(out["azure_error_code"], expected)
+            self.assertNotIn("do-not-log", str(out))
+
+    def test_sdk_code_property_takes_precedence_over_legacy_error_code(self):
+        result = SimpleNamespace(
+            reason="CANCELED",
+            cancellation_details=SimpleNamespace(
+                reason="ERR", code="FORBIDDEN", error_code="AUTH",
+                error_details="do-not-print"))
+        out = azure_recognition_diagnostic(result, mock_sdk())
+        self.assertEqual(out["azure_error_code"], "Forbidden")
+        self.assertNotIn("do-not-print", str(out))
+
     def test_unrecognized_enum_never_serializes_untrusted_value(self):
         fake = SimpleNamespace(reason="CANCELED",
                                cancellation_details=SimpleNamespace(
