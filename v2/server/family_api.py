@@ -734,8 +734,14 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
             (family_id, target)).rowcount
         con.execute("DELETE FROM members WHERE family_id=? AND user_id=?",
                     (family_id, target))
+        # Any other leaked unused code could otherwise let an expelled member
+        # rejoin immediately. Invalidate pending invitations together with removal.
+        revoked = con.execute(
+            "DELETE FROM invitations WHERE family_id=? AND redeemed_by IS NULL",
+            (family_id,)).rowcount
         con.commit()
-        return jsonify(removed=True, member_id=target, removed_activities=removed)
+        return jsonify(removed=True, member_id=target, removed_activities=removed,
+                       revoked_invites=revoked)
 
     @app.post("/api/v2/family/groups/<int:family_id>/leave")
     @auth
