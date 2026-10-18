@@ -75,11 +75,19 @@ def review(rows: list[dict], labels: list[dict] | None = None) -> dict:
     for engine in ENGINES:
         available = [g[engine] for g in groups.values() if engine in g]
         successful = [r for r in available if r["status"] == "ok"]
+        timings = []
+        for row in available:
+            elapsed = row.get("latency_ms")
+            if elapsed is not None:
+                if type(elapsed) not in (int, float) or not math.isfinite(elapsed) or elapsed < 0:
+                    raise ValueError("Malformed provider elapsed time")
+                timings.append(float(elapsed))
         entry: dict = {
             "paired_samples_available": len(available),
             "successful_results": len(successful),
             "inconclusive_results": len(available) - len(successful),
             "missing_results": len(groups) - len(available),
+            "mean_response_latency_ms_observed": _mean(timings),
         }
         if engine in (V3, TURBO):
             ref_wer = []
