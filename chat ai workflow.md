@@ -1,5 +1,33 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
+## PHYSICAL MILESTONE: Azure Polish Pronunciation Assessment SUCCESS (2026-10-18)
+
+**Owner's actual Mac Terminal evidence** (not mocked, not CI): after retrieving Key 1 from the **existing** `learnpolish-EU` Azure Speech resource, Active/Free, Germany West Central (`AZURE_SPEECH_REGION=germanywestcentral`), owner pasted a valid key in a hidden zsh prompt and exported it in CURRENT Terminal. The previously present `AZURE_SPEECH_KEY` had an invalid Unicode ellipsis; existing nonempty-only checks were misleading. Local `python3 v2/benchmarks/azure_auth_probe.py` returned `token_issuer_authorized`, **HTTP 200**, `no_audio_uploaded=true`, `speech_inference_requests=0`.
+
+**Then first successful REAL Azure scripted Polish Pronunciation Assessment:** executed exactly ONE Azure-only request with `PathToPolish-Private-AI/.venv-speech-test/bin/python v2/benchmarks/azure_retest.py --manifest PathToPolish-Private-AI/sentences-source.json --sample-id fleurs-pl-val-00003 --max-requests 1 --max-audio-seconds 10 --send --approve-public-audio-upload --confirm-azure-f0 --confirm-no-paid-billing --output PathToPolish-Private-AI/azure-sdk-diagnostic-02.jsonl`. Actual result:
+```json
+{
+  "status": "ok",
+  "sample_id": "fleurs-pl-val-00003",
+  "source_sha256": "f6242c4173c0853b6bf71b2ce9d6cbebdfa61196e604b8900ddefd0b7684dbbe",
+  "audio_seconds": 5.64,
+  "network_calls_performed": 1,
+  "groq_requests": 0,
+  "human_verified": false,
+  "azure_region": "germanywestcentral",
+  "output": "PathToPolish-Private-AI/azure-sdk-diagnostic-02.jsonl",
+  "azure_scores_uncalibrated": {
+    "AccuracyScore": 93.0,
+    "FluencyScore": 93.0,
+    "CompletenessScore": 92.0
+  }
+}
+```
+**This is a real Azure PA integration pass with raw accuracy 93 / fluency 93 / completeness 92.** The SDK cancellation diagnostic fields are null because recognition succeeded. Existing earlier two Groq model transcriptions already passed on this same original FLEURS WAV; across sessions all THREE providers have produced real successful returns. This does NOT establish native grade accuracy, human calibration, named Polish phoneme diagnosis, learning model quality or production readiness. FLEURS validation source and transcript were NOT independently human-verified, and the user said some batch recordings sounded poor. Keep this experiment `exploratory_NOT_NATIVE_CERTIFICATION`.
+
+**NO need to repeat earlier four successful Whisper calls, nor the now-successful Azure trial.** Existing private results `preliminary-three-model-01.jsonl`, `azure-sdk-diagnostic-01.jsonl`, `azure-sdk-diagnostic-02.jsonl` remain local, ignored, never uploaded or overwritten. No key, token or other secret is in GitHub. Next operational task: make verified CURRENT-MAC Azure key **durably** available using macOS Keychain, and repair TWO `AZURE_SPEECH_KEY` declarations in Mac `~/.zshrc` which may reintroduce malformed placeholder in a new Terminal. User should not paste secrets or `.zshrc` contents in chat. Validate new Terminal with zero-audio `azure_auth_probe.py`. Afterwards move the project from provider integration debugging to useful app pronunciation UX and realistic learner calibration/AI analysis deferred as per owner. Avoid premature gold corpus certification work; add meaningful use-case tests as development expands.
+
+
 ## PR #39 MERGED — reject invalid Mac Azure key before STS request (2026-10-18)
 
 **[PR #39](https://github.com/AndrewDionne/LearnPolish/pull/39) MERGED**, squash `b6d2b78b8c5c4789c418bc728f295a870f4bdf78`. Exact-head CI [#39115094039](https://github.com/AndrewDionne/LearnPolish/actions/runs/39115094039) all 4 lanes PASS, **102 offline benchmark tests**; final head `d15bb22949a7581160fa41df68aefb58c8a60438`. It implements local-only input validation on AZURE_SPEECH_KEY before urllib: reject U+2026/non-ASCII, nonprintable, placeholders or whitespace; no raw secret leaked or remote request; report `invalid_local_credentials` rather than `config_missing`. One test fixture initially failed (escaped newline instead of actual nonprintable); fixed before final green CI. No Azure or Groq calls made by this tranche.
