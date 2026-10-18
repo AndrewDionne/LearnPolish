@@ -38,6 +38,13 @@ jobs:
         run: npm run check
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
+      - name: Make ffmpeg available for public Polish Ogg decoding
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y ffmpeg
+          fi
+          ffmpeg -version | head -n 1
       - name: Prepare public-domain natural Polish test WAVs (no AI)
         run: python3 ../benchmarks/public_polish_audio.py --output-dir "$RUNNER_TEMP/ptp-public-polish"
       - name: Browser journeys (desktop and mobile, including natural public Polish audio)
