@@ -47,6 +47,8 @@ jobs:
           ffmpeg -version | head -n 1
       - name: Prepare public-domain natural Polish test WAVs (no AI)
         run: python3 ../benchmarks/public_polish_audio.py --output-dir "$RUNNER_TEMP/ptp-public-polish"
+      - name: Validate identical-input six-call research preview (no AI)
+        run: python3 ../benchmarks/public_three_model_pilot.py --fixture-dir "$RUNNER_TEMP/ptp-public-polish"
       - name: Browser journeys (desktop and mobile, including natural public Polish audio)
         env:
           PTP_PUBLIC_POLISH_WAV_DIR: ${{ runner.temp }}/ptp-public-polish
