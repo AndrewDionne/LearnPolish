@@ -1,5 +1,16 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
+## 2026-10-18 — PHYSICAL Mac Azure STS key contains non-ASCII Unicode (no request) — DO NOT ASSUME READY
+
+Owner synced PR #38 and ran `python3 v2/benchmarks/azure_auth_probe.py`. Actual Terminal:
+```json
+{"status": "config_missing", "reason": "'latin-1' codec can't encode character '\\u2026' in position 0: ordinal not in range(256)", "speech_inference_requests": 0}
+```
+**Conclusion:** local shell `AZURE_SPEECH_KEY` contained the non-ASCII ellipsis character `…` (at beginning of the HTTP header value). The request failed *locally while encoding* before Azure could authenticate; this was NOT proof of HTTP 401/403, network outage, or a charge. Our old presence-only Mac check falsely called Azure READY. **The previous 3 Speech SDK Azure `Canceled/Error` inference attempts may have used this invalid local key**; cannot conclusively attribute those SDK failures until a valid key and safe auth check are demonstrated. Previous **Render** `/api/azure/diag?probe=1` authenticated independently with the Render-configured key — does not prove Mac's local env key matches it. Groq key in Keychain and four Whisper calls worked; do not replace Groq.
+
+Patch `azure_auth_probe.py` fail closed before HTTP on non-ASCII/placeholder/whitespace, reports only `invalid_local_credentials` and fixed validation text, never secret. Test actual Unicode ellipsis. **Next owner action:** one-line `python3 -c` local shell check prints key-present/ASCII/contains ellipsis only (NO actual key). If invalid, safely find original AZURE_SPEECH_KEY in the existing Azure Speech F0 resource -> Keys and Endpoint, correct `~/.zshrc` duplicate env definitions without displaying/pasting value in chat and optionally save good key to macOS Keychain; open fresh Terminal to load it. Then run `python3 v2/benchmarks/azure_auth_probe.py` (token-only, no audio). **NO further Azure speech inference until returned `token_issuer_authorized`**. Do not create a new Azure resource or paid tier or pretend an earlier 3-model result produced speech scores.
+
+
 ## PR #38 MERGED — correct actual Azure cancellation code + zero-audio key probe (2026-10-18)
 
 **[PR #38](https://github.com/AndrewDionne/LearnPolish/pull/38) MERGED**, squash commit `61841f517ee55091f11a2bb98a3cdcf643d7d636`; exact-head

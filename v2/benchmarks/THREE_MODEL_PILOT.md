@@ -1,5 +1,37 @@
 # First actual three-engine Polish speech trial — exploratory
 
+## 2026-10-18 — Local Azure key misconfiguration discovered
+
+Owner ran the post-PR #38 zero-audio regional authentication probe
+and received a Python `latin-1` header encoding error on Unicode
+character `U+2026` (ellipsis). This failure occurs **on the Mac
+before any Azure HTTP authentication**. The Mac environment variable
+`AZURE_SPEECH_KEY` was marked AVAILABLE only because it was nonempty,
+not because it was valid. Existing Render has a working, separately
+configured Azure key; its token probe does NOT validate the Mac's key.
+Both Whisper engines worked, Groq Keychain credential is fine.
+
+The probe now rejects non-ASCII values/placeholders before attempting
+HTTP and returns `invalid_local_credentials` rather than misleading
+`config_missing`. Safe one-line check, NO key printed:
+
+```bash
+python3 -c 'import os; k=os.environ.get("AZURE_SPEECH_KEY",""); print("Present:",bool(k),"ASCII:",k.isascii(),"Contains ellipsis:",chr(0x2026) in k)'
+```
+
+If non-ASCII/placeholder, recheck the **EXISTING** Azure Speech F0
+resource under Azure Portal > Keys and Endpoint; do not create a new
+resource or paid tier. The local `~/.zshrc` previously contained two
+assignments to `AZURE_SPEECH_KEY`, so ensure no later placeholder
+overrides the correct key. **Never post/commit/print secrets**.
+After repairing and exporting the existing credential, rerun
+`python3 v2/benchmarks/azure_auth_probe.py` (zero audio).
+Only `token_issuer_authorized` justifies the next single Azure-only
+5.64-second diagnostic `azure-sdk-diagnostic-02.jsonl` under user
+F0/free quota, permission and no-paid gating. The old `-01` and
+initial six model result files remain immutable.
+
+
 ## 2026-10-18 — Azure Canceled/Error/Unknown: verified SDK property fix
 
 **Physical result:** One Azure-only SDK call on public FLEURS 00003 (5.64 seconds)

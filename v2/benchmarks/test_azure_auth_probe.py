@@ -59,6 +59,20 @@ class AzureAuthProbeTests(unittest.TestCase):
         self.assertEqual(report["status"], "connection_failed")
         self.assertNotIn("private", json.dumps(report))
 
+    def test_non_ascii_ellipsis_placeholder_is_rejected_locally_without_network_or_secret_output(self):
+        calls = []
+        def unexpected(*args, **kwargs):
+            calls.append("network")
+            raise AssertionError("Should not reach HTTP library")
+        for candidate in ("…not-a-real-key", "🔑abc", "key\nvalue",
+                          "...", "[REDACTED]", " KEY ", "<KEY>"):
+            with self.subTest(key_kind="placeholder/nonascii"):
+                with self.assertRaisesRegex(ValueError, "AZURE_SPEECH_KEY") as err:
+                    probe(candidate, "germanywestcentral", opener=unexpected)
+                self.assertNotIn(candidate, str(err.exception))
+                self.assertNotIn("latin-1", str(err.exception))
+        self.assertEqual(calls, [])
+
     def test_missing_key_and_region_no_calls(self):
         calls = []
         def unexpected(*a, **kw):
