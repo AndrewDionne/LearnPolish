@@ -12,6 +12,7 @@ import json
 import os
 from pathlib import Path
 import stat
+import time
 from typing import Callable
 
 from azure_pilot import azure_scripted_assess
@@ -98,19 +99,23 @@ def run(manifest: Path, catalog: Path, sample_id: str, *, max_audio_seconds: flo
     with _output(output, manifest.parent) as stream:
         completed = 0
         for model in MODELS:
+            started = time.monotonic()
             transcript = transcriber(clip["audio"], model, groq_key)
+            latency_ms = round((time.monotonic() - started) * 1000, 1)
             if not isinstance(transcript, str):
                 raise ValueError("Unusable Groq transcript; stop, preserve partial result")
             entry = {"sample_id": sample_id, "engine": "groq-" + model,
                      "audio_sha256": clip["sha256"], "reference": clip["reference"],
                      "status": "ok" if transcript.strip() else "inconclusive",
                      "transcript": transcript, "wer": word_error_rate(clip["reference"], transcript),
-                     "pronunciation_grade": None, "exploratory_only": True}
+                     "latency_ms": latency_ms, "pronunciation_grade": None, "exploratory_only": True}
             stream.write(json.dumps(entry, ensure_ascii=False) + "\n")
             stream.flush(); os.fsync(stream.fileno())
             completed += 1
 
+        started = time.monotonic()
         evidence = assessor(clip["audio"], clip["reference"], azure_key, azure_region)
+        latency_ms = round((time.monotonic() - started) * 1000, 1)
         if not isinstance(evidence, dict) or evidence.get("status") not in ("ok", "inconclusive"):
             raise ValueError("Malformed Azure result; stop without inventing grade")
         raw = evidence.get("raw_azure_json")
@@ -119,7 +124,8 @@ def run(manifest: Path, catalog: Path, sample_id: str, *, max_audio_seconds: flo
         entry = {"sample_id": sample_id, "engine": "azure-pl-PL-scripted",
                  "audio_sha256": clip["sha256"], "reference": clip["reference"],
                  "status": evidence["status"], "azure_native": native,
-                 "raw_azure_json": raw, "assessment_is_human_calibrated": False,
+                 "latency_ms": latency_ms, "raw_azure_json": raw,
+                 "assessment_is_human_calibrated": False,
                  "exploratory_only": True}
         stream.write(json.dumps(entry, ensure_ascii=False) + "\n")
         stream.flush(); os.fsync(stream.fileno())
