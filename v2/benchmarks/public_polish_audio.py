@@ -81,8 +81,14 @@ def prepare_public_audio(output: Path, downloader=fetch_original) -> list[dict]:
                 "-i", str(audio_ogg), "-ac", "1", "-ar", "16000",
                 "-c:a", "pcm_s16le", str(audio_wav),
             ], check=True, timeout=15, capture_output=True)
-        except (OSError, subprocess.SubprocessError):
-            raise ValueError("Could not decode trusted Polish original into mono PCM16 16 kHz WAV") from None
+        except FileNotFoundError:
+            raise ValueError("FFmpeg is not installed on the runner; install ffmpeg before public Polish E2E") from None
+        except subprocess.CalledProcessError as error:
+            # Keep bounded decoder errors for debugging public, non-sensitive audio.
+            details=error.stderr.decode("utf-8",errors="replace")[-500:] if error.stderr else "decoder returned failure"
+            raise ValueError("FFmpeg could not decode public-domain Wikimedia Ogg: " + details) from None
+        except subprocess.TimeoutExpired:
+            raise ValueError("FFmpeg took over 15 seconds decoding a short Polish greeting") from None
         metadata = read_audio_metadata(audio_wav)
         if not metadata["valid_signal"] or not 0.6 <= metadata["seconds"] <= 10:
             raise ValueError("Unusable Polish recording after 16-kHz PCM conversion")
