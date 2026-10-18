@@ -28,7 +28,7 @@ test('organizer removes a member, confirms erasure, and receives updated ranking
     expect(route.request().headers().authorization).toBe('Bearer test-owner-session');
     removed++;
     members=[owner];
-    await route.fulfill(json({removed:true,member_id:2,removed_activities:1}));
+    await route.fulfill(json({removed:true,member_id:2,removed_activities:1,revoked_invites:2}));
   });
   await page.goto('/');
   await page.getByRole('button',{name:'Expedition'}).first().click();
@@ -43,7 +43,7 @@ test('organizer removes a member, confirms erasure, and receives updated ranking
   await panel.getByLabel('Member to remove').selectOption('2');
   page.once('dialog',dialog=>dialog.accept());
   await panel.getByRole('button',{name:'Remove member and erase shared XP'}).click();
-  await expect(panel.getByText('Learner Two removed from this family. 1 shared activities erased.')).toBeVisible();
+  await expect(panel.getByText('Learner Two removed. 1 shared activities erased; 2 unused invitations revoked.')).toBeVisible();
   await expect(panel.getByRole('list',{name:'Effort leaderboard'}).getByRole('listitem')).toHaveCount(1);
   await expect(panel.getByText('10 weekly family XP')).toBeVisible();
   expect(removed).toBe(1);
