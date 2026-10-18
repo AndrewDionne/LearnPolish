@@ -357,7 +357,8 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
         userId={userId} members={summary?.members??[]}
         onLeave={leaveFamily}
         onTransfer={()=>{void refresh().catch(()=>setError('Unable to refresh ownership status.'));}}
-        onRemoved={()=>{void refresh().catch(()=>setError('Unable to refresh member list.'));}}
+        onRemoved={()=>{setNewInvite('');setInviteCopied(false);
+          void refresh().catch(()=>setError('Unable to refresh member list.'));}}
         onRevoke={revoked} onSignedOut={clearAccountSession}/>
     </div>}
     {error&&<p role="alert" className="family-error">{error}</p>}
