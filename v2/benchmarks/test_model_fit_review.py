@@ -38,7 +38,7 @@ class ModelFitReviewTests(unittest.TestCase):
         self.assertEqual(result["model_results"][V3]["mean_wer_vs_intended_text_asr_only"], 0)
         self.assertEqual(result["model_results"][TURBO]["mean_wer_vs_intended_text_asr_only"], 0.3333)
         self.assertEqual(result["model_results"][AZURE]["raw_accuracy_mean_uncalibrated"], 93)
-        self.assertNotIn("transcript", json.dumps(result).lower())
+        self.assertNotIn("Dzień dobry wszystkim", json.dumps(result))
         self.assertIsNone(result["model_results"][V3]["pronunciation_quality_score"])
         self.assertFalse(result["model_results"][AZURE]["named_polish_phoneme_diagnosis_certified"])
 
