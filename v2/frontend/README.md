@@ -155,3 +155,36 @@ After signing in, family members can join using a one-use invitation, choose the
 ### Friendly weekly family recognition
 
 The family scoreboard now includes separate, evidence-grounded tabs for **Effort** (weekly eligible XP), **Consistency** (distinct practice days), **Trailblazer** (highest built-in difficulty *attempted*, not mastery), **Team contribution** (weekly expedition XP), and **Most improved** (an honest no-data state until independently verified comparable outcomes can be accepted). Ties share a rank; members with no activity receive no fictional first-place award. Tabs use existing server-calculated member metrics, not untrusted client-derived performance data. In a connected group the invitation/create-group forms are initially collapsed under **Manage groups and invitations**, making the team map and achievements the primary visual focus. No changes to the underlying XP economy and no model inference.
+
+
+## Opt-in Speak pronunciation feedback (behind family account + deployment gate)
+
+After an actual live Azure Polish scripted Pronunciation Assessment
+proved provider connectivity (FLEURS test, raw Azure 93 accuracy,
+93 fluency, 92 completeness, **not human-calibrated**), the V2
+Speak journey now has an optional **Check my pronunciation** action.
+It is visible ONLY when a trusted private family API is configured,
+`VITE_SPEECH_ASSESSMENT_ENABLED=true` is intentionally set at
+build time, and a verified family account is connected. Otherwise
+the existing local-only mic capture/replay and optional WAV export
+continue unchanged.
+
+The button always requires a **second deliberate click after
+recording**, with an explanation that this take will be processed
+by Azure. It sends one WAV to the server over authenticated HTTPS;
+the **server** holds the Azure key and determines the expected Polish
+text from the built-in lesson catalog. No arbitrary personal content
+or raw credential comes from the browser. On return, the UI displays
+only raw Azure Accuracy/Fluency/Completeness with clear
+uncalibrated disclosure and no false named-Polish-phoneme coaching;
+inconclusive is NOT 0 points. New recording, card navigation or
+unmount aborts an in-flight browser upload. Raw provider scores do
+NOT feed XP/leaderboards or invent Most Improved evidence.
+
+The underlying private family server is still UNDEPLOYED; this
+is a development integration contract and unit/browser-mock-tested
+UX, **not a working public production scoring service**. See
+`../server/README.md` for explicit F0/no-paid gates, account
+authorization, quotas and audio privacy. No automatic provider
+requests or spending enabled in default builds.
+
