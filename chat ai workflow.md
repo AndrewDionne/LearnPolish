@@ -1,5 +1,34 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
+## Mac physical Azure Canceled/Error/Unknown and documented Python SDK field bug (2026-10-18)
+
+Owner ran PR #37 Azure-only FLEURS 00003 retest: exactly one real
+5.64-second Azure F0 request, zero Groq, private output
+PathToPolish-Private-AI/azure-sdk-diagnostic-01.jsonl. Report:
+status=inconclusive, sdk_result_reason=Canceled,
+sdk_cancellation_reason=Error, sdk_error_code=Unknown,
+azure_scores_uncalibrated=null. **NOT NoMatch**; not evidence of poor
+Polish pronunciation. This is a true Speech SDK canceled/error result,
+but its actual reason was hidden by our code defect.
+
+Microsoft's Python CancellationDetails class exposes `code`, while
+azure_pilot.py incorrectly looked for `error_code`; hence Unknown
+without even interrogating the real enum. Patch to prefer .code and
+fallback to .error_code, allowlisted enum only, tests against actual
+Python-style .code and no error_details. BEFORE more inference, a
+new safe no-audio Azure regional STS issueToken check (azure_auth_probe.py)
+tests existing Mac AZURE_SPEECH_KEY+germanywestcentral and reports only
+safe status; NEVER reads the bearer token body or prints credentials.
+Only successful token check (and owner reconfirmed F0 free quota, no
+paid account, public FLEURS upload) permits one further 5.64s Azure-only
+request to NEW ignored private azure-sdk-diagnostic-02.jsonl. NEVER
+overwrite diagnostic 01, original 6-result JSONL, or WAVs, and do
+not rerun four successful Whisper requests. See
+v2/benchmarks/THREE_MODEL_PILOT.md for exact commands. Do not guess
+which Azure error it is before SDK .code is captured. No real speech
+inference or key probe was executed by GitHub development.
+
+
 ## PR #37 MERGED — isolate Azure speech failure safely (2026-10-18)
 
 [PR #37](https://github.com/AndrewDionne/LearnPolish/pull/37) **MERGED** squash `cc094878a998ec9d79658ffc685693fefc4aad1e`. Exact-head [CI #39074910591](https://github.com/AndrewDionne/LearnPolish/actions/runs/39074910591) **all 4 lanes PASSED**, including **95 offline benchmark unit tests** at head `efb61c29261ad94749a07f721fdd3f2879607401`. No Azure/Groq live inference performed by these GitHub tests.
@@ -43,7 +72,7 @@ getting working model integration over perfect native human corpus;
 no added linguistic certification barrier on exploratory public voice.
 
 
-**Updated:** 2026-10-18 — PR #37 MERGED, all four CI PASS incl 95 offline tests: one Azure-only source 00003 retest with safe SDK NoMatch vs Canceled codes; physical result pending
+**Updated:** 2026-10-18 — PHYSICAL Azure-only Canceled/Error/Unknown; documented Python SDK .code read fix and no-audio STS authorization probe for next action
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.

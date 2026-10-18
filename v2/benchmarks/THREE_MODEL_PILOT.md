@@ -1,5 +1,59 @@
 # First actual three-engine Polish speech trial — exploratory
 
+## 2026-10-18 — Azure Canceled/Error/Unknown: verified SDK property fix
+
+**Physical result:** One Azure-only SDK call on public FLEURS 00003 (5.64 seconds)
+returned Canceled/Error/Unknown, no scores. Zero Groq. The result is
+preserved at PathToPolish-Private-AI/azure-sdk-diagnostic-01.jsonl.
+**Do not rerun/overwrite it.**
+
+**Actual code defect:** Python SDK CancellationDetails uses the field
+`code`, NOT the `error_code` attribute mistakenly read in our
+diagnostic. The old report could not disclose the actual Azure category;
+do not infer authentication failure or bad microphones. New code reads
+`code` with a legacy fallback; only allowlisted enum labels are ever
+printed, never free-text SDK error details or keys.
+
+**Before any additional voice inference**, sync latest merged main and run
+this zero-audio regional token authorization check:
+
+```bash
+git switch main
+git pull --ff-only origin main
+python3 v2/benchmarks/azure_auth_probe.py
+```
+
+This performs just one regional STS issueToken POST via the existing
+AZURE_SPEECH_KEY and AZURE_SPEECH_REGION shell variables. It never
+reads or prints the returned bearer token; does not make speech
+inference requests. `token_issuer_authorized` only proves that the
+regional token issuer accepts the key, not that Speech SDK works.
+If `token_issuer_rejected` or `connection_failed`, **STOP**,
+report the status and do not repeat any speech inference.
+
+After `token_issuer_authorized` and confirming existing Azure Speech
+F0 resource, remaining free quota, zero paid billing and public dataset
+audio processing rights, run exactly one new Azure-only request using
+the PRIVATE already-installed SDK. This uses a NEW filename; never
+overwrites diagnostic 01 or the first three-model results.
+
+```bash
+PathToPolish-Private-AI/.venv-speech-test/bin/python \
+  v2/benchmarks/azure_retest.py \
+  --manifest PathToPolish-Private-AI/sentences-source.json \
+  --sample-id fleurs-pl-val-00003 \
+  --max-requests 1 --max-audio-seconds 10 \
+  --send --approve-public-audio-upload \
+  --confirm-azure-f0 --confirm-no-paid-billing \
+  --output PathToPolish-Private-AI/azure-sdk-diagnostic-02.jsonl
+```
+
+Report sanitized `sdk_error_code` (or successful Azure score), then
+STOP before further sends. No Groq requests. No files moved. This
+diagnoses the SDK error; it does not promise resolution or that any
+particular paid usage is impossible.
+
+
 ## 2026-10-18: Azure-only diagnostic after first real three-model run
 
 The owner actually ran all six calls: Groq Whisper V3 and Turbo returned

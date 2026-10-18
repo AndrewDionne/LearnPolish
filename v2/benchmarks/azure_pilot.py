@@ -96,8 +96,15 @@ def azure_recognition_diagnostic(result: object, speechsdk: object) -> dict:
         details = getattr(result, "cancellation_details", None)
         cancelled = _safe_enum_name(getattr(speechsdk, "CancellationReason", None),
                                      getattr(details, "reason", None), _CANCELLATION_NAMES)
+        # Python Speech SDK CancellationDetails exposes .code, NOT
+        # .error_code (the latter is used by some event argument APIs).
+        # Prefer the documented property, retaining a safe fallback for
+        # SDK variants. The raw value is NEVER serialized.
+        error_value = getattr(details, "code", None)
+        if error_value is None:
+            error_value = getattr(details, "error_code", None)
         error = _safe_enum_name(getattr(speechsdk, "CancellationErrorCode", None),
-                                getattr(details, "error_code", None), _ERROR_NAMES)
+                                error_value, _ERROR_NAMES)
         return {"status": "inconclusive", "reason": "Azure canceled speech recognition",
                 "azure_result_reason": "Canceled", "azure_cancellation_reason": cancelled,
                 "azure_error_code": error}
