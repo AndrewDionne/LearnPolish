@@ -52,12 +52,13 @@ export default function FamilyPrivacyControls({token,groupId,canInvite,userId,me
    const id=Number(removeTarget);
    const member=members.find(person=>person.id===id&&person.id!==userId);
    if(!member||!Number.isSafeInteger(id))return;
-   if(!window.confirm('Remove '+member.name+' from this family? Their family-shared XP and practice records will be erased, and this may reduce map progress. Their account and personal/offline lessons are unaffected.'))return;
-   const response=await familyRequest<{removed:boolean;removed_activities:number}>(
+   if(!window.confirm('Remove '+member.name+' from this family? Their shared activity will be erased, and all unused family invites revoked to prevent rejoining with an old code. Their account and offline learning are unaffected.'))return;
+   const response=await familyRequest<{removed:boolean;removed_activities:number;revoked_invites:number}>(
      '/api/v2/family/groups/'+groupId+'/members/remove','POST',{member_id:id},token);
    setRemoveTarget('');
    onRemoved();
-   setFeedback(member.name+' removed from this family. '+response.removed_activities+' shared activities erased.');
+   setFeedback(member.name+' removed. '+response.removed_activities+' shared activities erased; '+
+     response.revoked_invites+' unused invitations revoked.');
  };
  const exportData=async()=>{
    const data=await familyRequest<Record<string,unknown>>('/api/v2/family/account/export',
