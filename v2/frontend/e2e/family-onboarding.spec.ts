@@ -33,7 +33,8 @@ test('an invite never follows a learner into another family, even after a late A
     families,user:{id:1}
   })));
   await page.route('**/api/v2/family/groups/*/summary',route=>{
-    const id=Number(route.request().url().match(/groups\\/(\\d+)\\/summary/)?.[1]||0);
+    const parts=new URL(route.request().url()).pathname.split('/');
+    const id=Number(parts[parts.length-2]);
     const group=families.find(item=>item.id===id);
     if(!group)return route.fulfill({status:404,body:'{}'});
     return route.fulfill(json({group,members:[],regions:[],
