@@ -140,7 +140,8 @@ def execute(folder: Path, *, send: bool = False, approve_public_audio_upload: bo
                 row = {"sample_id": c["id"], "reference": c["reference"],
                        "audio_sha256": c["sha256"], "engine": "groq-" + model,
                        "status": "ok" if hypothesis.strip() else "inconclusive",
-                       "transcript": hypothesis,\n                       "wer": word_error_rate(c["reference"], hypothesis) if hypothesis.strip() else None,
+                       "transcript": hypothesis,
+                       "wer": word_error_rate(c["reference"], hypothesis) if hypothesis.strip() else None,
                        "latency_ms": elapsed, "pronunciation_grade": None,
                        "source_public_native": True, "human_calibrated": False}
                 stream.write(json.dumps(row, ensure_ascii=False) + "\n")
