@@ -157,3 +157,66 @@ anti-abuse controls beyond local SQLite/IP, verified parent/guardian authority
 and child account creation/privacy, incident monitoring, TLS/persistent hosting,
 encryption/retention of offsite backups and erasure reconciliation, physical
 Safari/VoiceOver. Email verification alone is **not** guardian consent.
+
+
+## Opt-in Azure Polish pronunciation feedback (development only)
+
+The private family API can now serve one real `pl-PL` **scripted**
+Pronunciation Assessment per explicit learner action. This is
+**disabled by default**; the family service itself remains undeployed
+and not security-certified for production accounts. Do not enable
+publicly until hosted identity, TLS, safe durable storage, parental
+privacy, backups, and production API quotas have passed review.
+
+The frontend NEVER receives an Azure key or sends audio directly to
+Azure. Only an authenticated and verified V2 family account may
+`POST /api/v2/family/speech/assess` using multipart:
+`item_id` (must be in the server's built-in canonical lesson
+catalog), `audio` (mono PCM16 16kHz WAV, 0.6–10 seconds, max
+360KB, local quality checked again on server), and
+`approve_azure_audio_upload=yes`. The server constructs the
+reference from the trusted catalog, not from browser-submitted Polish
+text. Personal lessons intentionally unavailable until explicitly
+approved server-side content exists. No client-supplied grade can
+be credited.
+
+A durable per-user free-tier guard permits at most **12 requests per
+UTC day per account** and **30 total requests per UTC day** across the
+service. Requests are counted BEFORE contacting Azure, so failed or
+canceled provider calls still count. Only these request counts are
+stored; no raw voice, provider transcript, phoneme, result or grading
+history is written to DB. A short-lived owner-private temporary WAV
+on the API server is deleted after each SDK call (including failure).
+The user explicitly consents to transfer that take to Microsoft
+Azure; its own processing policies apply.
+
+Server activation is deliberately strict: set
+`PTP_SPEECH_ENABLED=1`, `PTP_SPEECH_F0_CONFIRMED=1`,
+`PTP_SPEECH_NO_PAID_BILLING=1`, with existing private
+`AZURE_SPEECH_KEY` and
+`AZURE_SPEECH_REGION=germanywestcentral`.
+Install `azure-cognitiveservices-speech` in the server's isolated
+Python environment (never commit or ship key in frontend).
+Activation fails closed if any required flag/key/region is missing.
+Server's existing origin restrictions, session authentication, email
+verification and no-cache response headers apply. Add
+`VITE_SPEECH_ASSESSMENT_ENABLED=true` to a **local opt-in Vite
+build** only when the family API is actively configured; leave
+disabled by default. `VITE_FAMILY_API_URL` must also be a
+trusted HTTPS origin (localhost allowed for development).
+
+The server returns `status=ok` with Azure's original
+`AccuracyScore`, `FluencyScore`, and
+`CompletenessScore` mapped to named 0..100 scalar metrics
+and `calibration=uncalibrated`. Inconclusive results carry a
+sanitized reason and **no grades**. No manual certainty bands,
+phoneme-naming claims, XP improvement bonus, automatic uploads,
+background provider requests or database retention of voices.
+This is an integration slice, not human-calibrated Polish grading.
+On any error, Speak's existing local replay/effort XP path works.
+
+Server tests inject a fake assessor and run entirely offline. Browser
+unit tests validate result shape and that the feature remains
+disabled by default. **Do not confuse mocked CI tests with a real
+end-to-end account/mobile/browser Azure assessment.**
+
