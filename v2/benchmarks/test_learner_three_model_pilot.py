@@ -79,8 +79,11 @@ class AdultSpeakBakeoffTests(unittest.TestCase):
         self.assertEqual(rows[0]["wer"],0)
         self.assertEqual(rows[1]["pronunciation_grade"],None)
         self.assertEqual(rows[2]["azure_native"]["scores"]["AccuracyScore"],84)
+        self.assertTrue(all(isinstance(r["latency_ms"], float) and r["latency_ms"] >= 0 for r in rows))
         self.assertEqual(path.stat().st_mode & 0o777,0o600)
-        self.assertEqual(review(rows)["complete_three_engine_triplets"],1)
+        comparison=review(rows)
+        self.assertEqual(comparison["complete_three_engine_triplets"],1)
+        self.assertIsNotNone(comparison["model_results"]["groq-whisper-large-v3"]["mean_response_latency_ms_observed"])
         with self.assertRaisesRegex(ValueError,"Output exists"):
             run(self.manifest,self.catalog,self.sample,**self.args(path))
         self.assertEqual(len(self.calls),3)
