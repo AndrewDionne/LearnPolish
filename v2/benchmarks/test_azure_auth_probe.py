@@ -64,7 +64,7 @@ class AzureAuthProbeTests(unittest.TestCase):
         def unexpected(*args, **kwargs):
             calls.append("network")
             raise AssertionError("Should not reach HTTP library")
-        for candidate in ("…not-a-real-key", "🔑abc", "key\\nvalue",
+        for candidate in ("…not-a-real-key", "🔑abc", "key\nvalue",
                           "...", "[REDACTED]", " KEY ", "<KEY>"):
             with self.subTest(key_kind="placeholder/nonascii"):
                 with self.assertRaisesRegex(ValueError, "AZURE_SPEECH_KEY") as err:
