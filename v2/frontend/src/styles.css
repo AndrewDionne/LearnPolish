@@ -306,6 +306,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .family-auth-switch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;background:#e7f0ef;border:1px solid #d6e5e2;border-radius:12px;padding:5px}
 .family-panel .family-auth-switch button{min-width:0;border-color:transparent;background:transparent;color:#386660}
 .family-panel .family-auth-switch button[aria-pressed=true]{background:#fff;color:#14655d;border-color:#b9d1cc;box-shadow:0 1px 4px rgba(14,65,60,.09)}
+.family-auth-current{display:grid;place-items:center;min-height:44px;border:1px solid #b9d1cc;background:white;color:#14655d;border-radius:9px;font-size:12px;font-weight:700;box-shadow:0 1px 4px rgba(14,65,60,.09)}
 .family-panel .family-auth-switch button:focus-visible{outline:3px solid #197f74;outline-offset:1px}
 .family-auth .family-verification,.family-auth .family-recovery{grid-column:1/-1;display:grid;gap:12px}
 .family-auth .family-verification h3,.family-auth .family-recovery h3{margin:0}
