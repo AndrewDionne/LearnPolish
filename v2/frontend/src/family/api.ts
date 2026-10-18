@@ -21,6 +21,13 @@ export function familyServiceUrl(value:string|undefined):string|null{
   }catch{/* unavailable or invalid */}
   return null;
 }
+export class FamilyRequestError extends Error {
+  constructor(readonly status:number,reason:string){
+    super(reason.replace(/_/g,' '));
+    this.name='FamilyRequestError';
+  }
+}
+
 export const FAMILY_API=familyServiceUrl(import.meta.env.VITE_FAMILY_API_URL);
 
 export async function familyRequest<T>(path:string,method:'GET'|'POST'='GET',
@@ -36,7 +43,7 @@ export async function familyRequest<T>(path:string,method:'GET'|'POST'='GET',
   const data:unknown=await response.json().catch(()=>null);
   if(!response.ok){
     const error=data&&typeof data==='object'&&'error' in data ? String(data.error) : 'request_failed';
-    throw new Error(error.replace(/_/g,' '));
+    throw new FamilyRequestError(response.status,error);
   }
   return data as T;
 }
