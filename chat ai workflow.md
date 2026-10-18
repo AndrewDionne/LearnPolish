@@ -1,14 +1,14 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
-## Family organizer membership control — 2026-10-18 (PR awaiting CI)
+## PR #42 MERGED — organizer member removal and group access revocation (2026-10-18)
 
-Following PR #41's family onboarding cleanup, this branch adds a missing *real* family management operation:
+**[PR #42](https://github.com/AndrewDionne/LearnPolish/pull/42) MERGED** (squash `01a913c4362a81f259fbb2d8e4ae8953b631ea28`) after all FOUR checks **PASS** on exact PR head `3991f061091e4c97cece8319479f5c756741c6c2`: [CI #39165315049](https://github.com/AndrewDionne/LearnPolish/actions/runs/39165315049) (frontend build/tests+desktop/mobile, private connected browser, backend tests, offline benchmarks). This fills an actual missing family control:
 - Organizer-only `POST /api/v2/family/groups/:id/members/remove` for another current member (strict integer ID, separate group-member and owner checks, transactional recheck) with atomic deletion of that person's shared practice activity and membership. Return only erased-activity count. Repeated removal fails; unrelated groups, login, personal/offline practice remain intact. Already redeemed codes stay spent and **all outstanding unused invites are revoked in the removal transaction** to prevent immediate rejoining with another old code; fresh invitations are required afterward. Shared map progress may decline because erased activity cannot be retained.
 - Private React management panel presents an explicit member selector, destructive confirmation and updated weekly family standings. Local contribution opt-in remains per group. If a learner is removed while still browsing, a group-summary **404** on reload or Refresh rankings clears the formerly selected group, cached shared summary/map and opt-in checkbox without touching their unrelated account.
 - Python backend regressions test owner vs member/outsider, refusal to remove self or invalid target, erasure, revoked group routes, repeated invite reuse and independent membership. Connected browser mocks test organizer removal and revoked member refresh.
 - **Important:** the family organizer is not a verified parent/guardian. There is no legal age/guardian proof, child consent, audited guardian dashboard or child-safe Azure service. Do not enroll minors or call this parent authorization. Family API is still UNDEPLOYED; no real users, voice uploads or paid requests exercised.
 
-**CI/merge gate:** exact-head frontend, connected-browser, private family backend and benchmark jobs must pass before merge. Update this note after merge with PR, SHA, CI. Next distinct tranche should design *actual* parent-led child enrollment and privacy rights, not merely a self-attestation checkbox; plan physical multi-device hosting review without altering legacy live app.
+**Release gate MET.** Backend and browser regressions passed on the exact head before merge; no provider calls or live user data involved. Private family hosting, actual guardian/child authorization, audited minor privacy/consent, physical iOS testing and calibrated Azure assessment remain NOT delivered. **Next valuable tranche:** design and implement verifiable parent-led child enrollment + associated withdrawal/deletion permissions (with a clear operator approval boundary), rather than a fake self-attestation checkbox. No deployment or legacy Render changes until reviewed. `main` is the durable source; owner may sync with `git switch main && git pull --ff-only origin main`.
 
 
 ## PR #41 MERGED — family onboarding and invitation privacy (2026-10-18)
