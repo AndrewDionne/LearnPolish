@@ -1,5 +1,18 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
+## PR #39 MERGED — reject invalid Mac Azure key before STS request (2026-10-18)
+
+**[PR #39](https://github.com/AndrewDionne/LearnPolish/pull/39) MERGED**, squash `b6d2b78b8c5c4789c418bc728f295a870f4bdf78`. Exact-head CI [#39115094039](https://github.com/AndrewDionne/LearnPolish/actions/runs/39115094039) all 4 lanes PASS, **102 offline benchmark tests**; final head `d15bb22949a7581160fa41df68aefb58c8a60438`. It implements local-only input validation on AZURE_SPEECH_KEY before urllib: reject U+2026/non-ASCII, nonprintable, placeholders or whitespace; no raw secret leaked or remote request; report `invalid_local_credentials` rather than `config_missing`. One test fixture initially failed (escaped newline instead of actual nonprintable); fixed before final green CI. No Azure or Groq calls made by this tranche.
+
+**MOST IMPORTANT NEXT OWNER ACTION:** the Mac `AZURE_SPEECH_KEY` was *present but invalid* (starts with Unicode ellipsis), not actually usable. Earlier presence checks were misleading. Production Render token probe success is separate, does not mean Mac env key valid. Owner should retrieve **existing** F0 Azure Speech key from Azure Portal > existing Speech resource > Keys and Endpoint; do not create a new resource or reveal secret in chat. In SAME Mac Terminal, masked input:
+```bash
+read -rs 'AZURE_SPEECH_KEY?Paste existing Speech F0 key (hidden): '; echo
+export AZURE_SPEECH_KEY
+python3 v2/benchmarks/azure_auth_probe.py
+```
+Only `token_issuer_authorized` is a successful credential check. If accepted, optionally store key in Mac Keychain and ensure it wins over **two** preexisting .zshrc assignments that contained/overwrote key; do not show file contents with grep or cat (secrets). Further Azure-only F0 test to fresh `azure-sdk-diagnostic-02.jsonl` *only after token issuer accepts key*, with F0 quota/upload/no-paid checks. NEVER rerun Groq or overwrite original research evidence.
+
+
 ## 2026-10-18 — PHYSICAL Mac Azure STS key contains non-ASCII Unicode (no request) — DO NOT ASSUME READY
 
 Owner synced PR #38 and ran `python3 v2/benchmarks/azure_auth_probe.py`. Actual Terminal:
