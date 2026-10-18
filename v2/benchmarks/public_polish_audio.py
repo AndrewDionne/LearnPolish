@@ -28,12 +28,14 @@ SOURCES = (
         "url": "https://upload.wikimedia.org/wikipedia/commons/b/b8/Pl-dzie%C5%84_dobry-2.ogg",
         "description": "https://commons.wikimedia.org/wiki/File:Pl-dzie%C5%84_dobry-2.ogg",
         "author": "Julo", "license": "Public domain", "duration_hint": 1.3,
+        "original_sha256": "03d8086535e6e961d6e588f6a9e941b60c73ddaf22b6051231794815fa1cca72",
     },
     {
         "id": "greeting-evening", "text": "Dobry wieczór",
         "url": "https://upload.wikimedia.org/wikipedia/commons/b/bb/Pl-dobry_wiecz%C3%B3r-2.ogg",
         "description": "https://commons.wikimedia.org/wiki/File:Pl-dobry_wiecz%C3%B3r-2.ogg",
         "author": "SirPL0", "license": "Public domain", "duration_hint": 1.6,
+        "original_sha256": "f9ae6aec5209ec247fbf65aea96e4db1914e6476f0ae65db9920dd7126c0dccd",
     },
 )
 MAX_SOURCE_BYTES = 130_000
@@ -73,6 +75,8 @@ def prepare_public_audio(output: Path, downloader=fetch_original) -> list[dict]:
             raise ValueError("Fixture files already exist; use a fresh output directory")
         data = downloader(source["url"])
         source_sha = validate_ogg(data)
+        if source_sha != source["original_sha256"]:
+            raise ValueError("Public-domain source bytes changed; re-review provenance before testing")
         with audio_ogg.open("xb") as handle:
             handle.write(data)
         try:
