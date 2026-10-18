@@ -1,5 +1,18 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
+## V2 Speak now advances to optional real provider assessments (development tranche, 2026-10-18)
+
+Owner verified first real live Azure F0 `pl-PL` score on a FLEURS Polish original (Accuracy 93, Fluency 93, Completeness 92), after both Groq Whisper models transcribed the same public clip. This is **technical integration evidence**, not a calibrated learner grade. Do not repeat that provider triage without a need. Owner requests continue development rather than further credential work.
+
+**New tranche** in `feat/v2-opt-in-azure-speak-assessment`:
+- Isolated V2 private family API opt-in `POST /api/v2/family/speech/assess`, using authenticated/verified account, server-side existing key, **built-in canonical Polish prompt**, explicit single WAV upload consent, strict mono16kHz WAV size/duration/clipping/silence validation and owner-private temporary WAV cleanup.
+- OFF by default; backend requires `PTP_SPEECH_ENABLED=1`, explicit `PTP_SPEECH_F0_CONFIRMED=1`, `PTP_SPEECH_NO_PAID_BILLING=1`, existing key and exact Germany West Central region. Database-backed cap **12 per account per UTC day and 30 across service per UTC day**, counted on attempted SDK call. No audio, transcript, provider response or scores persisted; only request allowance counters.
+- React `SpeakPanel` optional **Check my pronunciation** explicit action after clean take and disclosure of Microsoft Azure processing. ONLY visible with deployed/connected verified family session, `VITE_FAMILY_API_URL` and `VITE_SPEECH_ASSESSMENT_ENABLED=true`. Raw measured Azure 0–100 Accuracy/Fluency/Completeness shown, expressly **uncalibrated, NOT named-phoneme diagnosis**. `inconclusive` never becomes 0%. Abort stale requests on re-record/navigation. No raw score contributes XP/improvement yet. Private family service still NOT deployed; app public default stays fully unscored/offline-safe.
+- Mock/offline backend/auth/quota/security tests and frontend response-parse/privacy unit tests. No live Azure, Groq, keys or user voice data in CI. PWA legacy site and production Render not switched. Physical learner phone testing/hosting certification remain open.
+
+**Next after green CI**: merge substantial complete integration PR, retain immutable previous private FLEURS results; later authorized local server/mobile UX physical pass is a distinct gate. Mac Keychain/Zsh credential repair is operational and should not block independent frontend/backend code development; NEVER commit any key or personal speech.
+
+
 ## PHYSICAL MILESTONE: Azure Polish Pronunciation Assessment SUCCESS (2026-10-18)
 
 **Owner's actual Mac Terminal evidence** (not mocked, not CI): after retrieving Key 1 from the **existing** `learnpolish-EU` Azure Speech resource, Active/Free, Germany West Central (`AZURE_SPEECH_REGION=germanywestcentral`), owner pasted a valid key in a hidden zsh prompt and exported it in CURRENT Terminal. The previously present `AZURE_SPEECH_KEY` had an invalid Unicode ellipsis; existing nonempty-only checks were misleading. Local `python3 v2/benchmarks/azure_auth_probe.py` returned `token_issuer_authorized`, **HTTP 200**, `no_audio_uploaded=true`, `speech_inference_requests=0`.
