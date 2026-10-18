@@ -12,9 +12,13 @@ Conversation 1 built-in Polish Speak prompts:
    https://commons.wikimedia.org/wiki/File:Pl-dobry_wiecz%C3%B3r-2.ogg
 
 The runner downloads original Ogg from Wikimedia Commons only after explicit
-invocation, converts locally to 16 kHz mono PCM16 using ffmpeg, checks audio
-structure/signal, and saves SHA-256 provenance for BOTH original and converted
-voice. The browser's mocked MediaRecorder feeds those **real spoken sounds**
+invocation, **matches exact pinned original SHA-256 hashes observed from the
+first real CI download**, converts locally to 16 kHz mono PCM16 using ffmpeg,
+checks audio structure/signal, and saves SHA-256 provenance for BOTH original and
+converted voice. First actual CI run sampled **1.250 seconds** and **1.579 seconds**
+and passed the Speak browser journey on both desktop and mobile Chromium
+([CI #39169298893](https://github.com/AndrewDionne/LearnPolish/actions/runs/39169298893)).
+Zero AI calls were made. The browser's mocked MediaRecorder feeds those **real spoken sounds**
 through the production audio decoder, local capture checks, replay, and
 next-card lifecycle. No user data, browser mic or private speech is needed.
 
