@@ -136,6 +136,59 @@ class FamilyApiTests(unittest.TestCase):
         self.assertEqual(self.client.post("/api/v2/family/invites/redeem",
                           headers=stranger,json={"code":valid}).status_code,400)
 
+    def test_owner_can_remove_member_and_erase_only_that_familys_shared_work(self):
+        owner,learner,stranger,gid=self.family()
+        base=f"/api/v2/family/groups/{gid}"
+        learner_id=self.client.get("/api/v2/family/me",headers=learner).json["user"]["id"]
+        owner_id=self.client.get("/api/v2/family/me",headers=owner).json["user"]["id"]
+        # Independent membership survives family removal.
+        other=self.client.post("/api/v2/family/groups",headers=learner,
+                               json={"name":"Another study group"})
+        self.assertEqual(other.status_code,201)
+        other_id=other.json["id"]
+        invite=self.client.post(base+"/invite",headers=owner).json["code"]
+        self.assertEqual(self.client.post("/api/v2/family/invites/redeem",
+                          headers=learner,json={"code":invite}).status_code,200)
+        spare=self.client.post(base+"/invite",headers=owner).json["code"]
+        activity={"item_id":"basic:0","mode":"learn","region":"pomorskie"}
+        self.assertEqual(self.client.post(base+"/activity",headers=learner,json=activity).status_code,201)
+        self.assertEqual(self.client.get(base+"/summary",headers=owner).json["regions"][0]["earned"],10)
+        endpoint=base+"/members/remove"
+        # Neither nonmembers nor ordinary members have organizer privileges.
+        self.assertEqual(self.client.post(endpoint,headers=stranger,
+                          json={"member_id":learner_id}).status_code,404)
+        self.assertEqual(self.client.post(endpoint,headers=learner,
+                          json={"member_id":owner_id}).status_code,403)
+        for invalid in (owner_id,str(learner_id),True,-1,0):
+            self.assertEqual(self.client.post(endpoint,headers=owner,
+                              json={"member_id":invalid}).status_code,400)
+        self.assertEqual(self.client.post(endpoint,headers=owner,
+                          json={"member_id":99999}).status_code,404)
+        removed=self.client.post(endpoint,headers=owner,json={"member_id":learner_id})
+        self.assertEqual(removed.status_code,200)
+        self.assertTrue(removed.json["removed"])
+        self.assertEqual(removed.json["removed_activities"],1)
+        self.assertEqual(removed.json["revoked_invites"],1)
+        self.assertEqual(self.client.post("/api/v2/family/invites/redeem",
+                          headers=stranger,json={"code":spare}).status_code,400)
+        self.assertEqual(self.client.post(endpoint,headers=owner,
+                          json={"member_id":learner_id}).status_code,404)
+        summary=self.client.get(base+"/summary",headers=owner).json
+        self.assertEqual([m["name"] for m in summary["members"]],["Parent"])
+        self.assertEqual(summary["regions"][0]["earned"],0)
+        self.assertEqual(self.client.get(base+"/summary",headers=learner).status_code,404)
+        self.assertEqual(self.client.post(base+"/activity",headers=learner,json=activity).status_code,404)
+        self.assertEqual(self.client.post(base+"/invite",headers=learner).status_code,404)
+        # Removing from a family neither deletes login nor unrelated groups.
+        self.assertEqual(self.client.get("/api/v2/family/me",headers=learner).status_code,200)
+        self.assertEqual(self.client.get(f"/api/v2/family/groups/{other_id}/summary",
+                                         headers=learner).status_code,200)
+        # Previously redeemed invitation never becomes reusable.
+        self.assertEqual(self.client.post("/api/v2/family/invites/redeem",
+                          headers=stranger,json={"code":invite}).status_code,400)
+        self.assertEqual(self.client.post("/api/v2/family/invites/redeem",
+                          headers=learner,json={"code":invite}).status_code,400)
+
     def test_leave_erases_member_activity_and_shared_region_credit(self):
         owner, child, stranger, gid = self.family()
         base=f"/api/v2/family/groups/{gid}"

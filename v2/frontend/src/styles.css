@@ -367,6 +367,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .family-private-fieldset label{max-width:440px}
 .family-private-fieldset button{justify-self:start}
 .family-private-fieldset .family-danger{border-color:#a54d4d;color:#9b2828;background:#fff8f8}
+.family-privacy-actions .family-danger{border-color:#a54d4d;color:#9b2828;background:#fff8f8}
 .family-private-fieldset p{max-width:690px}
 @media(max-width:760px){.family-privacy-actions{display:grid;grid-template-columns:1fr}.family-privacy-actions button{width:100%}}
 

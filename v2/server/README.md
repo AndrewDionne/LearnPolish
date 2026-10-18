@@ -26,12 +26,17 @@ A client claims completion; the server does not yet verify that the learner perf
 Production deployment requires private persistent disk, TLS termination, backup/recovery, integration security review, verified frontend origin, parent/minor privacy controls, load/concurrency checks and operational monitoring. Do not put credentials, invitation codes, database files or speech recordings in GitHub.
 
 
+## Family organizer controls are not guardian authority
+
+The invite owner is a **group organizer**, not a verified parent or guardian. An emailed code verifies control of a mailbox, not age, legal guardianship, consent or responsibility for a child. Members currently register their own accounts. Do **not** deploy family accounts for minors, enable speech provider transfer for children, or describe the service as parent-authorized until a separate verified guardian enrollment and consent lifecycle is built and reviewed. This tranche only permits an organizer to stop unwanted group access and erase shared data.
+
 ## Family privacy and account lifecycle
 
 Authenticated APIs, without automatic sharing or deletion:
 - POST /api/v2/family/groups/:id/invites/revoke: owner revokes all unused invitation codes. Used codes are never reactivated.
 - POST /api/v2/family/groups/:id/transfer: owner nominates an existing member (new_owner_id).
 - POST /api/v2/family/groups/:id/leave: member leaves, with shared activity removed and rankings updated; owner must transfer first if others remain, while a sole owner closes the family.
+- POST /api/v2/family/groups/:id/members/remove: owner-only removal of a **different** current member via `{member_id: integer}`. Deletes that member's activity and membership within this group atomically; once removed, the existing bearer session cannot read/submit further activity to this group. Other family memberships, personal account, and offline progress are untouched. Previously spent invitations stay spent; **all other unused invitations to that group are revoked** atomically to prevent immediate rejoining with an older code. Organizers must issue fresh invitations afterward. The owner cannot remove themself or another group's member. The client clears stale shared/map state upon a group-summary HTTP 404 on load or refresh.
 - GET /api/v2/family/account/export: authenticated personal profile, membership and activity data; never password/session hashes.
 - POST /api/v2/family/account/password: verifies current password, rotates hash/salt, invalidates all sessions; reauthentication required.
 - POST /api/v2/family/account/delete: requires exact confirmation phrase DELETE MY ACCOUNT and password. Deletes service sessions, activity, memberships, account and associated redeemed invitations. Ownership transfer required if others are in an owned group.

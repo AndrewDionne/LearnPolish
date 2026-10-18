@@ -1,17 +1,19 @@
-import {useState} from 'react';
+import {useEffect,useState} from 'react';
 import {familyRequest} from './api';
 import type {FamilyMember} from './api';
 
 type Props = {
  token:string; groupId:number; canInvite:boolean; userId:number;
  members:FamilyMember[];
- onLeave:()=>void; onTransfer:()=>void; onRevoke:()=>void; onSignedOut:()=>void;
+ onLeave:()=>void; onTransfer:()=>void; onRemoved:()=>void; onRevoke:()=>void; onSignedOut:()=>void;
 };
 
 /** Explicit, authenticated, private-data operations. Never affects local/offline lessons. */
 export default function FamilyPrivacyControls({token,groupId,canInvite,userId,members,
- onLeave,onTransfer,onRevoke,onSignedOut}:Props){
+ onLeave,onTransfer,onRemoved,onRevoke,onSignedOut}:Props){
  const [target,setTarget]=useState('');
+ const [removeTarget,setRemoveTarget]=useState('');
+ useEffect(()=>{setTarget('');setRemoveTarget('');},[groupId]);
  const [currentPassword,setCurrentPassword]=useState('');
  const [newPassword,setNewPassword]=useState('');
  const [deletePassword,setDeletePassword]=useState('');
@@ -45,6 +47,18 @@ export default function FamilyPrivacyControls({token,groupId,canInvite,userId,me
    setFeedback('Ownership transferred.');
    setTarget('');
    onTransfer();
+ };
+ const removeMember=async()=>{
+   const id=Number(removeTarget);
+   const member=members.find(person=>person.id===id&&person.id!==userId);
+   if(!member||!Number.isSafeInteger(id))return;
+   if(!window.confirm('Remove '+member.name+' from this family? Their shared activity will be erased, and all unused family invites revoked to prevent rejoining with an old code. Their account and offline learning are unaffected.'))return;
+   const response=await familyRequest<{removed:boolean;removed_activities:number;revoked_invites:number}>(
+     '/api/v2/family/groups/'+groupId+'/members/remove','POST',{member_id:id},token);
+   setRemoveTarget('');
+   onRemoved();
+   setFeedback(member.name+' removed. '+response.removed_activities+' shared activities erased; '+
+     response.revoked_invites+' unused invitations revoked.');
  };
  const exportData=async()=>{
    const data=await familyRequest<Record<string,unknown>>('/api/v2/family/account/export',
@@ -91,6 +105,15 @@ export default function FamilyPrivacyControls({token,groupId,canInvite,userId,me
        </label>
        <button type="button" disabled={busy||!target} onClick={()=>void run(transfer)}>
          Transfer ownership</button>
+       <label>Remove a family member
+         <select aria-label="Member to remove" value={removeTarget} onChange={e=>setRemoveTarget(e.target.value)}>
+           <option value="">Choose a family member</option>
+           {members.filter(m=>m.id!==userId).map(m=>
+             <option key={m.id} value={m.id}>{m.name}</option>)}
+         </select>
+       </label>
+       <button type="button" className="family-danger" disabled={busy||!removeTarget}
+         onClick={()=>void run(removeMember)}>Remove member and erase shared XP</button>
      </>}
    </div>
    <fieldset className="family-private-fieldset">

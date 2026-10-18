@@ -701,6 +701,48 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
         con.commit()
         return jsonify(transferred=True, new_owner_id=target)
 
+    @app.post("/api/v2/family/groups/<int:family_id>/members/remove")
+    @auth
+    def remove_member(user, family_id):
+        """An organizer may expel another member and erase their group activity.
+
+        An authenticated session for the removed user still exists for their
+        own account and unrelated groups; every group route enforces membership.
+        Previously redeemed invites stay consumed.
+        """
+        access = _owner_guard(user, family_id)
+        if access:
+            return access
+        target = _json().get("member_id")
+        if type(target) is not int or target <= 0 or target == user["id"]:
+            return fail("invalid_member")
+        con = db()
+        con.execute("BEGIN IMMEDIATE")
+        owner = con.execute("SELECT owner_id FROM families WHERE id=?",
+                            (family_id,)).fetchone()
+        if not owner or owner["owner_id"] != user["id"]:
+            con.rollback()
+            return fail("owner_only", 403)
+        present = con.execute(
+            "SELECT 1 FROM members WHERE family_id=? AND user_id=?",
+            (family_id, target)).fetchone()
+        if not present:
+            con.rollback()
+            return fail("member_not_found", 404)
+        removed = con.execute(
+            "DELETE FROM activities WHERE family_id=? AND user_id=?",
+            (family_id, target)).rowcount
+        con.execute("DELETE FROM members WHERE family_id=? AND user_id=?",
+                    (family_id, target))
+        # Any other leaked unused code could otherwise let an expelled member
+        # rejoin immediately. Invalidate pending invitations together with removal.
+        revoked = con.execute(
+            "DELETE FROM invitations WHERE family_id=? AND redeemed_by IS NULL",
+            (family_id,)).rowcount
+        con.commit()
+        return jsonify(removed=True, member_id=target, removed_activities=removed,
+                       revoked_invites=revoked)
+
     @app.post("/api/v2/family/groups/<int:family_id>/leave")
     @auth
     def leave_group(user, family_id):
