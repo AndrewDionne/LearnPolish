@@ -102,8 +102,9 @@ jobs:
       - name: Connected family signup/invite/XP browser journeys
         env:
           VITE_FAMILY_API_URL: http://127.0.0.1:8016
+          VITE_SPEECH_ASSESSMENT_ENABLED: 'true'
           PTP_CI_VERIFICATION_OUTBOX: ${{ runner.temp }}/ptp-family/verification.jsonl
-        run: npx playwright test e2e/family-connected.spec.ts
+        run: npx playwright test e2e/family-connected.spec.ts e2e/speech-assessment-connected.spec.ts
       - name: Upload connected evidence
         if: always()
         uses: actions/upload-artifact@v4
