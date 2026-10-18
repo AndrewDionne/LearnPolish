@@ -1,6 +1,8 @@
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { LessonItem } from '../model';
 import { prepareAssessmentInput } from './format';
+import type {AssessmentReadyCapture} from './format';
+import type {SpeechFeedback} from './assessment';
 import { researchWavFilename } from './research';
 import { useSpeechCapture } from './useSpeechCapture';
 
@@ -10,10 +12,29 @@ type Props = {
   onPlayReference: (path: string) => void;
   onStopReference: () => void;
   onNext: (completedTake: boolean) => void;
+  onAssess?: (capture: AssessmentReadyCapture, signal: AbortSignal) => Promise<SpeechFeedback>;
 };
 
-export default function SpeakPanel({item, playing, onPlayReference, onStopReference, onNext}: Props) {
+export default function SpeakPanel({item, playing, onPlayReference, onStopReference, onNext, onAssess}: Props) {
   const preview = useRef<HTMLAudioElement | null>(null);
+  const activeRequest = useRef<AbortController | null>(null);
+  const [feedback, setFeedback] = useState<SpeechFeedback | null>(null);
+  const [assessmentBusy, setAssessmentBusy] = useState(false);
+  const [assessmentError, setAssessmentError] = useState('');
+  const abortAssessment = () => {
+    activeRequest.current?.abort();
+    activeRequest.current = null;
+  };
+  useEffect(() => () => { activeRequest.current?.abort(); }, []);
+
+  const startNewTake = () => {
+    abortAssessment();
+    setFeedback(null);
+    setAssessmentError('');
+    setAssessmentBusy(false);
+    void capture.start();
+  };
+
   const capture = useSpeechCapture(() => {
     preview.current?.pause();
     onStopReference();
@@ -21,6 +42,31 @@ export default function SpeakPanel({item, playing, onPlayReference, onStopRefere
   const prepared = capture.wav && capture.check
     ? prepareAssessmentInput(item.id, item.polish, {wav: capture.wav, check: capture.check})
     : null;
+
+  const assessTake = async () => {
+    if(!onAssess || !prepared || assessmentBusy)return;
+    abortAssessment();
+    const controller = new AbortController();
+    activeRequest.current = controller;
+    setFeedback(null);
+    setAssessmentError('');
+    setAssessmentBusy(true);
+    try{
+      const response = await onAssess(prepared,controller.signal);
+      if(!controller.signal.aborted && activeRequest.current === controller){
+        setFeedback(response);
+      }
+    }catch(error){
+      if(!controller.signal.aborted && activeRequest.current === controller){
+        setAssessmentError(error instanceof Error ? error.message : 'Assessment unavailable.');
+      }
+    }finally{
+      if(!controller.signal.aborted && activeRequest.current === controller){
+        activeRequest.current = null;
+        setAssessmentBusy(false);
+      }
+    }
+  };
 
   const onReference = () => {
     preview.current?.pause();
@@ -39,7 +85,7 @@ export default function SpeakPanel({item, playing, onPlayReference, onStopRefere
     <div className="speak-divider"/>
     <p className="speak-instruction">Listen to the example, then record yourself. This preview does not grade pronunciation.</p>
     {capture.phase === 'idle' || capture.phase === 'error' || capture.phase === 'inconclusive' || capture.phase === 'ready'
-      ? <button type="button" className="record-button" onClick={() => void capture.start()}>● {capture.previewUrl ? 'Record another take' : 'Start recording'}</button>
+      ? <button type="button" className="record-button" onClick={startNewTake}>● {capture.previewUrl ? 'Record another take' : 'Start recording'}</button>
       : null}
     {capture.phase === 'requesting' && <p role="status" className="speak-status">Requesting microphone permission…</p>}
     {capture.phase === 'recording' && <>
@@ -53,7 +99,25 @@ export default function SpeakPanel({item, playing, onPlayReference, onStopRefere
       <audio id="personal-speech-replay" ref={preview} src={capture.previewUrl} controls preload="metadata"/>
     </div>}
     {capture.phase === 'inconclusive' && <p role="status" className="capture-warning">Recording inconclusive: {capture.message || 'Try again.'}</p>}
-    {capture.phase === 'ready' && prepared && <p role="status" className="capture-valid">Recording captured ({capture.check?.seconds.toFixed(1)} s). You can replay it or try again. Pronunciation is not scored yet.</p>}
+    {capture.phase === 'ready' && prepared && <p role="status" className="capture-valid">Recording captured ({capture.check?.seconds.toFixed(1)} s). You can replay it or try again.{!onAssess ? ' Pronunciation is not scored yet.' : ''}</p>}
+    {onAssess && prepared && capture.phase === 'ready' && <div className="speak-feedback">
+      <p className="speak-instruction">Optional: send this take to Azure Speech for an estimated Polish pronunciation assessment. Your voice is processed by Azure; this app does not keep the recording or a score history. The result is not a certified grade.</p>
+      <button type="button" className="secondary-action" disabled={assessmentBusy} onClick={() => void assessTake()}>
+        {assessmentBusy ? 'Checking with Azure…' : 'Check my pronunciation'}
+      </button>
+      {assessmentBusy && <p role="status">Sending this take for pronunciation feedback…</p>}
+      {assessmentError && <p role="alert" className="capture-warning">{assessmentError}</p>}
+      {feedback?.status === 'inconclusive' && <p role="status" className="capture-warning">{feedback.reason} This is not a score of zero.</p>}
+      {feedback?.status === 'ok' && <div className="speak-scores" role="status">
+        <strong>Azure's estimated pronunciation feedback</strong>
+        <dl>
+          <div><dt>Accuracy</dt><dd>{feedback.scores.accuracy.toFixed(1)} / 100</dd></div>
+          <div><dt>Fluency</dt><dd>{feedback.scores.fluency.toFixed(1)} / 100</dd></div>
+          <div><dt>Completeness</dt><dd>{feedback.scores.completeness.toFixed(1)} / 100</dd></div>
+        </dl>
+        <p>These provider scores have not been calibrated against Polish speakers or learners. We cannot yet identify a particular Polish sound as incorrect from these numbers.</p>
+      </div>}
+    </div>}
     {prepared && <button type="button" className="benchmark-export" onClick={() => {
       // Explicit learner action; no upload, no server, no silent retention.
       const url = URL.createObjectURL(prepared.wav);
@@ -63,7 +127,7 @@ export default function SpeakPanel({item, playing, onPlayReference, onStopRefere
       document.body.appendChild(a); a.click(); a.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 0);
     }}>Save 16 kHz WAV for private AI test</button>}
-    <p className="speak-privacy">Your recording stays in this browser's temporary memory. It is discarded when you leave this card; it is not uploaded or stored as progress. Saving a benchmark WAV is optional, initiated by you, and remains on your device. Its filename identifies the exact Polish exercise for private testing.</p>
-    <button type="button" className="primary-action speak-next" disabled={capture.phase === 'recording' || capture.phase === 'requesting' || capture.phase === 'processing'} onClick={() => {preview.current?.pause(); onNext(!!prepared);}}>Next phrase →</button>
+    <p className="speak-privacy">Your recording remains in temporary memory and is discarded when you leave this card. It is not uploaded unless you explicitly choose Check my pronunciation (when available). That assessment sends one take to Azure for processing, not to your family leaderboard, and does not store your score. The optional private benchmark WAV download remains on your device.</p>
+    <button type="button" className="primary-action speak-next" disabled={capture.phase === 'recording' || capture.phase === 'requesting' || capture.phase === 'processing'} onClick={() => {abortAssessment(); preview.current?.pause(); onNext(!!prepared);}}>Next phrase →</button>
   </section>;
 }
