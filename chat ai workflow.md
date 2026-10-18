@@ -1,5 +1,43 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
+## PR #38 MERGED — correct actual Azure cancellation code + zero-audio key probe (2026-10-18)
+
+**[PR #38](https://github.com/AndrewDionne/LearnPolish/pull/38) MERGED**, squash commit `61841f517ee55091f11a2bb98a3cdcf643d7d636`; exact-head
+[CI #39114205618](https://github.com/AndrewDionne/LearnPolish/actions/runs/39114205618)
+all FOUR lanes PASS, **101 offline benchmark tests PASS** at head
+`34ff0cff9d21f848b9d24043ed742f37bb596c1d`.
+After user real one Azure-only clip request gave Canceled/Error/Unknown,
+Microsoft Python SDK `CancellationDetails.code` was found to be the
+actual error field; earlier code erroneously used `error_code`. Now
+`azure_pilot.py` reads documented `.code` with fallback, outputs
+ONLY allowlisted enum labels (never free-text error_details/keys).
+New `v2/benchmarks/azure_auth_probe.py` performs only ONE zero-audio
+regional STS token authentication POST to official
+`germanywestcentral.api.cognitive.microsoft.com/sts/v1.0/issueToken`,
+does not read bearer token response nor log headers/key; returns safe
+HTTP status. Only establishes regional token issuer acceptance, NOT
+Speech SDK WebSocket/PA operation or billing state. No real Azure or
+Groq calls run by CI.
+
+**IMMEDIATE NEXT OWNER ACTION** (no provider audio): Mac Terminal from
+repo root, `git switch main && git pull --ff-only origin main`, then
+`python3 v2/benchmarks/azure_auth_probe.py`. Existing AZURE_SPEECH_KEY
+and AZURE_SPEECH_REGION are in Mac .zshrc/current terminal; NO new
+credentials required. Paste ONLY the coarse diagnostic output.
+If connection failure or HTTP rejection, STOP voice tests and diagnose
+regional key/resource. If status=token_issuer_authorized and owner has
+verified current existing Speech F0 quota/no paid billing and
+public FLEURS upload rights, exactly ONE more Azure-only 00003 5.64s
+call can be executed with `azure_retest.py`, new/private
+`PathToPolish-Private-AI/azure-sdk-diagnostic-02.jsonl` after --send
+etc flags; no Groq repeats. Full command is durable in
+`v2/benchmarks/THREE_MODEL_PILOT.md`.
+Old `azure-sdk-diagnostic-01.jsonl`, first six model results, exact
+existing WAVs/source manifest are **never overwritten**.
+Do not claim actual service error cause before corrected SDK .code
+classification is observed. Avoid unneeded provider replays.
+
+
 ## Mac physical Azure Canceled/Error/Unknown and documented Python SDK field bug (2026-10-18)
 
 Owner ran PR #37 Azure-only FLEURS 00003 retest: exactly one real
@@ -72,7 +110,7 @@ getting working model integration over perfect native human corpus;
 no added linguistic certification barrier on exploratory public voice.
 
 
-**Updated:** 2026-10-18 — PHYSICAL Azure-only Canceled/Error/Unknown; documented Python SDK .code read fix and no-audio STS authorization probe for next action
+**Updated:** 2026-10-18 — PR #38 MERGED 4 CI lanes/101 offline tests: actual Python Azure .code fix and zero-audio STS probe; owner Mac key check NEXT
 
 ## Read first in every new development session
 1. [V2_REBUILD_PLAN.md](V2_REBUILD_PLAN.md) — authoritative product scope, architecture direction, priorities, delivery tranches, acceptance criteria.
