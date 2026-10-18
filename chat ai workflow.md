@@ -1,5 +1,16 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
+## Family organizer membership control — 2026-10-18 (PR awaiting CI)
+
+Following PR #41's family onboarding cleanup, this branch adds a missing *real* family management operation:
+- Organizer-only `POST /api/v2/family/groups/:id/members/remove` for another current member (strict integer ID, separate group-member and owner checks, transactional recheck) with atomic deletion of that person's shared practice activity and membership. Return only erased-activity count. Repeated removal fails; unrelated groups, login, personal/offline practice remain intact. Existing consumed invitations cannot be reused. Shared map progress may decline because erased activity cannot be retained.
+- Private React management panel presents an explicit member selector, destructive confirmation and updated weekly family standings. Local contribution opt-in remains per group. If a learner is removed while still browsing, a group-summary **404** on reload or Refresh rankings clears the formerly selected group, cached shared summary/map and opt-in checkbox without touching their unrelated account.
+- Python backend regressions test owner vs member/outsider, refusal to remove self or invalid target, erasure, revoked group routes, repeated invite reuse and independent membership. Connected browser mocks test organizer removal and revoked member refresh.
+- **Important:** the family organizer is not a verified parent/guardian. There is no legal age/guardian proof, child consent, audited guardian dashboard or child-safe Azure service. Do not enroll minors or call this parent authorization. Family API is still UNDEPLOYED; no real users, voice uploads or paid requests exercised.
+
+**CI/merge gate:** exact-head frontend, connected-browser, private family backend and benchmark jobs must pass before merge. Update this note after merge with PR, SHA, CI. Next distinct tranche should design *actual* parent-led child enrollment and privacy rights, not merely a self-attestation checkbox; plan physical multi-device hosting review without altering legacy live app.
+
+
 ## PR #41 MERGED — family onboarding and invitation privacy (2026-10-18)
 
 **[PR #41](https://github.com/AndrewDionne/LearnPolish/pull/41) MERGED** (squash `857c364a6e07701f789c1213934a846f5fdd3284`) after all four V2 checks **PASS** on exact head `fceab1d0eef3e33efab7a13ae5a679741b0d3816`: [CI #39157847662](https://github.com/AndrewDionne/LearnPolish/actions/runs/39157847662) (frontend type/unit/build + desktop/mobile, private connected browser, private backend, offline benchmarks). Following PR #40's opt-in Azure integration, this is a useful family UI/privacy increment, not another provider experiment:
