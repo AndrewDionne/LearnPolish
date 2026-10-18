@@ -22,6 +22,7 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
   const [recoveryAvailable,setRecoveryAvailable]=useState(false);
   const [verificationAvailable,setVerificationAvailable]=useState(false);
   const [pendingVerification,setPendingVerification]=useState(false);
+  const [authMode,setAuthMode]=useState<'sign-in'|'create'>('create');
   const [verificationCode,setVerificationCode]=useState('');
   const [recoveryMode,setRecoveryMode]=useState(false);
   const [recoveryRequested,setRecoveryRequested]=useState(false);
@@ -30,12 +31,15 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
   const [familyName,setFamilyName]=useState('');
   const [invite,setInvite]=useState('');
   const [newInvite,setNewInvite]=useState('');
+  const [inviteCopied,setInviteCopied]=useState(false);
   const [error,setError]=useState('');
   const [status,setStatus]=useState('');
   const [busy,setBusy]=useState(false);
   const [recognitionCategory,setRecognitionCategory]=useState<RecognitionCategory>('effort');
   // Ignore earlier summary fetches that finish after a refresh or group change.
   const summaryRequestId=useRef(0);
+  // Prevent a late invite response from appearing under a different family group.
+  const inviteRequestId=useRef(0);
   const initialSync=useRef(syncVersion);
 
   useEffect(()=>{
@@ -94,6 +98,8 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
   };
   const pickGroup=(id:number)=>{
     summaryRequestId.current++;
+    inviteRequestId.current++;
+    setNewInvite('');setInviteCopied(false);
     setGroup(id);setSummary(null);onSummary(null);setEnabled(false);
     try{sessionStorage.setItem('ptp-v2-family-group',String(id));sessionStorage.removeItem('ptp-v2-family-sharing');}catch{}
   };
@@ -112,7 +118,7 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
       }
       throw e;
     }
-    saveSession(data.token);setPassword('');setPendingVerification(false);
+    saveSession(data.token);setPassword('');setPendingVerification(false);setAuthMode('sign-in');
     setStatus('Signed in. Choose or create a family.');
   };
   const signUp=async()=>{
@@ -169,8 +175,22 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
     await refresh(token,data.group_id);
   };
   const inviteMember=async()=>{
-    const data=await familyRequest<{code:string}>('/api/v2/family/groups/'+group+'/invite','POST',{},token);
-    setNewInvite(data.code);
+    const id=++inviteRequestId.current;
+    const chosenGroup=group;
+    const data=await familyRequest<{code:string}>('/api/v2/family/groups/'+chosenGroup+'/invite','POST',{},token);
+    if(id===inviteRequestId.current){setNewInvite(data.code);setInviteCopied(false);}
+  };
+
+  const copyInvite=async()=>{
+    if(!newInvite)return;
+    try{
+      if(!navigator.clipboard?.writeText)throw new Error('Clipboard unavailable');
+      await navigator.clipboard.writeText(newInvite);
+      setInviteCopied(true);
+    }catch{
+      setInviteCopied(false);
+      setStatus('Select the invitation code below and copy it manually.');
+    }
   };
 
   if(!FAMILY_API)return <section className="family-panel" aria-label="Family expedition">
@@ -198,7 +218,7 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
             onClick={()=>void run(resendVerification)}>Resend code</button>
         </div>
         <button type="button" disabled={busy} onClick={()=>{
-          setPendingVerification(false);setVerificationCode('');setError('');setStatus('');
+          setPendingVerification(false);setAuthMode('sign-in');setVerificationCode('');setError('');setStatus('');
         }}>Back to sign in</button>
       </div>:recoveryMode?<div className="family-recovery">
         <h3>Recover family account</h3>
@@ -218,15 +238,32 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
         <button type="button" disabled={busy} onClick={()=>{setRecoveryMode(false);setRecoveryCode('');
           setRecoveryPassword('');setRecoveryRequested(false);setError('');setStatus('');}}>Back to sign in</button>
       </div>:<>
-        <p>Use your own private account to create or join your family's Poland expedition.</p>
-        <label>Display name<input value={name} onChange={e=>setName(e.target.value)} autoComplete="nickname" maxLength={48}/></label>
+        <div className="family-auth-heading">
+          <p>{authMode==='create'?'A private learner account lets you join or create a family expedition.':'Sign in to continue your family expedition.'}</p>
+          <div className="family-auth-switch" role="group" aria-label="Family account access">
+            <button type="button" aria-pressed={authMode==='sign-in'} disabled={busy}
+              onClick={()=>{setAuthMode('sign-in');setError('');setStatus('');}}>Sign in</button>
+            {authMode==='create'
+              ? <span className="family-auth-current" aria-current="step">Create account</span>
+              : <button type="button" aria-pressed={false} disabled={busy||!verificationAvailable}
+                  onClick={()=>{setAuthMode('create');setError('');setStatus('');}}>Create account</button>}
+          </div>
+        </div>
+        {authMode==='create'&&<label>Display name<input value={name} onChange={e=>setName(e.target.value)}
+          autoComplete="nickname" maxLength={48}/></label>}
         <label>Email<input type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)}/></label>
-        <label>Password<input type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)}/></label>
-        <div className="family-actions"><button type="button" disabled={busy} onClick={()=>void run(login)}>Sign in</button>
-          <button type="button" disabled={busy||!verificationAvailable} onClick={()=>void run(signUp)}>Create account</button></div>
-        <small>New passwords require at least 12 characters. Email confirmation is required before family access.</small>
+        <label>Password<input type="password" autoComplete={authMode==='create'?'new-password':'current-password'}
+          value={password} onChange={e=>setPassword(e.target.value)}/></label>
+        <div className="family-actions">
+          {authMode==='create'
+            ? <button type="button" disabled={busy||!verificationAvailable||name.trim().length<2||!email.trim()||password.length<12}
+                onClick={()=>void run(signUp)}>Create account</button>
+            : <button type="button" disabled={busy||!email.trim()||!password}
+                onClick={()=>void run(login)}>Sign in to family</button>}
+        </div>
+        {authMode==='create'&&<small>Use a password of at least 12 characters. Verify the code in your email before joining a family.</small>}
         {!verificationAvailable&&<p className="family-note">New family accounts are unavailable until secure verification email delivery is configured.</p>}
-        {recoveryAvailable&&<button type="button" disabled={busy} onClick={()=>{
+        {recoveryAvailable&&<button type="button" className="family-recovery-link" disabled={busy} onClick={()=>{
           setRecoveryMode(true);setError('');setStatus('');}}>Forgot password?</button>}
       </>}
     </div> : <div className="family-connected">
@@ -281,8 +318,13 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
           <div key={r.region}><span>{r.region}</span><strong>{r.earned}/{r.target} XP {r.unlocked?'✓':''}</strong></div>
         ):<p>No team XP yet. Complete a lesson to start exploring.</p>}</div>
         {summary.group.can_invite&&<button type="button" disabled={busy} onClick={()=>void run(inviteMember)}>Create one-use family invite</button>}
-        {newInvite&&<p className="family-invite">Invitation expires in 48 hours, can be used only once, and should be shared privately.
-          <code>{newInvite}</code></p>}
+        {newInvite&&<div className="family-invite" aria-label="New private family invitation">
+          <p>Invitation expires in 48 hours, can be used only once, and should be shared privately.</p>
+          <code>{newInvite}</code>
+          <button type="button" disabled={busy} onClick={()=>void copyInvite()}>
+            {inviteCopied?'Copied invitation code':'Copy invitation code'}
+          </button>
+        </div>}
       </div>}
       <FamilyPrivacyControls token={token} groupId={group} canInvite={!!summary?.group.can_invite}
         userId={userId} members={summary?.members??[]}
