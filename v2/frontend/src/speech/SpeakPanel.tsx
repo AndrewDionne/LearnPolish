@@ -83,7 +83,7 @@ export default function SpeakPanel({item, playing, onPlayReference, onStopRefere
         </button>
       : <p className="speak-subtle">No reference audio is available for this personal lesson yet.</p>}
     <div className="speak-divider"/>
-    <p className="speak-instruction">Listen to the example, then record yourself. This preview does not grade pronunciation.</p>
+    <p className="speak-instruction">1. Listen to the Polish example. 2. Record yourself. 3. Replay and compare before you continue.{onAssess ? ' Pronunciation feedback is an optional extra.' : ' You can practise without a grade.'}</p>
     {capture.phase === 'idle' || capture.phase === 'error' || capture.phase === 'inconclusive' || capture.phase === 'ready'
       ? <button type="button" className="record-button" onClick={startNewTake}>● {capture.previewUrl ? 'Record another take' : 'Start recording'}</button>
       : null}
@@ -111,11 +111,12 @@ export default function SpeakPanel({item, playing, onPlayReference, onStopRefere
       {feedback?.status === 'ok' && <div className="speak-scores" role="status">
         <strong>Azure's estimated pronunciation feedback</strong>
         <dl>
-          <div><dt>Accuracy</dt><dd>{feedback.scores.accuracy.toFixed(1)} / 100</dd></div>
-          <div><dt>Fluency</dt><dd>{feedback.scores.fluency.toFixed(1)} / 100</dd></div>
-          <div><dt>Completeness</dt><dd>{feedback.scores.completeness.toFixed(1)} / 100</dd></div>
+          <div><dt>Accuracy <small>How closely your sounds matched</small></dt><dd>{feedback.scores.accuracy.toFixed(1)} / 100</dd></div>
+          <div><dt>Fluency <small>Flow and pauses</small></dt><dd>{feedback.scores.fluency.toFixed(1)} / 100</dd></div>
+          <div><dt>Completeness <small>How much of the phrase was heard</small></dt><dd>{feedback.scores.completeness.toFixed(1)} / 100</dd></div>
         </dl>
-        <p>These provider scores have not been calibrated against Polish speakers or learners. We cannot yet identify a particular Polish sound as incorrect from these numbers.</p>
+        <p>These provider scores have not been calibrated against Polish speakers or learners. They are not a pass/fail grade, and they cannot identify a specific Polish sound as incorrect.</p>
+        <p className="speak-next-step">Listen to the example again, compare it with your recording, and choose whether to retry or move on.</p>
       </div>}
     </div>}
     {prepared && <button type="button" className="benchmark-export" onClick={() => {
