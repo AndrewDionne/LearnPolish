@@ -1,5 +1,5 @@
 import {useEffect,useRef,useState} from 'react';
-import {FAMILY_API,familyRequest} from './api';
+import {FAMILY_API,FamilyRequestError,familyRequest} from './api';
 import type {FamilyConnection,FamilyGroup,FamilySummary} from './api';
 import {rankFamily,recognitionLabel,RECOGNITION_CATEGORIES} from './recognition';
 import FamilyPrivacyControls from './FamilyPrivacyControls';
@@ -63,12 +63,32 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
     return ()=>{active=false;};
   },[token]);
 
+  const dropInaccessibleGroup=(inaccessibleId:number)=>{
+    summaryRequestId.current++;
+    inviteRequestId.current++;
+    setSummary(null);onSummary(null);
+    setGroups(current=>current.filter(item=>item.id!==inaccessibleId));
+    setNewInvite('');setInviteCopied(false);
+    setEnabled(false);setGroup(0);
+    try{
+      sessionStorage.removeItem('ptp-v2-family-group');
+      sessionStorage.removeItem('ptp-v2-family-sharing');
+    }catch{/* private browsing */}
+  };
   const refresh=async(t=token,g=group)=>{
     if(!t||!g)return;
     const id=++summaryRequestId.current;
-    const data=await familyRequest<FamilySummary>('/api/v2/family/groups/'+g+'/summary','GET',undefined,t);
-    if(id===summaryRequestId.current){
-      setSummary(data);onSummary(data);
+    try{
+      const data=await familyRequest<FamilySummary>('/api/v2/family/groups/'+g+'/summary','GET',undefined,t);
+      if(id===summaryRequestId.current){
+        setSummary(data);onSummary(data);
+      }
+    }catch(e){
+      if(id===summaryRequestId.current && e instanceof FamilyRequestError && e.status===404){
+        dropInaccessibleGroup(g);
+        throw new Error('Family access has ended. Choose another group.');
+      }
+      throw e;
     }
   };
   useEffect(()=>{
@@ -77,7 +97,14 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
     const id=++summaryRequestId.current;
     void familyRequest<FamilySummary>('/api/v2/family/groups/'+group+'/summary','GET',undefined,token)
       .then(data=>{if(active&&id===summaryRequestId.current){setSummary(data);onSummary(data);}})
-      .catch(()=>{if(active&&id===summaryRequestId.current){setError('Unable to load this private family group.');setEnabled(false);}});
+      .catch(error=>{if(active&&id===summaryRequestId.current){
+        if(error instanceof FamilyRequestError && error.status===404){
+          dropInaccessibleGroup(group);
+          setError('Family access has ended. Choose another group.');
+        }else{
+          setError('Unable to load this private family group.');setEnabled(false);
+        }
+      }});
     return ()=>{active=false;summaryRequestId.current++;};
   },[token,group]);
   useEffect(()=>{
@@ -330,6 +357,7 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
         userId={userId} members={summary?.members??[]}
         onLeave={leaveFamily}
         onTransfer={()=>{void refresh().catch(()=>setError('Unable to refresh ownership status.'));}}
+        onRemoved={()=>{void refresh().catch(()=>setError('Unable to refresh member list.'));}}
         onRevoke={revoked} onSignedOut={clearAccountSession}/>
     </div>}
     {error&&<p role="alert" className="family-error">{error}</p>}
