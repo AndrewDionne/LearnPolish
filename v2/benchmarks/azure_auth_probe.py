@@ -22,6 +22,13 @@ URL = "https://" + HOST + "/sts/v1.0/issueToken"
 def probe(key: str, region: str, opener: Callable = urllib.request.urlopen) -> dict:
     if not isinstance(key, str) or not key:
         raise ValueError("AZURE_SPEECH_KEY missing; do not paste it into chat")
+    if not key.isascii() or not key.isprintable():
+        # Reject BEFORE passing the value to urllib/http.client, which would
+        # otherwise raise a UnicodeEncodeError that looks like a server fault.
+        # Do not emit the value, character or substring of this secret.
+        raise ValueError("AZURE_SPEECH_KEY is not printable ASCII: likely a placeholder or incorrectly copied; check the existing Azure resource key")
+    if key != key.strip() or key in ("...", "[REDACTED]", "REDACTED", "<KEY>", "YOUR_AZURE_SPEECH_KEY"):
+        raise ValueError("AZURE_SPEECH_KEY looks like a placeholder or contains whitespace; check the existing Azure resource key")
     if region != REGION:
         raise ValueError("AZURE_SPEECH_REGION must match germanywestcentral")
     req = urllib.request.Request(
@@ -56,7 +63,11 @@ def main() -> int:
         result = probe(os.environ.get("AZURE_SPEECH_KEY", ""),
                        os.environ.get("AZURE_SPEECH_REGION", ""))
     except ValueError as exc:
-        print(json.dumps({"status": "config_missing", "reason": str(exc),
+        # Distinguish invalid/present credentials from absent credentials.
+        # Error reason is a fixed local validation message, never a provider
+        # exception, header value, key fragment or character position.
+        print(json.dumps({"status": "invalid_local_credentials",
+                          "reason": str(exc), "no_audio_uploaded": True,
                           "speech_inference_requests": 0}))
         return 2
     print(json.dumps(result, indent=2))
