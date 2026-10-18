@@ -356,3 +356,14 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .family-private-fieldset .family-danger{border-color:#a54d4d;color:#9b2828;background:#fff8f8}
 .family-private-fieldset p{max-width:690px}
 @media(max-width:760px){.family-privacy-actions{display:grid;grid-template-columns:1fr}.family-privacy-actions button{width:100%}}
+
+/* Explicit, consent-first Speak feedback. Raw scores are NOT Polish-grade certification. */
+.speak-feedback{margin-top:1rem;padding:1rem;border:1px solid var(--border, #cbd5e1);border-radius:12px;display:grid;gap:.7rem}
+.speak-feedback .secondary-action{justify-self:start;min-height:44px}
+.speak-scores{display:grid;gap:.6rem}
+.speak-scores dl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.55rem;margin:0}
+.speak-scores dl>div{padding:.75rem .55rem;border-radius:10px;background:var(--card, #fff);border:1px solid var(--border, #cbd5e1);min-width:0}
+.speak-scores dt{font-size:.8rem;color:var(--muted, #506172)}
+.speak-scores dd{margin:.2rem 0 0;font-weight:750;font-variant-numeric:tabular-nums}
+.speak-scores p{font-size:.85rem;color:var(--muted, #506172);margin:0}
+@media(max-width:360px){.speak-scores dl{grid-template-columns:1fr}}

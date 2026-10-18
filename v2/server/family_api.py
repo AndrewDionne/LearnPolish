@@ -20,6 +20,7 @@ from typing import Callable
 from flask import Flask, g, jsonify, request
 from private_storage import prepare_database
 from recovery_mail import configured_sender
+from speech_assessment import InvalidAudio, checked_wav, assessment_from_sdk, azure_scripted_assess, MAX_WAV_BYTES
 
 REGIONS = frozenset((
     "dolnośląskie", "kujawsko-pomorskie", "lubelskie", "lubuskie",
@@ -64,6 +65,12 @@ CREATE TABLE IF NOT EXISTS activities(
  UNIQUE(family_id,user_id,item_id,mode,day)
 );
 CREATE INDEX IF NOT EXISTS activities_week ON activities(family_id,created_at,user_id);
+CREATE TABLE IF NOT EXISTS speech_usage(
+ user_id INTEGER NOT NULL REFERENCES users(id), day TEXT NOT NULL,
+ requests INTEGER NOT NULL DEFAULT 0,
+ PRIMARY KEY(user_id,day)
+);
+
 CREATE TABLE IF NOT EXISTS login_throttle(
  identity TEXT PRIMARY KEY, failures INTEGER NOT NULL, first_at INTEGER NOT NULL
 );
@@ -109,7 +116,9 @@ def _json():
 def create_app(database_path: str | None = None, catalog_path: str | None = None,
                allowed_origins: tuple[str, ...] | None = None,
                recovery_sender: Callable[[str, str], None] | None = None,
-               verification_sender: Callable[[str, str], None] | None = None) -> Flask:
+               verification_sender: Callable[[str, str], None] | None = None,
+               speech_enabled: bool | None = None,
+               speech_assessor: Callable | None = None) -> Flask:
     path = database_path or os.environ.get("PTP_FAMILY_DB")
     catalog = catalog_path or os.environ.get("PTP_FAMILY_CATALOG")
     if not path or not catalog or path == ":memory:":
@@ -129,6 +138,21 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
             known[key] = tier
     if not known:
         raise RuntimeError("Empty lesson catalog")
+    speech_references = {
+        item["id"]: item["polish"] for lesson in raw["lessons"]
+        for item in lesson["items"]
+        if isinstance(item.get("polish"), str) and 1 <= len(item["polish"]) <= 300
+    }
+    speech_active = (os.environ.get("PTP_SPEECH_ENABLED") == "1") if speech_enabled is None else speech_enabled
+    speech_key = os.environ.get("AZURE_SPEECH_KEY", "")
+    speech_region = os.environ.get("AZURE_SPEECH_REGION", "")
+    if speech_active and speech_assessor is None:
+        if (os.environ.get("PTP_SPEECH_F0_CONFIRMED") != "1" or
+                os.environ.get("PTP_SPEECH_NO_PAID_BILLING") != "1" or
+                not speech_key or not speech_key.isascii() or not speech_key.isprintable() or
+                speech_region != "germanywestcentral"):
+            raise RuntimeError("Speak assessment requires explicitly confirmed F0/no-paid resource and valid private Azure key/region")
+    assess = speech_assessor or azure_scripted_assess
     origins = allowed_origins if allowed_origins is not None else tuple(
         x.strip() for x in os.getenv("PTP_FAMILY_ORIGINS", "").split(",") if x.strip()
     )
@@ -137,7 +161,9 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
     mail_sender = recovery_sender or configured_sender("recovery")
     signup_sender = verification_sender or configured_sender("verification")
     app = Flask(__name__)
-    app.config["MAX_CONTENT_LENGTH"] = 16_000
+    # WAV uploads are allowed only on the authenticated opt-in speech route.
+    # All other routes preserve their previous 16 kB request limit.
+    app.config["MAX_CONTENT_LENGTH"] = MAX_WAV_BYTES + 2000
     app.config["JSON_SORT_KEYS"] = True
     # Never let SQLite create a potentially world-readable account database.
     # Existing directories/files must already be owner-private; reject symlinks.
@@ -174,6 +200,9 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
 
     @app.before_request
     def guard():
+        if (request.path != "/api/v2/family/speech/assess" and
+                request.content_length is not None and request.content_length > 16_000):
+            return jsonify(error="request_too_large"), 413
         origin = request.headers.get("Origin")
         if origin and origin not in origins:
             return jsonify(error="origin_not_allowed"), 403
@@ -212,6 +241,56 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
         if not member(user, family_id):
             return fail("not_found", 404)
         return None
+
+    @app.post("/api/v2/family/speech/assess")
+    @auth
+    def assess_speech(user):
+        """Explicit adult/user-authorized provider upload, no persisted voice or score."""
+        if not speech_active:
+            return fail("speech_assessment_unavailable", 503)
+        if (request.mimetype != "multipart/form-data" or
+                request.form.get("approve_azure_audio_upload") != "yes"):
+            return fail("explicit_voice_upload_consent_required")
+        item_id = request.form.get("item_id")
+        if not isinstance(item_id, str) or item_id not in speech_references:
+            return fail("built_in_lesson_item_required")
+        audio = request.files.get("audio")
+        if audio is None or audio.mimetype not in ("audio/wav", "audio/x-wav", "audio/wave"):
+            return fail("invalid_audio")
+        try:
+            raw_audio = audio.read(MAX_WAV_BYTES + 1)
+            duration, checked = checked_wav(raw_audio)
+        except InvalidAudio as exc:
+            return fail(str(exc))
+        # Record request allowance atomically BEFORE the provider SDK invocation.
+        # This is a durable cap across processes/restarts; do not auto-refund
+        # failures (the SDK may have consumed the provider request).
+        day = datetime.now(timezone.utc).date().isoformat()
+        con = db()
+        con.execute("BEGIN IMMEDIATE")
+        local = con.execute(
+            "SELECT requests FROM speech_usage WHERE user_id=? AND day=?",
+            (user["id"], day)).fetchone()
+        global_count = con.execute(
+            "SELECT COALESCE(SUM(requests),0) FROM speech_usage WHERE day=?",
+            (day,)).fetchone()[0]
+        if (local and local["requests"] >= 12) or global_count >= 30:
+            con.rollback()
+            return fail("speech_daily_free_quota_guard", 429)
+        con.execute(
+            """INSERT INTO speech_usage(user_id,day,requests) VALUES(?,?,1)
+               ON CONFLICT(user_id,day) DO UPDATE SET requests=requests+1""",
+            (user["id"], day))
+        con.commit()
+        try:
+            payload = assess(checked, speech_references[item_id], speech_key, speech_region)
+            result = assessment_from_sdk(payload)
+        except Exception:
+            result = {"status": "inconclusive", "reason": "provider_unavailable"}
+        # The service intentionally does not write raw voice, transcriptions,
+        # word/phoneme scores or result history. Never award XP using raw PA.
+        return jsonify({"item_id": item_id, "engine": "azure-pl-PL-scripted",
+                        "audio_seconds": round(duration, 2), **result})
 
     @app.get("/api/v2/family/health")
     def health():
@@ -722,6 +801,7 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
         # Revocation MUST delete consumed invites, never make one-use codes reusable.
         con.execute("DELETE FROM invitations WHERE redeemed_by=?", (user["id"],))
         con.execute("DELETE FROM activities WHERE user_id=?", (user["id"],))
+        con.execute("DELETE FROM speech_usage WHERE user_id=?", (user["id"],))
         con.execute("DELETE FROM members WHERE user_id=?", (user["id"],))
         con.execute("DELETE FROM sessions WHERE user_id=?", (user["id"],))
         con.execute("DELETE FROM password_reset_tokens WHERE user_id=?", (user["id"],))

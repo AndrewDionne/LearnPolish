@@ -4,6 +4,7 @@ import { lessonLabel, parseManifest } from './model';
 import { useLessonAudio } from './audio';
 import OfflineDownloadControl from './OfflineDownloadControl';
 import SpeakPanel from './speech/SpeakPanel';
+import {requestSpeechFeedback, SPEECH_ASSESSMENT_AVAILABLE} from './speech/assessment';
 import SoundContrastDeck from './SoundContrastDeck';
 import { parseProgress, recallRate, recordAttempt, STORAGE_KEY } from './progress';
 import type { Progress } from './progress';
@@ -426,7 +427,11 @@ export default function App() {
               </button>)}</div>
             </div>}
             <div className="answer-actions"><button type="button" className="secondary-action" onClick={() => jump(0)}>Practise again</button><button type="button" className="primary-action" onClick={() => goTo('library')}>Back to library →</button></div>
-          </section> : mode === 'speak' ? <SpeakPanel key={current.id} item={current} playing={audio.playing} onPlayReference={play} onStopReference={stopAudio} onNext={(completedTake) => {
+          </section> : mode === 'speak' ? <SpeakPanel key={current.id} item={current} playing={audio.playing} onPlayReference={play} onStopReference={stopAudio}
+            onAssess={SPEECH_ASSESSMENT_AVAILABLE && familyConnection && active.source !== 'personal'
+              ? (capture, signal) => requestSpeechFeedback(capture, familyConnection.token, signal)
+              : undefined}
+            onNext={(completedTake) => {
             if (completedTake) earn(current.id, 'speak');
             if (index < sessionItems.length - 1) jump(index + 1);
             else { stopAudio(); setFinished(true); }
