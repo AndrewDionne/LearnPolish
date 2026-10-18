@@ -22,7 +22,7 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
   const [recoveryAvailable,setRecoveryAvailable]=useState(false);
   const [verificationAvailable,setVerificationAvailable]=useState(false);
   const [pendingVerification,setPendingVerification]=useState(false);
-  const [authMode,setAuthMode]=useState<'sign-in'|'create'>('sign-in');
+  const [authMode,setAuthMode]=useState<'sign-in'|'create'>('create');
   const [verificationCode,setVerificationCode]=useState('');
   const [recoveryMode,setRecoveryMode]=useState(false);
   const [recoveryRequested,setRecoveryRequested]=useState(false);
@@ -243,8 +243,10 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
           <div className="family-auth-switch" role="group" aria-label="Family account access">
             <button type="button" aria-pressed={authMode==='sign-in'} disabled={busy}
               onClick={()=>{setAuthMode('sign-in');setError('');setStatus('');}}>Sign in</button>
-            <button type="button" aria-pressed={authMode==='create'} disabled={busy||!verificationAvailable}
-              onClick={()=>{setAuthMode('create');setError('');setStatus('');}}>Create account</button>
+            {authMode==='create'
+              ? <span className="family-auth-current" aria-current="step">Create account</span>
+              : <button type="button" aria-pressed={false} disabled={busy||!verificationAvailable}
+                  onClick={()=>{setAuthMode('create');setError('');setStatus('');}}>Create account</button>}
           </div>
         </div>
         {authMode==='create'&&<label>Display name<input value={name} onChange={e=>setName(e.target.value)}
@@ -255,13 +257,13 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
         <div className="family-actions">
           {authMode==='create'
             ? <button type="button" disabled={busy||!verificationAvailable||name.trim().length<2||!email.trim()||password.length<12}
-                onClick={()=>void run(signUp)}>Send verification email</button>
+                onClick={()=>void run(signUp)}>Create account</button>
             : <button type="button" disabled={busy||!email.trim()||!password}
                 onClick={()=>void run(login)}>Sign in to family</button>}
         </div>
         {authMode==='create'&&<small>Use a password of at least 12 characters. Verify the code in your email before joining a family.</small>}
         {!verificationAvailable&&<p className="family-note">New family accounts are unavailable until secure verification email delivery is configured.</p>}
-        {authMode==='sign-in'&&recoveryAvailable&&<button type="button" className="family-recovery-link" disabled={busy} onClick={()=>{
+        {recoveryAvailable&&<button type="button" className="family-recovery-link" disabled={busy} onClick={()=>{
           setRecoveryMode(true);setError('');setStatus('');}}>Forgot password?</button>}
       </>}
     </div> : <div className="family-connected">
