@@ -13,7 +13,7 @@ import unittest
 import wave
 
 from phonetic_similarity import (
-    SCHEMA, SYLLABLES, WORD, align, estimate, from_saved, per_syllable,
+    SCHEMA, SYLLABLES, WORD, align, english_guide, estimate, from_saved, per_syllable,
     render_html, sound_units, write_private_html,
 )
 from groq_pilot import MODELS
@@ -59,6 +59,26 @@ class PolishSyllableProxyTests(unittest.TestCase):
 
     def tearDown(self):
         self.temp.cleanup()
+
+    def test_shared_english_cues_exactly_align_to_four_scored_syllables(self):
+        guide = english_guide()
+        self.assertEqual(guide["polish"],WORD)
+        self.assertEqual(tuple(x["polish"] for x in guide["syllables"]),SYLLABLES)
+        self.assertEqual(guide["stressIndex"],2)
+        self.assertEqual(guide["reviewStatus"],"needs_native_speaker_review")
+        self.assertEqual([x["englishCue"] for x in guide["syllables"]],
+                         ["shfyehn","toh","KSHIH","skah"])
+        self.assertTrue(all(x["letterFocus"] and x["tip"] for x in guide["syllables"]))
+        score = estimate(WORD,[(MODELS[0],"Sweczo Seska"),(MODELS[1],"Sveczo Seska")])
+        self.assertEqual(score["english_guide"],guide)
+        page = render_html(score)
+        self.assertIn("English-friendly sounds sit below each Polish syllable",page)
+        self.assertIn("KSHIH · STRESS",page)
+        self.assertIn("shfyehn",page)
+        self.assertIn("skah",page)
+        self.assertIn("English guide (approx.)",page)
+        self.assertEqual(page.count('class="english-cue"'),4)
+        self.assertNotIn("<script",page)
 
     def test_expected_polish_syllable_segmentation_and_word_v_are_equivalent_in_asr(self):
         self.assertEqual(SYLLABLES,("Świę","to","krzy","ska"))

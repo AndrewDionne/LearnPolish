@@ -17,6 +17,36 @@ describe('lesson schema', () => {
     expect(() => parseManifest({ schemaVersion: 1, lessons: [lesson, lesson] })).toThrow(/Duplicate/);
   });
 });
+describe('syllable-aligned English pronunciation guides', () => {
+  const chunks = [
+    {polish:'Świę',englishCue:'shfyehn',letterFocus:'św · ię',tip:'Soft ś.'},
+    {polish:'to',englishCue:'toh',letterFocus:'t · o',tip:'Open o.'},
+    {polish:'krzy',englishCue:'KSHIH',letterFocus:'k · rz · y',tip:'Stress krzy.'},
+    {polish:'ska',englishCue:'skah',letterFocus:'sk · a',tip:'Clear ska.'},
+  ];
+  const item = {id:'speak_swietokrzyska:0',polish:'Świętokrzyska',
+                english:'Warsaw place name',
+                pronunciationGuide:{
+                  syllables:chunks,stressIndex:2,
+                  qualification:'Approximate English sounds.',
+                  reviewStatus:'needs_native_speaker_review',
+                }};
+  const candidate = {...lesson,items:[item]};
+  test('accepts exactly aligned cues; rejects null, mismatched syllables and invalid stress',()=>{
+    expect(validateLesson(candidate)).toBe(true);
+    expect(validateLesson({...candidate,items:[{...item,pronunciationGuide:null}]})).toBe(false);
+    expect(validateLesson({...candidate,items:[{...item,pronunciationGuide:{
+      ...item.pronunciationGuide,stressIndex:7,
+    }}]})).toBe(false);
+    expect(validateLesson({...candidate,items:[{...item,pronunciationGuide:{
+      ...item.pronunciationGuide,syllables:chunks.slice(1),
+    }}]})).toBe(false);
+    expect(validateLesson({...candidate,items:[{...item,pronunciationGuide:{
+      ...item.pronunciationGuide,syllables:[{...chunks[0],englishCue:''},...chunks.slice(1)],
+    }}]})).toBe(false);
+  });
+});
+
 describe('progress', () => {
   test('records distinct learning outcomes', () => {
     const one = recordAttempt({}, 'greetings:0', false, '2026-10-16T00:00:00Z');

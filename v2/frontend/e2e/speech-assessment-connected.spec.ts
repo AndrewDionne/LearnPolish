@@ -167,6 +167,15 @@ test('Świętokrzyska is a real built-in Speak test item with opt-in timing, not
   await page.getByRole('button',{name:/Świętokrzyska/}).click();
   await page.getByRole('button',{name:'Speak',exact:true}).click();
   await expect(page.getByText('Świętokrzyska',{exact:true})).toBeVisible();
+  // English pronunciation stays visible before microphone capture and
+  // does not imply a phonetic score or native MP3 exists.
+  const guide = page.getByLabel('English-friendly pronunciation guide');
+  await expect(guide).toBeVisible();
+  await expect(guide.locator('.speak-english-syllable')).toHaveCount(4);
+  await expect(guide.locator('.speak-english-cue')).toHaveText(['shfyehn','toh','KSHIH','skah']);
+  await expect(guide.locator('.speak-english-syllable.stressed')).toContainText('krzy');
+  await expect(guide.locator('.speak-english-syllable.stressed')).toContainText('stress');
+  await expect(guide).toContainText('Polish sounds differ');
   await expect(page.getByText(/Native reference audio is not available/)).toBeVisible();
   await expect(page.getByText(/Read the Polish word/)).toBeVisible();
   await expect(page.getByRole('button',{name:'Check my pronunciation'})).toHaveCount(0);
