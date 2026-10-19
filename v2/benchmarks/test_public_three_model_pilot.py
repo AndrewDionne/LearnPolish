@@ -360,6 +360,22 @@ class PublicThreeModelPilotTests(unittest.TestCase):
         self.assertFalse(paired["grading_verified"])
         self.assertEqual(result["network_requests_performed"],1)
 
+    def test_azure_recognized_but_unscored_negative_keeps_evidence(self):
+        positive=self.create_real_positive_control()
+        wrong=self.folder/"negative-no-grade.jsonl"
+        args=self.control_params(positive,wrong)
+        args["assessor"]=lambda *params: {
+            "status":"ok","raw_azure_json":{"NBest":[{"Display":"Dzień dobry"}]},
+        }
+        result=run_reference_control(**args)
+        self.assertEqual(result["network_requests_performed"],1)
+        paired=result["comparison"]
+        self.assertEqual(paired["wrong_target_result"],"recognized_but_no_usable_scores")
+        self.assertIsNone(paired["positive_minus_wrong_target"])
+        self.assertFalse(paired["grading_verified"])
+        self.assertTrue(wrong.is_file())
+        self.assertEqual(wrong.stat().st_mode & 0o777,0o600)
+
     def test_equally_high_wrong_target_score_is_not_misrepresented(self):
         original=self.create_real_positive_control()
         wrong=self.folder/"azure-false-positive.jsonl"
