@@ -51,31 +51,63 @@
 .offline-error{font-size:11px;color:#af483e;max-width:245px}
 @media(max-width:760px){.offline-control{border-left:0;padding-left:0}}
 
-/* Speak: pre-assessment microphone capture and temporary replay */
-.speak-panel{gap:0}.speak-prompt{font:650 clamp(32px,4.6vw,52px)/1.3 "Outfit",sans-serif;letter-spacing:-1px;color:#193f51;margin:32px 0 8px;overflow-wrap:anywhere}
-.speak-translation{font-size:14px;color:#78929a;margin:0 0 16px}
-.speak-english-guide{width:min(100%,520px);margin:5px 0 19px;text-align:left}
-.speak-english-label{font-size:11px;font-weight:750;color:#416f73;margin:0 0 8px;letter-spacing:.02em}
-.speak-english-label small{font-weight:500}
-.speak-english-syllables{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
-.speak-english-syllable{min-width:0;border-radius:10px;background:#f2f7f5;padding:9px 7px;display:grid;gap:2px;justify-items:center;text-align:center}
-.speak-english-syllable.stressed{background:#e5f0e9;box-shadow:inset 0 -3px 0 #176e69}
-.speak-english-original{font-size:15px;color:#193f51;font-weight:750}
-.speak-english-cue{font-size:12px;color:#275f64;overflow-wrap:anywhere}
-.speak-english-syllable small{font-size:10px;color:#2f6d62;font-weight:700}
-.speak-guide-qualification,.speak-english-fallback{font-size:12px;line-height:1.55;color:#425b61;margin:9px 0 0}
-@media(max-width:390px){.speak-english-syllables{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.speak-divider{width:100%;height:1px;background:#e9f0ec;margin:26px 0}
-.speak-instruction{font-size:13px;color:#6f888e;max-width:420px;line-height:1.65;margin:0 0 20px}
+/* Speak: focused one-word practice — controls expand only as needed */
+.speak-focused .lesson-tools{margin-bottom:6px}
+.speak-focused .speak-compact-head{justify-content:flex-end;min-height:0;margin:0}
+.speak-focused .speak-compact-head .item-count{font-size:14px;color:#41616b}
+.speak-focused .speak-compact-head .item-count span{font-size:13px}
+.speak-focused .lesson-meter{margin:5px 0 14px;height:4px}
+.speak-focused .mode-row{margin-bottom:12px}
+.speak-panel{gap:0;min-height:350px;padding:clamp(19px,3.5vw,34px);width:100%}
+.speak-card-top{width:100%;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;text-align:left}
+.speak-meaning{color:#405e65;font-size:13px;line-height:1.5;margin:3px 0;min-width:0;max-width:65%}
+.speak-guide-toggle{border:1px solid #9ebcb6;background:#fff;color:#21574f;min-height:42px;padding:9px 12px;border-radius:10px;font-weight:700;font-size:12px;display:flex;gap:9px;align-items:center;flex-wrap:wrap;justify-content:center;text-align:center}
+.speak-guide-toggle[aria-pressed="true"]{background:#e5f4ee;border-color:#176e69;color:#125a51}
+.speak-guide-toggle span{font-size:11px;font-weight:800;white-space:nowrap}
+.speak-word-stage{width:100%;min-width:0;display:flex;flex-direction:column;align-items:center;margin:clamp(25px,5vw,48px) 0 22px}
+.speak-prompt{font:650 clamp(30px,5.5vw,54px)/1.18 "Outfit",sans-serif;letter-spacing:-1.3px;color:#193f51;margin:0;text-align:center;overflow-wrap:anywhere}
+.speak-prompt.with-guide{width:100%;font-size:inherit;letter-spacing:normal}
+.speak-guided-word{display:flex;align-items:flex-start;justify-content:center;flex-wrap:nowrap;max-width:100%;gap:0}
+.speak-word-segment{display:inline-flex;flex-direction:column;align-items:center;min-width:0}
+.speak-word-polish{font:650 clamp(25px,5.1vw,52px)/1.14 "Outfit",sans-serif;letter-spacing:-1px;white-space:nowrap}
+.speak-word-english{font:650 clamp(11px,1.6vw,14px)/1.4 "DM Sans",sans-serif;color:#4b6771;white-space:nowrap;margin-top:7px;padding:0 5px;letter-spacing:0}
+.speak-word-segment.stressed .speak-word-english{color:#156759;font-weight:800}
+.speak-guide-caption,.speak-english-fallback{color:#425b61;font-size:11px;line-height:1.45;margin:9px 0 0}
+.speak-english-fallback{max-width:100%}
+.speak-panel .speak-audio-button{margin:0 0 18px}
+.speak-record-actions{width:100%;display:flex;flex-direction:column;align-items:center;gap:10px}
 .record-button{background:#176e69;color:#fff;font-size:13px;font-weight:800;border-radius:999px;border:0;min-height:47px;padding:13px 25px}
-.record-button:hover{background:#105b56}.record-button.stop-button{background:#b4554b}.recording-dot{color:#bd5d4d;font-weight:700}
-.speak-status{font-size:13px;line-height:1.5;margin:4px 0 16px}.speak-replay{margin:20px auto 0;width:min(100%,450px);display:grid;gap:10px}
-.speak-replay label{font-size:11px;font-weight:700;color:#416f73}.speak-replay audio{width:100%}
-.capture-warning,.capture-error,.capture-valid{width:100%;margin:20px auto 0;border-radius:10px;padding:14px 16px;font-size:12px;line-height:1.6}
-.capture-warning{background:#fff5e8;color:#8a6039}.capture-error{background:#faefed;color:#a54239}.capture-valid{background:#e9f7ef;color:#286f58}
-.speak-privacy{max-width:440px;font-size:11px;line-height:1.6;color:#849a9e;margin:23px 0 0}
-.speak-next{margin-top:20px}.speak-subtle{font-size:12px;color:#839a9c}
-@media(max-width:760px){.speak-panel{padding:27px 20px}.speak-prompt{font-size:34px;margin-top:20px}.speak-divider{margin:23px 0}}
+.record-button:hover{background:#105b56}.record-button.stop-button{background:#b4554b}
+.recording-dot{color:#a84439;font-weight:750}
+.speak-status{font-size:13px;line-height:1.5;margin:5px 0}
+.speak-replay{margin:6px auto;width:min(100%,450px);display:grid;gap:8px}
+.speak-replay label{font-size:12px;font-weight:700;color:#2e6065}
+.speak-replay audio{width:100%}
+.speak-record-actions .capture-warning,.speak-record-actions .capture-error,.speak-record-actions .capture-valid{width:min(100%,470px);margin:0;border-radius:10px;padding:11px 13px;font-size:12px;line-height:1.5}
+.capture-warning{background:#fff5e8;color:#754923}
+.capture-error{background:#faefed;color:#942d28}
+.capture-valid{background:#e9f7ef;color:#235c46}
+.speak-feedback{width:min(100%,540px);margin-top:5px;padding:14px}
+.speak-feedback .speak-assessment-consent{color:#425b61;font-size:12px;line-height:1.5;margin:0}
+.speak-panel .speak-next{margin-top:24px;min-width:104px;min-height:44px}
+.speak-private-details{width:min(100%,490px);margin:19px auto 0;color:#435e64;text-align:left;font-size:12px;line-height:1.5}
+.speak-private-details summary{display:list-item;width:fit-content;margin:0 auto;cursor:pointer;padding:5px 7px;font-size:12px;font-weight:700}
+.speak-private-details summary:focus-visible{outline:3px solid #176e69;outline-offset:3px}
+.speak-private-details p{margin:8px 0 0}
+.speak-private-details .benchmark-export{margin-top:10px}
+.speak-score-explanation{font-size:12px;color:#425b61}
+.speak-score-explanation summary{cursor:pointer;font-weight:700}
+.speak-score-explanation summary:focus-visible{outline:3px solid #176e69;outline-offset:3px}
+.speak-score-explanation p{margin:7px 0 0}
+@media(max-width:460px){
+  .speak-panel{padding:20px 15px}
+  .speak-card-top{flex-wrap:wrap;justify-content:center;gap:7px}
+  .speak-meaning{max-width:100%;text-align:center}
+  .speak-word-stage{margin:24px 0 20px}
+  .speak-word-polish{font-size:clamp(19px,6vw,31px);letter-spacing:-.8px}
+  .speak-word-english{font-size:10px;padding:0 2px}
+  .speak-prompt{font-size:clamp(27px,8vw,37px)}
+}
 
 /* Scheduled recall: a quiet, deterministic practice queue */
 .due-panel{background:#fff;border:1px solid #e1ebe8;padding:25px;border-radius:16px;margin:24px 0}

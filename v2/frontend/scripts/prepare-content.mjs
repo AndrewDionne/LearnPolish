@@ -202,7 +202,7 @@ export function buildContent() {
     items: [{
       id: 'speak_swietokrzyska:0',
       polish: guide.polish,
-      english: 'Świętokrzyska (street and metro station in Warsaw)',
+      english: 'Street and metro station in Warsaw',
       pronunciation: guide.syllables.map(s => s.englishCue).join(' · '),
       pronunciationGuide: {
         syllables: guide.syllables,
