@@ -95,6 +95,104 @@ def preview(folder: Path) -> dict:
     }
 
 
+
+# The Speech SDK supplies these diagnostic enums; NEVER serialize its
+# unbounded error_details, recognition result ID, or provider exception text.
+_DIAGNOSTIC_ENUMS = {
+    "azure_result_reason": frozenset(("Canceled", "NoMatch", "Other")),
+    "azure_no_match_reason": frozenset((
+        "NotRecognized", "InitialSilenceTimeout", "InitialBabbleTimeout",
+        "KeywordNotRecognized", "EndSilenceTimeout", "Unknown")),
+    "azure_cancellation_reason": frozenset(("Error", "EndOfStream", "CancelledByUser", "Unknown")),
+    "azure_error_code": frozenset((
+        "NoError", "AuthenticationFailure", "BadRequest", "ConnectionFailure",
+        "Forbidden", "RuntimeError", "ServiceError", "ServiceTimeout",
+        "ServiceUnavailable", "TooManyRequests", "EmbeddedModelError",
+        "ServiceRedirectPermanent", "ServiceRedirectTemporary", "Unknown")),
+}
+_SAFE_REASONS = frozenset((
+    "Azure returned NoMatch", "Azure canceled speech recognition",
+    "Azure returned unsupported recognition result", "Azure returned no detailed response",
+    "Azure response was not a JSON object",
+))
+
+
+def azure_evidence(clip: dict, payload: dict, elapsed_ms: float) -> dict:
+    """Allowlisted SDK cancellation categories; raw provider details remain private."""
+    if not isinstance(payload, dict) or payload.get("status") not in ("ok", "inconclusive"):
+        raise ValueError("Azure result unusable; no automatic retry or fake 0")
+    raw = payload.get("raw_azure_json")
+    reason = payload.get("reason")
+    native = extract_azure_native(raw) if isinstance(raw, dict) else {
+        "status": "inconclusive",
+        "reason": reason if reason in _SAFE_REASONS else "Azure result inconclusive",
+    }
+    diagnostic = {
+        name: payload[name] if payload[name] in allowed else "Unknown"
+        for name, allowed in _DIAGNOSTIC_ENUMS.items()
+        if isinstance(payload.get(name), str)
+    }
+    return {
+        "sample_id": clip["id"], "reference": clip["reference"],
+        "audio_sha256": clip["sha256"], "engine": "azure-pl-PL-scripted",
+        "status": payload["status"], "azure_native": native,
+        "azure_diagnostic": diagnostic or None,
+        "latency_ms": elapsed_ms, "raw_azure_json": raw,
+        "source_public_native": True, "assessment_is_human_calibrated": False,
+    }
+
+
+def azure_only(folder: Path, sample_id: str, *, send: bool = False,
+               approve_public_audio_upload: bool = False,
+               confirm_azure_f0: bool = False, confirm_no_paid_billing: bool = False,
+               output: Path | None = None, azure_key: str | None = None,
+               azure_region: str | None = None,
+               assessor: Callable | None = None) -> dict:
+    """Target ONE already studied short clip, never re-run either Whisper model."""
+    clips = checked_public_clips(folder)
+    matches = [clip for clip in clips if clip["id"] == sample_id]
+    if len(matches) != 1:
+        raise ValueError("--azure-only needs --sample-id greeting-day or greeting-evening")
+    clip = matches[0]
+    plan = {
+        "status": "AZURE_ONLY_PREVIEW", "sample_id": sample_id,
+        "reference": clip["reference"], "audio_sha256": clip["sha256"],
+        "audio_seconds": round(clip["seconds"], 3), "planned_azure_calls": 1,
+        "planned_groq_calls": 0, "network_calls_performed": 0,
+        "reason": "The original six-call result omitted Azure SDK cancellation enums",
+    }
+    if not send:
+        return plan
+    if not (approve_public_audio_upload and confirm_azure_f0 and confirm_no_paid_billing):
+        raise ValueError("Azure-only inference requires public audio approval, F0 and no-paid-billing checks")
+    if (not azure_key or not azure_key.isascii() or "\u2026" in azure_key
+            or azure_region != AZURE_REGION):
+        raise ValueError("Existing private AZURE_SPEECH_KEY and germanywestcentral region required")
+    if output is None:
+        raise ValueError("Select a NEW private JSONL output; don't overwrite earlier results")
+    if assessor is None:
+        try:
+            import azure.cognitiveservices.speech  # noqa: F401
+        except ImportError:
+            raise RuntimeError("Local Azure SDK missing; no audio sent") from None
+        assessor = azure_scripted_assess
+    # Exclusive creation before any single potential Azure SDK request.
+    with _output(output, folder) as stream:
+        started = time.monotonic()
+        payload = assessor(clip["audio"], clip["reference"], azure_key, azure_region)
+        elapsed = round((time.monotonic() - started) * 1000, 1)
+        row = azure_evidence(clip, payload, elapsed)
+        stream.write(json.dumps(row, ensure_ascii=False) + "\n")
+        stream.flush(); os.fsync(stream.fileno())
+    return {
+        "status": "AZURE_ONLY_COMPLETED", "network_calls_performed": 1,
+        "groq_calls": 0, "sample_id": sample_id,
+        "azure_status": row["status"], "azure_diagnostic": row["azure_diagnostic"],
+        "azure_scores_uncalibrated": row["azure_native"].get("scores"),
+        "report_saved_private": True,
+    }
+
+
 def execute(folder: Path, *, send: bool = False, approve_public_audio_upload: bool = False,
             confirm_groq_free: bool = False, confirm_azure_f0: bool = False,
             confirm_no_paid_billing: bool = False, output: Path | None = None,
@@ -151,16 +249,7 @@ def execute(folder: Path, *, send: bool = False, approve_public_audio_upload: bo
             started = time.monotonic()
             assessed = assessor(c["audio"], c["reference"], azure_key, azure_region)
             elapsed = round((time.monotonic() - started) * 1000, 1)
-            if not isinstance(assessed, dict) or assessed.get("status") not in ("ok", "inconclusive"):
-                raise ValueError("Azure result unusable; no automatic retry or fake 0")
-            raw = assessed.get("raw_azure_json")
-            native = extract_azure_native(raw) if isinstance(raw, dict) else {
-                "status": "inconclusive", "reason": assessed.get("reason")}
-            row = {"sample_id": c["id"], "reference": c["reference"],
-                   "audio_sha256": c["sha256"], "engine": "azure-pl-PL-scripted",
-                   "status": assessed["status"], "azure_native": native,
-                   "latency_ms": elapsed, "raw_azure_json": raw,
-                   "source_public_native": True, "assessment_is_human_calibrated": False}
+            row = azure_evidence(c, assessed, elapsed)
             stream.write(json.dumps(row, ensure_ascii=False) + "\n")
             stream.flush(); os.fsync(stream.fileno())
             calls += 1
@@ -186,6 +275,9 @@ def summarize(output: Path) -> dict:
             shown["azure_scores_uncalibrated"] = (
                 native.get("scores") if isinstance(native, dict) else None)
             shown["reason"] = (native.get("reason") if isinstance(native, dict) else None)
+            # Older saved runs do not have this field. A missing enum cannot
+            # be reconstructed from an Azure cancellation summary.
+            shown["azure_diagnostic"] = entry.get("azure_diagnostic")
         per_clip.append(shown)
     return {"evidence": per_clip, "fit": fit}
 
@@ -193,6 +285,9 @@ def summarize(output: Path) -> dict:
 def main() -> int:
     p = argparse.ArgumentParser(description="Two public-domain Polish voices × 3 engines; 0 inference by default")
     p.add_argument("--fixture-dir", type=Path)
+    p.add_argument("--azure-only", action="store_true",
+                   help="One opt-in Azure diagnostic without calling Groq")
+    p.add_argument("--sample-id", help="Exact public clip ID when using --azure-only")
     p.add_argument("--send", action="store_true")
     p.add_argument("--approve-public-audio-upload", action="store_true")
     p.add_argument("--confirm-groq-free", action="store_true")
@@ -207,14 +302,24 @@ def main() -> int:
         else:
             if not args.fixture_dir:
                 raise ValueError("Use --fixture-dir or --summarize")
-            result = execute(args.fixture_dir, send=args.send,
-                approve_public_audio_upload=args.approve_public_audio_upload,
-                confirm_groq_free=args.confirm_groq_free,
-                confirm_azure_f0=args.confirm_azure_f0,
-                confirm_no_paid_billing=args.confirm_no_paid_billing,
-                output=args.output, groq_key=os.environ.get("GROQ_API_KEY"),
-                azure_key=os.environ.get("AZURE_SPEECH_KEY"),
-                azure_region=os.environ.get("AZURE_SPEECH_REGION"))
+            if args.azure_only:
+                result = azure_only(args.fixture_dir, args.sample_id or "", send=args.send,
+                    approve_public_audio_upload=args.approve_public_audio_upload,
+                    confirm_azure_f0=args.confirm_azure_f0,
+                    confirm_no_paid_billing=args.confirm_no_paid_billing,
+                    output=args.output, azure_key=os.environ.get("AZURE_SPEECH_KEY"),
+                    azure_region=os.environ.get("AZURE_SPEECH_REGION"))
+            else:
+                if args.sample_id:
+                    raise ValueError("--sample-id is only for --azure-only")
+                result = execute(args.fixture_dir, send=args.send,
+                    approve_public_audio_upload=args.approve_public_audio_upload,
+                    confirm_groq_free=args.confirm_groq_free,
+                    confirm_azure_f0=args.confirm_azure_f0,
+                    confirm_no_paid_billing=args.confirm_no_paid_billing,
+                    output=args.output, groq_key=os.environ.get("GROQ_API_KEY"),
+                    azure_key=os.environ.get("AZURE_SPEECH_KEY"),
+                    azure_region=os.environ.get("AZURE_SPEECH_REGION"))
         print(json.dumps(result, ensure_ascii=False, indent=2))
     except (OSError, ValueError, RuntimeError) as err:
         p.error(str(err))
