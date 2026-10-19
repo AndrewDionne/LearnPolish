@@ -1,5 +1,96 @@
 # Świętokrzyska — pronunciation and latency test
 
+## Whisper v3 vs Whisper Turbo — same adult word, **no repeat Azure**
+
+**Current status:** Azure has already measured this exact `Świętokrzyska`
+WAV twice; Whisper has **not** yet been run on this recording. Earlier
+Groq Whisper native-audio successes were for `Dzień dobry` and
+`Dobry wieczór`, NOT this longer word. Treat results separately.
+
+The Groq-only `v2/benchmarks/swietokrzyska_whisper.py` harness reuses the
+same original private WAV and **reads the existing** `azure-compare-01.jsonl`
+to verify the SHA-256 and reference `Świętokrzyska`. It requires both
+Azure assessments to have actually succeeded. It never calls Azure,
+regardless of `--send`, and makes **zero inference** by default.
+
+From the repository root after pulling merged main, check local WAV:
+
+```bash
+WAV='PathToPolish-Private-AI/swietokrzyska-01/ptp-speech-v1--speak_swietokrzyska%3A0--20261019T123345890Z.wav'
+
+PathToPolish-Private-AI/.venv-speech-test/bin/python \
+  v2/benchmarks/swietokrzyska_whisper.py \
+  --wav "$WAV" \
+  --azure-result PathToPolish-Private-AI/swietokrzyska-01/azure-compare-01.jsonl
+```
+
+This is a **PREVIEW** (zero network) and reports the previous Azure raw
+scores, old timings, target SHA, and planned TWO Groq Whisper requests.
+Do not touch or overwrite the original adult WAV or completed Azure
+result file.
+
+To perform the new comparison ONCE, the owner must separately review
+and approve processing this consenting **adult's audio** by **Groq**,
+verify their Groq account is still on the **Free plan** without paid
+billing or auto-top-up, and privately have a valid `GROQ_API_KEY` in
+the same Mac Terminal (no key in chat/screenshots). Check its presence
+without printing its value:
+
+```bash
+echo "Groq key available: $([[ -n "$GROQ_API_KEY" ]] && echo yes || echo no)"
+```
+
+The available `v2/benchmarks/groq_pilot.py` can do a **zero-audio**
+list-models access check if needed; do not confuse that with confirmed
+model inference or billing status. If the key is absent, restore your
+Groq key privately using hidden `read -rs`; never store it in tracked
+frontend code.
+
+With explicit informed Groq consent / confirmed free billing, execute
+TWO requests (Groq large-v3 and Groq large-v3-turbo, sequential; **ZERO
+Azure**) using a **NEW** private output filename:
+
+```bash
+PathToPolish-Private-AI/.venv-speech-test/bin/python \
+  v2/benchmarks/swietokrzyska_whisper.py \
+  --wav "$WAV" \
+  --azure-result PathToPolish-Private-AI/swietokrzyska-01/azure-compare-01.jsonl \
+  --send --approve-adult-audio-upload \
+  --confirm-groq-free --confirm-no-paid-billing \
+  --output PathToPolish-Private-AI/swietokrzyska-01/whisper-01.jsonl
+```
+
+Estimate about **20 seconds of Groq billable audio** in total due to
+their minimum 10 seconds per 3.12-second recording, even though the
+models process only the unchanged 3.12 seconds each. No implicit
+retry; on provider failure save one sanitized error row and stop.
+
+The script prints an offline-verified paired comparison with recognized
+literal Polish text (diacritics preserved), **single-word WER** and
+duration for each model, alongside already saved Azure scores/SDK
+timings. Provider raw response, credentials and WAV are never copied
+into the result file; private JSONL still contains **your recognized
+transcript** and must remain private and chmod-600.
+
+Review later WITHOUT any model calls:
+
+```bash
+PathToPolish-Private-AI/.venv-speech-test/bin/python \
+  v2/benchmarks/swietokrzyska_whisper.py \
+  --wav "$WAV" \
+  --azure-result PathToPolish-Private-AI/swietokrzyska-01/azure-compare-01.jsonl \
+  --summarize PathToPolish-Private-AI/swietokrzyska-01/whisper-01.jsonl
+```
+
+**Decision boundaries:** Whisper large-v3 and Turbo give
+transcriptions, not the Azure pronunciation metric. On a ONE-word
+test, WER is just 0 or 1: correct `Świętokrzyska` transcription
+does NOT prove correct `ś`, `ę`, `rz`, etc., nor phoneme grading
+quality. Azure's 84/100/100 is raw, uncalibrated. Two request times
+cannot establish p95, and Groq curl HTTP turnaround and Azure SDK
+recognize_once time are not identical instrumentation. This is
+exploratory model-fit evidence, not a leader-board scoring policy.
+
 ## PHYSICAL RESULT COMPLETE — 2026-10-19 (do not repeat)
 
 Owner successfully submitted the **same original 3.120-second** adult
