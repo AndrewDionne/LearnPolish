@@ -13,11 +13,19 @@ export type ReadingProgression = { order: number; stage: 'foundations' | 'daily-
 /** Explicitly validated learning difficulty only; missing defaults to beginner XP. */
 export type LearningDifficulty = 1 | 2 | 3 | 4 | 5;
 
+export type EnglishPronunciationGuide = {
+  syllables: {polish:string;englishCue:string;letterFocus:string;tip:string}[];
+  stressIndex: number;
+  qualification: string;
+  reviewStatus: 'needs_native_speaker_review';
+};
+
 export type LessonItem = {
   id: string;
   polish: string;
   english: string;
   pronunciation?: string;
+  pronunciationGuide?: EnglishPronunciationGuide;
   title?: string;
   audio?: string;
   soundGroupId?: string;
@@ -53,6 +61,24 @@ export function validateLesson(value: unknown): value is Lesson {
       !!item && typeof item.id === 'string' &&
       typeof item.polish === 'string' && item.polish.trim().length > 0 &&
       typeof item.english === 'string' && item.english.trim().length > 0 &&
+      (item.pronunciationGuide === undefined || (
+        Array.isArray(item.pronunciationGuide.syllables) &&
+        item.pronunciationGuide.syllables.length >= 2 &&
+        item.pronunciationGuide.syllables.length <= 12 &&
+        item.pronunciationGuide.syllables.every(segment =>
+          !!segment && typeof segment.polish === 'string' && segment.polish.length > 0 &&
+          typeof segment.englishCue === 'string' && segment.englishCue.trim().length > 0 &&
+          typeof segment.letterFocus === 'string' && segment.letterFocus.trim().length > 0 &&
+          typeof segment.tip === 'string' && segment.tip.trim().length > 0
+        ) &&
+        item.pronunciationGuide.syllables.map(segment => segment.polish).join('') === item.polish &&
+        Number.isInteger(item.pronunciationGuide.stressIndex) &&
+        item.pronunciationGuide.stressIndex >= 0 &&
+        item.pronunciationGuide.stressIndex < item.pronunciationGuide.syllables.length &&
+        typeof item.pronunciationGuide.qualification === 'string' &&
+        item.pronunciationGuide.qualification.length > 0 &&
+        item.pronunciationGuide.reviewStatus === 'needs_native_speaker_review'
+      )) &&
       (item.audio === undefined || typeof item.audio === 'string') &&
       (item.soundGroupId === undefined || typeof item.soundGroupId === 'string') &&
       (item.comprehension === undefined || (
