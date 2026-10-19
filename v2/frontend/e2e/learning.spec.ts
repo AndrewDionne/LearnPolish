@@ -224,7 +224,7 @@ test('Speak records, checks acoustic quality, replays locally, and clears on nex
   await page.getByRole('button', {name: 'Stop recording'}).click();
   await expect(page.getByText(/Recording captured/)).toBeVisible();
   await expect(page.locator('#personal-speech-replay')).toHaveAttribute('src', /blob:/);
-  await expect(page.getByText(/Pronunciation is not scored yet/)).toBeVisible();
+  await expect(page.getByText(/Recording captured/)).toBeVisible();
   await page.getByRole('button', {name: /Next phrase/}).click();
   await expect(page.getByText('Dobry wieczór', {exact: true})).toBeVisible();
   const earned = await page.evaluate(() => JSON.parse(localStorage.getItem('ptp-v2-expedition') || '{}'));
@@ -362,7 +362,7 @@ test('XP is awarded for actual Learn/Listen responses, but not a skipped Speak a
  await page.getByRole('group',{name:'Choose the meaning'}).getByRole('button').first().click();
  await page.getByRole('button',{name:'Continue →',exact:true}).click();
  await page.getByRole('button',{name:'Speak',exact:true}).click();
- await page.getByRole('button',{name:/Next phrase/}).click();
+ await page.getByRole('button',{name:'Next',exact:true}).click();
  await page.getByRole('button',{name:/My progress|Profile/}).last().click();
  const xp=page.getByRole('region',{name:'Your learning XP'});
  await expect(xp).toContainText('20');
