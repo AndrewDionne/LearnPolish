@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "polish": "Świętokrzyska",
+  "syllables": [
+    {
+      "polish": "Świę",
+      "englishCue": "shfyehn",
+      "letterFocus": "św · ię",
+      "tip": "ś is softer than English sh. In this word, w after ś sounds closer to f; ę before t is approximately en."
+    },
+    {
+      "polish": "to",
+      "englishCue": "toh",
+      "letterFocus": "t · o",
+      "tip": "A short, clear t followed by an open Polish o, close to the vowel in English 'thought' for many English accents."
+    },
+    {
+      "polish": "krzy",
+      "englishCue": "KSHIH",
+      "letterFocus": "k · rz · y",
+      "tip": "This is the stressed syllable. After k, rz sounds like a hard sh; Polish y is a central vowel, not exactly English ih."
+    },
+    {
+      "polish": "ska",
+      "englishCue": "skah",
+      "letterFocus": "sk · a",
+      "tip": "Keep the s-k consonants distinct and the final a open, approximately ah."
+    }
+  ],
+  "stressIndex": 2,
+  "qualification": "English-friendly approximation for first practice, not a literal phonetic transcription or a certified native recording.",
+  "reviewStatus": "needs_native_speaker_review"
+}
