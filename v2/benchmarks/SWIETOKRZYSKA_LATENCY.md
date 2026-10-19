@@ -112,6 +112,51 @@ The preview checks the original **16 kHz mono PCM16 WAV**, 0.6–10 second
 duration, exact test item ID and SHA-256 and displays the planned
 **two** Azure requests. It makes zero provider connections/calls.
 
+## Live runner preflight — keys and existing results (owner issue, 2026-10-19)
+
+The owner's first REAL `--send` attempt did **not** print
+`Azure 1/2:` and ended with the older generic
+`Validation/provider failure. Check local private files, speech key, F0
+and command flags.` The previous **no-network WAV preview PASSED**,
+confirming the original V2 file is valid (3.12 seconds, correct
+`Świętokrzyska` target). The failure therefore occurred after the
+preview boundary; it is NOT proof that Azure processed any request.
+Likely preflight causes include an unexported `AZURE_SPEECH_KEY` in a
+new Terminal or a previously created output file. **Do not infer an
+exact cause until the user checks; preserve the original evidence.**
+
+Safe local diagnostics (from repo root), no audio upload or secret echo:
+
+```bash
+echo "Azure key configured: $([[ -n "$AZURE_SPEECH_KEY" ]] && echo yes || echo no)"
+echo "Azure region: ${AZURE_SPEECH_REGION:-not-set}"
+
+if [[ -e PathToPolish-Private-AI/swietokrzyska-01/azure-compare-01.jsonl ]]; then
+  echo "Result file exists — preserve it; DO NOT repeat --send"
+else
+  echo "No result file created"
+fi
+```
+
+If the key is not exported, restore it privately from the owner's
+existing Azure Speech **F0** resource in the *same* Mac shell, without
+printing or sharing it; set
+`export AZURE_SPEECH_REGION=germanywestcentral`. The earlier Azure
+token-issuer preflight can confirm STS access **without audio calls**:
+
+```bash
+python3 v2/benchmarks/azure_auth_probe.py
+```
+
+If an output file already exists, do not overwrite it. Run
+`--summarize <existing private JSONL>` first to see how many requests
+(if any) completed; if no rows, preserve for diagnosis and choose a new
+filename only after checking the cause. The updated CLI reports
+**safe allowlisted cause categories** (key missing/invalid shape,
+region mismatch, output exists, and private folder problems).
+It never prints raw Azure SDK errors, private file paths, keys, audio
+bytes or transcripts. Repeating a failed command is NOT automatic.
+
 ## Optional one-shot Azure SDK connection comparison
 
 First confirm the existing Speech **F0** resource still has free quota,

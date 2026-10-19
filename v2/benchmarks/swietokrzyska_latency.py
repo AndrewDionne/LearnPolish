@@ -212,9 +212,17 @@ def run(audio: Path, output: Path | None = None, *, send: bool = False,
         return preview(audio)
     if not (approve_adult_audio_upload and confirm_azure_f0 and confirm_no_paid_billing):
         raise ValueError("Consent to adult voice upload, existing F0 and no-paid-billing must be confirmed")
-    if (not azure_key or not azure_key.isascii() or not azure_key.isprintable()
-            or azure_key!=azure_key.strip() or "\u2026" in azure_key or azure_region!=REGION):
-        raise ValueError("Existing private germanywestcentral Azure Speech F0 key required")
+    # The owner may be returning after a completed or partial run. Never
+    # start another provider call before identifying an existing result.
+    if output is not None and (output.is_symlink() or output.exists()):
+        raise ValueError("Output already exists; preserve it. Use --summarize to review saved attempts before considering another call")
+    if not azure_key:
+        raise ValueError("AZURE_SPEECH_KEY is not exported in this Terminal. Restore it privately; never print or paste the key")
+    if (not azure_key.isascii() or not azure_key.isprintable()
+            or azure_key != azure_key.strip() or "\u2026" in azure_key):
+        raise ValueError("AZURE_SPEECH_KEY has an invalid shape or placeholder; reset it privately without printing the value")
+    if azure_region != REGION:
+        raise ValueError("AZURE_SPEECH_REGION must be germanywestcentral in this Terminal")
     if output is None:
         raise ValueError("Choose a NEW owner-private output filename")
     if output.resolve()==audio.resolve():
@@ -235,6 +243,24 @@ def run(audio: Path, output: Path | None = None, *, send: bool = False,
             if row["status"]=="error":
                 break
     return summary(audio,output)
+
+
+# Only these EXACT owner-authored errors may be printed by the CLI.
+# Exception text from the SDK, WAV parser and OS is deliberately excluded,
+# because it can contain private filesystem paths, HTTP headers or tokens.
+_SAFE_CLI_MESSAGES = frozenset((
+    "Output already exists; preserve it. Use --summarize to review saved attempts before considering another call",
+    "AZURE_SPEECH_KEY is not exported in this Terminal. Restore it privately; never print or paste the key",
+    "AZURE_SPEECH_KEY has an invalid shape or placeholder; reset it privately without printing the value",
+    "AZURE_SPEECH_REGION must be germanywestcentral in this Terminal",
+    "Choose a NEW owner-private output filename",
+    "Results must not overwrite original voice recording",
+    "Consent to adult voice upload, existing F0 and no-paid-billing must be confirmed",
+    "Output exists. Pick a NEW private filename; never overwrite partial tests",
+    "Private output parent must be chmod 700",
+    "Result must be a new .jsonl DIRECTLY inside existing private source folder",
+    "Offline summary cannot be combined with provider send",
+))
 
 
 def main() -> int:
@@ -260,9 +286,14 @@ def main() -> int:
                 azure_key=os.getenv("AZURE_SPEECH_KEY"),
                 azure_region=os.getenv("AZURE_SPEECH_REGION"))
         print(json.dumps(result,indent=2,ensure_ascii=False))
-    except (OSError,ValueError,TypeError,RuntimeError,json.JSONDecodeError):
-        # No SDK exception text or private recording path in CLI errors.
-        p.error("Validation/provider failure. Check local private files, speech key, F0 and command flags.")
+    except ValueError as exc:
+        # Allowlisted preflight messages are safe; do not echo untrusted
+        # errors from WAV parsing, Azure SDK or arbitrary Python exceptions.
+        message = str(exc)
+        p.error(message if message in _SAFE_CLI_MESSAGES else
+                "Local validation failed; check your original private WAV and 0700 folder")
+    except (OSError,TypeError,RuntimeError,json.JSONDecodeError):
+        p.error("Private WAV/provider operation failed; preserve existing output and do not automatically retry")
     return 0
 
 
