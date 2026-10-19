@@ -1,4 +1,56 @@
-# Pronunciation teaching quality — next measured control
+# Pronunciation teaching quality — real matched-audio wrong-reference control
+
+
+## Physical result — COMPLETED on owner's Mac, 2026-10-19
+
+This experiment was **actually executed** after first running the zero-network
+preview. The owner preserved the original native Polish WAV and the original
+Azure-positive result. Only **one** additional Azure Speech SDK request was
+performed; Groq requests = **0**. The output was stored privately as
+`PathToPolish-Private-AI/public-polish-live-01/azure-wrong-reference-01.jsonl`.
+Do not re-run or overwrite either evidence file.
+
+| Same exact original WAV | Reference: Dzień dobry (positive) | Reference: Dobry wieczór (deliberate negative) | Difference |
+| --- | ---: | ---: | ---: |
+| Azure raw AccuracyScore | 100.0 | 50.0 | 50.0 |
+| Azure raw FluencyScore | 100.0 | 100.0 | 0.0 |
+| Azure raw CompletenessScore | 100.0 | 50.0 | 50.0 |
+
+The single negative-control request took **20411.3 ms**. macOS printed
+`CFNetwork SSLHandshake failed (-9806)` during the execution, but the actual
+SDK returned `status=ok` and real scores; do not equate the warning with a
+failed inference. Apple's `errSSLClosedAbort` is a TLS closed-connection
+error and could be unrelated to the eventual successful Azure result. Long
+latency is concerning for live learner UX but one delayed request does not
+establish a representative Azure performance distribution.
+
+**Interpretation and scope:** The provider differentiated a complete wrong
+two-word reference from the correct reference on identical speech, while
+fluency stayed 100. This makes sense: Microsoft defines Fluency as aspects of
+word breaks/flow and Completeness in terms of how many reference words were
+pronounced. The two phrases share `dobry`, but without analyzing matched
+word-level evidence we CANNOT conclude that shared word directly explains
+the exact 50 scores. Only ONE natural native speaker WAV and ONE deliberately
+wrong **full phrase** have been compared. This is NOT evidence of robust
+`s/ś`, `c/cz`, `sz/ś` phoneme discrimination or calibrated learner grades.
+`grading_verified=false`; `phoneme_diagnosis_verified=false`.
+
+**Next milestone: real adult learner pronunciation controls, no new MVP UI.**
+Use the current Speak component's record/replay/private WAV export to collect
+a small volunteered, consenting-adult pilot with carefully attempted correct
+and intentionally incorrect pronunciations of the **same Polish target**.
+First let a Polish-proficient person label what is audible, target correctness
+and recording quality without seeing Azure output. Compare the existing
+reference-aware Azure scores and words against these labels to identify any
+false positives, false negatives and inconclusive results. Make no automatic
+phoneme tips, child XP scores or pass thresholds until there is real evidence.
+No user-facing steps have been added and no additional provider requests
+were made as part of documenting this result.
+
+Reference sources:
+- Microsoft score definitions: https://learn.microsoft.com/en-us/azure/ai-services/speech-service/how-to-pronunciation-assessment
+- Apple's errSSLClosedAbort: https://developer.apple.com/documentation/security/errsslclosedabort
+
 
 ## Why this change
 
