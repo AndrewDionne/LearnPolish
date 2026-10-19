@@ -13,6 +13,7 @@ import os
 from typing import Callable
 import urllib.error
 import urllib.request
+from speech_env import speech_credentials
 
 REGION = "germanywestcentral"
 HOST = "germanywestcentral.api.cognitive.microsoft.com"
@@ -60,8 +61,8 @@ def probe(key: str, region: str, opener: Callable = urllib.request.urlopen) -> d
 
 def main() -> int:
     try:
-        result = probe(os.environ.get("AZURE_SPEECH_KEY", ""),
-                       os.environ.get("AZURE_SPEECH_REGION", ""))
+        key, region = speech_credentials()
+        result = probe(key or "", region or "")
     except ValueError as exc:
         # Distinguish invalid/present credentials from absent credentials.
         # Error reason is a fixed local validation message, never a provider
