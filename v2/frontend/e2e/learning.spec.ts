@@ -174,6 +174,62 @@ test('offline lesson pack is confirmed only after caching and supports an offlin
 });
 
 
+test('Speak Next escapes pending microphone permission and active capture without awarding XP', async ({ page }) => {
+  await page.addInitScript(() => {
+    (window as any).__stoppedMicrophoneTracks = 0;
+    let grantFirst: ((stream: MediaStream) => void) | null = null;
+    let calls = 0;
+    const makeStream = () => ({
+      getTracks: () => [{ stop: () => { (window as any).__stoppedMicrophoneTracks++; } }],
+    } as unknown as MediaStream);
+    (window as any).__grantPendingMicrophone = () => { grantFirst?.(makeStream()); };
+    Object.defineProperty(navigator.mediaDevices, 'getUserMedia', {
+      configurable: true,
+      value: () => ++calls === 1
+        ? new Promise<MediaStream>(resolve => { grantFirst = resolve; })
+        : Promise.resolve(makeStream()),
+    });
+    class MockRecorder {
+      static isTypeSupported(_mime: string) { return true; }
+      mimeType = 'audio/wav';
+      state = 'inactive';
+      ondataavailable: ((event: {data: Blob}) => void) | null = null;
+      onstop: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      constructor(_stream: MediaStream, _options?: unknown) {}
+      start() { this.state = 'recording'; }
+      stop() { this.state = 'inactive'; }
+    }
+    Object.defineProperty(window, 'MediaRecorder', { configurable: true, value: MockRecorder });
+  });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Explore lessons' }).click();
+  await page.getByRole('searchbox', { name: 'Search lessons' }).fill('Conversation 1');
+  await page.getByRole('button', { name: /Conversation 1/ }).click();
+  await page.getByRole('button', { name: 'Speak', exact: true }).click();
+  await expect(page.getByText('Dzień dobry', { exact: true })).toBeVisible();
+
+  // A stalled OS/browser permission prompt must not hold the learner hostage.
+  await page.getByRole('button', { name: 'Start recording' }).click();
+  await expect(page.getByText('Requesting microphone permission…')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Next', exact: true })).toBeEnabled();
+  await page.getByRole('button', { name: 'Next', exact: true }).click();
+  await expect(page.getByText('Dobry wieczór', { exact: true })).toBeVisible();
+  await page.evaluate(() => (window as any).__grantPendingMicrophone());
+  await page.waitForFunction(() => (window as any).__stoppedMicrophoneTracks === 1);
+
+  // A currently running recording can also be abandoned with the SAME Next.
+  await page.getByRole('button', { name: 'Start recording' }).click();
+  await expect(page.getByRole('button', { name: 'Stop recording' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Next', exact: true })).toBeEnabled();
+  await page.getByRole('button', { name: 'Next', exact: true }).click();
+  await page.waitForFunction(() => (window as any).__stoppedMicrophoneTracks === 2);
+
+  const expedition = await page.evaluate(() => JSON.parse(localStorage.getItem('ptp-v2-expedition') || '{}'));
+  expect((expedition.events || []).filter((event: {mode: string}) => event.mode === 'speak')).toHaveLength(0);
+  await expect(page.locator('#personal-speech-replay')).toHaveCount(0);
+});
+
 test('Speak records, checks acoustic quality, replays locally, and clears on next phrase', async ({ page }) => {
   await page.addInitScript(() => {
     const length = 16000;
