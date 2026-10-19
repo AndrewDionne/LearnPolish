@@ -109,7 +109,7 @@ test('explicit consent -> native Azure numbers -> replay/next without fabricated
   await expect(page.getByText(/not been calibrated/)).toBeVisible();
   await expect(page.getByText('DO_NOT_DISPLAY_PRIVATE_TRANSCRIPT')).toHaveCount(0);
   expect(calls).toBe(1);
-  await page.getByRole('button',{name:/Next phrase/}).click();
+  await page.getByRole('button',{name:'Next',exact:true}).click();
   await expect(page.getByText('Dobry wieczór',{exact:true})).toBeVisible();
   await expect(page.locator('.speak-scores')).toHaveCount(0);
   await expect(page.locator('#personal-speech-replay')).toHaveCount(0);
@@ -141,7 +141,7 @@ test('inconclusive and quota outcomes stay ungraded; new take clears old feedbac
   await expect(page.getByText(/Daily free pronunciation assessment limit reached/)).toBeVisible();
   expect(calls).toBe(2);
   await expect(page.locator('.speak-scores')).toHaveCount(0);
-  await page.getByRole('button',{name:/Next phrase/}).click();
+  await page.getByRole('button',{name:'Next',exact:true}).click();
   await expect(page.getByText('Dobry wieczór',{exact:true})).toBeVisible();
 });
 
@@ -167,17 +167,34 @@ test('Świętokrzyska is a real built-in Speak test item with opt-in timing, not
   await page.getByRole('button',{name:/Świętokrzyska/}).click();
   await page.getByRole('button',{name:'Speak',exact:true}).click();
   await expect(page.getByText('Świętokrzyska',{exact:true})).toBeVisible();
-  // English pronunciation stays visible before microphone capture and
-  // does not imply a phonetic score or native MP3 exists.
-  const guide = page.getByLabel('English-friendly pronunciation guide');
-  await expect(guide).toBeVisible();
-  await expect(guide.locator('.speak-english-syllable')).toHaveCount(4);
-  await expect(guide.locator('.speak-english-cue')).toHaveText(['shfyehn','toh','KSHIH','skah']);
-  await expect(guide.locator('.speak-english-syllable.stressed')).toContainText('krzy');
-  await expect(guide.locator('.speak-english-syllable.stressed')).toContainText('stress');
-  await expect(guide).toContainText('Polish sounds differ');
-  await expect(page.getByText(/Native reference audio is not available/)).toBeVisible();
-  await expect(page.getByText(/Read the Polish word/)).toBeVisible();
+  // Owner-approved minimal Speak: guide genuinely OFF by default,
+  // no extra hero/export/footer and no second visible copy of the word.
+  const guideToggle = page.getByRole('button',{name:/Pronunciation guide/});
+  await expect(guideToggle).toHaveAttribute('aria-pressed','false');
+  await expect(page.locator('.speak-guided-word')).toHaveCount(0);
+  await expect(page.locator('.speak-word-english')).toHaveCount(0);
+  await expect(page.getByText('Practise speaking',{exact:true})).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'Export JSON'})).toHaveCount(0);
+  await expect(page.locator('.lesson-footer')).toHaveCount(0);
+  await expect(page.getByText(/Native reference audio is not available/)).toHaveCount(0);
+  await expect(page.getByText(/Read the Polish word/)).toHaveCount(0);
+  await expect(page.getByText('Street and metro station in Warsaw')).toBeVisible();
+  expect(calls).toBe(0);
+  await guideToggle.click();
+  await expect(guideToggle).toHaveAttribute('aria-pressed','true');
+  await expect(page.locator('.speak-word-segment')).toHaveCount(4);
+  await expect(page.locator('.speak-word-english')).toHaveText(['shfyehn','toh','KSHIH','skah']);
+  await expect(page.locator('.speak-word-segment.stressed')).toContainText('krzy');
+  await guideToggle.click();
+  await expect(guideToggle).toHaveAttribute('aria-pressed','false');
+  await expect(page.locator('.speak-word-english')).toHaveCount(0);
+  expect(calls).toBe(0);
+  const privacy = page.locator('.speak-private-details');
+  await expect(privacy).not.toHaveAttribute('open');
+  await privacy.locator('summary').click();
+  await expect(privacy).toContainText('No native example is available');
+  await expect(page.locator('.benchmark-export')).toHaveCount(0);
+  await privacy.locator('summary').click();
   await expect(page.getByRole('button',{name:'Check my pronunciation'})).toHaveCount(0);
   await recordValidTake(page);
   expect(calls).toBe(0);
