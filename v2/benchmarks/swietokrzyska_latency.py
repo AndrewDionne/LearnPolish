@@ -49,6 +49,12 @@ def checked_audio(path: Path) -> dict:
     if item != ITEM_ID:
         raise ValueError("Recording must be the exported Świętokrzyska Speak item")
     audio = read_audio_metadata(path)
+    # The V2 Speak WAV encoder writes a strict 44-byte header plus exactly
+    # the declared PCM frames. A truncated file can otherwise still have
+    # plausible WAV metadata/peak from its first few samples.
+    expected_bytes = 44 + round(audio["seconds"] * 16000) * 2
+    if path.stat().st_size != expected_bytes:
+        raise ValueError("Original exported V2 WAV is incomplete or altered")
     if not audio["valid_signal"] or not .6 <= audio["seconds"] <= 10:
         raise ValueError("WAV is silent, too short or longer than ten seconds")
     return {"sample_id": ITEM_ID, "reference": WORD, "wav_sha256": audio["audio_sha256"],
