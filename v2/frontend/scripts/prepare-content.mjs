@@ -8,6 +8,7 @@ const legacyAudio = path.join(root, 'docs/static');
 const outRoot = path.join(root, 'v2/frontend/public/generated');
 const curatedSoundsFile = path.join(root, 'v2/content/sound-contrasts.json');
 const readingChecksFile = path.join(root, 'v2/content/reading-checks.json');
+const pronunciationGuideFile = path.join(root, 'v2/content/pronunciation-swietokrzyska.json');
 const retiredGroupedSoundSets = new Set(['letter_recognition_1', 'letter_recognition_2', 'letter_recognition_3']);
 
 export function migrateLesson(filename, source) {
@@ -182,14 +183,33 @@ export function buildContent() {
   // No invented native-speaker MP3: recording/replay works without an example.
   // The server catalogs this stable ID so opt-in Azure feedback can use the
   // authoritative spelled Polish reference rather than trusting client text.
+  const guide = JSON.parse(fs.readFileSync(pronunciationGuideFile, 'utf8'));
+  if (guide.schemaVersion !== 1 || guide.polish !== 'Świętokrzyska' ||
+      !Array.isArray(guide.syllables) || guide.syllables.length !== 4 ||
+      guide.syllables.map(s => s.polish).join('') !== guide.polish ||
+      !Number.isInteger(guide.stressIndex) || guide.stressIndex !== 2 ||
+      guide.reviewStatus !== 'needs_native_speaker_review' ||
+      typeof guide.qualification !== 'string' || !guide.qualification ||
+      !guide.syllables.every(s => typeof s.englishCue === 'string' && !!s.englishCue.trim() &&
+        typeof s.tip === 'string' && !!s.tip.trim() &&
+        typeof s.letterFocus === 'string' && !!s.letterFocus.trim())) {
+    throw new Error('Invalid syllable-aligned Świętokrzyska pronunciation guide');
+  }
   lessons.push({
     schemaVersion: 1, id: 'speak_swietokrzyska',
     title: 'Speak test · Świętokrzyska',
     kind: 'vocabulary', source: 'curated',
     items: [{
       id: 'speak_swietokrzyska:0',
-      polish: 'Świętokrzyska',
+      polish: guide.polish,
       english: 'Świętokrzyska (street and metro station in Warsaw)',
+      pronunciation: guide.syllables.map(s => s.englishCue).join(' · '),
+      pronunciationGuide: {
+        syllables: guide.syllables,
+        stressIndex: guide.stressIndex,
+        qualification: guide.qualification,
+        reviewStatus: guide.reviewStatus,
+      },
     }],
   });
   const soundDefinitions = JSON.parse(fs.readFileSync(curatedSoundsFile, 'utf8'));
