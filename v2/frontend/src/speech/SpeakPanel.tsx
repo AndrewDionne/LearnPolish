@@ -77,6 +77,21 @@ export default function SpeakPanel({item, playing, onPlayReference, onStopRefere
     <span className="card-label">SAY IT IN POLISH</span>
     <h2 lang="pl" className="speak-prompt">{item.polish}</h2>
     <p className="speak-translation">{item.english}</p>
+    {item.pronunciationGuide ? <div className="speak-english-guide" aria-label="English-friendly pronunciation guide">
+      <p className="speak-english-label">Say it in English sounds <small>(approximate)</small></p>
+      <div className="speak-english-syllables">
+        {item.pronunciationGuide.syllables.map((part,index) => <div
+          className={'speak-english-syllable' + (index === item.pronunciationGuide!.stressIndex ? ' stressed' : '')}
+          key={index}>
+          <span lang="pl" className="speak-english-original">{part.polish}</span>
+          <strong className="speak-english-cue">{part.englishCue}</strong>
+          {index === item.pronunciationGuide!.stressIndex && <small>stress</small>}
+        </div>)}
+      </div>
+      <p className="speak-guide-qualification">English spelling is only a starting point; Polish sounds differ. No native pronunciation has been verified for this item.</p>
+    </div> : item.pronunciation ? <p className="speak-english-fallback">
+      English pronunciation guide (approx.): <strong>{item.pronunciation}</strong>
+    </p> : null}
     {item.audio
       ? <button type="button" className="audio-btn" disabled={capture.phase === 'requesting' || capture.phase === 'recording' || capture.phase === 'processing'} onClick={onReference}>
           {playing === item.audio ? 'Playing example' : '▶ Hear native example'}
