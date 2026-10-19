@@ -115,7 +115,7 @@ class SpeechApiTests(unittest.TestCase):
         self.assertEqual(self.calls[0][1],"Dzień dobry")
         # Duration-only Server-Timing, no speech text, key or private transcript.
         header=response.headers.get("Server-Timing","")
-        self.assertRegex(header, r"^speech-sdk;dur=\\d+(?:\\.\\d+)?$")
+        self.assertRegex(header, r"^speech-sdk;dur=\d+(?:\.\d+)?$")
         self.assertNotIn("Dzień",header)
         self.assertNotIn("Private",header)
         self.assertNotIn("test",header)
@@ -132,7 +132,7 @@ class SpeechApiTests(unittest.TestCase):
         self.assertEqual(self.calls[0][1],"Świętokrzyska")
         self.assertEqual(response.json["status"],"ok")
         self.assertNotIn("latency",response.json)
-        self.assertRegex(response.headers.get("Server-Timing",""), r"^speech-sdk;dur=\\d+(?:\\.\\d+)?$")
+        self.assertRegex(response.headers.get("Server-Timing",""), r"^speech-sdk;dur=\d+(?:\.\d+)?$")
         self.assertEqual(len(self.calls),1)
         # Unauthorized, cross-origin and no-consent paths must not issue
         # further provider requests or expose measurement headers.
