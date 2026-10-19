@@ -5,7 +5,7 @@ Zero inference by default; the original two-call Azure result is read only.
 On explicit opt-in, two Groq-only transcriptions at most, no retries, no
 Azure SDK calls, no audio manipulation, private append-per-attempt evidence.
 This compares transcription/WER and service turnaround, NEVER pronunciation
-grading. One word gives WER only 0 or 1; do not infer phoneme accuracy.
+grading. With one reference word, inserted hypothesis words can yield WER > 1.0; this is not a pronunciation score.
 """
 from __future__ import annotations
 
@@ -124,7 +124,9 @@ def report(wav: Path, azure_result: Path, output: Path) -> dict:
             "pronunciation_grade": None,
         } for row in rows],
         "interpretation": ("Whisper recognizes words and can miss diacritics or guess a target from "
-                           "context; 0 word error is not evidence of correct Polish phonemes. "
+                           "context; a zero word error is not evidence of correct Polish phonemes. "
+                           "With a one-word reference and a multiword hypothesis, WER can exceed 1.0 "
+                           "because insertions count; it is not a phoneme or pronunciation score. "
                            "Azure PA 84/100/100 remains uncalibrated; no human listener labeled this word. "
                            "These isolated CLI timings are not complete app UX latency or p95."),
     }

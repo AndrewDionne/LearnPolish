@@ -137,6 +137,20 @@ class ŚwiętokrzyskaWhisperTests(unittest.TestCase):
             report(self.wav,self.baseline,self.result_file)
         self.assertEqual(self.calls[0][0],self.wav)
 
+    def test_one_reference_word_two_recognized_words_can_have_wer_2(self):
+        # Real-world outcome shape: both Groq models produced two
+        # unrecognized words for the one-word Polish reference. WER
+        # counts a substitution AND an insertion, so 2/1 == 2.0.
+        # This measures transcription errors, never pronunciation.
+        for model, hypothesis in ((MODELS[0], "Sweczo Seska"),
+                                  (MODELS[1], "Sveczo Seska")):
+            with self.subTest(model=model):
+                row = safe_row(model, 1 if model == MODELS[0] else 2,
+                               "a"*64, 1000.0, hypothesis)
+                self.assertEqual(row["single_word_wer_transcription_only"], 2.0)
+                self.assertFalse(row["exact_word_match"])
+                self.assertIsNone(row["pronunciation_grade"])
+
     def test_failed_or_blank_transcript_is_not_assigned_a_grade(self):
         self.assertEqual(safe_row(MODELS[0],1,"a"*64,1250.0,"")["status"],"inconclusive")
         self.assertIsNone(safe_row(MODELS[0],1,"a"*64,1250.0,"")["single_word_wer_transcription_only"])

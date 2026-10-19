@@ -1,8 +1,63 @@
 # Świętokrzyska — pronunciation and latency test
 
+## PHYSICAL RESULT — Whisper v3/Turbo comparison COMPLETED (2026-10-19)
+
+**Actual owner Mac result; no synthetic/provider-mocked numbers:** the
+owner successfully installed `PathToPolish-Private-AI/.env.groq`,
+verified the model-list endpoint (Groq auth accepted, both models listed,
+zero uploaded audio), and then expressly authorized exactly TWO Groq
+Whisper transcriptions on the previously tested adult original 3.12s
+`Świętokrzyska` WAV. Report `WHISPER_PAIRED_RESULT`, same audio
+SHA `0f4ff4b3d01165dc5e27fd9c10336f19aedf4aefdca430798c2b1777e5df1626`,
+**2 Groq attempts saved, 0 new Azure requests**. Original private
+result `PathToPolish-Private-AI/swietokrzyska-01/whisper-01.jsonl`
+MUST NOT be overwritten or submitted again.
+
+| Provider/mode | Total elapsed measured | Raw output on original WAV |
+| --- | ---: | --- |
+| Azure SDK ordinary | 2459.7 ms | Pronunciation raw 84 / 100 / 100 |
+| Azure SDK explicitly preconnected | 1923.3 ms | Pronunciation raw 84 / 100 / 100 |
+| Groq Whisper large-v3 (curl HTTP) | **1034.9 ms** | `Sweczo Seska` — NOT the target |
+| Groq Whisper large-v3-turbo (curl HTTP) | **470.8 ms** | `Sveczo Seska` — NOT the target |
+
+**Both Whisper engines returned an incorrect two-token transcription**
+instead of `Świętokrzyska`. Exact target word match FALSE for both.
+One-word-reference WER **2.0** for both, which is **200% transcription
+word error**, valid because 1 substitution + 1 insertion divided by
+1 reference word = 2.0. Contrary to the original note, single-word WER
+is **not restricted to 0 or 1**: extra hypothesized words can produce
+WER greater than 1.0. This is NOT pronunciation accuracy, confidence
+or a phoneme metric. The transcription difference is not proof that
+the adult learner pronounced the target incorrectly, nor evidence
+that Azure's 84/100/100 was correct: there is no independently labeled
+Polish human assessment or native reference comparator for THIS word.
+
+**Latency observation:** Turbo's 470.8ms was ~4.1x shorter than
+preconnected Azure's 1923.3ms and ~5.2x shorter than Azure ordinary's
+2459.7ms. This is on single isolated requests with different
+instrumentation (Groq HTTP vs Azure Python SDK) and order/warming
+confounders; NO production p95 or causal ranking. Both engines were
+within the desired <5s bound on this instance; the older 20s Azure
+outlier still matters. Do not replace Azure pronunciation assessment
+with Whisper exact-text recognition in the live family learning app
+based on these results. Neither Groq call provided usable
+`Świętokrzyska` recognition for this recording.
+
+**Decision:** Preserve the existing private WAV, Azure JSONL and Groq
+JSONL. No more repeat calls on the same WAV just to check credentials,
+and NO new scores/XP gates. Next research must distinguish speech
+content/learner articulation from ASR language-model familiarity using
+an independently verified native Polish `Świętokrzyska` reference and
+separately a few consented adult takes, with human-reviewed pronunciation
+quality, before investing in blended model UX. Any expanded study must
+be explicitly added to the development plan rather than treated as
+an automatic next test.
+
+
 ## SAVE GROQ KEY ONCE — permanent owner-private setup
 
-Groq and Azure use different API keys. Azure was already saved as
+Groq and Azure use different API keys. Both have now been installed by the owner;
+these instructions are retained for future key rotations. Azure was already saved as
 `PathToPolish-Private-AI/.env.azure-speech`; **do not replace that file**.
 The matching permanent Groq asset is now:
 
@@ -58,8 +113,8 @@ secrets.
 
 ## Whisper v3 vs Whisper Turbo — same adult word, **no repeat Azure**
 
-**Current status:** Azure has already measured this exact `Świętokrzyska`
-WAV twice; Whisper has **not** yet been run on this recording. Earlier
+**Historical setup note:** The owner has now completed both the Azure and
+Whisper tests on this exact `Świętokrzyska` WAV; see the physical result above. Earlier
 Groq Whisper native-audio successes were for `Dzień dobry` and
 `Dobry wieczór`, NOT this longer word. Treat results separately.
 
@@ -139,10 +194,11 @@ PathToPolish-Private-AI/.venv-speech-test/bin/python \
 ```
 
 **Decision boundaries:** Whisper large-v3 and Turbo give
-transcriptions, not the Azure pronunciation metric. On a ONE-word
-test, WER is just 0 or 1: correct `Świętokrzyska` transcription
-does NOT prove correct `ś`, `ę`, `rz`, etc., nor phoneme grading
-quality. Azure's 84/100/100 is raw, uncalibrated. Two request times
+transcriptions, not the Azure pronunciation metric. Even on a ONE-word
+reference, WER may be **greater than 1.0** when the hypothesis has extra
+words (as observed here, WER=2.0). A correct `Świętokrzyska`
+transcription would not prove correct `ś`, `ę`, `rz`, etc. or
+phoneme-grading quality. Azure's 84/100/100 is raw, uncalibrated. Two request times
 cannot establish p95, and Groq curl HTTP turnaround and Azure SDK
 recognize_once time are not identical instrumentation. This is
 exploratory model-fit evidence, not a leader-board scoring policy.
