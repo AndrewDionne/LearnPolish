@@ -1,5 +1,64 @@
 # Azure short Polish phrase — bounded real latency sample
 
+
+## Owner-Mac physical result: completed, 2026-10-19
+
+The owner **actually ran** the four-call `--send` test using the already
+verified authentic Wikimedia native Polish WAVs and correct reference text.
+Exactly 4 Azure Speech F0 SDK requests; no Groq calls; 4/4 `ok` and
+scored 100/100/100 (raw provider Accuracy, Fluency, Completeness). All
+source WAV SHA-256 checks passed. Result saved privately at
+`PathToPolish-Private-AI/public-polish-live-01/azure-latency-four-01.jsonl`.
+**Never rerun or overwrite it.** No additional calls were performed by
+ChatGPT or GitHub CI.
+
+| Attempt | Phrase | Original WAV seconds | SDK wall-clock seconds | Azure status |
+| --- | --- | ---: | ---: | --- |
+| 1 | Dzień dobry | 1.250 | **4.0529** | ok, 100/100/100 |
+| 2 | Dobry wieczór | 1.579 | **6.6664** | ok, 100/100/100 |
+| 3 | Dzień dobry | 1.250 | **4.0196** | ok, 100/100/100 |
+| 4 | Dobry wieczór | 1.579 | **1.4700** | ok, 100/100/100 |
+
+**Median = 4.0362 seconds; maximum = 6.6664 seconds; >5 seconds =
+1/4; >=10 seconds = 0/4; >=20 seconds = 0/4.** No failed or
+unscored attempts. This is a successful connection/assessment smoke
+test, **not** a tail-latency guarantee: four samples cannot determine
+true p95, and the original **20.4113-second** deliberately wrong-target
+response remains a real historical slow call (different reference
+condition). Don't average canceled requests with successful assessment
+latencies or extrapolate the results into production reliability.
+
+**Current implementation diagnosis (code inspection):** Both the
+benchmark and the private family server build fresh Speech SDK
+configuration and recognizer objects per call, then use synchronous
+`recognize_once()`. The measurements span the whole SDK call; no
+per-phase metrics exist to distinguish setup, network/TLS, end-of-phrase
+detection and remote work. 6.67s vs 1.47s on the identical second WAV
+indicates variability, but does not identify the cause. Microsoft's
+`Connection` API supports opening a recognizer connection ahead of
+recognition; its `open(False)` may return before it is actually connected,
+so measured connected events are required to claim an improvement.
+Any connection reuse must respect distinct learner audio, references,
+cancellation and data privacy; do not silently send uploads or generate
+billable calls.
+
+**Recommended next step:** Keep Azure as an optional pronunciation
+candidate, with no grade-based progress gates. Instrument actual
+app-to-server and server-to-Azure SDK wall times using sanitized
+aggregate/event timings; then compare a concrete SDK connection setup
+optimization against this cold-per-request baseline. No further user
+configuration, score history or fake phoneme-feedback UI needed.
+Treat user-visible >10s as a serious warning and >=20s as unacceptable.
+Avoid changing speech/silence timeouts without tests that protect slow
+beginner Polish pronunciation.
+
+This test run is **already complete**. Commands below are retained only
+for reproducibility; they should NOT be re-executed on the same output
+path. References:
+- https://learn.microsoft.com/en-us/azure/ai-services/speech-service/how-to-control-connections
+- https://learn.microsoft.com/en-us/python/api/azure-cognitiveservices-speech/azure.cognitiveservices.speech.connection
+
+
 ## Why we are testing
 
 The owner's last **real** Azure Speech SDK request (2026-10-19) scored a
