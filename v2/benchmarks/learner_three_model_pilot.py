@@ -16,6 +16,7 @@ import time
 from typing import Callable
 
 from azure_pilot import azure_scripted_assess
+from speech_env import speech_credentials
 from benchmark import extract_azure_native, read_audio_metadata
 from corpus import parse_capture_name, read_catalog
 from groq_pilot import MODELS, transcribe
@@ -148,6 +149,7 @@ def main() -> int:
     p.add_argument("--output", type=Path)
     args = p.parse_args()
     try:
+        key, region = speech_credentials() if args.send else (None, None)
         result = run(args.manifest, args.catalog, args.sample_id,
                      max_audio_seconds=args.max_audio_seconds,send=args.send,
                      approve_adult_audio_upload=args.approve_adult_audio_upload,
@@ -155,8 +157,8 @@ def main() -> int:
                      confirm_azure_f0=args.confirm_azure_f0,
                      confirm_no_paid_billing=args.confirm_no_paid_billing,
                      groq_key=os.environ.get("GROQ_API_KEY"),
-                     azure_key=os.environ.get("AZURE_SPEECH_KEY"),
-                     azure_region=os.environ.get("AZURE_SPEECH_REGION"),
+                     azure_key=key,
+                     azure_region=region,
                      output=args.output)
         print(json.dumps(result, ensure_ascii=False, indent=2))
     except (ValueError, RuntimeError, OSError) as e:
