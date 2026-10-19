@@ -77,6 +77,16 @@ def validate_evidence(row: dict, clip: dict, *, negative: bool) -> dict[str, flo
         if not negative:
             raise ValueError("Existing positive baseline has no usable Azure score")
         return None
+    # The SDK can recognize speech without providing assessment fields. Keep
+    # its private evidence even when it cannot produce all three metrics:
+    # never erase a consumed provider call or invent a zero score.
+    native = row.get("azure_native")
+    if negative and (
+        not isinstance(native, dict) or native.get("status") != "ok"
+        or not isinstance(native.get("scores"), dict)
+        or any(name not in native["scores"] for name in METRICS)
+    ):
+        return None
     return checked_score_values(row)
 
 
@@ -94,8 +104,8 @@ def source_and_baseline(folder: Path, positive: Path) -> tuple[dict, dict[str, f
 
 def compare(folder: Path, baseline_path: Path, negative_path: Path) -> dict:
     clip, positive = source_and_baseline(folder, baseline_path)
-    negative = validate_evidence(
-        read_one_private_jsonl(folder, negative_path), clip, negative=True)
+    negative_row = read_one_private_jsonl(folder, negative_path)
+    negative = validate_evidence(negative_row, clip, negative=True)
     delta = {
         name: round(positive[name] - negative[name], 2)
         for name in METRICS
@@ -111,7 +121,9 @@ def compare(folder: Path, baseline_path: Path, negative_path: Path) -> dict:
         "positive_raw_scores_uncalibrated": positive,
         "wrong_target_raw_scores_uncalibrated": negative,
         "positive_minus_wrong_target": delta,
-        "wrong_target_result": "returned_scores" if negative is not None else "inconclusive",
+        "wrong_target_result": ("returned_scores" if negative is not None else
+            "inconclusive" if negative_row["status"] == "inconclusive"
+            else "recognized_but_no_usable_scores"),
         "grading_verified": False,
         "phoneme_diagnosis_verified": False,
         "interpretation": (
