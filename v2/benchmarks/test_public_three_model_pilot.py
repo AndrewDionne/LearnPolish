@@ -13,6 +13,8 @@ import wave
 from benchmark import read_audio_metadata
 from public_polish_audio import SOURCES
 from public_three_model_pilot import checked_public_clips, execute, preview, summarize, azure_only, azure_evidence
+from azure_native_reference_contrast import (run as run_reference_control, compare as compare_reference_control,
+                                              source_and_baseline, SPOKEN, WRONG_PROMPT)
 
 
 class PublicThreeModelPilotTests(unittest.TestCase):
@@ -272,6 +274,150 @@ class PublicThreeModelPilotTests(unittest.TestCase):
         self.assertEqual(done["report"]["evidence"][2]["azure_diagnostic"]["azure_result_reason"],"Canceled")
         self.assertEqual(done["report"]["fit"]["model_results"]["azure-pl-PL-scripted"]["inconclusive_results"],2)
         self.assertEqual(done["report"]["fit"]["complete_three_engine_triplets"],2)
+
+
+    def create_real_positive_control(self):
+        """Persist one actual-shaped Azure SDK 100/100/100 with sample SHA."""
+        c=checked_public_clips(self.folder)[0]
+        payload={"status":"ok","raw_azure_json":{"NBest":[{
+            "PronunciationAssessment":{
+                "AccuracyScore":100.0,"FluencyScore":100.0,"CompletenessScore":100.0
+            }
+        }]}}
+        row=azure_evidence(c,payload,1200.5)
+        path=self.folder/"azure-only-diagnostic-01.jsonl"
+        path.write_text(json.dumps(row,ensure_ascii=False)+"\n")
+        path.chmod(0o600)
+        return path
+
+    def control_params(self, positive, negative):
+        def fake_azure(wav,reference,key,region):
+            self.calls.append((wav,reference,region))
+            return {"status":"ok","raw_azure_json":{"NBest":[{
+                "PronunciationAssessment":{
+                    "AccuracyScore":44.0,"FluencyScore":96.0,"CompletenessScore":27.0
+                }
+            }]}}
+        return {
+            "folder":self.folder,"baseline_path":positive,"send":True,
+            "approve_public_audio_upload":True,"confirm_azure_f0":True,
+            "confirm_no_paid_billing":True,"output":negative,
+            "azure_key":"FAKE-AZURE","azure_region":"germanywestcentral",
+            "assessor":fake_azure,
+        }
+
+    def test_reference_control_preview_is_no_inference_and_same_hash(self):
+        original=self.create_real_positive_control()
+        plan=run_reference_control(self.folder,original)
+        self.assertEqual(plan["status"],"PREVIEW_ONLY")
+        self.assertEqual(plan["planned_azure_requests"],1)
+        self.assertEqual(plan["planned_groq_requests"],0)
+        self.assertEqual(plan["network_requests_performed"],0)
+        self.assertEqual(plan["positive_raw_scores_uncalibrated"]["AccuracyScore"],100)
+        self.assertEqual((plan["actual_spoken_polish"],plan["negative_reference"]),
+                         ("Dzień dobry","Dobry wieczór"))
+        self.assertEqual(self.calls,[])
+
+    def test_correct_100_vs_wrong_target_44_is_a_difference_not_grading(self):
+        original=self.create_real_positive_control()
+        negative=self.folder/"wrong-target-01.jsonl"
+        actual=run_reference_control(**self.control_params(original,negative))
+        self.assertEqual(actual["status"],"WRONG_TARGET_AZURE_CONTROL_COMPLETED")
+        self.assertEqual(actual["network_requests_performed"],1)
+        self.assertEqual(actual["groq_requests_performed"],0)
+        self.assertEqual(len(self.calls),1)
+        self.assertEqual(self.calls[0][1],WRONG_PROMPT)
+        self.assertEqual(self.calls[0][0],self.folder/"greeting-day.wav")
+        paired=actual["comparison"]
+        self.assertTrue(paired["same_audio_confirmed"])
+        self.assertEqual(paired["positive_minus_wrong_target"],{
+            "AccuracyScore":56.0,"FluencyScore":4.0,"CompletenessScore":73.0,
+        })
+        self.assertFalse(paired["grading_verified"])
+        self.assertFalse(paired["phoneme_diagnosis_verified"])
+        self.assertIn("not the same as",paired["interpretation"])
+        self.assertEqual(negative.stat().st_mode & 0o777,0o600)
+        row=json.loads(negative.read_text())
+        self.assertEqual(row["reference"],"Dobry wieczór")
+        self.assertEqual(row["control_condition"],"public_native_wrong_full_phrase")
+        self.assertEqual(row["audio_sha256"],source_and_baseline(self.folder,original)[0]["sha256"])
+        self.assertNotIn("FAKE-AZURE",negative.read_text())
+        self.assertEqual(compare_reference_control(self.folder,original,negative),paired)
+
+    def test_wrong_target_inconclusive_is_not_a_successful_rejection(self):
+        original=self.create_real_positive_control()
+        wrong=self.folder/"azure-inconclusive.jsonl"
+        args=self.control_params(original,wrong)
+        args["assessor"]=lambda *params: {
+            "status":"inconclusive","reason":"Azure returned NoMatch",
+            "azure_result_reason":"NoMatch","azure_no_match_reason":"NotRecognized",
+        }
+        result=run_reference_control(**args)
+        paired=result["comparison"]
+        self.assertEqual(paired["wrong_target_result"],"inconclusive")
+        self.assertIsNone(paired["wrong_target_raw_scores_uncalibrated"])
+        self.assertIsNone(paired["positive_minus_wrong_target"])
+        self.assertFalse(paired["grading_verified"])
+        self.assertEqual(result["network_requests_performed"],1)
+
+    def test_equally_high_wrong_target_score_is_not_misrepresented(self):
+        original=self.create_real_positive_control()
+        wrong=self.folder/"azure-false-positive.jsonl"
+        args=self.control_params(original,wrong)
+        args["assessor"]=lambda *params: {
+            "status":"ok","raw_azure_json":{"NBest":[{"PronunciationAssessment":{
+                "AccuracyScore":100.0,"FluencyScore":100.0,"CompletenessScore":100.0,
+            }}]},
+        }
+        result=run_reference_control(**args)
+        self.assertEqual(result["comparison"]["positive_minus_wrong_target"],{
+            "AccuracyScore":0.0,"FluencyScore":0.0,"CompletenessScore":0.0})
+        self.assertFalse(result["comparison"]["grading_verified"])
+
+    def test_reference_control_no_network_without_exact_approval_and_key(self):
+        original=self.create_real_positive_control()
+        for change in (
+            {"approve_public_audio_upload":False},{"confirm_azure_f0":False},
+            {"confirm_no_paid_billing":False},{"azure_key":""},
+            {"azure_key":"INVALID\u2026"},{"azure_region":"westus"},
+        ):
+            negative=self.folder/"no-upload.jsonl"
+            args=self.control_params(original,negative)
+            args.update(change)
+            with self.assertRaises(ValueError):
+                run_reference_control(**args)
+            self.assertFalse(negative.exists())
+        self.assertEqual(self.calls,[])
+
+    def test_wrong_original_baseline_reference_or_digest_is_rejected_before_any_upload(self):
+        original=self.create_real_positive_control()
+        saved=json.loads(original.read_text())
+        for field,value in (
+            ("reference",WRONG_PROMPT),("audio_sha256","a"*64),
+            ("status","inconclusive"),("source_public_native",False),
+            ("assessment_is_human_calibrated",True),
+        ):
+            changed={**saved,field:value}
+            original.write_text(json.dumps(changed)+"\n")
+            with self.assertRaises(ValueError):
+                run_reference_control(self.folder,original,**{
+                    k:v for k,v in self.control_params(original,self.folder/"forbidden.jsonl").items()
+                    if k not in ("folder","baseline_path")
+                })
+            self.assertFalse((self.folder/"forbidden.jsonl").exists())
+        original.write_text(json.dumps(saved)+"\n")
+        original.chmod(0o600)
+        self.assertEqual(self.calls,[])
+
+    def test_result_never_overwrites_existing_original_success(self):
+        original=self.create_real_positive_control()
+        baseline_before=original.read_bytes()
+        args=self.control_params(original,original)
+        with self.assertRaises(ValueError):
+            run_reference_control(**args)
+        self.assertEqual(original.read_bytes(),baseline_before)
+        self.assertEqual(self.calls,[])
+
 
 
 if __name__ == "__main__":
