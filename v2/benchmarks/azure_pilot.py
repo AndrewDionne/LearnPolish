@@ -14,6 +14,7 @@ import argparse
 import json
 import os
 from pathlib import Path
+from speech_env import speech_credentials
 import re
 import stat
 from typing import Callable
@@ -239,14 +240,15 @@ def main() -> int:
     parser.add_argument("--output", type=Path, help="NEW private raw Azure evidence JSON; never overwrite")
     args = parser.parse_args()
     try:
+        key, region = speech_credentials() if args.send else (None, None)
         result = run(args.manifest, args.sample_id,
                      max_requests=args.max_requests, max_audio_seconds=args.max_audio_seconds,
                      send=args.send, approve_voice_upload=args.approve_voice_upload,
                      confirm_resource_f0=args.confirm_resource_f0,
                      confirm_no_paid_billing=args.confirm_no_paid_billing,
                      output=args.output,
-                     key=os.environ.get("AZURE_SPEECH_KEY"),
-                     region=os.environ.get("AZURE_SPEECH_REGION"))
+                     key=key,
+                     region=region)
     except (OSError, ValueError, RuntimeError) as error:
         parser.error(str(error))
     print(json.dumps(result, indent=2))
