@@ -21,16 +21,28 @@ Basic recording, replay and progression do not require Azure.
 
 ## Capture ONE real spoken attempt (no inference required)
 
-From the owner's existing Mac repo after merging and syncing:
+From the owner's existing Mac repo root, after merging and syncing,
+install the **frontend dependencies** if not yet present. This repository
+currently has `package.json` but **no tracked package-lock.json**, so
+use `npm install`, not `npm ci` (which requires a lockfile):
 
 ```bash
 git switch main
 git pull --ff-only origin main
 cd v2/frontend
-npm run dev -- --host 127.0.0.1 --port 5173
+npm install
+npm run dev -- --host 127.0.0.1 --port 5194
 ```
 
-In a browser open `http://127.0.0.1:5173`, go to **Library**, search
+If Terminal already shows `frontend %`, you are **already** in
+`v2/frontend`: omit `cd v2/frontend`, then run `npm install`
+and `npm run dev -- --host 127.0.0.1 --port 5194` directly.
+A successful `npm run content` does not mean Vite has been installed;
+`vite: command not found` usually indicates missing local `node_modules`.
+Node and npm should already be installed if the content generator ran.
+To return to the repository root later, use `cd ../..`.
+
+In a browser open `http://127.0.0.1:5194`, go to **Library**, search
 `Świętokrzyska`, open the **Speak test** lesson and select **Speak**.
 Record an **adult volunteer** saying the actual word, replay it, and
 choose **Save 16 kHz WAV for private AI test**. The ordinary browser
