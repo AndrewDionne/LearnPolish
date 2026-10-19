@@ -106,7 +106,8 @@ test('explicit consent -> native Azure numbers -> replay/next without fabricated
   await expect(page.getByText('93.0 / 100')).toBeVisible();
   await expect(page.getByText('82.0 / 100')).toBeVisible();
   await expect(page.getByText('90.0 / 100')).toBeVisible();
-  await expect(page.getByText(/not been calibrated/)).toBeVisible();
+  await page.locator('.speak-score-explanation summary').click();
+  await expect(page.getByText(/not calibrated against Polish speakers/)).toBeVisible();
   await expect(page.getByText('DO_NOT_DISPLAY_PRIVATE_TRANSCRIPT')).toHaveCount(0);
   expect(calls).toBe(1);
   await page.getByRole('button',{name:'Next',exact:true}).click();
