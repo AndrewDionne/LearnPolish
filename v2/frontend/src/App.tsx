@@ -96,6 +96,9 @@ export default function App() {
   const [index, setIndex] = useState(0);
   const [sessionStartXp, setSessionStartXp] = useState(0);
   const [mode, setMode] = useState<LearningMode>('learn');
+  // One deliberate choice for the current Speak session, OFF at lesson start.
+  // Keeps the guide open if the learner advances, without a persistent gate.
+  const [guideVisible,setGuideVisible] = useState(false);
   const [reviewOnly, setReviewOnly] = useState<string[] | null>(null);
   const [listenGuess, setListenGuess] = useState<string | null>(null);
   const [readGuess, setReadGuess] = useState<string | null>(null);
@@ -201,13 +204,13 @@ export default function App() {
 
   const stopAudio = () => { audio.stop(); };
   const goTo = (destination: Page) => {
-    stopAudio(); setLessonId(null); setEditorOpen(false); setReviewOnly(null); setPage(destination); setRevealed(false); setFinished(false);
+    stopAudio(); setLessonId(null); setGuideVisible(false); setEditorOpen(false); setReviewOnly(null); setPage(destination); setRevealed(false); setFinished(false);
   };
   const openLesson = (lesson: Lesson) => {
     stopAudio();
     setReviewOnly(null);
     setSessionStartXp(expedition.events.length);
-    setLessonId(lesson.id); setMode(lesson.kind === 'reading' ? 'read' : 'learn');
+    setLessonId(lesson.id); setGuideVisible(false); setMode(lesson.kind === 'reading' ? 'read' : 'learn');
     setIndex(lesson.kind === 'reading' ? safeReadingPosition(readingPositions, lesson.id, lesson.items.length) : 0);
     setRevealed(false); setTranslationOpen(false); setListenGuess(null); setReadGuess(null); setListenRevealed(false); setFinished(false);
     setLastLesson(lesson.id); saveLastLesson(lesson.id);
@@ -400,14 +403,16 @@ export default function App() {
         {loading && <section className="empty-state" role="status"><h2>Gathering your lessons…</h2><p>Preparing your Polish library.</p></section>}
         {!loading && loadError && <section className="empty-state" role="alert"><h2>Lessons could not load</h2><p>{loadError}</p><p>Run <code>npm run content</code> in v2/frontend, then reload. Your progress remains saved locally.</p></section>}
 
-        {!loading && !loadError && active && current && <div className="learning">
-          <div className="lesson-tools"><button type="button" className="back-link" onClick={() => goTo('library')}>← Back to library</button><div><button type="button" onClick={() => exportFile(active)}>Export JSON</button><OfflineDownloadControl lesson={active}/>{active.source === 'personal' && <><button type="button" onClick={() => beginEdit(active)}>Edit lesson</button><button type="button" className="delete-link" onClick={() => deletePersonalLesson(active)}>Delete</button></>}</div></div>
-          <div className="learning-head">
+        {!loading && !loadError && active && current && <div className={'learning' + (mode === 'speak' ? ' speak-focused' : '')}>
+          <div className="lesson-tools"><button type="button" className="back-link" onClick={() => goTo('library')}>← Back to library</button>{mode !== 'speak' && <div><button type="button" onClick={() => exportFile(active)}>Export JSON</button><OfflineDownloadControl lesson={active}/>{active.source === 'personal' && <><button type="button" onClick={() => beginEdit(active)}>Edit lesson</button><button type="button" className="delete-link" onClick={() => deletePersonalLesson(active)}>Delete</button></>}</div>}</div>
+          {mode === 'speak'
+            ? <div className="learning-head speak-compact-head"><span className="item-count">{index + 1} <span>/ {sessionItems.length}</span></span></div>
+            : <div className="learning-head">
             <div><span className="eyebrow">{reviewOnly ? 'DUE REVIEW' : lessonLabel(active.kind)} · {active.title}</span><h1>{reviewOnly ? 'Review what matters' : mode === 'speak' ? 'Practise speaking' : mode === 'listen' ? 'Train your ear' : mode === 'read' ? 'Read & understand' : active.kind === 'sounds' ? 'Hear the difference' : 'Learn the language'}</h1><p>{reviewOnly ? 'These expressions are due for recall practice. Answer honestly; missed items remain available for review.' : mode === 'speak' ? (SPEECH_ASSESSMENT_AVAILABLE && familyConnection && active.source !== 'personal'
               ? 'Listen, record, replay, and optionally ask Azure for estimated pronunciation feedback. This is not a certified grade.'
               : 'Listen, record, replay and practise your Polish. No pronunciation grade is assigned.') : mode === 'listen' ? 'Listen first, choose the meaning, then compare your answer with the Polish transcript.' : mode === 'read' ? 'Read naturally, then reveal the translation. Your reading position is remembered.' : active.kind === 'sounds' ? active.soundGroups ? 'Play each recording individually and compare neighbouring sound families. Audio quality and pronunciation notes await native review.' : 'Compare the examples and listen carefully. These lessons await native-speaker review.' : 'Think of the Polish expression before revealing its meaning.'}</p></div>
             <span className="item-count">{index + 1} <span>/ {sessionItems.length}</span></span>
-          </div>
+          </div>}
           {active.progression && <p className="pathway-hint">Reading pathway · Step {active.progression.order} · {readingStage(active.progression.stage)} — {active.progression.goal}</p>}
           <div className="lesson-meter" role="progressbar" aria-label="Lesson progress" aria-valuemin={0} aria-valuemax={sessionItems.length} aria-valuenow={index + 1}><span style={{ width: (100 * (index + 1) / sessionItems.length) + '%' }} /></div>
           <div className="mode-row" role="group" aria-label="Learning modes">
@@ -430,6 +435,7 @@ export default function App() {
             </div>}
             <div className="answer-actions"><button type="button" className="secondary-action" onClick={() => jump(0)}>Practise again</button><button type="button" className="primary-action" onClick={() => goTo('library')}>Back to library →</button></div>
           </section> : mode === 'speak' ? <SpeakPanel key={current.id} item={current} playing={audio.playing} onPlayReference={play} onStopReference={stopAudio}
+            guideVisible={guideVisible} onGuideChange={setGuideVisible}
             onAssess={SPEECH_ASSESSMENT_AVAILABLE && familyConnection && active.source !== 'personal'
               ? (capture, signal) => requestSpeechFeedback(capture, familyConnection.token, signal)
               : undefined}
@@ -489,11 +495,11 @@ export default function App() {
               <button type="button" className="primary-action" onClick={() => record(true)}>{mode === 'read' ? 'Finished reading →' : 'Got it →'}</button>
             </div>)}
           </section>}
-          <div className="lesson-footer">
+          {mode !== 'speak' && <div className="lesson-footer">
             <button type="button" onClick={() => jump(index - 1)} disabled={index === 0}>← Previous</button>
             <span>{completedIn(active)} of {active.items.length} explored</span>
             <button type="button" onClick={() => jump(index + 1)} disabled={index === sessionItems.length - 1}>Skip to next →</button>
-          </div>
+          </div>}
         </div>}
 
         {!loading && !loadError && editorOpen && <section className="authoring">
