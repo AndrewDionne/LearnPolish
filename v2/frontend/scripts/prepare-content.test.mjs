@@ -46,6 +46,16 @@ test('new catalog retires bundled sound examples while retaining all other legac
     {id:'speak_swietokrzyska:0',polish:'Świętokrzyska'},
   ]);
   assert.equal(spoken.items[0].audio, undefined);
+  // ONE curated source for English-friendly cues in Speak and the offline
+  // sound-similarity review. Polish segmentation must never drift.
+  const shared = JSON.parse(fs.readFileSync(path.resolve('../content/pronunciation-swietokrzyska.json'),'utf8'));
+  const item = spoken.items[0];
+  assert.deepEqual(item.pronunciationGuide.syllables,shared.syllables);
+  assert.equal(item.pronunciationGuide.stressIndex,2);
+  assert.equal(item.pronunciationGuide.reviewStatus,'needs_native_speaker_review');
+  assert.equal(item.pronunciation,shared.syllables.map(s=>s.englishCue).join(' · '));
+  assert.equal(shared.syllables.map(s=>s.polish).join(''),item.polish);
+  assert.deepEqual(shared.syllables.map(s=>s.englishCue),['shfyehn','toh','KSHIH','skah']);
   const reading = catalog.filter(x => x.kind === 'reading');
   assert.deepEqual(reading.map(x => x.progression.order).sort((a,b)=>a-b), [1,2,3,4,5,6]);
   assert.equal(reading.reduce((count,x) => count + x.items.filter(i => !!i.comprehension).length,0),24);
