@@ -1,5 +1,22 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
+## Azure STS restored to HTTP 200 — isolated Speech SDK check next (2026-10-19)
+
+**Owner's actual Mac auth result, after repairing existing Azure Speech key:** `python3 v2/benchmarks/azure_auth_probe.py` returned `status=token_issuer_authorized`, `http_status=200`, `no_audio_uploaded=true`, `speech_inference_requests=0`, `key_and_token_never_printed=true`. Prior 401 **resolved for current Terminal shell**. This is ONLY regional token issuance success, **NOT** proof the Speech SDK WebSocket / Polish scripted pronunciation assessment works. No Azure inference has been performed since PR #46.
+
+**Next owner-approved physical diagnostic**: after rechecking **existing Speech F0/free quota/no paid billing**, perform exactly ONE public-domain Azure-only request on already downloaded `greeting-day` (`Dzień dobry`, 1.250 seconds). No Groq/Whisper calls. From repo root:
+```bash
+PathToPolish-Private-AI/.venv-speech-test/bin/python \
+  v2/benchmarks/public_three_model_pilot.py \
+  --fixture-dir PathToPolish-Private-AI/public-polish-live-01 \
+  --azure-only --sample-id greeting-day \
+  --send --approve-public-audio-upload \
+  --confirm-azure-f0 --confirm-no-paid-billing \
+  --output PathToPolish-Private-AI/public-polish-live-01/azure-only-diagnostic-01.jsonl
+```
+This command has NOT been executed by ChatGPT; awaiting owner's Mac output. Request only `azure_status`, allowlisted `azure_diagnostic` (`azure_result_reason`, `azure_cancellation_reason`, `azure_error_code`) and `azure_scores_uncalibrated`; never keys or raw provider JSON. The first six-call `results-01.jsonl`, public source originals, previous diagnostics and Groq successful results remain immutable. If token issuer had returned 200 but SDK still cancels, diagnose **actual SDK cancellation category** before proposing duration/silence remedies or app model changes. Check lingering duplicate `~/.zshrc` key assignments privately after experiment so new shells don't restore the old invalid key.
+
+
 ## Azure auth STOP gate: owner's Mac STS issued HTTP 401 (2026-10-19)
 
 **New actual owner result** after pulling PR #46 on local `main`: `python3 v2/benchmarks/azure_auth_probe.py` returned `status=token_issuer_rejected`, `http_status=401`, `no_audio_uploaded=true`, `speech_inference_requests=0`, secret/token never printed. **STOP all Azure voice inference until a valid key/resource pair is established.** No additional Groq calls needed (both transcribed the two public short recordings correctly). This 401 is the regional STS preflight rejecting authorization—NOT evidence of pronunciation quality, clip duration, a Speech SDK audio defect, or a definite specific key failure.
