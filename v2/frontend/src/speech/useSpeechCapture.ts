@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { normalizeRecording, preferredRecordingMime } from './format';
 import type { AcousticCheck } from './format';
+import { microphoneFailureMessage, readMicrophonePermission } from './microphoneError';
 
 export type CapturePhase = 'idle' | 'requesting' | 'recording' | 'processing' | 'ready' | 'inconclusive' | 'error';
 export type SpeechCapture = {
@@ -145,11 +146,16 @@ export function useSpeechCapture(beforeStart: () => void): SpeechCapture {
       if (!alive.current || generation.current !== myGeneration) return;
       closeStream();
       requesting.current = false;
-      const name = error instanceof DOMException ? error.name : '';
+      const name = error instanceof Error ? error.name : '';
+      // NotAllowedError can occur even AFTER site permission was granted,
+      // e.g. when macOS denies browser microphone access. Resolve the
+      // permission state without opening another mic or prompting again.
+      const sitePermission = name === 'NotAllowedError' || name === 'PermissionDeniedError'
+        ? await readMicrophonePermission() : 'unknown';
+      if (!alive.current || generation.current !== myGeneration) return;
       setPhase('error');
-      setMessage(name === 'NotAllowedError' || name === 'PermissionDeniedError'
-        ? 'Microphone permission was denied. Allow microphone access for this site and try again.'
-        : error instanceof Error ? error.message : 'Microphone unavailable. Try again.');
+      setMessage(name === 'Error' && error instanceof Error
+        ? error.message : microphoneFailureMessage(name, sitePermission));
     }
   };
 
