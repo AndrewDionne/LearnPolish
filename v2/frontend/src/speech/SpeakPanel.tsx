@@ -148,7 +148,7 @@ export default function SpeakPanel({item, playing, onPlayReference, onStopRefere
         </div>}
       </div>}
     </div>
-    <button type="button" className="primary-action speak-next" disabled={capture.phase === 'recording' || capture.phase === 'requesting' || capture.phase === 'processing'} onClick={() => {abortAssessment(); preview.current?.pause(); onNext(!!prepared);}}>Next</button>
+    <button type="button" className="primary-action speak-next" onClick={() => {abortAssessment(); preview.current?.pause(); onNext(capture.phase === 'ready' && !!prepared);}}>Next</button>
     <details className="speak-private-details">
       <summary>Privacy &amp; options</summary>
       <p>Recordings stay temporarily on this device while you practise. Nothing is uploaded unless you choose Check my pronunciation, which sends one take to Azure. No recording or score is kept in your family history.</p>
