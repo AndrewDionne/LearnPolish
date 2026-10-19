@@ -12,7 +12,7 @@ import wave
 
 from benchmark import read_audio_metadata
 from public_polish_audio import SOURCES
-from public_three_model_pilot import checked_public_clips, execute, preview, summarize
+from public_three_model_pilot import checked_public_clips, execute, preview, summarize, azure_only, azure_evidence
 
 
 class PublicThreeModelPilotTests(unittest.TestCase):
@@ -157,6 +157,121 @@ class PublicThreeModelPilotTests(unittest.TestCase):
         self.assertEqual(len(rows),1)
         self.assertEqual(rows[0]["engine"],"groq-whisper-large-v3")
         self.assertEqual(self.calls,[])
+
+
+    def test_existing_file_preserves_its_unknown_azure_cancellation_cause(self):
+        legacy = self.folder / "legacy-recording.jsonl"
+        row = {
+            "sample_id": "greeting-day", "reference": "Dzień dobry",
+            "audio_sha256": "a" * 64, "engine": "azure-pl-PL-scripted",
+            "status": "inconclusive",
+            "azure_native": {"status": "inconclusive", "reason": "Azure canceled speech recognition"},
+            "latency_ms": 1328.3,
+        }
+        legacy.write_text(json.dumps(row) + "\n")
+        shown = summarize(legacy)["evidence"][0]
+        self.assertEqual(shown["reason"], "Azure canceled speech recognition")
+        self.assertIsNone(shown["azure_diagnostic"])
+        self.assertIsNone(shown["azure_scores_uncalibrated"])
+
+    def test_azure_only_preview_zero_requests_and_refuses_wrong_clip(self):
+        report = azure_only(self.folder, "greeting-day")
+        self.assertEqual(report["planned_azure_calls"], 1)
+        self.assertEqual(report["planned_groq_calls"], 0)
+        self.assertEqual(report["network_calls_performed"], 0)
+        self.assertEqual(report["status"], "AZURE_ONLY_PREVIEW")
+        self.assertEqual(self.calls, [])
+        with self.assertRaisesRegex(ValueError, "sample-id"):
+            azure_only(self.folder, "not-a-greeting")
+
+    def test_azure_only_one_call_returns_safe_sdk_diagnostics_with_no_groq_key(self):
+        calls = []
+        def assessor(audio, reference, key, region):
+            calls.append((audio, reference, region))
+            return {
+                "status": "inconclusive", "reason": "Azure canceled speech recognition",
+                "azure_result_reason": "Canceled",
+                "azure_cancellation_reason": "Error",
+                "azure_error_code": "ServiceTimeout",
+                "error_details": "provider-private-error-message-MUST-NOT-LEAK",
+            }
+        path = self.folder / "azure-only-01.jsonl"
+        result = azure_only(self.folder, "greeting-day", send=True,
+                            approve_public_audio_upload=True, confirm_azure_f0=True,
+                            confirm_no_paid_billing=True, azure_key="TEST-ONLY",
+                            azure_region="germanywestcentral", output=path, assessor=assessor)
+        self.assertEqual(result["network_calls_performed"], 1)
+        self.assertEqual(result["groq_calls"], 0)
+        self.assertEqual(calls, [(self.folder/"greeting-day.wav", "Dzień dobry", "germanywestcentral")])
+        self.assertEqual(result["azure_diagnostic"], {
+            "azure_result_reason": "Canceled", "azure_cancellation_reason": "Error",
+            "azure_error_code": "ServiceTimeout",
+        })
+        shown = summarize(path)["evidence"][0]
+        self.assertEqual(shown["azure_diagnostic"]["azure_error_code"], "ServiceTimeout")
+        self.assertIsNone(shown["azure_scores_uncalibrated"])
+        self.assertEqual(path.stat().st_mode & 0o777, 0o600)
+        self.assertNotIn("provider-private-error-message",path.read_text())
+        with self.assertRaisesRegex(ValueError, "Output exists"):
+            azure_only(self.folder, "greeting-day", send=True,
+                       approve_public_audio_upload=True, confirm_azure_f0=True,
+                       confirm_no_paid_billing=True, azure_key="TEST-ONLY",
+                       azure_region="germanywestcentral", output=path, assessor=assessor)
+        self.assertEqual(len(calls), 1)
+
+    def test_azure_only_refuses_upload_without_approval_and_bad_credentials(self):
+        for change in [
+            {"approve_public_audio_upload": False},
+            {"confirm_azure_f0": False},
+            {"confirm_no_paid_billing": False},
+            {"azure_key": ""},
+            {"azure_key": "TEST-ONLY\u2026"},
+            {"azure_region": "wrong-region"},
+        ]:
+            kwargs = {
+                "send": True, "approve_public_audio_upload": True,
+                "confirm_azure_f0": True, "confirm_no_paid_billing": True,
+                "azure_key": "TEST-ONLY", "azure_region": "germanywestcentral",
+                "output": self.folder / "forbidden.jsonl",
+                "assessor": lambda *_: self.fail("Azure must NOT be contacted"),
+            }
+            kwargs.update(change)
+            with self.assertRaises(ValueError):
+                azure_only(self.folder, "greeting-day", **kwargs)
+            self.assertFalse(kwargs["output"].exists())
+
+    def test_bad_sdk_free_text_is_not_serialized_or_displayed(self):
+        c={"id":"greeting-day","reference":"Dzień dobry","sha256":"f"*64}
+        row=azure_evidence(c, {
+            "status":"inconclusive", "reason":"PRIVATE SERVICE STRING",
+            "azure_result_reason":"Canceled", "azure_cancellation_reason":"PRIVATE ERROR",
+            "azure_error_code":"KEY123INPRIVATEERROR", "error_details":"DO-NOT-COPY",
+        },123.4)
+        self.assertEqual(row["azure_diagnostic"], {
+            "azure_result_reason": "Canceled",
+            "azure_cancellation_reason": "Unknown",
+            "azure_error_code": "Unknown",
+        })
+        self.assertEqual(row["azure_native"]["reason"], "Azure result inconclusive")
+        self.assertNotIn("PRIVATE",json.dumps(row))
+        self.assertNotIn("DO-NOT-COPY",json.dumps(row))
+
+    def test_six_call_runner_now_preserves_cancel_categories(self):
+        output=self.folder/"native-six-diagnostic.jsonl"
+        args=self.params(output)
+        def assessor(*_):
+            return {"status":"inconclusive", "reason":"Azure canceled speech recognition",
+                    "azure_result_reason":"Canceled", "azure_cancellation_reason":"Error",
+                    "azure_error_code":"AuthenticationFailure"}
+        args["assessor"]=assessor
+        done=execute(self.folder,**args)
+        self.assertEqual(done["network_calls_performed"],6)
+        rows=[json.loads(line) for line in output.read_text().splitlines()]
+        self.assertEqual(rows[2]["azure_diagnostic"]["azure_error_code"],"AuthenticationFailure")
+        self.assertEqual(rows[5]["azure_diagnostic"]["azure_cancellation_reason"],"Error")
+        self.assertEqual(done["report"]["evidence"][2]["azure_diagnostic"]["azure_result_reason"],"Canceled")
+        self.assertEqual(done["report"]["fit"]["model_results"]["azure-pl-PL-scripted"]["inconclusive_results"],2)
+        self.assertEqual(done["report"]["fit"]["complete_three_engine_triplets"],2)
 
 
 if __name__ == "__main__":
