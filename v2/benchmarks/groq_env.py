@@ -71,6 +71,8 @@ def save_private_groq(key: str, *, root: Path | None = None,
                       replace: bool = False) -> None:
     _valid_key(key)
     folder, path = _paths(root)
+    if replace and not folder.exists() and not folder.is_symlink():
+        raise ValueError("No installed Groq config to rotate")
     _check_directory(folder, create=True)
     if path.exists() or path.is_symlink():
         if not replace:
