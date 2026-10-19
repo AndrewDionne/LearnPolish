@@ -8,6 +8,11 @@ from pathlib import Path
 import tempfile
 import unittest
 import wave
+import contextlib
+import io
+import os
+import sys
+from unittest.mock import patch
 
 from swietokrzyska_latency import (
     WORD, ITEM_ID, VARIANTS, checked_audio, preview, run, summary, clean_payload
@@ -147,6 +152,58 @@ class ŚwiętokrzyskaLatencyTests(unittest.TestCase):
         self.assertIsNone(result["observations"][0]["scores_uncalibrated"])
         self.assertFalse(result["observations"][1]["connected_before_recognition"])
         self.assertEqual(result["observations"][1]["scores_uncalibrated"]["AccuracyScore"],97)
+
+    def test_safe_preflight_names_missing_key_and_region_without_provider_calls(self):
+        options=self.options()
+        options["azure_key"]=None
+        with self.assertRaisesRegex(ValueError,"AZURE_SPEECH_KEY is not exported"):
+            run(self.audio,**options)
+        options["azure_key"]="SECRET" + "\u2026"
+        with self.assertRaisesRegex(ValueError,"invalid shape or placeholder"):
+            run(self.audio,**options)
+        options["azure_key"]="PRIVATE-TEST-NOT-REAL"
+        options["azure_region"]=None
+        with self.assertRaisesRegex(ValueError,"AZURE_SPEECH_REGION must be germanywestcentral"):
+            run(self.audio,**options)
+        self.assertEqual(self.calls,[])
+        self.assertFalse(self.output.exists())
+
+    def test_existing_private_result_is_reported_before_key_check_and_never_retried(self):
+        self.output.write_text('{"partial":"preserve"}\\n')
+        self.output.chmod(0o600)
+        original=self.output.read_bytes()
+        options=self.options()
+        options["azure_key"]=None
+        with self.assertRaisesRegex(ValueError,"Output already exists; preserve it"):
+            run(self.audio,**options)
+        self.assertEqual(self.output.read_bytes(),original)
+        self.assertEqual(self.calls,[])
+
+    def test_cli_safe_preflight_messages_never_expose_key_or_private_path(self):
+        from swietokrzyska_latency import main
+        flags=["--wav",str(self.audio),"--send","--approve-adult-audio-upload",
+               "--confirm-azure-f0","--confirm-no-paid-billing",
+               "--output",str(self.output)]
+        def invoke(env):
+            stderr=io.StringIO()
+            with patch.object(sys,"argv",["swietokrzyska_latency.py",*flags]), \\
+                 patch.dict(os.environ, env, clear=True), contextlib.redirect_stderr(stderr), \\
+                 self.assertRaises(SystemExit) as caught:
+                main()
+            self.assertEqual(caught.exception.code,2)
+            return stderr.getvalue()
+        no_key=invoke({"AZURE_SPEECH_REGION":"germanywestcentral"})
+        self.assertIn("AZURE_SPEECH_KEY is not exported",no_key)
+        self.assertNotIn(str(self.audio),no_key)
+        self.assertEqual(self.calls,[])
+        # File is present: stop before even checking keys or contacting Azure.
+        self.output.write_text('{"partial":"preserve"}\\n')
+        self.output.chmod(0o600)
+        file_present=invoke({})
+        self.assertIn("Output already exists; preserve it",file_present)
+        self.assertNotIn(str(self.audio),file_present)
+        self.assertNotIn("partial",file_present)
+        self.assertEqual(self.calls,[])
 
     def test_only_allowlisted_sanitized_score_and_timing_payload(self):
         x=clean_payload("ordinary",1,checked_audio(self.audio),{
