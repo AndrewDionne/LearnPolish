@@ -17,6 +17,7 @@ from typing import Callable
 
 from azure_pilot import azure_scripted_assess
 from speech_env import speech_credentials
+from groq_env import groq_key
 from benchmark import extract_azure_native, read_audio_metadata
 from corpus import parse_capture_name, read_catalog
 from groq_pilot import MODELS, transcribe
@@ -156,7 +157,7 @@ def main() -> int:
                      confirm_groq_free=args.confirm_groq_free,
                      confirm_azure_f0=args.confirm_azure_f0,
                      confirm_no_paid_billing=args.confirm_no_paid_billing,
-                     groq_key=os.environ.get("GROQ_API_KEY"),
+                     groq_key=groq_key() if args.send else None,
                      azure_key=key,
                      azure_region=region,
                      output=args.output)

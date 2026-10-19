@@ -1,5 +1,61 @@
 # Świętokrzyska — pronunciation and latency test
 
+## SAVE GROQ KEY ONCE — permanent owner-private setup
+
+Groq and Azure use different API keys. Azure was already saved as
+`PathToPolish-Private-AI/.env.azure-speech`; **do not replace that file**.
+The matching permanent Groq asset is now:
+
+`PathToPolish-Private-AI/.env.groq`
+
+This directory is excluded from Git, is required to be owner-only
+(mode 0700), and the Groq config file must be owner-only (mode 0600).
+The new standard-library `v2/benchmarks/groq_env.py` never executes
+configuration text, never writes a key to source control or browser
+JavaScript, and never sends requests to Groq during key setup.
+
+**If GROQ_API_KEY is already exported in this Terminal:** from the repo
+root (once this PR is merged), install it **just once**:
+
+```bash
+git pull --ff-only origin main
+python3 v2/benchmarks/groq_env.py --save-current
+python3 v2/benchmarks/groq_env.py --status
+```
+
+**If the key is not in this Terminal**, use a private hidden input
+instead:
+
+```bash
+python3 v2/benchmarks/groq_env.py --setup
+```
+
+After installation, future Terminal sessions and the Groq-only
+`swietokrzyska_whisper.py` runner load the private file
+automatically; no environment variable export or repeated key entry.
+The installed file overrides any stale `GROQ_API_KEY` in your shell;
+the environment variable remains a fallback ONLY when there is no
+installed file. Invalid or insecure installed files fail closed.
+`--setup --replace` intentionally rotates an existing key; no normal
+setup can overwrite it. Do not paste the key into chat or expose it
+through `cat`, `echo` or screen recordings. Gitignore is not encryption;
+keep the owner-private directory out of shared/cloud folders.
+
+Optional Groq credential-only authorization check (**GET model list**,
+zero audio uploaded, no Whisper inference) after installing:
+
+```bash
+python3 v2/benchmarks/groq_pilot.py --check-access --transport curl
+```
+
+The same private Groq loader is used by the general `groq_pilot.py`,
+public test harness, and adult learner three-engine harness. Groq
+provider requests still require distinct `--send`, adult consent,
+Free-plan and no-paid-billing approval. This is a research credential
+asset only; it does not configure a browser key or production Render
+secrets.
+
+
 ## Whisper v3 vs Whisper Turbo — same adult word, **no repeat Azure**
 
 **Current status:** Azure has already measured this exact `Świętokrzyska`

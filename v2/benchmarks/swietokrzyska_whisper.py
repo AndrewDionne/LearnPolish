@@ -19,6 +19,7 @@ import time
 from typing import Callable
 
 from groq_pilot import MODELS, transcribe
+from groq_env import groq_key
 from swietokrzyska_latency import ITEM_ID, WORD, checked_audio, summary as azure_summary
 from three_model_pilot import _output, word_error_rate
 
@@ -192,7 +193,7 @@ def main() -> int:
                 approve_adult_audio_upload=args.approve_adult_audio_upload,
                 confirm_groq_free=args.confirm_groq_free,
                 confirm_no_paid_billing=args.confirm_no_paid_billing,
-                groq_key=os.environ.get("GROQ_API_KEY") if args.send else None,
+                groq_key=groq_key() if args.send else None,
                 output=args.output)
         print(json.dumps(result, ensure_ascii=False, indent=2))
     except (OSError, ValueError, RuntimeError, TypeError, json.JSONDecodeError):

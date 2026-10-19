@@ -19,6 +19,7 @@ from typing import Callable
 
 from benchmark import load_manifest, polish_match, polish_target_present, read_audio_metadata
 from research_paths import check_research_location
+from groq_env import groq_key
 from groq_curl_transport import request_json as curl_request_json
 
 GROQ_ENDPOINT = "https://api.groq.com/openai/v1/audio/transcriptions"
@@ -272,7 +273,7 @@ def main() -> int:
         if args.check_access:
             if args.send or args.output:
                 raise ValueError("--check-access cannot be combined with --send or --output")
-            report = check_access(os.environ.get("GROQ_API_KEY", ""), transport=args.transport)
+            report = check_access(groq_key() or "", transport=args.transport)
             print(json.dumps(report, indent=2))
             return 0
         if args.manifest is None:
@@ -281,7 +282,7 @@ def main() -> int:
                      args.max_billed_seconds, send=args.send,
                      approve_voice_upload=args.approve_voice_upload,
                      confirm_free_plan=args.confirm_free_plan,
-                     output=args.output, api_key=os.environ.get("GROQ_API_KEY"),
+                     output=args.output, api_key=groq_key() if args.send else None,
                      transport=args.transport)
     except (OSError, ValueError, RuntimeError) as error:
         parser.error(str(error))
