@@ -237,6 +237,10 @@ test('Speak records, checks acoustic quality, replays locally, and clears on nex
 
 test('Speak handles denied microphone permissions without grading or blocking navigation', async ({ page }) => {
   await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'permissions', {
+      configurable: true,
+      value: {query: async () => ({state: 'denied'})},
+    });
     Object.defineProperty(navigator.mediaDevices, 'getUserMedia', {
       configurable: true,
       value: async () => { throw new DOMException('Permission denied', 'NotAllowedError'); },
@@ -248,7 +252,7 @@ test('Speak handles denied microphone permissions without grading or blocking na
   await page.getByRole('button', {name: /numbers 1-20/i}).click();
   await page.getByRole('button', {name: 'Speak', exact: true}).click();
   await page.getByRole('button', {name: /Start recording/}).click();
-  await expect(page.getByRole('alert')).toContainText('Microphone permission was denied');
+  await expect(page.getByRole('alert')).toContainText('microphone access is blocked for this exact site');
   await page.getByRole('button', {name: /Next phrase/}).click();
   await expect(page.getByText('Dwa', {exact: true})).toBeVisible();
 });

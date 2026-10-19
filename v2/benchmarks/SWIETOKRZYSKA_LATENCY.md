@@ -19,6 +19,35 @@ private adult family API is configured) optional Azure assessment.
 Without a verified native clip the Play Example button is absent.
 Basic recording, replay and progression do not require Azure.
 
+## Mac browser microphone troubleshooting
+
+If the Speak card shows a microphone-access error **even after choosing
+Allow**, two independent controls may be involved:
+
+1. In **Chrome**, open the exact local app address
+   `http://127.0.0.1:5194`; select the address-bar site information
+   → Site settings → Microphone → Allow. A permission given to
+   `localhost:5173` or another origin is not permission for
+   `127.0.0.1:5194`.
+2. macOS **System Settings → Privacy & Security → Microphone**:
+   confirm Chrome (or the actual browser in use) is enabled.
+3. macOS **System Settings → Sound → Input**: choose a functioning
+   microphone. Try a macOS local audio-recording app if you need to
+   distinguish OS input failure from the browser.
+4. Quit Chrome entirely with **⌘Q**, reopen the exact app URL, and
+   press **Start recording** again.
+
+A `NotAllowedError` does not by itself identify which layer rejected
+the request. The Speak recorder now **silently queries browser site
+permission after an actual capture failure**: if it is `granted`,
+the error advises checking macOS Privacy & Security and sound input;
+if `denied`, it advises site permissions; if unknown, it mentions both.
+The probe does not open a microphone, request fresh permission or
+upload audio. `NotReadableError` and `NotFoundError` are distinguished
+from permission denials. Basic lessons, XP and the next button work even
+if no microphone is available. Azure is never called by a failed
+recording or this diagnostic.
+
 ## Capture ONE real spoken attempt (no inference required)
 
 From the owner's existing Mac repo root, after merging and syncing,

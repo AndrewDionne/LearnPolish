@@ -182,3 +182,35 @@ test('Świętokrzyska is a real built-in Speak test item with opt-in timing, not
   await expect(page.locator('.speak-scores')).toHaveCount(0);
 });
 
+
+
+test('site permission allowed but macOS/browser rejects mic shows distinct diagnostic, no Azure call',async({page})=>{
+  await page.addInitScript(()=>{
+    Object.defineProperty(navigator,'permissions',{
+      configurable:true,value:{
+        query:async()=>({state:'granted'}),
+      },
+    });
+    Object.defineProperty(navigator.mediaDevices,'getUserMedia',{
+      configurable:true,value:async()=>{
+        throw new DOMException('TEST ONLY: inaccessible microphone','NotAllowedError');
+      },
+    });
+  });
+  let azureCalls=0;
+  await page.route('**/api/v2/family/speech/assess',route=>{
+    azureCalls++;
+    return route.fulfill({status:500,body:'no calls expected'});
+  });
+  await page.goto('/');
+  await page.getByRole('button',{name:'Library'}).first().click();
+  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Świętokrzyska');
+  await page.getByRole('button',{name:/Świętokrzyska/}).click();
+  await page.getByRole('button',{name:'Speak',exact:true}).click();
+  await page.getByRole('button',{name:/Start recording/}).click();
+  await expect(page.getByRole('alert')).toContainText('already has microphone permission');
+  await expect(page.getByRole('alert')).toContainText('Privacy & Security');
+  await expect(page.getByRole('alert')).toContainText('Sound → Input');
+  await expect(page.getByRole('button',{name:/Start recording/})).toBeEnabled();
+  expect(azureCalls).toBe(0);
+});
