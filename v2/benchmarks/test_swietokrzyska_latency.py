@@ -186,10 +186,11 @@ class ŚwiętokrzyskaLatencyTests(unittest.TestCase):
                "--output",str(self.output)]
         def invoke(env):
             stderr=io.StringIO()
-            with patch.object(sys,"argv",["swietokrzyska_latency.py",*flags]), \\
-                 patch.dict(os.environ, env, clear=True), contextlib.redirect_stderr(stderr), \\
-                 self.assertRaises(SystemExit) as caught:
-                main()
+            with patch.object(sys,"argv",["swietokrzyska_latency.py",*flags]):
+                with patch.dict(os.environ, env, clear=True):
+                    with contextlib.redirect_stderr(stderr):
+                        with self.assertRaises(SystemExit) as caught:
+                            main()
             self.assertEqual(caught.exception.code,2)
             return stderr.getvalue()
         no_key=invoke({"AZURE_SPEECH_REGION":"germanywestcentral"})
