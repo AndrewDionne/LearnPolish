@@ -17,6 +17,7 @@ import os
 from pathlib import Path
 import stat
 import statistics
+import sys
 import time
 from typing import Callable
 
@@ -105,13 +106,17 @@ def report(folder: Path, output: Path, *, count: int | None = None) -> dict:
     clips = scheduled_clips(folder, 4)
     by_id = {x["id"]: x for x in clips}
     rows = _safe_evidence(folder, output)
-    if count is not None and count not in (2, 4):
-        raise ValueError("Invalid planned request count")
-    expected_order = SAMPLE_ORDER[: count or len(rows)]
+    planned = rows[0].get("planned_requests")
+    if type(planned) is not int or planned not in (2, 4) or len(rows) > planned:
+        raise ValueError("Missing or invalid original request budget in saved results")
+    if count is not None and count != planned:
+        raise ValueError("Inconsistent original request budget")
+    expected_order = SAMPLE_ORDER[:planned]
     for i, row in enumerate(rows):
         expected = by_id[expected_order[i]]
         if (not isinstance(row, dict) or row.get("schema") != "azure-public-native-latency-v1"
-                or row.get("attempt") != i + 1 or row.get("sample_id") != expected["id"]
+                or row.get("attempt") != i + 1 or row.get("planned_requests") != planned
+                or row.get("sample_id") != expected["id"]
                 or row.get("reference") != expected["reference"]
                 or row.get("audio_sha256") != expected["sha256"]
                 or row.get("engine") != "azure-pl-PL-scripted"
@@ -135,7 +140,7 @@ def report(folder: Path, output: Path, *, count: int | None = None) -> dict:
         "all_attempts_under_5000ms": all(v < 5000 for v in completed),
     }
     return {
-        "status": "AZURE_LATENCY_PARTIAL" if count is not None and len(rows) != count
+        "status": "AZURE_LATENCY_PARTIAL" if len(rows) != planned
                   else "AZURE_LATENCY_OBSERVED",
         "network_requests_performed_in_file": len(rows),
         "groq_requests_performed": 0,
@@ -187,13 +192,15 @@ def run(folder: Path, *, count: int = 4, send: bool = False,
                 assessed = assessor(clip["audio"], clip["reference"], azure_key, azure_region)
                 elapsed_ms = round((clock() - started) * 1000, 1)
                 row = row_for_response(clip, i, elapsed_ms, assessed)
+                row["planned_requests"] = count
             except Exception:
                 # Never echo SDK exception text/headers/session/key. Persist the
                 # time for the attempted call, then stop WITHOUT a retry.
                 elapsed_ms = round(max(0, clock() - started) * 1000, 1)
                 row = {
                     "schema": "azure-public-native-latency-v1",
-                    "attempt": i, "sample_id": clip["id"], "reference": clip["reference"],
+                    "attempt": i, "planned_requests": count,
+                    "sample_id": clip["id"], "reference": clip["reference"],
                     "audio_sha256": clip["sha256"], "audio_seconds": round(clip["seconds"], 3),
                     "engine": "azure-pl-PL-scripted", "status": "error",
                     "sdk_wall_latency_ms": elapsed_ms,
@@ -202,10 +209,12 @@ def run(folder: Path, *, count: int = 4, send: bool = False,
                 stream.write(json.dumps(row, ensure_ascii=False) + "\n")
                 stream.flush()
                 os.fsync(stream.fileno())
+                print("Azure %d/%d: %s ERROR in %.1f ms" % (i, count, clip["id"], elapsed_ms), file=sys.stderr, flush=True)
                 break
             stream.write(json.dumps(row, ensure_ascii=False) + "\n")
             stream.flush()
             os.fsync(stream.fileno())
+            print("Azure %d/%d: %s %s in %.1f ms" % (i, count, clip["id"], row["status"], elapsed_ms), file=sys.stderr, flush=True)
     return report(folder, output, count=count)
 
 
