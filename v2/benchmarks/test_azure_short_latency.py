@@ -160,6 +160,7 @@ class AzureLatencyTests(unittest.TestCase):
         self.assertEqual(len(calls),2)
         self.assertEqual(result["status"],"AZURE_LATENCY_PARTIAL")
         self.assertEqual(result["network_requests_performed_in_file"],2)
+        self.assertEqual(report(self.folder, kw["output"])["status"], "AZURE_LATENCY_PARTIAL")
         self.assertEqual(result["observations"][-1]["status"],"error")
         self.assertNotIn("PASSWORD-OR-RAW",kw["output"].read_text())
         self.assertFalse(result["performance"]["all_attempts_under_5000ms"] is None)
