@@ -62,6 +62,7 @@ export function validateLesson(value: unknown): value is Lesson {
       typeof item.polish === 'string' && item.polish.trim().length > 0 &&
       typeof item.english === 'string' && item.english.trim().length > 0 &&
       (item.pronunciationGuide === undefined || (
+        !!item.pronunciationGuide &&
         Array.isArray(item.pronunciationGuide.syllables) &&
         item.pronunciationGuide.syllables.length >= 2 &&
         item.pronunciationGuide.syllables.length <= 12 &&
