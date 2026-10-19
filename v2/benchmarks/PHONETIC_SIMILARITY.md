@@ -1,5 +1,54 @@
 # Path to Polish — Syllable-highlighted phonetic similarity, first scoring tranche
 
+## English pronunciation guide — one shared, aligned source (2026-10-19)
+
+The owner requested an English-friendly guide placed **directly under the
+scored Polish syllables**. This is the same compact interface rather than
+a new modal, learning activity, or extra scoring subsystem.
+
+A single curated source:
+`v2/content/pronunciation-swietokrzyska.json` has the validated spelling
+split `Świę | to | krzy | ska` alongside the **approximate** English
+cues `shfyehn | toh | KSHIH | skah`. Stress falls on `krzy`. Every
+segment also has a specific Polish letter combination and a short
+teaching tip. The English respelling is NOT native audio, IPA, an
+acoustic transcript, or a certified learner pronunciation grade.
+Soft `ś` and Polish `y` have no precise English analogue and the
+guide is explicitly marked `needs_native_speaker_review`. The
+correct target cue must NEVER be confused with Whisper's
+`Sweczo Seska` or `Sveczo Seska` hypotheses.
+
+The very SAME JSON is read by:
+1. `v2/frontend/scripts/prepare-content.mjs`, attaching
+`item.pronunciation` and strongly validated optional
+`item.pronunciationGuide` to the built-in Świętokrzyska lesson.
+Its normal Speak card shows four aligned Polish syllables + English
+cues, the stressed syllable, and approximate/non-native qualification
+**before pressing Record**. Other words' existing optional
+`pronunciation` is unchanged; where available it gets an optional
+simple text guide on Speak (no invented syllable data).
+2. `v2/benchmarks/phonetic_similarity.py`, which validates that all
+four scored syllables align with the SAME curated cues and renders the
+English guide underneath the coloured target segments in the private
+owner-only HTML. Expand a segment to see English cue, letter focus,
+coaching tip, expected sound units, and transcript-inferred edits.
+
+This adds NO provider requests, browser API keys, phoneme inventions,
+family score gates, or mandatory learning steps. All existing WAV,
+Groq and Azure result files remain immutable. The last launched
+private HTML `phonetic-review-01.html` is not overwritten: to review
+the updated guide, ask the owner to generate a **NEW** HTML filename,
+e.g. `phonetic-review-02.html`, with the already documented
+offline command, and open that. The new guide is visible in the normal
+Speak UI after regenerating content via `npm run dev` or build.
+
+**Future step:** native Polish speaker reviews/resolves the learner
+respelling (and ideally provides verified example audio); any change
+is made ONCE in canonical JSON, not separately in frontend/Python.
+Do not imply that merely seeing an English cue validates the
+Whisper-derived percentage.
+
+
 ## Product decision
 
 The owner proposes a deliberately minimal pronunciation feedback UI:
