@@ -354,7 +354,7 @@ code{{overflow-wrap:anywhere}}
 <h1>Where did the sounds differ?</h1>
 <p class="subtitle">English-friendly sounds sit below each Polish syllable.
 Tap a coloured syllable for its English cue, letter combination and candidate difference.
-This is not a confirmed acoustic pronunciation grade.</p></header>
+This is not an acoustic measurement or a confirmed pronunciation grade.</p></header>
 <main><section class="review-panel">
 <div class="target" lang="pl">{_esc(result["reference"])}</div>
 <p>Transcript-based similarity estimate: <strong>{_esc(score)} / 100</strong></p>
