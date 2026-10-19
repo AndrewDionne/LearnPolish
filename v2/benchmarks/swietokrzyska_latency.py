@@ -25,6 +25,7 @@ from azure_pilot import azure_recognition_diagnostic
 from benchmark import read_audio_metadata, extract_azure_native
 from corpus import parse_capture_name
 from research_paths import check_research_location
+from speech_env import speech_credentials
 from three_model_pilot import _output
 
 WORD = "Świętokrzyska"
@@ -279,12 +280,13 @@ def main() -> int:
                 raise ValueError("Offline summary cannot be combined with provider send")
             result=summary(args.wav,args.summarize)
         else:
+            key, region = speech_credentials() if args.send else (None, None)
             result=run(args.wav,args.output,send=args.send,
                 approve_adult_audio_upload=args.approve_adult_audio_upload,
                 confirm_azure_f0=args.confirm_azure_f0,
                 confirm_no_paid_billing=args.confirm_no_paid_billing,
-                azure_key=os.getenv("AZURE_SPEECH_KEY"),
-                azure_region=os.getenv("AZURE_SPEECH_REGION"))
+                azure_key=key,
+                azure_region=region)
         print(json.dumps(result,indent=2,ensure_ascii=False))
     except ValueError as exc:
         # Allowlisted preflight messages are safe; do not echo untrusted

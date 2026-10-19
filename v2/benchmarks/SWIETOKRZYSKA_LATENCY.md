@@ -1,5 +1,102 @@
 # Świętokrzyska — pronunciation and latency test
 
+## PHYSICAL RESULT COMPLETE — 2026-10-19 (do not repeat)
+
+Owner successfully submitted the **same original 3.120-second** adult
+`Świętokrzyska` Speak WAV for exactly **two Azure Speech F0** requests.
+Private evidence at `PathToPolish-Private-AI/swietokrzyska-01/azure-compare-01.jsonl`
+MUST NOT be overwritten or used as a fresh output. Zero Groq calls.
+
+| Phase | Ordinary | Preconnected |
+| --- | ---: | ---: |
+| Total measured SDK time | **2459.7 ms** | **1923.3 ms** |
+| Preconnection wait | 0 ms | **423.9 ms** |
+| Recognition call | 2457.4 ms | **1499.1 ms** |
+| Connected event confirmed before recognition | No | **Yes** |
+| Status | ok | ok |
+| Accuracy / Fluency / Completeness (Azure raw, not calibrated) | **84 / 100 / 100** | **84 / 100 / 100** |
+
+Observed total advantage = **536.4 milliseconds** (about **21.8%**)
+for preconnected second call, **including the time spent connecting**.
+Recognize-only phase decreased by 958.3ms but excludes 423.9ms of
+preconnection wait; don't report that as full user-perceived savings.
+Same audio SHA-256 confirmed by owner-run benchmark; no transcript,
+credential, or recording committed to GitHub.
+
+**Interpretation:** Both attempts scored identically; connection
+readiness was actually confirmed. This is encouraging but NOT proof of
+causal acceleration or true latency percentiles: the preconnected
+attempt ran SECOND and could benefit from network/service warming. No
+app-wide connection optimization is deployed by this experiment; it
+remains an engineering candidate. The previous 20.4113-second historical
+outlier is NOT invalidated by this two-call test.
+
+## STABLE Azure key asset — setup ONCE, no more repeated shell exports
+
+Owner request: credentials must persist across new Terminal sessions
+without manually re-pasting or setting a region every time.
+
+The single **permanent local** key file is:
+
+`PathToPolish-Private-AI/.env.azure-speech`
+
+The folder is already ignored from Git by `/PathToPolish-Private-AI/`.
+The new standard-library-only helper `v2/benchmarks/speech_env.py`
+never touches network, never sources `.env` as executable shell code,
+and requires owner-only file **0600** and folder **0700**. Supported
+fields are exactly `AZURE_SPEECH_KEY` and `AZURE_SPEECH_REGION`.
+A valid installed file **takes precedence over stale `~/.zshrc`
+environment exports**. If no file is installed, existing shell
+variables still work. Bad/insecure installed files fail closed.
+
+**From the repo root in a Terminal where the real Azure key and
+`germanywestcentral` region just succeeded**, install once:
+
+```bash
+git pull --ff-only origin main
+python3 v2/benchmarks/speech_env.py --save-current
+python3 v2/benchmarks/speech_env.py --status
+python3 v2/benchmarks/azure_auth_probe.py
+```
+
+The save operation uses the ALREADY configured key/region, prints
+only success status, and performs **zero** Azure calls. The auth probe
+sends a separate **zero-audio** Microsoft STS token-request, not speech
+inference, to confirm credentials. No need to rerun the already
+completed two-call audio comparison.
+
+**If this Terminal does not have the valid key exported**, instead:
+
+```bash
+python3 v2/benchmarks/speech_env.py --setup
+```
+
+The Python helper prompts for the real Speech key with hidden input,
+installs it under the correct resource region, and does not print it.
+No key arguments, source code edits, output screenshots or chat sharing.
+
+**When intentionally rotating the key**, use
+`python3 v2/benchmarks/speech_env.py --setup --replace` and enter the
+new real key through hidden input. An existing credential file is
+NEVER overwritten by a normal setup. Do not store keys in tracked
+`v2/frontend/.env`, browser JavaScript, a committed file, or macOS
+shell startup files. Gitignore is protection against accidental
+commit only, **not encryption**: avoid uploading the private folder
+to cloud sync or sharing Mac accounts.
+
+All owner-local Azure Speech CLI tools (STS auth probe, normal Azure
+pilot, Świętokrzyska timing, historical short-latency and contrast
+experiments, public and adult comparison runners) now load this
+same file, but only for an explicitly selected live `--send`.
+Offline previews/summaries never need the secret. This configuration
+DOES NOT grant upload consent or turn on provider calls automatically.
+
+**Next owner verification:** after saving, open a NEW Terminal,
+run the zero-inference `python3 v2/benchmarks/speech_env.py --status`
+and `python3 v2/benchmarks/azure_auth_probe.py` from the repository
+root. Both should work without manually exporting the key or region.
+
+
 ## Why this word
 
 The owner chose **Świętokrzyska** to replace the two short greetings as

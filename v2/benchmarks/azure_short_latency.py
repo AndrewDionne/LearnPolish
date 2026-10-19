@@ -24,6 +24,7 @@ from typing import Callable
 from azure_pilot import azure_scripted_assess
 from public_three_model_pilot import AZURE_REGION, azure_evidence, checked_public_clips
 from three_model_pilot import _output
+from speech_env import speech_credentials
 
 MAX_REQUESTS = 4
 MAX_FILE_BYTES = 200_000
@@ -235,12 +236,13 @@ def main() -> int:
                 raise ValueError("--summarize is offline and cannot be combined with --send/--output")
             result = report(args.fixture_dir, args.summarize)
         else:
+            key, region = speech_credentials() if args.send else (None, None)
             result = run(args.fixture_dir, count=args.count, send=args.send,
                          approve_public_audio_upload=args.approve_public_audio_upload,
                          confirm_azure_f0=args.confirm_azure_f0,
                          confirm_no_paid_billing=args.confirm_no_paid_billing,
-                         output=args.output, azure_key=os.getenv("AZURE_SPEECH_KEY"),
-                         azure_region=os.getenv("AZURE_SPEECH_REGION"))
+                         output=args.output, azure_key=key,
+                         azure_region=region)
         print(json.dumps(result, ensure_ascii=False, indent=2))
     except (OSError, ValueError, RuntimeError, TypeError, json.JSONDecodeError) as exc:
         p.error(str(exc))

@@ -19,6 +19,7 @@ import time
 from typing import Callable
 
 from azure_pilot import azure_scripted_assess
+from speech_env import speech_credentials
 from benchmark import extract_azure_native, read_audio_metadata
 from groq_pilot import MODELS, transcribe
 from model_fit_review import review as offline_review
@@ -300,6 +301,7 @@ def main() -> int:
         if args.summarize:
             result = summarize(args.summarize)
         else:
+            key, region = speech_credentials() if args.send else (None, None)
             if not args.fixture_dir:
                 raise ValueError("Use --fixture-dir or --summarize")
             if args.azure_only:
@@ -307,8 +309,8 @@ def main() -> int:
                     approve_public_audio_upload=args.approve_public_audio_upload,
                     confirm_azure_f0=args.confirm_azure_f0,
                     confirm_no_paid_billing=args.confirm_no_paid_billing,
-                    output=args.output, azure_key=os.environ.get("AZURE_SPEECH_KEY"),
-                    azure_region=os.environ.get("AZURE_SPEECH_REGION"))
+                    output=args.output, azure_key=key,
+                    azure_region=region)
             else:
                 if args.sample_id:
                     raise ValueError("--sample-id is only for --azure-only")
@@ -318,8 +320,8 @@ def main() -> int:
                     confirm_azure_f0=args.confirm_azure_f0,
                     confirm_no_paid_billing=args.confirm_no_paid_billing,
                     output=args.output, groq_key=os.environ.get("GROQ_API_KEY"),
-                    azure_key=os.environ.get("AZURE_SPEECH_KEY"),
-                    azure_region=os.environ.get("AZURE_SPEECH_REGION"))
+                    azure_key=key,
+                    azure_region=region)
         print(json.dumps(result, ensure_ascii=False, indent=2))
     except (OSError, ValueError, RuntimeError) as err:
         p.error(str(err))

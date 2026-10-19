@@ -24,6 +24,7 @@ from public_three_model_pilot import (
     AZURE_REGION, azure_evidence, checked_public_clips,
 )
 from three_model_pilot import _output
+from speech_env import speech_credentials
 
 SOURCE_ID = "greeting-day"
 SPOKEN = "Dzień dobry"
@@ -205,12 +206,13 @@ def main() -> int:
                 raise ValueError("Offline --review-result cannot be combined with --send/--output")
             report = compare(args.fixture_dir, args.positive_result, args.review_result)
         else:
+            key, region = speech_credentials() if args.send else (None, None)
             report = run(args.fixture_dir, args.positive_result,
                          send=args.send, approve_public_audio_upload=args.approve_public_audio_upload,
                          confirm_azure_f0=args.confirm_azure_f0,
                          confirm_no_paid_billing=args.confirm_no_paid_billing,
-                         output=args.output, azure_key=os.getenv("AZURE_SPEECH_KEY"),
-                         azure_region=os.getenv("AZURE_SPEECH_REGION"))
+                         output=args.output, azure_key=key,
+                         azure_region=region)
         print(json.dumps(report, ensure_ascii=False, indent=2))
     except (ValueError, OSError, RuntimeError, TypeError, json.JSONDecodeError) as e:
         p.error(str(e))
