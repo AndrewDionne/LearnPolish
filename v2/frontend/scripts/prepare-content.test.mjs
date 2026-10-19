@@ -25,18 +25,27 @@ test('rejects malformed lesson data', () => {
 
 test('new catalog retires bundled sound examples while retaining all other legacy lessons and audio', () => {
   const report = buildContent();
-  assert.equal(report.lessons, 24);
-  assert.equal(report.items, 477);
+  assert.equal(report.lessons, 25);
+  assert.equal(report.items, 478);
   assert.equal(report.reading, 6);
   assert.equal(report.sounds, 4);
   assert.equal(report.curatedAudioReferences, 22);
   assert.equal(report.authoredReadingChecks, 24);
   assert.equal(report.readingPathwayLessons, 6);
   assert.equal(report.audioCopied, 455);
-  assert.equal(report.missingAudio, 0);
+  assert.equal(report.missingAudio, 1);
   assert.deepEqual(report.legacyGroupedSoundSetsRetired,
     ['letter_recognition_1', 'letter_recognition_2', 'letter_recognition_3']);
   const catalog = JSON.parse(fs.readFileSync(path.resolve('public/generated/lessons.json'), 'utf8')).lessons;
+  // Pronunciation latency target appears in the normal Library and in the
+  // authenticated server's authoritative catalog, without synthetic audio.
+  const spoken = catalog.find(x => x.id === 'speak_swietokrzyska');
+  assert.equal(spoken?.kind, 'vocabulary');
+  assert.equal(spoken?.source, 'curated');
+  assert.deepEqual(spoken?.items.map(({id,polish})=>({id,polish})), [
+    {id:'speak_swietokrzyska:0',polish:'Świętokrzyska'},
+  ]);
+  assert.equal(spoken.items[0].audio, undefined);
   const reading = catalog.filter(x => x.kind === 'reading');
   assert.deepEqual(reading.map(x => x.progression.order).sort((a,b)=>a-b), [1,2,3,4,5,6]);
   assert.equal(reading.reduce((count,x) => count + x.items.filter(i => !!i.comprehension).length,0),24);
