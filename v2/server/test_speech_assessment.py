@@ -58,7 +58,9 @@ class SpeechApiTests(unittest.TestCase):
         self.root=pathlib.Path(self.tmp.name)
         self.catalog=self.root/"lessons.json"
         self.catalog.write_text(json.dumps({"schemaVersion":1,"lessons":[
-            {"id":"a","kind":"vocabulary","items":[{"id":"a:0","polish":"Dzień dobry"}]}
+            {"id":"a","kind":"vocabulary","items":[{"id":"a:0","polish":"Dzień dobry"}]},
+            {"id":"speak_swietokrzyska","kind":"vocabulary","items":[
+                {"id":"speak_swietokrzyska:0","polish":"Świętokrzyska"}]}
         ]}))
         self.calls=[]
         self.mail=[]
@@ -111,11 +113,35 @@ class SpeechApiTests(unittest.TestCase):
         self.assertEqual(response.json["scores"],{"accuracy":93.0,"fluency":93.0,"completeness":92.0})
         self.assertEqual(len(self.calls),1)
         self.assertEqual(self.calls[0][1],"Dzień dobry")
+        # Duration-only Server-Timing, no speech text, key or private transcript.
+        header=response.headers.get("Server-Timing","")
+        self.assertRegex(header, r"^speech-sdk;dur=\\d+(?:\\.\\d+)?$")
+        self.assertNotIn("Dzień",header)
+        self.assertNotIn("Private",header)
+        self.assertNotIn("test",header)
         self.assertNotIn("wav",self.database.read_bytes().decode("latin-1"))
         with self.app.app_context():
             import sqlite3
             with sqlite3.connect(self.database) as con:
                 self.assertEqual(con.execute("SELECT requests FROM speech_usage").fetchone()[0],1)
+
+    def test_new_swietokrzyska_reference_is_server_authoritative_and_timed(self):
+        auth=self.auth("warsaw@example.com")
+        response=self.send(auth,item="speak_swietokrzyska:0")
+        self.assertEqual(response.status_code,200)
+        self.assertEqual(self.calls[0][1],"Świętokrzyska")
+        self.assertEqual(response.json["status"],"ok")
+        self.assertNotIn("latency",response.json)
+        self.assertRegex(response.headers.get("Server-Timing",""), r"^speech-sdk;dur=\\d+(?:\\.\\d+)?$")
+        self.assertEqual(len(self.calls),1)
+        # Unauthorized, cross-origin and no-consent paths must not issue
+        # further provider requests or expose measurement headers.
+        denied=self.send(auth,item="speak_swietokrzyska:0",consent="no")
+        self.assertEqual(denied.status_code,400)
+        self.assertIsNone(denied.headers.get("Server-Timing"))
+        allowed_origin=self.send(auth|{"Origin":"http://localhost:5173"},item="speak_swietokrzyska:0")
+        self.assertEqual(allowed_origin.status_code,200)
+        self.assertEqual(allowed_origin.headers.get("Access-Control-Expose-Headers"),"Server-Timing")
 
     def test_daily_cap_durable_and_cors_untrusted(self):
         auth=self.auth("c@example.com")
