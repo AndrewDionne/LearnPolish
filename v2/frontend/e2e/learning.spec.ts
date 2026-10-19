@@ -219,14 +219,27 @@ test('Speak records, checks acoustic quality, replays locally, and clears on nex
   await page.getByRole('button', {name: /Conversation 1/}).click();
   await page.getByRole('button', {name: 'Speak', exact: true}).click();
   await expect(page.getByText('Dzień dobry', {exact: true})).toBeVisible();
+  const guide = page.getByRole('button',{name:/Pronunciation guide/});
+  await expect(guide).toHaveAttribute('aria-pressed','false');
+  await expect(page.locator('.speak-english-fallback')).toHaveCount(0);
+  await expect(page.locator('.lesson-footer')).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'Export JSON'})).toHaveCount(0);
+  await guide.click();
+  await expect(guide).toHaveAttribute('aria-pressed','true');
+  await expect(page.getByText('jen DOH-brih',{exact:true})).toBeVisible();
   await page.getByRole('button', {name: /Start recording/}).click();
   await expect(page.getByRole('button', {name: 'Stop recording'})).toBeVisible();
   await page.getByRole('button', {name: 'Stop recording'}).click();
   await expect(page.getByText(/Recording captured/)).toBeVisible();
   await expect(page.locator('#personal-speech-replay')).toHaveAttribute('src', /blob:/);
   await expect(page.getByText(/Recording captured/)).toBeVisible();
-  await page.getByRole('button', {name: /Next phrase/}).click();
+  await page.getByRole('button', {name:'Next', exact:true}).click();
   await expect(page.getByText('Dobry wieczór', {exact: true})).toBeVisible();
+  await expect(guide).toHaveAttribute('aria-pressed','true');
+  await expect(page.getByText('DOH-brih VYEH-choor',{exact:true})).toBeVisible();
+  await guide.click();
+  await expect(page.locator('.speak-english-fallback')).toHaveCount(0);
+  await expect(guide).toHaveAttribute('aria-pressed','false');
   const earned = await page.evaluate(() => JSON.parse(localStorage.getItem('ptp-v2-expedition') || '{}'));
   expect(earned.events.some((entry:{mode:string})=>entry.mode==='speak')).toBe(true);
   await expect(page.locator('#personal-speech-replay')).toHaveCount(0);
@@ -253,7 +266,7 @@ test('Speak handles denied microphone permissions without grading or blocking na
   await page.getByRole('button', {name: 'Speak', exact: true}).click();
   await page.getByRole('button', {name: /Start recording/}).click();
   await expect(page.getByRole('alert')).toContainText('microphone access is blocked for this exact site');
-  await page.getByRole('button', {name: /Next phrase/}).click();
+  await page.getByRole('button', {name:'Next', exact:true}).click();
   await expect(page.getByText('Dwa', {exact: true})).toBeVisible();
 });
 
