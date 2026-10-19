@@ -144,3 +144,41 @@ test('inconclusive and quota outcomes stay ungraded; new take clears old feedbac
   await page.getByRole('button',{name:/Next phrase/}).click();
   await expect(page.getByText('Dobry wieczór',{exact:true})).toBeVisible();
 });
+
+test('Świętokrzyska is a real built-in Speak test item with opt-in timing, not fake native audio',async({page})=>{
+  await installSyntheticMicrophone(page);
+  let calls=0;
+  await page.route('**/api/v2/family/speech/assess', async route=>{
+    calls++;
+    const body=route.request().postDataBuffer()?.toString('latin1')??'';
+    expect(body).toContain('speak_swietokrzyska:0');
+    expect(body).toContain('approve_azure_audio_upload');
+    await route.fulfill({
+      status:200,contentType:'application/json',
+      headers:{'Server-Timing':'speech-sdk;dur=4020.0','Access-Control-Expose-Headers':'Server-Timing'},
+      body:JSON.stringify({status:'ok',engine:'azure-pl-PL-scripted',
+        calibration:'uncalibrated',scores:{accuracy:77,fluency:88,completeness:100},
+        rawText:'NEVER-DISPLAY-RAW-SPEECH'}),
+    });
+  });
+  await connectPrivateAdult(page);
+  await page.getByRole('button',{name:'Library'}).first().click();
+  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Świętokrzyska');
+  await page.getByRole('button',{name:/Świętokrzyska/}).click();
+  await page.getByRole('button',{name:'Speak',exact:true}).click();
+  await expect(page.getByText('Świętokrzyska',{exact:true})).toBeVisible();
+  await expect(page.getByText(/Native reference audio is not available/)).toBeVisible();
+  await expect(page.getByText(/Read the Polish word/)).toBeVisible();
+  await expect(page.getByRole('button',{name:'Check my pronunciation'})).toHaveCount(0);
+  await recordValidTake(page);
+  expect(calls).toBe(0);
+  await page.getByRole('button',{name:'Check my pronunciation'}).click();
+  await expect(page.getByText('77.0 / 100')).toBeVisible();
+  await expect(page.getByText(/Azure SDK call 4\.0 s/)).toBeVisible();
+  await expect(page.getByText('NEVER-DISPLAY-RAW-SPEECH')).toHaveCount(0);
+  expect(calls).toBe(1);
+  await page.getByRole('button',{name:/Record another take/}).click();
+  await expect(page.locator('.speak-latency')).toHaveCount(0);
+  await expect(page.locator('.speak-scores')).toHaveCount(0);
+});
+
