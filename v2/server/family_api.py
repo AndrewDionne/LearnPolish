@@ -194,6 +194,9 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
             response.headers["Vary"] = "Origin"
             response.headers["Access-Control-Allow-Headers"] = "Authorization,Content-Type"
             response.headers["Access-Control-Allow-Methods"] = "GET,POST,OPTIONS"
+            # Expose strictly duration-only metrics; never provider transcripts,
+            # request identifiers, credentials or audio metadata.
+            response.headers["Access-Control-Expose-Headers"] = "Server-Timing"
         response.headers["Cache-Control"] = "no-store"
         response.headers["X-Content-Type-Options"] = "nosniff"
         return response
@@ -282,15 +285,22 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
                ON CONFLICT(user_id,day) DO UPDATE SET requests=requests+1""",
             (user["id"], day))
         con.commit()
+        sdk_started = time.perf_counter()
         try:
             payload = assess(checked, speech_references[item_id], speech_key, speech_region)
             result = assessment_from_sdk(payload)
         except Exception:
             result = {"status": "inconclusive", "reason": "provider_unavailable"}
+        sdk_ms = round(max(0, time.perf_counter() - sdk_started) * 1000, 1)
+        # These are ephemeral response-header durations, never database logs,
+        # persistent telemetry, private speech identifiers or a score.
+        # SDK time includes recognition setup, transport and remote processing.
         # The service intentionally does not write raw voice, transcriptions,
         # word/phoneme scores or result history. Never award XP using raw PA.
-        return jsonify({"item_id": item_id, "engine": "azure-pl-PL-scripted",
-                        "audio_seconds": round(duration, 2), **result})
+        response = jsonify({"item_id": item_id, "engine": "azure-pl-PL-scripted",
+                            "audio_seconds": round(duration, 2), **result})
+        response.headers["Server-Timing"] = f"speech-sdk;dur={sdk_ms}"
+        return response
 
     @app.get("/api/v2/family/health")
     def health():

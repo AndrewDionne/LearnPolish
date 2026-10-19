@@ -2,10 +2,12 @@
 import type {AssessmentReadyCapture} from './format';
 import {FAMILY_API} from '../family/api';
 
+export type SpeechTiming = {roundTripMs:number;sdkMs?:number};
+
 export type SpeechFeedback =
   | {status:'ok'; engine:'azure-pl-PL-scripted'; calibration:'uncalibrated';
-     scores:{accuracy:number;fluency:number;completeness:number}}
-  | {status:'inconclusive'; reason:string};
+     scores:{accuracy:number;fluency:number;completeness:number};timing?:SpeechTiming}
+  | {status:'inconclusive'; reason:string;timing?:SpeechTiming};
 
 const REASONS:Record<string,string>={
   no_match:'Azure could not recognize enough speech. Try again.',
@@ -52,6 +54,7 @@ export async function requestSpeechFeedback(
   body.append('item_id',capture.itemId);
   body.append('audio',capture.wav,'learner.wav');
   body.append('approve_azure_audio_upload','yes');
+  const started=performance.now();
   const response=await fetch(FAMILY_API+'/api/v2/family/speech/assess',{
     method:'POST',
     headers:{Authorization:'Bearer '+token},
@@ -63,5 +66,17 @@ export async function requestSpeechFeedback(
     if(response.status===401)throw new Error('Sign in again to request pronunciation feedback.');
     throw new Error('Pronunciation assessment could not be completed. Please try again later.');
   }
-  return parseSpeechFeedback(await response.json());
+  const feedback=parseSpeechFeedback(await response.json());
+  const elapsed=performance.now()-started;
+  const roundTripMs=Number.isFinite(elapsed) ? Math.round(Math.max(0,elapsed)) : 0;
+  // This header is duration-only and is exposed by the private API. Never
+  // show untrusted server strings or claim the SDK value is pure inference time.
+  const rawTiming=response.headers.get('Server-Timing') || '';
+  const matched=/(?:^|,)\s*speech-sdk;dur=(\d+(?:\.\d+)?)(?:\s*(?:,|$))/.exec(rawTiming);
+  const sdk=matched?Number(matched[1]):null;
+  const timing:SpeechTiming={roundTripMs};
+  if(sdk!==null && Number.isFinite(sdk) && sdk>=0 && sdk<=120000){
+    timing.sdkMs=Math.round(sdk);
+  }
+  return {...feedback,timing};
 }

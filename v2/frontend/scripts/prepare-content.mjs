@@ -178,6 +178,20 @@ export function buildContent() {
     lessons.push(lesson);
   }
   if (!lessons.length) throw new Error('No lessons migrated');
+  // An exact, repeatable Warsaw place-name target for Speak latency testing.
+  // No invented native-speaker MP3: recording/replay works without an example.
+  // The server catalogs this stable ID so opt-in Azure feedback can use the
+  // authoritative spelled Polish reference rather than trusting client text.
+  lessons.push({
+    schemaVersion: 1, id: 'speak_swietokrzyska',
+    title: 'Speak test · Świętokrzyska',
+    kind: 'vocabulary', source: 'curated',
+    items: [{
+      id: 'speak_swietokrzyska:0',
+      polish: 'Świętokrzyska',
+      english: 'Świętokrzyska (street and metro station in Warsaw)',
+    }],
+  });
   const soundDefinitions = JSON.parse(fs.readFileSync(curatedSoundsFile, 'utf8'));
   if (!Array.isArray(soundDefinitions) || soundDefinitions.length === 0) throw new Error('Missing curated sound definitions');
   const curatedSounds = buildSoundCurriculum(lessons, soundDefinitions);

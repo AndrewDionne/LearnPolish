@@ -81,9 +81,12 @@ export default function SpeakPanel({item, playing, onPlayReference, onStopRefere
       ? <button type="button" className="audio-btn" disabled={capture.phase === 'requesting' || capture.phase === 'recording' || capture.phase === 'processing'} onClick={onReference}>
           {playing === item.audio ? 'Playing example' : '▶ Hear native example'}
         </button>
-      : <p className="speak-subtle">No reference audio is available for this personal lesson yet.</p>}
+      : <p className="speak-subtle">Native reference audio is not available for this word yet. You can still record and replay your pronunciation.</p>}
     <div className="speak-divider"/>
-    <p className="speak-instruction">1. Listen to the Polish example. 2. Record yourself. 3. Replay and compare before you continue.{onAssess ? ' Pronunciation feedback is an optional extra.' : ' You can practise without a grade.'}</p>
+    <p className="speak-instruction">{item.audio
+      ? 'Listen to the Polish example, record yourself, then replay and compare.'
+      : 'Read the Polish word, record yourself, and replay to hear your attempt.'}
+      {onAssess ? ' Pronunciation feedback is optional.' : ' You can practise without a grade.'}</p>
     {capture.phase === 'idle' || capture.phase === 'error' || capture.phase === 'inconclusive' || capture.phase === 'ready'
       ? <button type="button" className="record-button" onClick={startNewTake}>● {capture.previewUrl ? 'Record another take' : 'Start recording'}</button>
       : null}
@@ -108,6 +111,11 @@ export default function SpeakPanel({item, playing, onPlayReference, onStopRefere
       {assessmentBusy && <p role="status">Sending this take for pronunciation feedback…</p>}
       {assessmentError && <p role="alert" className="capture-warning">{assessmentError}</p>}
       {feedback?.status === 'inconclusive' && <p role="status" className="capture-warning">{feedback.reason} This is not a score of zero.</p>}
+      {feedback?.timing && <p className="speak-latency" role="status">
+        Feedback arrived in {(feedback.timing.roundTripMs / 1000).toFixed(1)} s
+        {feedback.timing.sdkMs !== undefined ? ' (Azure SDK call ' + (feedback.timing.sdkMs / 1000).toFixed(1) + ' s)' : ''}.
+        {feedback.timing.roundTripMs >= 10000 ? ' That delay is longer than our target; your recording and replay still work.' : ''}
+      </p>}
       {feedback?.status === 'ok' && <div className="speak-scores" role="status">
         <strong>Azure's estimated pronunciation feedback</strong>
         <dl>
