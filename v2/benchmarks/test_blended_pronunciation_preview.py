@@ -68,16 +68,26 @@ class BlendedPreviewTests(unittest.TestCase):
         self.assertEqual([x["polish"] for x in result["syllable_hints"]],
             ["Świę","to","krzy","ska"])
         html=render_html_preview(result)
-        self.assertIn("Combined estimate · experimental",html)
-        self.assertIn('>67<small>/100</small>',html)
-        self.assertIn('>84/100</dd>',html)
-        self.assertIn('>50/100</dd>',html)
-        self.assertIn('class="sound review"',html)
-        self.assertIn('class="sound focus"',html)
-        self.assertIn('class="sound close"',html)
-        self.assertIn('type="checkbox"',html)
-        self.assertIn('.card:has(#guide:checked) .word .cue',html)
-        self.assertNotIn('class="sound score"',html)
+        # Exactly one unboxed coloured word and one score in the body.
+        self.assertIn('<h1 class="word"',html)
+        self.assertIn('>67/100</output>',html)
+        self.assertEqual(html.count('class="syllable review"'),2)
+        self.assertEqual(html.count('class="syllable focus"'),1)
+        self.assertEqual(html.count('class="syllable close"'),1)
+        self.assertIn('.syllable.review{color:',html)
+        self.assertIn('.syllable.focus{color:',html)
+        self.assertIn('.syllable.close{color:',html)
+        self.assertNotIn('.syllable.review{background:',html)
+        body=html.split('<body>',1)[1].split('</body>',1)[0]
+        import re
+        visible=''.join(re.sub(r'<[^>]+>','',body).split())
+        self.assertEqual(visible,'Świętokrzyska67/100')
+        for excluded in (
+            '<p', '<header', '<footer', '<summary', '<details', '<small',
+            '<input', '<label', '<button', 'class="card"', 'class="legend"',
+            'class="cue"', 'class="english-cue"',
+        ):
+            self.assertNotIn(excluded,body)
         self.assertNotIn("Świę 50%",html)
         self.assertNotIn("krzy 0%",html)
         self.assertNotIn("Sweczo Seska",html)
