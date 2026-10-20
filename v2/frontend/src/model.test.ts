@@ -12,6 +12,12 @@ describe('lesson schema', () => {
     expect(validateLesson(lesson)).toBe(true);
     expect(parseManifest({ schemaVersion: 1, lessons: [lesson] })).toHaveLength(1);
   });
+  test('practice-only reference status is allowed only in built vocabulary items',()=>{
+    expect(validateLesson({...lesson,items:[{...lesson.items[0],referenceReview:'practice_only'}]})).toBe(true);
+    expect(validateLesson({...lesson,kind:'sounds',
+      items:[{...lesson.items[0],referenceReview:'practice_only'}]})).toBe(false);
+    expect(validateLesson({...lesson,items:[{...lesson.items[0],referenceReview:'verified'}]})).toBe(false);
+  });
   test('rejects invalid items and duplicate IDs', () => {
     expect(validateLesson({ ...lesson, items: [{ polish: '', english: 'Hi' }] })).toBe(false);
     expect(() => parseManifest({ schemaVersion: 1, lessons: [lesson, lesson] })).toThrow(/Duplicate/);
