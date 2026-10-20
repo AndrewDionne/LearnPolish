@@ -95,5 +95,6 @@ CREATE TABLE IF NOT EXISTS ptp_v2.recovery_throttle (
  first_at BIGINT NOT NULL
 );
 
--- Never import `public.users` passwords here implicitly. Existing V1
--- identities use different schemas/flows and need explicit owner review.
+-- Clean V2 start: do not import any legacy public.users identities,
+-- password hashes, memberships, XP or scores. All V2 accounts begin fresh.
+-- This migration creates ONLY ptp_v2 tables; it does not drop old data.
