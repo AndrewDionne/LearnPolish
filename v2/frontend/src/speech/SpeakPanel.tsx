@@ -14,10 +14,11 @@ type Props = {
   onNext: (completedTake: boolean) => void;
   guideVisible: boolean;
   onGuideChange: (visible: boolean) => void;
+  onPracticeSound?: () => void;
   onAssess?: (capture: AssessmentReadyCapture, signal: AbortSignal) => Promise<SpeechFeedback>;
 };
 
-export default function SpeakPanel({item, playing, onPlayReference, onStopReference, onNext, guideVisible, onGuideChange, onAssess}: Props) {
+export default function SpeakPanel({item, playing, onPlayReference, onStopReference, onNext, guideVisible, onGuideChange, onPracticeSound, onAssess}: Props) {
   const preview = useRef<HTMLAudioElement | null>(null);
   const activeRequest = useRef<AbortController | null>(null);
   const [feedback, setFeedback] = useState<SpeechFeedback | null>(null);
@@ -148,6 +149,7 @@ export default function SpeakPanel({item, playing, onPlayReference, onStopRefere
         </div>}
       </div>}
     </div>
+    {onPracticeSound && item.soundPractice && capture.phase === 'ready' && <button type="button" className="sound-practice-link" onClick={onPracticeSound}>Practise {item.soundPractice.label} sounds →</button>}
     <button type="button" className="primary-action speak-next" onClick={() => {abortAssessment(); preview.current?.pause(); onNext(capture.phase === 'ready' && !!prepared);}}>Next</button>
     <details className="speak-private-details">
       <summary>Privacy &amp; options</summary>
