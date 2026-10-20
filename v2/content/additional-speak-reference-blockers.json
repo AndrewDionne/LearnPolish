@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "reviewStatus": "source_audio_unverified_practice_only",
+  "notes": "Exactly twelve additional original vocabulary items beyond Conversation_1:24/25. Original MP3 remains preserved but not represented as a verified matching pronunciation reference. Review and replace only with a complete audio-matched Polish utterance; never auto-create lessons or alternatives.",
+  "sourceBlockers": [
+    {
+      "itemId": "Conversation_-_restaurant:1",
+      "polish": "Chciałbym / Chciałabym zamówić",
+      "reason": "spoken_gender_alternatives"
+    },
+    {
+      "itemId": "Conversation_-_restaurant:5",
+      "polish": "Jestem wegetarianinem / wegetarianką",
+      "reason": "spoken_gender_alternatives"
+    },
+    {
+      "itemId": "Emergencies_and_Health:4",
+      "polish": "Jestem ranny / ranna",
+      "reason": "spoken_gender_alternatives"
+    },
+    {
+      "itemId": "Emergencies_and_Health:5",
+      "polish": "Zgubiłem się / Zgubiłam się",
+      "reason": "spoken_gender_alternatives"
+    },
+    {
+      "itemId": "Emergencies_and_Health:15",
+      "polish": "Zgubiłem dokumenty / Zgubiłam dokumenty",
+      "reason": "spoken_gender_alternatives"
+    },
+    {
+      "itemId": "Emergencies_and_Health:19",
+      "polish": "Złamałem / Złamałam nogę",
+      "reason": "spoken_gender_alternatives"
+    },
+    {
+      "itemId": "Food_and_Dinning:2",
+      "polish": "Czy ma pan/pani menu po angielsku?",
+      "reason": "spoken_address_alternatives"
+    },
+    {
+      "itemId": "Food_and_Dinning:4",
+      "polish": "Co pan/pani poleca?",
+      "reason": "spoken_address_alternatives"
+    },
+    {
+      "itemId": "Getting_Around_1:23",
+      "polish": "Idzie pan/pani w dobrą stronę",
+      "reason": "spoken_address_alternatives"
+    },
+    {
+      "itemId": "Road_Terminology:10",
+      "polish": "Jak dojść do …?",
+      "reason": "unfinished_destination"
+    },
+    {
+      "itemId": "Road_Terminology:21",
+      "polish": "droga wojewódzka 634",
+      "reason": "numeric_spoken_reference_unverified"
+    },
+    {
+      "itemId": "Transit_1:4",
+      "polish": "Przepraszam, jak dojadę do …?",
+      "reason": "unfinished_destination"
+    }
+  ]
+}
