@@ -21,7 +21,7 @@ For a production-like V2 PWA/offline preview run `./prod_like.sh`, then open **h
 
 The owner requires **Render Free only**. The [Render V2 runbook](v2/server/RENDER_V2.md) and [`render.yaml`](render.yaml) define **one free Docker web service, no disk and no paid add-ons**. The host starts before delivering the V2 UI, preventing the former Pages-frontend/separate-Render-backend wake-up mismatch. Render Free can still take time to wake from idle; it provides its own loading page. Existing GitHub Pages and legacy Render services remain unchanged until free V2 hosting is verified.
 
-**Data integrity:** Render Free has no durable local storage. The free build provides the offline-first personal V2 learning experience, but **does not falsely offer server-side family accounts, sync or Azure inference**. Those remain disabled until a genuinely durable, zero-paid-cost storage solution and production safeguards are available. Render Free's shared usage limits/possible overages also require checking account billing settings; a free plan does not guarantee a zero invoice.
+**Data integrity:** Render Free has no durable local storage. The free build provides offline-first V2 learning while hosted family accounts and Azure remain disabled. An **optional Neon Postgres V2 adapter and isolated schema migration** are now prepared using the existing Frankfurt Path_to_Polish project; actual Neon migration, private connection and secure SMTP verification have **not yet been configured**, so production accounts remain off. Render Free's shared usage limits/possible overages also require checking account billing settings; a free plan does not guarantee a zero invoice.
 
 ## Previous GitHub Pages publishing
 
