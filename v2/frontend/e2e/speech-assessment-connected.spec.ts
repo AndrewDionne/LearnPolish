@@ -211,6 +211,48 @@ test('Świętokrzyska is a real built-in Speak test item with opt-in timing, not
 
 
 
+test('reserved acoustic-score UI aligns exact syllables with guide OFF/ON and clears on retry',async({page})=>{
+  await installSyntheticMicrophone(page);
+  // Synthetic contract fixture only. Production Azure pl-PL adapter does NOT
+  // return verified syllabus scores, and no real voice/provider is contacted.
+  await page.route('**/api/v2/family/speech/assess',route=>route.fulfill({
+    status:200,contentType:'application/json',
+    body:JSON.stringify({
+      status:'ok',engine:'azure-pl-PL-scripted',calibration:'uncalibrated',
+      scores:{accuracy:81,fluency:90,completeness:100},
+      syllableFeedback:{method:'reviewed-acoustic-syllables-v1',
+        reference:'Świętokrzyska',
+        segments:[{polish:'Świę',score:71.2},{polish:'to',score:88.3},
+                  {polish:'krzy',score:null},{polish:'ska',score:95}]},
+      rawTranscript:'NEVER DISPLAY THIS',
+    }),
+  }));
+  await connectPrivateAdult(page);
+  await page.getByRole('button',{name:'Library'}).first().click();
+  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Świętokrzyska');
+  await page.getByRole('button',{name:/Speak test · Świętokrzyska/}).click();
+  await page.getByRole('button',{name:'Speak',exact:true}).click();
+  const toggle=page.getByRole('button',{name:/Pronunciation guide/});
+  await expect(toggle).toHaveAttribute('aria-pressed','false');
+  await expect(page.locator('.speak-word-score')).toHaveCount(0);
+  await recordValidTake(page);
+  await page.getByRole('button',{name:'Check my pronunciation'}).click();
+  await expect(page.locator('.speak-word-score')).toHaveText(['71%','88%','—','95%']);
+  await expect(page.locator('.speak-word-polish')).toHaveText(['Świę','to','krzy','ska']);
+  await expect(page.locator('.speak-word-english')).toHaveCount(0);
+  await expect(page.getByText('NEVER DISPLAY THIS')).toHaveCount(0);
+  await toggle.click();
+  await expect(page.locator('.speak-word-english')).toHaveText(['shfyehn','toh','KSHIH','skah']);
+  await expect(page.locator('.speak-word-score')).toHaveCount(4);
+  await toggle.click();
+  await expect(page.locator('.speak-word-english')).toHaveCount(0);
+  await expect(page.locator('.speak-word-score')).toHaveCount(4);
+  await page.getByRole('button',{name:/Record another take/}).click();
+  await expect(page.locator('.speak-word-score')).toHaveCount(0);
+  await expect(page.locator('.speak-scores')).toHaveCount(0);
+  await expect(toggle).toHaveAttribute('aria-pressed','false');
+});
+
 test('site permission allowed but macOS/browser rejects mic shows distinct diagnostic, no Azure call',async({page})=>{
   await page.addInitScript(()=>{
     Object.defineProperty(navigator,'permissions',{

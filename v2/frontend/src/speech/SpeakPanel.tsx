@@ -79,6 +79,14 @@ export default function SpeakPanel({item, playing, onPlayReference, onStopRefere
   const hasGuide = Boolean(item.pronunciationGuide || item.pronunciation);
   const expandedGuide = guideVisible && hasGuide;
   const guide = item.pronunciationGuide;
+  // Azure pl-PL currently returns only aggregate scores to production.
+  // Hypothetical reviewed acoustic syllables are displayed ONLY when the
+  // server result matches the exact authored orthographic segmentation.
+  const measured = feedback?.status === 'ok' ? feedback.syllableFeedback : undefined;
+  const syllableScores = guide && measured?.reference === item.polish &&
+    measured.segments.length === guide.syllables.length &&
+    guide.syllables.every((part,index)=>part.polish===measured.segments[index]?.polish)
+    ? measured.segments : null;
 
   return <section className="flashcard speak-panel" aria-live="polite">
     <div className="speak-card-top">
@@ -92,12 +100,19 @@ export default function SpeakPanel({item, playing, onPlayReference, onStopRefere
       >Pronunciation guide <span aria-hidden="true">{expandedGuide ? 'On' : 'Off'}</span></button>}
     </div>
     <div id="speak-word-guide" className="speak-word-stage">
-      <h2 lang="pl" className={'speak-prompt' + (expandedGuide && guide ? ' with-guide' : '')}>
-        {expandedGuide && guide ? <span className="speak-guided-word" aria-label={item.polish}>
-          {guide.syllables.map((part, index) => <span className={'speak-word-segment' + (index === guide.stressIndex ? ' stressed' : '')} key={index}>
-            <span className="speak-word-polish">{part.polish}</span>
-            <span className="speak-word-english" lang="en">{part.englishCue}</span>
-          </span>)}
+      <h2 lang="pl" className={'speak-prompt' + ((expandedGuide || syllableScores) && guide ? ' with-guide' : '')}>
+        {(expandedGuide || syllableScores) && guide ? <span className="speak-guided-word" aria-label={item.polish}>
+          {guide.syllables.map((part, index) => {
+            const score=syllableScores?.[index]?.score;
+            return <span className={'speak-word-segment' + (index === guide.stressIndex ? ' stressed' : '')} key={index}>
+              <span className="speak-word-polish" style={typeof score==='number' ?
+                {backgroundColor:`hsl(${Math.round(score*1.2)} 55% 88%)`,borderRadius:'6px'} : undefined}>{part.polish}</span>
+              {expandedGuide && <span className="speak-word-english" lang="en">{part.englishCue}</span>}
+              {syllableScores && <span className="speak-word-score" lang="en" aria-label={typeof score!=='number' ? part.polish+' not reliably assessed' : part.polish+' estimated '+Math.round(score)+' out of 100'}>
+                {typeof score!=='number' ? '—' : Math.round(score)+'%'}
+              </span>}
+            </span>;
+          })}
         </span> : item.polish}
       </h2>
       {expandedGuide && !guide && item.pronunciation && <p className="speak-english-fallback">Approximate English sounds: <strong>{item.pronunciation}</strong></p>}

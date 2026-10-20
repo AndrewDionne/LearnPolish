@@ -30,6 +30,44 @@ describe('Pronunciation assessment contract — real Azure scores only',()=>{
     expect(()=>parseSpeechFeedback({...base,calibration:'certified',scores:{accuracy:93,fluency:93,completeness:92}}))
       .toThrow('Assessment response unavailable');
   });
+  test('reviewed acoustic syllabus contract preserves exact numbers, nullable measurements and privacy',()=>{
+    const evidence={method:'reviewed-acoustic-syllables-v1',
+      reference:'Świętokrzyska',
+      segments:[{polish:'Świę',score:71.3},{polish:'to',score:88},
+                {polish:'krzy',score:null},{polish:'ska',score:92.7}]};
+    const result=parseSpeechFeedback({status:'ok',engine:'azure-pl-PL-scripted',
+      calibration:'uncalibrated',scores:{accuracy:83,fluency:92,completeness:100},
+      syllableFeedback:evidence,DisplayText:'PRIVATE TRANSCRIPTION'});
+    expect(result.status).toBe('ok');
+    if(result.status==='ok') expect(result.syllableFeedback).toEqual(evidence);
+    expect(JSON.stringify(result)).not.toContain('PRIVATE');
+  });
+  test('incomplete/unreviewed/misaligned phoneme hypotheses cannot enter learner feedback',()=>{
+    const base={status:'ok',engine:'azure-pl-PL-scripted',calibration:'uncalibrated',
+      scores:{accuracy:84,fluency:100,completeness:100}};
+    const valid={method:'reviewed-acoustic-syllables-v1',
+      reference:'Świętokrzyska',segments:[
+        {polish:'Świę',score:50},{polish:'to',score:50},
+        {polish:'krzy',score:0},{polish:'ska',score:100}]};
+    for(const candidate of [
+      {...valid,method:'whisper-text-edit-v1'},
+      {...valid,segments:[{polish:'Świę',score:84},{polish:'to',score:84}]},
+      {...valid,segments:valid.segments.map((x,i)=>i===2?{...x,score:NaN}:x)},
+      {...valid,segments:valid.segments.map((x,i)=>i===2?{...x,score:-1}:x)},
+      {...valid,reference:'other'},
+      {...valid,segments:valid.segments.map((x,i)=>i===2?{...x,polish:'cz'}:x)},
+      {...valid,segments:null},
+    ]){
+      const parsed=parseSpeechFeedback({...base,syllableFeedback:candidate});
+      expect(parsed.status).toBe('ok');
+      if(parsed.status==='ok')expect(parsed.syllableFeedback).toBeUndefined();
+    }
+    // Even well-formed observed-syllable numbers require the explicit
+    // REVIEWED provenance; this is a fixture, not a live provider grade.
+    const fakeProvider=parseSpeechFeedback({...base,syllableFeedback:{
+      ...valid,method:'azure-pl-PL-scripted'}});
+    if(fakeProvider.status==='ok')expect(fakeProvider.syllableFeedback).toBeUndefined();
+  });
   test('service disabled by default, no audio network or hidden provider calls',async()=>{
     expect(SPEECH_ASSESSMENT_AVAILABLE).toBe(false);
     const original=globalThis.fetch;
