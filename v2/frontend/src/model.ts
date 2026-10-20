@@ -10,6 +10,12 @@ export type ComprehensionCheck = {
 };
 
 export type ReadingProgression = { order: number; stage: 'foundations' | 'daily-life' | 'getting-around'; goal: string };
+export type MicroDialogue = {
+  id: string;
+  title: string;
+  speakers: {A:string; B:string};
+  turns: {itemId:string; speaker:'A'|'B'}[];
+};
 /** Explicitly validated learning difficulty only; missing defaults to beginner XP. */
 export type LearningDifficulty = 1 | 2 | 3 | 4 | 5;
 
@@ -52,6 +58,8 @@ export type Lesson = {
   intro?: string;
   soundGroups?: SoundGroup[];
   progression?: ReadingProgression;
+  /** Optional exact-source dialogue practice; not a separate lesson or XP source. */
+  microDialogues?: MicroDialogue[];
   difficultyTier?: LearningDifficulty;
   needsReview?: boolean;
 };
@@ -128,6 +136,26 @@ export function validateLesson(value: unknown): value is Lesson {
         typeof item.comprehension.feedback === 'string' && item.comprehension.feedback.length >= 10
       ))
     ) &&
+    (x.microDialogues === undefined || (
+      x.kind === 'reading' && Array.isArray(x.microDialogues) &&
+      x.microDialogues.length >= 1 && x.microDialogues.length <= 8 &&
+      new Set(x.microDialogues.map(dialogue=>dialogue.id)).size === x.microDialogues.length &&
+      x.microDialogues.every(dialogue=>
+        !!dialogue && typeof dialogue.id === 'string' && /^[a-z0-9-]+$/.test(dialogue.id) &&
+        typeof dialogue.title === 'string' && dialogue.title.trim().length >= 5 &&
+        typeof dialogue.speakers?.A === 'string' && !!dialogue.speakers.A.trim() &&
+        typeof dialogue.speakers?.B === 'string' && !!dialogue.speakers.B.trim() &&
+        Array.isArray(dialogue.turns) && dialogue.turns.length >= 2 && dialogue.turns.length <= 4 &&
+        dialogue.turns.every((turn,i) => {
+          const itemIndex=x.items?.findIndex(item=>item.id===turn.itemId) ?? -1;
+          const previous=i > 0 ? x.items?.findIndex(item=>item.id===dialogue.turns[i-1].itemId) : -1;
+          return itemIndex >= 0 && !!x.items?.[itemIndex].audio &&
+            x.items?.[itemIndex].referenceReview !== 'practice_only' &&
+            turn.speaker === (i % 2 === 0 ? 'A' : 'B') &&
+            (i===0 || itemIndex===previous+1);
+        })
+      )
+    )) &&
     (x.difficultyTier === undefined || [1,2,3,4,5].includes(x.difficultyTier)) &&
     (x.progression === undefined || (
       x.kind === 'reading' && Number.isInteger(x.progression.order) &&
