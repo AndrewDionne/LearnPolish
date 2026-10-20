@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import fs from 'node:fs';
 import path from 'node:path';
 import { migrateLesson, buildContent, buildSoundCurriculum } from './prepare-content.mjs';
+import {inspectSpeakCatalog,printAuditMarkdown} from './speak-readiness.mjs';
 
 test('migrates vocabulary into versioned, stable IDs', () => {
   const lesson = migrateLesson('numbers_1-20.json', { cards: [{ phrase: 'Jeden', meaning: 'One', pronunciation: 'YEH-den' }] });
@@ -44,6 +45,37 @@ test('new catalog retires bundled sound examples while retaining all other legac
   assert.deepEqual(report.legacyGroupedSoundSetsRetired,
     ['letter_recognition_1', 'letter_recognition_2', 'letter_recognition_3']);
   const catalog = JSON.parse(fs.readFileSync(path.resolve('public/generated/lessons.json'), 'utf8')).lessons;
+  const audit=inspectSpeakCatalog({schemaVersion:1,lessons:catalog});
+  assert.deepEqual({
+    modules:audit.summary.modules,
+    speakModules:audit.summary.speakModules,
+    readingModules:audit.summary.readingModules,
+    items:audit.summary.items,
+    spokenItems:audit.summary.spokenItems,
+    readingItems:audit.summary.readingItems,
+    withAudio:audit.summary.withAudio,
+    editorial:audit.summary.editorial,
+    autoDraft:audit.summary.autoDraft,
+    authored:audit.summary.authored,
+    speakBlockedReferences:audit.summary.speakBlockedReferences,
+    speakUnfinishedReferences:audit.summary.speakUnfinishedReferences,
+  },{
+    modules:26,speakModules:20,readingModules:6,items:482,
+    spokenItems:431,readingItems:51,withAudio:481,
+    editorial:23,autoDraft:458,authored:1,
+    speakBlockedReferences:11,speakUnfinishedReferences:3,
+  });
+  const unread=audit.modules.filter(x=>!x.speakAvailable);
+  assert.equal(unread.length,6);
+  assert.ok(unread.every(x=>x.kind==='reading' && x.items===x.withAudio));
+  const blocked=audit.modules.flatMap(x=>x.speakAvailable?x.blockedReferences:[]);
+  assert.ok(blocked.some(x=>x.polish==='Jak ma pan/pani na imię?'));
+  assert.ok(blocked.some(x=>x.polish==='droga wojewódzka 634'));
+  assert.ok(!blocked.some(x=>x.polish==='Świętokrzyska'));
+  const unfinished=audit.modules.flatMap(x=>x.speakAvailable?x.unfinishedReferences:[]);
+  assert.ok(unfinished.some(x=>x.polish==='Mam na imię…'));
+  assert.ok(printAuditMarkdown(audit).includes('| Speak |'));
+  assert.ok(printAuditMarkdown(audit).includes('| Read only |'));
   // Pronunciation latency target appears in the normal Library and in the
   // authenticated server's authoritative catalog, without synthetic audio.
   const spoken = catalog.find(x => x.id === 'speak_swietokrzyska');
