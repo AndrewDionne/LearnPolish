@@ -98,6 +98,29 @@ describe('authored reading comprehension schema', () => {
 });
 
 
+describe('exact-source short dialogue schema',()=>{
+  const items=[
+    {id:'Basic_01R:0',polish:'Cześć! Jak się masz?',english:'Hi, how are you?',
+      audio:'generated/audio/Basic_01R/0.mp3'},
+    {id:'Basic_01R:1',polish:'Dziękuję, mam się dobrze.',english:'Thank you, I am well.',
+      audio:'generated/audio/Basic_01R/1.mp3'},
+  ];
+  const scene={id:'how-are-you',title:'How are you?',
+    speakers:{A:'Person A',B:'Person B'},
+    turns:[{itemId:'Basic_01R:0',speaker:'A'}, {itemId:'Basic_01R:1',speaker:'B'}]};
+  const reading={...lesson,id:'Basic_01R',kind:'reading',items,microDialogues:[scene]};
+  test('accepts only source-linked, alternating, recorded reading turns',()=>{
+    expect(validateLesson(reading)).toBe(true);
+    expect(validateLesson({...reading,kind:'vocabulary'})).toBe(false);
+    expect(validateLesson({...reading,microDialogues:[scene,scene]})).toBe(false);
+    expect(validateLesson({...reading,microDialogues:[{...scene,turns:[scene.turns[0],
+      {...scene.turns[1],speaker:'A'}]}]})).toBe(false);
+    expect(validateLesson({...reading,microDialogues:[{...scene,turns:[scene.turns[0],
+      {...scene.turns[1],itemId:'Basic_01R:missing'}]}]})).toBe(false);
+    expect(validateLesson({...reading,items:[items[0],{...items[1],audio:undefined}]})).toBe(false);
+  });
+});
+
 describe('explicit learning tier validation',()=>{
   test('tiers remain opt-in and unknown difficulty is not invented',()=>{
     expect(validateLesson({...lesson,difficultyTier:3})).toBe(true);
