@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import {attachPronunciationSegments} from './pronunciation-segments.mjs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -227,9 +228,11 @@ export function buildContent() {
   };
   const readingDefinitions = JSON.parse(fs.readFileSync(readingChecksFile, 'utf8'));
   const authoredReadingChecks = attachReadingCurriculum(lessons, readingDefinitions);
+  const pronunciationGrouping=attachPronunciationSegments(lessons);
   fs.writeFileSync(path.join(outRoot, 'lessons.json'), JSON.stringify({ schemaVersion: 1, lessons }, null, 2) + '\n');
   const report = {
     lessons: lessons.length,
+    pronunciationGrouping,
     vocabulary: lessons.filter(x => x.kind === 'vocabulary').length,
     reading: lessons.filter(x => x.kind === 'reading').length,
     sounds: lessons.filter(x => x.kind === 'sounds').length,

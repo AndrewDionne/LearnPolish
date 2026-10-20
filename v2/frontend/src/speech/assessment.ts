@@ -14,11 +14,19 @@ export type CalibratedSyllables = {
   segments:{polish:string;score:number|null}[];
 };
 
+export type ColourHints = {
+  method:'whisper-transcript-proxy-v1';
+  reference:string;
+  segments:{polish:string;hint:'close'|'review'|'focus'|'uncertain'}[];
+};
+
 export type SpeechFeedback =
-  | {status:'ok'; engine:'azure-pl-PL-scripted'; calibration:'uncalibrated';
+  | {status:'ok';engine:'azure-pl-PL-scripted';calibration:'uncalibrated';
      scores:{accuracy:number;fluency:number;completeness:number};
      syllableFeedback?:CalibratedSyllables;timing?:SpeechTiming}
-  | {status:'inconclusive'; reason:string;timing?:SpeechTiming};
+  | {status:'ok';engine:'azure-whisper-blend-v1';calibration:'experimental-uncalibrated';
+     combined:number;colourHints:ColourHints;syllableFeedback?:never;timing?:SpeechTiming}
+  | {status:'inconclusive';reason:string;timing?:SpeechTiming};
 
 /** Validate an explicit, independently reviewed syllable result.
  * Incomplete or malformed segmentation MUST NOT be partially shown.
@@ -54,6 +62,27 @@ const REASONS:Record<string,string>={
 
 export const SPEECH_ASSESSMENT_AVAILABLE =
   import.meta.env.VITE_SPEECH_ASSESSMENT_ENABLED === 'true' && Boolean(FAMILY_API);
+/** Separately opted-in experimental two-provider workflow; never on by default. */
+export const SPEECH_BLEND_AVAILABLE =
+  SPEECH_ASSESSMENT_AVAILABLE && import.meta.env.VITE_SPEECH_BLEND_ENABLED === 'true';
+
+export function parseColourHints(input:unknown):ColourHints|null {
+  if(!input||typeof input!=='object')return null;
+  const v=input as Record<string,unknown>;
+  if(v.method!=='whisper-transcript-proxy-v1' || typeof v.reference!=='string' ||
+     !v.reference || !Array.isArray(v.segments) ||
+     v.segments.length<1 || v.segments.length>32)return null;
+  const segments:ColourHints['segments']=[];
+  for(const raw of v.segments){
+    if(!raw||typeof raw!=='object')return null;
+    const part=raw as Record<string,unknown>;
+    if(typeof part.polish!=='string'||!part.polish ||
+       !['close','review','focus','uncertain'].includes(String(part.hint)))return null;
+    segments.push({polish:part.polish,hint:part.hint as ColourHints['segments'][number]['hint']});
+  }
+  if(segments.map(p=>p.polish).join('')!==v.reference)return null;
+  return {method:'whisper-transcript-proxy-v1',reference:v.reference,segments};
+}
 
 /** Validate untrusted service replies. Unrecognized/missing grades are never zero. */
 export function parseSpeechFeedback(input:unknown):SpeechFeedback {
@@ -63,6 +92,16 @@ export function parseSpeechFeedback(input:unknown):SpeechFeedback {
     const reason=typeof row.reason==='string'&&Object.hasOwn(REASONS,row.reason)
       ? row.reason : 'provider_inconclusive';
     return {status:'inconclusive',reason:REASONS[reason]};
+  }
+  if(row.status==='ok'&&row.engine==='azure-whisper-blend-v1'){
+    const numeric=typeof row.combined==='number' && Number.isFinite(row.combined) &&
+                  Number.isInteger(row.combined) && row.combined>=0 && row.combined<=100;
+    const hints=parseColourHints(row.colourHints);
+    if(row.calibration!=='experimental-uncalibrated'||!numeric||!hints){
+      throw new Error('Assessment response unavailable.');
+    }
+    return {status:'ok',engine:'azure-whisper-blend-v1',calibration:'experimental-uncalibrated',
+            combined:row.combined as number,colourHints:hints};
   }
   if(row.status!=='ok'||row.engine!=='azure-pl-PL-scripted'||
       row.calibration!=='uncalibrated'||!row.scores||typeof row.scores!=='object'){
@@ -81,18 +120,19 @@ export function parseSpeechFeedback(input:unknown):SpeechFeedback {
 }
 
 export async function requestSpeechFeedback(
-  capture:AssessmentReadyCapture, token:string, signal?:AbortSignal,
+  capture:AssessmentReadyCapture, token:string, signal?:AbortSignal, blended=false,
 ):Promise<SpeechFeedback>{
-  if(!SPEECH_ASSESSMENT_AVAILABLE || !FAMILY_API || !token ||
-      capture.check.quality!=='usable'){
+  if(!SPEECH_ASSESSMENT_AVAILABLE || (blended && !SPEECH_BLEND_AVAILABLE) ||
+      !FAMILY_API || !token || capture.check.quality!=='usable'){
     throw new Error('Pronunciation feedback is unavailable.');
   }
   const body=new FormData();
   body.append('item_id',capture.itemId);
   body.append('audio',capture.wav,'learner.wav');
   body.append('approve_azure_audio_upload','yes');
+  if(blended)body.append('approve_groq_audio_upload','yes');
   const started=performance.now();
-  const response=await fetch(FAMILY_API+'/api/v2/family/speech/assess',{
+  const response=await fetch(FAMILY_API+(blended?'/api/v2/family/speech/assess-blend':'/api/v2/family/speech/assess'),{
     method:'POST',
     headers:{Authorization:'Bearer '+token},
     body,cache:'no-store',signal,

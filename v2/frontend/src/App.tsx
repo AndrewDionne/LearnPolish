@@ -4,7 +4,7 @@ import { lessonLabel, parseManifest } from './model';
 import { useLessonAudio } from './audio';
 import OfflineDownloadControl from './OfflineDownloadControl';
 import SpeakPanel from './speech/SpeakPanel';
-import {requestSpeechFeedback, SPEECH_ASSESSMENT_AVAILABLE} from './speech/assessment';
+import {requestSpeechFeedback, SPEECH_ASSESSMENT_AVAILABLE, SPEECH_BLEND_AVAILABLE} from './speech/assessment';
 import SoundContrastDeck from './SoundContrastDeck';
 import { parseProgress, recallRate, recordAttempt, STORAGE_KEY } from './progress';
 import type { Progress } from './progress';
@@ -479,8 +479,10 @@ export default function App() {
           </section> : mode === 'speak' ? <SpeakPanel key={current.id} item={current} playing={audio.playing} onPlayReference={play} onStopReference={stopAudio}
             guideVisible={guideVisible} onGuideChange={setGuideVisible}
             onPracticeSound={!soundReturn && current.soundPractice ? openSoundPractice : undefined}
+            blended={SPEECH_BLEND_AVAILABLE && !!current.pronunciationSegments}
             onAssess={SPEECH_ASSESSMENT_AVAILABLE && familyConnection && active.source !== 'personal'
-              ? (capture, signal) => requestSpeechFeedback(capture, familyConnection.token, signal)
+              ? (capture, signal) => requestSpeechFeedback(capture, familyConnection.token, signal,
+                  SPEECH_BLEND_AVAILABLE && !!current.pronunciationSegments)
               : undefined}
             onNext={(completedTake) => {
             if (completedTake) earn(current.id, 'speak');
