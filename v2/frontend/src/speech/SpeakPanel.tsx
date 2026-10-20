@@ -108,8 +108,8 @@ export default function SpeakPanel({item, playing, onPlayReference, onStopRefere
               <span className="speak-word-polish" style={typeof score==='number' ?
                 {backgroundColor:`hsl(${Math.round(score*1.2)} 55% 88%)`,borderRadius:'6px'} : undefined}>{part.polish}</span>
               {expandedGuide && <span className="speak-word-english" lang="en">{part.englishCue}</span>}
-              {syllableScores && <span className="speak-word-score" lang="en" aria-label={score===null ? part.polish+' not reliably assessed' : part.polish+' estimated '+Math.round(score)+' out of 100'}>
-                {score===null ? '—' : Math.round(score)+'%'}
+              {syllableScores && <span className="speak-word-score" lang="en" aria-label={typeof score!=='number' ? part.polish+' not reliably assessed' : part.polish+' estimated '+Math.round(score)+' out of 100'}>
+                {typeof score!=='number' ? '—' : Math.round(score)+'%'}
               </span>}
             </span>;
           })}
