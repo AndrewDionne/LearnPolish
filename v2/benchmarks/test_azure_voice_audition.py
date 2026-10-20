@@ -9,7 +9,7 @@ import azure_voice_audition as audition
 
 class AzureVoiceAuditionSafetyTests(unittest.TestCase):
     def make_plan(self):
-        voices = ["pl-PL-ZofiaNeural", "pl-PL-MarekNeural", "pl-PL-AgnieszkaNeural"]
+        voices = ["pl-PL-MarekNeural", "pl-PL-AgnieszkaNeural", "pl-PL-ZofiaNeural"]
         rows = []
         for index in range(8):
             polish = "Dzień dobry" if index == 0 else "Cześć" + str(index)
@@ -23,7 +23,10 @@ class AzureVoiceAuditionSafetyTests(unittest.TestCase):
                     "suggestedLocalFilename": f"{voice}/lesson_{index}.mp3",
                     "status": "not_generated_not_reviewed",
                 })
-        return {"schemaVersion": 1, "phase": "offline_preview_only", "audition": rows}
+        return {"schemaVersion": 1, "phase": "offline_preview_only",
+                "voices": [{"id": voice} for voice in voices],
+                "ownerVoicePreference": {"rankedVoiceIds": voices},
+                "audition": rows}
 
     def test_limited_preview_is_offline_and_does_not_require_keys(self):
         plan = self.make_plan()
@@ -33,6 +36,36 @@ class AzureVoiceAuditionSafetyTests(unittest.TestCase):
             self.assertEqual(audition.main(["--limit", "3"]), 0)
         self.assertIn('"status": "PREVIEW_ONLY"', output.getvalue())
         self.assertIn('"new_requests": 0', output.getvalue())
+
+    def test_preferred_paired_voice_preview_includes_same_four_actual_phrases(self):
+        plan = self.make_plan()
+        pairs = audition.select_paired_rows(plan, 4)
+        self.assertEqual(len(pairs), 8)
+        self.assertEqual([x["voiceId"] for x in pairs[:2]],
+                         ["pl-PL-MarekNeural", "pl-PL-AgnieszkaNeural"])
+        self.assertEqual(len({x["itemId"] for x in pairs}), 4)
+        self.assertNotIn("pl-PL-ZofiaNeural", [x["voiceId"] for x in pairs])
+        with patch.object(audition, "plan_from_generated_catalog", return_value=plan), \\
+             patch.object(audition, "generate", side_effect=AssertionError("no API")), \\
+             redirect_stdout(io.StringIO()) as output:
+            self.assertEqual(audition.main([]), 0)
+        self.assertIn('"files": 8', output.getvalue())
+        self.assertIn('"new_requests": 0', output.getvalue())
+        self.assertEqual(len(audition.select_paired_rows(plan, 8)), 16)
+        with self.assertRaisesRegex(ValueError, "requires 1–8"):
+            audition.select_paired_rows(plan, 9)
+        changed = self.make_plan()
+        changed["ownerVoicePreference"]["rankedVoiceIds"].reverse()
+        with self.assertRaisesRegex(ValueError, "ranking"):
+            audition.select_paired_rows(changed, 2)
+
+    def test_options_prevent_mixing_legacy_and_paired_modes(self):
+        plan = self.make_plan()
+        with patch.object(audition, "plan_from_generated_catalog", return_value=plan), \\
+             patch.object(audition, "generate", side_effect=AssertionError("no API")):
+            with self.assertRaises(SystemExit) as failure:
+                audition.main(["--pairs", "4", "--limit", "3"])
+        self.assertEqual(failure.exception.code, 2)
 
     def test_send_needs_all_explicit_owner_guards_before_any_network(self):
         plan = self.make_plan()
@@ -87,7 +120,7 @@ class AzureVoiceAuditionSafetyTests(unittest.TestCase):
         with patch.object(audition, "urlopen", side_effect=fake_open):
             self.assertEqual(audition.azure_request(row, "secret", "germanywestcentral")[:3], b"ID3")
         self.assertIn(b"&lt;dobry&gt; &amp; cze\xc5\x9b\xc4\x87", captured[0][0].data)
-        self.assertIn(b'pl-PL-ZofiaNeural', captured[0][0].data)
+        self.assertIn(b'pl-PL-MarekNeural', captured[0][0].data)
         self.assertEqual(captured[0][1], 25)
         self.assertEqual(captured[0][0].get_method(), "POST")
         with self.assertRaises(ValueError):
