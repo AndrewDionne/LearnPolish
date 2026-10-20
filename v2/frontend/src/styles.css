@@ -71,6 +71,11 @@
 .speak-word-segment{display:inline-flex;flex-direction:column;align-items:center;min-width:0}
 .speak-word-polish{font:650 clamp(25px,5.1vw,52px)/1.14 "Outfit",sans-serif;letter-spacing:-1px;white-space:nowrap}
 .speak-word-english{font:650 clamp(11px,1.6vw,14px)/1.4 "DM Sans",sans-serif;color:#4b6771;white-space:nowrap;margin-top:7px;padding:0 5px;letter-spacing:0}
+/* Syllable scores appear only with reviewed acoustic evidence, never ASR text.
+   Continuous shading is a display gradient, NOT a mastered/pass threshold. */
+.speak-word-score{font:750 clamp(12px,1.7vw,15px)/1.3 "DM Sans",sans-serif;color:#193f51;white-space:nowrap;margin-top:4px;font-variant-numeric:tabular-nums}
+.speak-word-polish[style]{padding:1px 2px}
+
 .speak-word-segment.stressed .speak-word-english{color:#156759;font-weight:800}
 .speak-guide-caption,.speak-english-fallback{color:#425b61;font-size:11px;line-height:1.45;margin:9px 0 0}
 .speak-english-fallback{max-width:100%}
