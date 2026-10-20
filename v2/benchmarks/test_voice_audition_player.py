@@ -56,7 +56,7 @@ class VoiceAuditionPlayerTests(unittest.TestCase):
         html = player.render_player(verified, self.planned, self.voices)
         self.assertIn('lang="pl">Dzień dobry', html)
         self.assertEqual(html.count("<audio controls"), 3)
-        self.assertEqual(html.count("Open MP3 directly"), 3)
+        self.assertEqual(html.count('class="direct-audio"'), 3)
         self.assertIn('preload="metadata"', html)
         self.assertEqual(html.count("Not generated"), 0)
         self.assertIn("Zofia", html)
