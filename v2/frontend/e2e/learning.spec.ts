@@ -83,6 +83,12 @@ test('ambiguous and unfinished greetings remain one lesson but have no scored or
   await expect(page.getByText('Jak ma pan/pani na imię?',{exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'Reference pending'})).toBeDisabled();
   await page.getByRole('button',{name:'Speak',exact:true}).click();
+  // Existing mode switching intentionally starts from the first expression.
+  // Visit the exact original item ID without granting XP to skipped recordings.
+  for(let i=0;i<24;i++){
+    await page.getByRole('button',{name:'Next',exact:true}).click();
+  }
+  await expect(page.getByText('Jak ma pan/pani na imię?',{exact:true})).toBeVisible();
   await expect(page.getByText(/An exact spoken reference is still being reviewed/)).toBeVisible();
   await expect(page.getByRole('button',{name:'Start recording'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Check my pronunciation'})).toHaveCount(0);
