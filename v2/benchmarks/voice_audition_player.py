@@ -84,7 +84,7 @@ def local_audio_probe(file: Path) -> dict:
             return {"tool": "afinfo", "result": "probe_failed", "duration_seconds": None}
         if proc.returncode != 0:
             return {"tool": "afinfo", "result": "not_decodable", "duration_seconds": None}
-        found = re.search(r"(?:estimated\\s+)?duration:\\s*([0-9]+(?:\\.[0-9]+)?)\\s*sec",
+        found = re.search(r"(?:estimated\s+)?duration:\s*([0-9]+(?:\.[0-9]+)?)\s*sec",
                           proc.stdout, flags=re.IGNORECASE)
         if found:
             duration = float(found.group(1))
@@ -148,7 +148,8 @@ def render_player(clips: list[dict], plans: list[dict], voices: list[dict]) -> s
                     '<section class="voice"><h3>' + name + '</h3>'
                     '<audio controls preload="metadata" aria-label="' + name + " — " +
                     html.escape(polish, quote=True) + '" src="' + href +
-                    '">Your browser does not support audio playback.</audio></section>')
+                    '">Your browser does not support audio playback.</audio>' +
+                    '<a class="direct-audio" href="' + href + '">Open MP3 directly</a></section>')
             else:
                 buttons.append(
                     '<section class="voice missing"><h3>' + name + '</h3>'
@@ -175,13 +176,14 @@ h1 { font-size:clamp(2rem,4vw,3rem); margin:.2em 0; letter-spacing:-.04em; } .in
 audio { display:block; width:100%; min-width:0; height:42px; }
 .voice.missing { color:#7e8796; border:1px dashed #c7cdd9; background:#fafbfc; }
 .voice p { font-size:.87rem; margin:12px 0; }
+.direct-audio { display:inline-block; margin-top:10px; font-size:.82rem; color:#344e85; }
 footer { color:#525a68; font-size:.88rem; margin-top:24px; }
 @media(max-width:680px){ .voices{grid-template-columns:1fr;} body{padding:18px;} }
 </style></head><body><header><div class="brand">Path to Polish / Content Lab</div>
 <h1>Compare Polish voices</h1>
 <p class="intro">Compare the same Polish phrase spoken by Marek and Agnieszka (and other voices only if recordings exist). Pay particular attention to <strong>natural word endings, final consonants and cadence</strong>. These are <strong>unreviewed synthetic recordings</strong>, not approved lesson audio.</p>
 </header><main>""" + "".join(headings) + """</main>
-<footer>All playable clips are local, checksum-verified files. Listening here does not call Azure or upload any voice data. Do not use these test recordings as phonetic ground truth.</footer>
+<footer>Audio files are source/hash verified, but may still be unplayable due to encoding or browser restrictions. Use the Open MP3 directly link or the offline --diagnose CLI to distinguish these cases. No audio is uploaded and no provider is called when listening.</footer>
 </body></html>
 """
 
