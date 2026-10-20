@@ -5,6 +5,12 @@ on:
     paths:
       - 'v2/**'
       - '.github/workflows/v2-ci.yml'
+      - '.github/workflows/deploy-v2-pages.yml'
+      - 'dev.sh'
+      - 'prod_like.sh'
+      - 'publish.sh'
+      - 'README.md'
+      - 'chat ai workflow.md'
       - 'docs/sets/**'
       - 'docs/static/**'
   push:
@@ -12,6 +18,12 @@ on:
     paths:
       - 'v2/**'
       - '.github/workflows/v2-ci.yml'
+      - '.github/workflows/deploy-v2-pages.yml'
+      - 'dev.sh'
+      - 'prod_like.sh'
+      - 'publish.sh'
+      - 'README.md'
+      - 'chat ai workflow.md'
       - 'docs/sets/**'
       - 'docs/static/**'
 

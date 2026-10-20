@@ -1,15 +1,10 @@
 #!/usr/bin/env bash
+# Path to Polish: canonical V2 local development launcher.
 set -euo pipefail
 
-# Auto-activate venv if present
-if [[ -f "venv/bin/activate" ]]; then
-  source venv/bin/activate
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$repo_root/v2/frontend"
+if [[ ! -d node_modules ]]; then
+  npm install --no-audit --no-fund
 fi
-
-export FRONTEND_BASE_URL="http://localhost:5000"
-export FLASK_APP=run.py
-export FLASK_ENV=development
-export FLASK_DEBUG=1
-
-# Use python -m to avoid PATH issues
-python -m flask run
+exec npm run dev -- --host 127.0.0.1 --port "${PTP_DEV_PORT:-5186}" --strictPort

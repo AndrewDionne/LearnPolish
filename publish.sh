@@ -1,29 +1,22 @@
 #!/usr/bin/env bash
-# publish.sh  (run from the repo root)
+# Canonical Path to Polish publishing is automated by GitHub Actions after green
+# V2 CI on main; never rebuild/commit/push V1 docs from this script.
 set -euo pipefail
 
-# activate venv if present
-if [[ -d "venv" ]]; then
-  # shellcheck disable=SC1091
-  source venv/bin/activate
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$repo_root/v2/frontend"
+if [[ ! -d node_modules ]]; then
+  npm install --no-audit --no-fund
 fi
+npm run check
+cat <<'MESSAGE'
 
-# pull latest
-git pull --rebase
+Local V2 checks/build passed.
+To publish, commit your changes via a PR and merge to GitHub main.
+After V2 checks pass on main, .github/workflows/deploy-v2-pages.yml
+publishes v2/frontend/dist directly to GitHub Pages.
 
-# rebuild static pages + catalogs
-python rebuild_all.py
-
-# make sure GitHub Pages doesn’t run Jekyll
-touch docs/.nojekyll
-
-# commit & push docs
-git add -A docs
-if git diff --cached --quiet; then
-  echo "Nothing to commit."
-else
-  git commit -m "Rebuild site: $(date -u +'%Y-%m-%d %H:%M:%S') UTC"
-  git push
-fi
-
-echo "Published."
+One-time repository setting: Settings > Pages > Build and deployment >
+Source: GitHub Actions. This local command does not publish or alter Git.
+Legacy docs/ files are retained only as migration/reference inputs.
+MESSAGE

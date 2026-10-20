@@ -1,0 +1,80 @@
+name: Deploy V2 to GitHub Pages
+
+# Deploy only after the same main commit has passed the existing four-lane
+# V2 workflow. No second frontend implementation, V1 docs publish or Azure calls.
+on:
+  workflow_run:
+    workflows: ["V2 checks"]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: ptp-v2-pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.head_repository.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout exact commit validated by V2 CI
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+      - name: Verify green CI commit is still current main
+        id: current
+        env:
+          TESTED_SHA: ${{ github.event.workflow_run.head_sha }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          current_sha="$(git ls-remote "https://github.com/${GH_REPO}.git" refs/heads/main | cut -f1)"
+          if [[ "${current_sha}" == "${TESTED_SHA}" ]]; then
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Skipping superseded V2 commit ${TESTED_SHA}; main is ${current_sha}"
+            echo "deploy=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Set up Node.js
+        if: steps.current.outputs.deploy == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install frontend dependencies
+        if: steps.current.outputs.deploy == 'true'
+        working-directory: v2/frontend
+        run: npm install --no-audit --no-fund
+      - name: Build canonical V2 static PWA
+        if: steps.current.outputs.deploy == 'true'
+        working-directory: v2/frontend
+        run: npm run build
+      - name: Verify publication artifact
+        if: steps.current.outputs.deploy == 'true'
+        run: |
+          test -s v2/frontend/dist/index.html
+          test -s v2/frontend/dist/generated/lessons.json
+          test -s v2/frontend/dist/sw.js
+          test -d v2/frontend/dist/assets
+          ! grep -q 'static/app.css?v=5' v2/frontend/dist/index.html
+          touch v2/frontend/dist/.nojekyll
+      - name: Configure GitHub Pages
+        if: steps.current.outputs.deploy == 'true'
+        uses: actions/configure-pages@v5
+      - name: Upload V2 publication artifact
+        if: steps.current.outputs.deploy == 'true'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: v2/frontend/dist
+      - name: Deploy V2 artifact
+        if: steps.current.outputs.deploy == 'true'
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
+# Local production preview of the canonical V2 PWA; does not run legacy Flask.
 set -euo pipefail
 
-if [[ -f "venv/bin/activate" ]]; then
-  source venv/bin/activate
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$repo_root/v2/frontend"
+if [[ ! -d node_modules ]]; then
+  npm install --no-audit --no-fund
 fi
-
-export FRONTEND_BASE_URL="https://andrewdionne.github.io/LearnPolish"
-export FLASK_APP=run.py
-
-python -m flask run
+npm run build
+exec ./node_modules/.bin/vite preview --host 127.0.0.1 --port "${PTP_PREVIEW_PORT:-4186}" --strictPort
