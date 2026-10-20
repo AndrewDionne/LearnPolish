@@ -148,7 +148,7 @@ export function validateLesson(value: unknown): value is Lesson {
         Array.isArray(dialogue.turns) && dialogue.turns.length >= 2 && dialogue.turns.length <= 4 &&
         dialogue.turns.every((turn,i) => {
           const itemIndex=x.items?.findIndex(item=>item.id===turn.itemId) ?? -1;
-          const previous=i > 0 ? x.items?.findIndex(item=>item.id===dialogue.turns[i-1].itemId) : -1;
+          const previous=i > 0 ? (x.items?.findIndex(item=>item.id===dialogue.turns[i-1].itemId) ?? -1) : -1;
           return itemIndex >= 0 && !!x.items?.[itemIndex].audio &&
             x.items?.[itemIndex].referenceReview !== 'practice_only' &&
             turn.speaker === (i % 2 === 0 ? 'A' : 'B') &&
