@@ -1,0 +1,17 @@
+**/.git
+**/node_modules
+**/dist
+**/.env
+**/.env.*
+**/__pycache__
+**/*.pyc
+**/*.sqlite
+**/*.sqlite3
+**/instance
+/PathToPolish-Private-AI
+/temp
+/venv
+/.venv
+/.github
+/v2/benchmarks/private
+/v2/benchmarks/recordings
