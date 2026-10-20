@@ -62,7 +62,7 @@ class RenderHostTests(unittest.TestCase):
 
         def fake_family(**kwargs):
             self.assertEqual(kwargs["postgres_url"],
-                             "postgresql://v2:secret@neon.example.com/Path_to_Polish_DB")
+                             "postgresql://ptp_v2_runtime:secret@neon.example.com/Path_to_Polish_DB")
             self.assertIsNone(kwargs["database_path"])
             self.assertTrue(kwargs["allowed_origins"])
             api = Flask("isolated-v2-neon")
@@ -71,9 +71,10 @@ class RenderHostTests(unittest.TestCase):
                 return {"ok": True}
             return api
 
-        url = "postgresql://v2:secret@neon.example.com/Path_to_Polish_DB"
+        url = "postgresql://ptp_v2_runtime:secret@neon.example.com/Path_to_Polish_DB"
         with patch.object(render_app, "create_family_app", side_effect=fake_family), \
-             patch.object(render_app, "postgres_ready", return_value=True) as probe:
+             patch.object(render_app, "postgres_ready", return_value=True) as probe, \
+             patch.object(render_app, "monotonic", return_value=0) as clock:
             app = create_render_app(dist_path=self.dist, family_mode="enabled",
                                     postgres_url=url,
                                     public_origin="https://path-to-polish.onrender.com",
@@ -83,10 +84,24 @@ class RenderHostTests(unittest.TestCase):
                              {"ready": True, "family_available": True})
             self.assertEqual(client.get("/").status_code, 200)
             self.assertEqual(client.get("/api/v2/family/health").status_code, 200)
-            probe.assert_called_with(url)
+            probe.assert_called_once_with(url)
+            # Repeat bundled asset fetches within one ready window do not
+            # open new Neon connections, avoiding free-compute waste.
+            self.assertEqual(client.get("/assets/bundle.js").status_code, 200)
+            probe.assert_called_once_with(url)
             probe.return_value = False
+            clock.return_value = 31
             self.assertEqual(client.get("/").status_code, 503)
             self.assertEqual(client.get("/health/ready").status_code, 503)
+
+    def test_rejects_privileged_neon_role_before_loading_api(self):
+        with self.assertRaisesRegex(RuntimeError, "least-privilege"):
+            create_render_app(
+                dist_path=self.dist, family_mode="enabled",
+                postgres_url="postgresql://neondb_owner:secret@neon.example.com/Path_to_Polish_DB",
+                public_origin="https://path-to-polish-v2.onrender.com",
+                require_email=False,
+            )
 
     def test_free_mode_never_creates_ephemeral_family_accounts(self):
         with patch.dict(os.environ, {"PTP_FAMILY_DB": str(self.db),

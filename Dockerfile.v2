@@ -6,9 +6,18 @@ COPY docs/static/ docs/static/
 COPY v2/content/ v2/content/
 COPY v2/frontend/ v2/frontend/
 RUN cd v2/frontend && npm install --no-audit --no-fund
-# Deliberately disconnect live family accounts: free ephemeral SQLite loses users.
-# Offline/local lessons and PWA remain functional. No provider key in the build.
-RUN cd v2/frontend && VITE_FAMILY_API_URL= VITE_SPEECH_ASSESSMENT_ENABLED=false npm run build
+# Default public preview: no live family accounts until verified Neon + email.
+# Build arg is a NON-SECRET UI feature flag, not a Postgres/Resend credential.
+# When the live API and recovery emails are verified use same-origin.
+ARG PTP_FAMILY_UI_MODE=offline
+RUN cd v2/frontend && \
+    if [ "$PTP_FAMILY_UI_MODE" = "same-origin" ]; then \
+      VITE_FAMILY_API_URL=same-origin VITE_SPEECH_ASSESSMENT_ENABLED=false npm run build; \
+    elif [ "$PTP_FAMILY_UI_MODE" = "offline" ]; then \
+      VITE_FAMILY_API_URL= VITE_SPEECH_ASSESSMENT_ENABLED=false npm run build; \
+    else \
+      echo "Invalid PTP_FAMILY_UI_MODE" >&2; exit 1; \
+    fi
 
 FROM python:3.11-slim AS runtime
 ENV PYTHONDONTWRITEBYTECODE=1 \

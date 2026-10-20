@@ -5,7 +5,7 @@ Requires a private persistent SQLite database; do not deploy on ephemeral storag
 
 ## Optional Neon persistence (no live migration yet)
 
-The existing owner's Neon `Path_to_Polish_DB` in Frankfurt contains V1 `public` tables and must be preserved. V2 has a separate `ptp_v2` [Postgres migration](migrations/001_neon_ptp_v2.sql), a reviewed-connection-only `PTP_FAMILY_DATABASE_URL` backend through `postgres_storage.py`, and a Render-ready health check. No live migrations or SMTP setup have been performed. SQLite remains the local/CI fallback. The free Render Blueprint still disables family sign-up until the Neon and email gates are certified. See [Render V2 runbook](RENDER_V2.md).
+The existing owner's Frankfurt Neon `Path_to_Polish_DB` now contains the newly applied `ptp_v2` [Postgres schema](migrations/001_neon_ptp_v2.sql) (14 tables), with no V1 accounts or scores imported; the old `public` tables are unused. Neon startup uses `PTP_FAMILY_DATABASE_URL` only with the restricted `ptp_v2_runtime` role. The role currently cannot log in: no live connection or accounts yet. Render Free blocks SMTP, so account verification and recovery can use HTTPS Resend (`PTP_FAMILY_RESEND_API_KEY` and `PTP_FAMILY_RESEND_FROM`, optional and not provisioned). The free Render Blueprint still disables signup until the Neon and email gates are certified. SQLite remains for local/CI. See [Render V2 runbook](RENDER_V2.md).
 
 ## Local setup
 
