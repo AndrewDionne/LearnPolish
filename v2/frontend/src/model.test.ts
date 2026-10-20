@@ -104,10 +104,16 @@ describe('exact-source short dialogue schema',()=>{
       audio:'generated/audio/Basic_01R/0.mp3'},
     {id:'Basic_01R:1',polish:'Dziękuję, mam się dobrze.',english:'Thank you, I am well.',
       audio:'generated/audio/Basic_01R/1.mp3'},
+    {id:'Basic_01R:unrelated',polish:'Przepraszam, nie rozumiem.',english:'I do not understand',
+      audio:'generated/audio/Basic_01R/5.mp3'},
+    {id:'Basic_01R:extra',polish:'Mam na imię Ela.',english:'My name is Ela.',
+      audio:'generated/audio/Basic_01R/6.mp3'},
   ];
   const scene={id:'how-are-you',title:'How are you?',
     speakers:{A:'Person A',B:'Person B'},
     turns:[{itemId:'Basic_01R:0',speaker:'A'}, {itemId:'Basic_01R:1',speaker:'B'}],
+    replyPractice:{promptItemId:'Basic_01R:0',replyItemId:'Basic_01R:1',
+      choiceItemIds:['Basic_01R:extra','Basic_01R:1','Basic_01R:unrelated'],correctIndex:1},
     comprehension:{prompt:'How does the second speaker feel?',
       options:['Well, thank you','Hungry','Lost'],correctIndex:0,
       feedback:'They say they are feeling well.'}};
@@ -121,6 +127,13 @@ describe('exact-source short dialogue schema',()=>{
     expect(validateLesson({...reading,microDialogues:[{...scene,turns:[scene.turns[0],
       {...scene.turns[1],itemId:'Basic_01R:missing'}]}]})).toBe(false);
     expect(validateLesson({...reading,items:[items[0],{...items[1],audio:undefined}]})).toBe(false);
+    expect(validateLesson({...reading,microDialogues:[{...scene,replyPractice:undefined}]})).toBe(false);
+    expect(validateLesson({...reading,microDialogues:[{...scene,replyPractice:{
+      ...scene.replyPractice,correctIndex:2}}]})).toBe(false);
+    expect(validateLesson({...reading,microDialogues:[{...scene,replyPractice:{
+      ...scene.replyPractice,choiceItemIds:['Basic_01R:1','Basic_01R:1','Basic_01R:unrelated']}}]})).toBe(false);
+    expect(validateLesson({...reading,microDialogues:[{...scene,replyPractice:{
+      ...scene.replyPractice,promptItemId:'Basic_01R:unrelated'}}]})).toBe(false);
     expect(validateLesson({...reading,microDialogues:[{...scene,comprehension:undefined}]})).toBe(false);
     expect(validateLesson({...reading,microDialogues:[{...scene,comprehension:{
       ...scene.comprehension,options:['Well, thank you','Well, thank you','Lost']}}]})).toBe(false);
