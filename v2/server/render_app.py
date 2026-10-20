@@ -55,6 +55,10 @@ def create_render_app(*, dist_path: str | Path | None = None,
     if family_enabled:
         database = database_path or os.getenv("PTP_FAMILY_DB", "")
         neon = postgres_url or os.getenv("PTP_FAMILY_DATABASE_URL", "")
+        # The Neon Console/API creates highly privileged DB roles by default;
+        # require the separately created SQL role with only ptp_v2 access.
+        if neon and urlparse(neon).username != "ptp_v2_runtime":
+            raise RuntimeError("V2 production requires the least-privilege Neon runtime role")
         if bool(database) == bool(neon):
             raise RuntimeError("Configure exactly one durable V2 database: Neon or private SQLite")
         if database and not Path(database).is_absolute():
