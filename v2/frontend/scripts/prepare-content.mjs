@@ -9,6 +9,7 @@ const legacyAudio = path.join(root, 'docs/static');
 const outRoot = path.join(root, 'v2/frontend/public/generated');
 const curatedSoundsFile = path.join(root, 'v2/content/sound-contrasts.json');
 const readingChecksFile = path.join(root, 'v2/content/reading-checks.json');
+const microDialoguesFile = path.join(root, 'v2/content/micro-dialogues.json');
 const pronunciationGuideFile = path.join(root, 'v2/content/pronunciation-swietokrzyska.json');
 const pronunciationOverridesFile = path.join(root, 'v2/content/pronunciation-segment-overrides.json');
 const voiceProductionFile = path.join(root, 'v2/content/voice-production.json');
@@ -223,6 +224,61 @@ export function attachReferenceReview(lessons, voiceSpecification, additional) {
   return registered.size;
 }
 
+/**
+ * Optional E2 dialogue practice reuses ORIGINAL individual reading items/audio.
+ * It creates no new lessons, cards, IDs, translations, XP or recorded voices.
+ * Every turn must match exact ordered source text and an existing mapped MP3.
+ */
+export function attachMicroDialogues(lessons, specification) {
+  if (specification?.schemaVersion !== 1 ||
+      specification.editorialStatus !== 'draft_source_text_and_existing_audio_mapping_not_native_reviewed' ||
+      !Array.isArray(specification.scenes) || specification.scenes.length !== 3) {
+    throw new Error('Expected the three curated E2 pilot exchanges');
+  }
+  const reading = new Map(lessons.filter(lesson=>lesson.kind === 'reading')
+    .map(lesson=>[lesson.id, lesson]));
+  const usedScenes = new Set();
+  const usedTurns = new Set();
+  for (const scene of specification.scenes) {
+    const lesson = reading.get(scene.lesson);
+    const key = scene.lesson + ':' + scene.id;
+    if (!lesson || !/^[a-z0-9-]+$/.test(scene.id ?? '') || usedScenes.has(key) ||
+        typeof scene.title !== 'string' || scene.title.trim().length < 5 ||
+        typeof scene.speakers?.A !== 'string' || !scene.speakers.A.trim() ||
+        typeof scene.speakers?.B !== 'string' || !scene.speakers.B.trim() ||
+        !Array.isArray(scene.turns) || scene.turns.length < 2 || scene.turns.length > 4 ||
+        scene.turns[0]?.speaker !== 'A') {
+      throw new Error('Invalid E2 micro-dialogue: ' + key);
+    }
+    usedScenes.add(key);
+    const turns = scene.turns.map((turn, i) => {
+      const item = lesson.items[turn.index];
+      const expectedId = lesson.id + ':' + turn.index;
+      const previous = scene.turns[i - 1];
+      const expectedAudio = 'generated/audio/' + encodeURIComponent(lesson.id) + '/' + turn.index + '.mp3';
+      if (!Number.isSafeInteger(turn.index) || turn.index < 0 ||
+          (i > 0 && turn.index !== previous.index + 1) ||
+          turn.speaker !== (i % 2 === 0 ? 'A' : 'B') ||
+          !item || item.id !== expectedId || item.polish !== turn.polish ||
+          item.referenceReview === 'practice_only' || item.audio !== expectedAudio ||
+          !fs.existsSync(path.join(outRoot, expectedAudio.replace(/^generated\\//, ''))) ||
+          usedTurns.has(expectedId)) {
+        throw new Error('Invalid or mismatched original E2 recorded turn: ' + key + ':' + turn.index);
+      }
+      usedTurns.add(expectedId);
+      return {itemId: expectedId, speaker: turn.speaker};
+    });
+    lesson.microDialogues ??= [];
+    lesson.microDialogues.push({id:scene.id,title:scene.title,
+      speakers:{A:scene.speakers.A,B:scene.speakers.B},turns});
+  }
+  if (reading.get('Basic_01R')?.microDialogues?.length !== 2 ||
+      reading.get('Grocery_store_very_basic_shopping')?.microDialogues?.length !== 1) {
+    throw new Error('Missing E2 pilot greeting or grocery exchange');
+  }
+  return specification.scenes.length;
+}
+
 export function buildContent() {
   if (!fs.existsSync(legacySets)) throw new Error('Legacy content directory missing: ' + legacySets);
   fs.rmSync(outRoot, { recursive: true, force: true });
@@ -290,6 +346,8 @@ export function buildContent() {
   };
   const readingDefinitions = JSON.parse(fs.readFileSync(readingChecksFile, 'utf8'));
   const authoredReadingChecks = attachReadingCurriculum(lessons, readingDefinitions);
+  const microDialogues = attachMicroDialogues(lessons,
+    JSON.parse(fs.readFileSync(microDialoguesFile, 'utf8')));
   const overrides=parsePronunciationOverrides(
     JSON.parse(fs.readFileSync(pronunciationOverridesFile,'utf8')));
   const pronunciationGrouping=attachPronunciationSegments(lessons,overrides);
@@ -308,6 +366,7 @@ export function buildContent() {
     audioCopied: audioCount,
     curatedAudioReferences: curatedSounds.reduce((count, lesson) => count + lesson.items.filter(item => !!item.audio).length, 0),
     authoredReadingChecks,
+    microDialogues,
     readingPathwayLessons: lessons.filter(lesson => lesson.progression).length,
     legacyGroupedSoundSetsRetired: retiredSoundSets,
     missingAudio: lessons.reduce((a, b) => a + b.items.filter(x => !x.audio).length, 0),
