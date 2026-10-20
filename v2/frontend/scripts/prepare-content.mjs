@@ -261,7 +261,7 @@ export function attachMicroDialogues(lessons, specification) {
           turn.speaker !== (i % 2 === 0 ? 'A' : 'B') ||
           !item || item.id !== expectedId || item.polish !== turn.polish ||
           item.referenceReview === 'practice_only' || item.audio !== expectedAudio ||
-          !fs.existsSync(path.join(outRoot, expectedAudio.replace(/^generated\\//, ''))) ||
+          !fs.existsSync(path.join(outRoot, expectedAudio.slice('generated/'.length))) ||
           usedTurns.has(expectedId)) {
         throw new Error('Invalid or mismatched original E2 recorded turn: ' + key + ':' + turn.index);
       }
