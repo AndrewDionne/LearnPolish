@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "content": "node scripts/prepare-content.mjs",
+    "audit:speak": "node scripts/speak-readiness.mjs --markdown",
     "predev": "npm run content",
     "dev": "vite",
     "prebuild": "npm run content",
