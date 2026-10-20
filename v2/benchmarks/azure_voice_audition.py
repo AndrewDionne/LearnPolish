@@ -125,8 +125,9 @@ def _persist_partial_manifest(output: Path, completed: list[dict]) -> None:
     temporary.replace(output / "manifest.json")
 
 
-def local_preflight(rows: list[dict], environ: dict[str, str], output: Path = OUTPUT) -> dict:
+def local_preflight(rows: list[dict], environ: dict[str, str], output: Path | None = None) -> dict:
     """Read-only local setup check. Cannot certify Azure F0 or paid-billing state."""
+    output = OUTPUT if output is None else output
     region = environ.get("AZURE_SPEECH_REGION", "")
     parent = output.parent
     return {
