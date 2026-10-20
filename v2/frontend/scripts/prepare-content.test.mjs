@@ -120,6 +120,19 @@ test('new catalog retires bundled sound examples while retaining all other legac
   const micros=reading.flatMap(lesson=>(lesson.microDialogues||[]).map(scene=>({lesson,scene})));
   assert.equal(micros.length,3);
   assert.deepEqual(micros.map(({scene})=>scene.comprehension.correctIndex),[0,1,2]);
+  assert.deepEqual(micros.map(({scene})=>scene.replyPractice.correctIndex),[1,2,1]);
+  for(const {lesson,scene} of micros){
+    const reply=scene.replyPractice;
+    assert.equal(reply.promptItemId,scene.turns[scene.turns.length-2].itemId);
+    assert.equal(reply.replyItemId,scene.turns[scene.turns.length-1].itemId);
+    assert.equal(reply.choiceItemIds[reply.correctIndex],reply.replyItemId);
+    assert.equal(new Set(reply.choiceItemIds).size,3);
+    for(const id of reply.choiceItemIds){
+      const item=lesson.items.find(item=>item.id===id);
+      assert.ok(item?.audio,'Reply candidate has original recording: '+id);
+      assert.ok(fs.existsSync(path.join('public',item.audio)));
+    }
+  }
   for(const {scene} of micros){
     assert.equal(scene.comprehension.options.length,3);
     assert.ok(scene.comprehension.feedback.length>=10);
@@ -284,4 +297,19 @@ test('micro-dialogue review fails closed on original Polish drift or unverified 
   const invalidAnswer=structuredClone(defs);
   invalidAnswer.scenes[1].comprehension.correctIndex=4;
   assert.throws(()=>attachMicroDialogues(changed,invalidAnswer),/Invalid E2 dialogue comprehension/);
+  const wrongReply=structuredClone(defs);
+  wrongReply.scenes[2].replyPractice.correctIndex=0;
+  assert.throws(()=>attachMicroDialogues(changed,wrongReply),/Invalid source-grounded E2 reply/);
+  const invented=structuredClone(defs);
+  invented.scenes[0].replyPractice.choices[0].polish='Wymyślona odpowiedź';
+  assert.throws(()=>attachMicroDialogues(changed,invented),/Invalid source-grounded E2 reply/);
+  const wrongAudio=structuredClone(changed);
+  wrongAudio.find(lesson=>lesson.id==='Basic_01R').items[5].audio=undefined;
+  assert.throws(()=>attachMicroDialogues(wrongAudio,defs),/Invalid source-grounded E2 reply/);
+  const duplicates=structuredClone(defs);
+  duplicates.scenes[1].replyPractice.choices[0]=structuredClone(duplicates.scenes[1].replyPractice.choices[1]);
+  assert.throws(()=>attachMicroDialogues(changed,duplicates),/Invalid source-grounded E2 reply/);
+  const sceneAlternative=structuredClone(defs);
+  sceneAlternative.scenes[0].replyPractice.choices[2]={index:0,polish:'Cześć! Jak się masz?'};
+  assert.throws(()=>attachMicroDialogues(changed,sceneAlternative),/Invalid source-grounded E2 reply/);
 });
