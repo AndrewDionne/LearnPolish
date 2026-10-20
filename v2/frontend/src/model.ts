@@ -20,12 +20,16 @@ export type EnglishPronunciationGuide = {
   reviewStatus: 'needs_native_speaker_review';
 };
 
+export type PronunciationSegments = {method:'authored-v1'|'draft-orthographic-v1';segments:string[]};
+
 export type LessonItem = {
   id: string;
   polish: string;
   english: string;
   pronunciation?: string;
   pronunciationGuide?: EnglishPronunciationGuide;
+  /** Exact textual grouping. Draft segments are not speaker-verified Polish syllables. */
+  pronunciationSegments?: PronunciationSegments;
   /** Authored optional route to an existing recorded sound exercise, not a diagnosis. */
   soundPractice?: {lessonId:string;groupId:string;label:string};
   title?: string;
@@ -68,6 +72,15 @@ export function validateLesson(value: unknown): value is Lesson {
         typeof item.soundPractice.lessonId === 'string' && item.soundPractice.lessonId.length > 0 &&
         typeof item.soundPractice.groupId === 'string' && item.soundPractice.groupId.length > 0 &&
         typeof item.soundPractice.label === 'string' && item.soundPractice.label.length > 0
+      )) &&
+      (item.pronunciationSegments === undefined || (
+        !!item.pronunciationSegments &&
+        ['authored-v1','draft-orthographic-v1'].includes(item.pronunciationSegments.method) &&
+        Array.isArray(item.pronunciationSegments.segments) &&
+        item.pronunciationSegments.segments.length >= 1 &&
+        item.pronunciationSegments.segments.length <= 32 &&
+        item.pronunciationSegments.segments.every(part=>typeof part==='string' && part.length>0) &&
+        item.pronunciationSegments.segments.join('')===item.polish
       )) &&
       (item.pronunciationGuide === undefined || (
         !!item.pronunciationGuide &&
