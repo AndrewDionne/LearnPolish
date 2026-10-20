@@ -180,7 +180,7 @@ export default function App() {
   }, [reviews]);
 
   const active = lessons.find(x => x.id === lessonId);
-  const focusedGroup = soundReturn?.practiceLessonId === active?.id ? soundReturn.practiceGroupId : null;
+  const focusedGroup = soundReturn && soundReturn.practiceLessonId === active?.id ? soundReturn.practiceGroupId : null;
   const sessionItems = active
     ? focusedGroup ? itemsForMode(active, mode).filter(item => item.soundGroupId === focusedGroup)
       : reviewOnly && mode === 'learn' ? active.items.filter(item => reviewOnly.includes(item.id))
