@@ -1,4 +1,4 @@
-# One Docker image, one Render web service, one origin for V2 and its API.
+# FREE Render V2: one build artifact, one Flask web host. No persistent user DB.
 FROM node:22-bookworm-slim AS frontend
 WORKDIR /repo
 COPY docs/sets/ docs/sets/
@@ -6,19 +6,20 @@ COPY docs/static/ docs/static/
 COPY v2/content/ v2/content/
 COPY v2/frontend/ v2/frontend/
 RUN cd v2/frontend && npm install --no-audit --no-fund
-# Explicit same-origin API, no cross-host/backend wake-up dependency.
-RUN cd v2/frontend && VITE_FAMILY_API_URL=same-origin VITE_SPEECH_ASSESSMENT_ENABLED=false npm run build
+# Deliberately disconnect live family accounts: free ephemeral SQLite loses users.
+# Offline/local lessons and PWA remain functional. No provider key in the build.
+RUN cd v2/frontend && VITE_FAMILY_API_URL= VITE_SPEECH_ASSESSMENT_ENABLED=false npm run build
 
 FROM python:3.11-slim AS runtime
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PTP_RENDER_REQUIRE_EMAIL=1 \
+    PTP_RENDER_FAMILY_MODE=disabled \
     PTP_SPEECH_ENABLED=0
 WORKDIR /srv/ptp
 RUN pip install --no-cache-dir "Flask==3.1.1" "gunicorn>=23,<25"
 COPY v2/server/ /srv/ptp/v2/server/
 COPY --from=frontend /repo/v2/frontend/dist/ /srv/ptp/v2/frontend/dist/
-# Bind a persistent Render disk at /var/data, configured outside this image.
 WORKDIR /srv/ptp/v2/server
 EXPOSE 10000
+# HTTP server binds only once all frontend assets and the V2 app have loaded.
 CMD ["sh", "-c", "exec gunicorn -w 1 --threads 4 --timeout 120 --bind 0.0.0.0:${PORT:-10000} render_wsgi:app"]
