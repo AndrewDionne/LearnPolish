@@ -25,11 +25,11 @@ test('rejects malformed lesson data', () => {
 
 test('new catalog retires bundled sound examples while retaining all other legacy lessons and audio', () => {
   const report = buildContent();
-  assert.equal(report.lessons, 25);
-  assert.equal(report.items, 478);
+  assert.equal(report.lessons, 26);
+  assert.equal(report.items, 482);
   assert.equal(report.reading, 6);
-  assert.equal(report.sounds, 4);
-  assert.equal(report.curatedAudioReferences, 22);
+  assert.equal(report.sounds, 5);
+  assert.equal(report.curatedAudioReferences, 26);
   assert.equal(report.authoredReadingChecks, 24);
   assert.equal(report.readingPathwayLessons, 6);
   assert.equal(report.audioCopied, 455);
@@ -46,6 +46,9 @@ test('new catalog retires bundled sound examples while retaining all other legac
     {id:'speak_swietokrzyska:0',polish:'Świętokrzyska'},
   ]);
   assert.equal(spoken.items[0].audio, undefined);
+  assert.deepEqual(spoken.items[0].soundPractice,{
+    lessonId:'contrast_krzy_przy',groupId:'krzy',label:'krzy'
+  });
   // ONE curated source for English-friendly cues in Speak and the offline
   // sound-similarity review. Polish segmentation must never drift.
   const shared = JSON.parse(fs.readFileSync(path.resolve('../content/pronunciation-swietokrzyska.json'),'utf8'));
@@ -65,7 +68,14 @@ test('new catalog retires bundled sound examples while retaining all other legac
     assert.ok(item.audio);
   }
   const sounds = catalog.filter(x => x.kind === 'sounds');
-  assert.equal(sounds.length, 4);
+  assert.equal(sounds.length, 5);
+  const clusters = sounds.find(x => x.id === 'contrast_krzy_przy');
+  assert.deepEqual(clusters.soundGroups.map(group => group.id),['krzy','przy']);
+  assert.deepEqual(clusters.soundGroups.map(group => group.itemIds.length),[2,2]);
+  assert.deepEqual(clusters.items.map(item => item.polish),[
+    'ulica Świętokrzyska','Krzysztof Wiśniewski',
+    'Przystanek autobusowy','Czy mogę to przymierzyć?'
+  ]);
   for (const lesson of sounds) {
     assert.equal(lesson.source, 'curated');
     assert.equal(lesson.needsReview, true);

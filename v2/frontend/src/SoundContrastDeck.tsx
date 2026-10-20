@@ -2,6 +2,7 @@ import type { Lesson } from './model';
 
 type Props = {
   lesson: Lesson;
+  focusGroupId?: string;
   currentId: string;
   playing: string | null;
   onSelect: (itemId: string) => void;
@@ -9,16 +10,17 @@ type Props = {
 };
 
 /** Compare short individual recordings side by side; no automatic phonetic grading. */
-export default function SoundContrastDeck({ lesson, currentId, playing, onSelect, onPlay }: Props) {
+export default function SoundContrastDeck({ lesson, focusGroupId, currentId, playing, onSelect, onPlay }: Props) {
   if (!lesson.soundGroups?.length) return null;
   const byId = new Map(lesson.items.map(item => [item.id, item]));
+  const groups = focusGroupId ? lesson.soundGroups.filter(g => g.id === focusGroupId) : lesson.soundGroups;
   return <section className="contrast-deck" aria-label="Compare Polish sounds">
     <div className="contrast-intro">
       <div><span className="eyebrow">SOUND LAB · LISTEN AND COMPARE</span><h2>Hear every sound separately</h2><p>{lesson.intro}</p></div>
       <span className="sound-note">Audio from existing lessons · native review pending</span>
     </div>
     <div className="contrast-groups">
-      {lesson.soundGroups.map(group => <article key={group.id} className="contrast-group">
+      {groups.map(group => <article key={group.id} className="contrast-group">
         <div className="contrast-group-label"><strong lang="pl">{group.label}</strong><span>{group.ipa}</span></div>
         <p>{group.hint}</p>
         <div className="contrast-examples">
@@ -38,6 +40,6 @@ export default function SoundContrastDeck({ lesson, currentId, playing, onSelect
         </div>
       </article>)}
     </div>
-    <p className="sound-caption">Select a word or play its individual recording, then compare the next column. These are sound contrasts, not guaranteed minimal pairs. Pronunciation assessment is not enabled yet.</p>
+    <p className="sound-caption">Play a recorded example, then try it in Speak. These are full words or phrases containing the highlighted combination—not isolated syllable recordings. Pronunciation scores are not available for these exercises yet.</p>
   </section>;
 }

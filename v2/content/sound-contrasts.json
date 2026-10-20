@@ -224,5 +224,48 @@
         ]
       }
     ]
+  },
+  {
+    "id": "contrast_krzy_przy",
+    "title": "KRZY · PRZY — Polish consonant clusters",
+    "intro": "Hear the krzy and przy combinations inside recorded Polish phrases, then try repeating them. These are whole-phrase examples, not isolated syllable recordings.",
+    "groups": [
+      {
+        "id": "krzy",
+        "label": "KRZY",
+        "ipa": "/kʂɨ/",
+        "hint": "After k, rz is normally devoiced. Focus on the krzy part within each spoken example.",
+        "examples": [
+          {
+            "set": "Road_Terminology",
+            "index": 19,
+            "expected": "ulica Świętokrzyska"
+          },
+          {
+            "set": "Names_of_Poland_1",
+            "index": 2,
+            "expected": "Krzysztof Wiśniewski"
+          }
+        ]
+      },
+      {
+        "id": "przy",
+        "label": "PRZY",
+        "ipa": "/pʂɨ/",
+        "hint": "A related cluster: p followed by devoiced rz and Polish y. Compare the beginning of each example.",
+        "examples": [
+          {
+            "set": "Transit_1",
+            "index": 8,
+            "expected": "Przystanek autobusowy"
+          },
+          {
+            "set": "Conversation_-_shopping",
+            "index": 15,
+            "expected": "Czy mogę to przymierzyć?"
+          }
+        ]
+      }
+    ]
   }
 ]

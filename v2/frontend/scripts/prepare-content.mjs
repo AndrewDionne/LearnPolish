@@ -216,6 +216,15 @@ export function buildContent() {
   if (!Array.isArray(soundDefinitions) || soundDefinitions.length === 0) throw new Error('Missing curated sound definitions');
   const curatedSounds = buildSoundCurriculum(lessons, soundDefinitions);
   lessons.push(...curatedSounds);
+  // The link identifies EXISTING whole-phrase sound practice, never a diagnosed
+  // learner error. Do not generate it from uncalibrated Whisper transcriptions.
+  const cluster = curatedSounds.find(lesson => lesson.id === 'contrast_krzy_przy');
+  if (!cluster?.soundGroups?.some(group => group.id === 'krzy' && group.itemIds.length >= 2)) {
+    throw new Error('Missing curated KRZY audio practice');
+  }
+  lessons.find(lesson => lesson.id === 'speak_swietokrzyska').items[0].soundPractice = {
+    lessonId: cluster.id, groupId: 'krzy', label: 'krzy',
+  };
   const readingDefinitions = JSON.parse(fs.readFileSync(readingChecksFile, 'utf8'));
   const authoredReadingChecks = attachReadingCurriculum(lessons, readingDefinitions);
   fs.writeFileSync(path.join(outRoot, 'lessons.json'), JSON.stringify({ schemaVersion: 1, lessons }, null, 2) + '\n');

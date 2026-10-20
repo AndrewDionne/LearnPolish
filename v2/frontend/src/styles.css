@@ -89,6 +89,9 @@
 .capture-valid{background:#e9f7ef;color:#235c46}
 .speak-feedback{width:min(100%,540px);margin-top:5px;padding:14px}
 .speak-feedback .speak-assessment-consent{color:#425b61;font-size:12px;line-height:1.5;margin:0}
+.sound-practice-link{border:0;background:none;color:#176e69;text-decoration:underline;text-underline-offset:3px;font:700 13px "DM Sans",sans-serif;min-height:44px;padding:9px 12px;margin-top:5px;cursor:pointer}
+.sound-practice-link:hover{color:#114c45}
+.sound-practice-link:focus-visible{outline:3px solid #176e69;outline-offset:3px;border-radius:5px}
 .speak-panel .speak-next{margin-top:24px;min-width:104px;min-height:44px}
 .speak-private-details{width:min(100%,490px);margin:19px auto 0;color:#435e64;text-align:left;font-size:12px;line-height:1.5}
 .speak-private-details summary{display:list-item;width:fit-content;margin:0 auto;cursor:pointer;padding:5px 7px;font-size:12px;font-weight:700}
