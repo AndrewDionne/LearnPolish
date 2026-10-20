@@ -250,6 +250,19 @@ export function attachMicroDialogues(lessons, specification) {
         scene.turns[0]?.speaker !== 'A') {
       throw new Error('Invalid E2 micro-dialogue: ' + key);
     }
+    // One source-grounded comprehension check per scene. Do not infer
+    // correctness from generic phrase similarity or text translated by a model.
+    const question = scene.comprehension;
+    if (!question || typeof question.prompt !== 'string' ||
+        question.prompt.trim().length < 12 ||
+        !Array.isArray(question.options) || question.options.length !== 3 ||
+        question.options.some(option => typeof option !== 'string' || option.trim().length < 3) ||
+        new Set(question.options.map(option => option.trim().toLowerCase())).size !== 3 ||
+        !Number.isInteger(question.correctIndex) || question.correctIndex < 0 ||
+        question.correctIndex >= question.options.length ||
+        typeof question.feedback !== 'string' || question.feedback.trim().length < 10) {
+      throw new Error('Invalid E2 dialogue comprehension: ' + key);
+    }
     usedScenes.add(key);
     const turns = scene.turns.map((turn, i) => {
       const item = lesson.items[turn.index];
@@ -270,7 +283,11 @@ export function attachMicroDialogues(lessons, specification) {
     });
     lesson.microDialogues ??= [];
     lesson.microDialogues.push({id:scene.id,title:scene.title,
-      speakers:{A:scene.speakers.A,B:scene.speakers.B},turns});
+      speakers:{A:scene.speakers.A,B:scene.speakers.B},turns,
+      comprehension:{
+        prompt:question.prompt,options:question.options,
+        correctIndex:question.correctIndex,feedback:question.feedback,
+      }});
   }
   if (reading.get('Basic_01R')?.microDialogues?.length !== 2 ||
       reading.get('Grocery_store_very_basic_shopping')?.microDialogues?.length !== 1) {
