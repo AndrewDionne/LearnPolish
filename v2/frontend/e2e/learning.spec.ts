@@ -153,6 +153,12 @@ test('E2 short dialogues stay inside reading lessons and allow read/listen witho
   await dialogue.getByRole('button',{name:'Listen first'}).click();
   await expect(dialogue.locator('.micro-dialogue-polish')).toHaveCount(0);
   await expect(dialogue.locator('.micro-dialogue-hidden')).toHaveCount(2);
+  await expect(dialogue.getByRole('button',{name:'Show English translations'})).toHaveCount(0);
+  await expect(dialogue.getByText('How does Person B respond to the greeting?')).toBeVisible();
+  await dialogue.getByRole('button',{name:'They say they are feeling well.'}).click();
+  await expect(dialogue.getByRole('status')).toContainText('Correct!');
+  await expect(dialogue.getByRole('button',{name:'They ask for directions.'})).toBeDisabled();
+  await expect(dialogue.locator('.micro-dialogue-polish')).toHaveCount(0);
   await dialogue.getByRole('button',{name:'Reveal Polish dialogue'}).click();
   await expect(dialogue.locator('.micro-dialogue-polish')).toHaveCount(2);
   await dialogue.getByRole('button',{name:'Show English translations'}).click();
@@ -164,10 +170,16 @@ test('E2 short dialogues stay inside reading lessons and allow read/listen witho
   await expect(page.getByText('Cześć! Jak się masz?',{exact:true})).toBeVisible();
   await expect(page.getByText('0 of 6 explored')).toBeVisible();
   await selector.getByRole('button',{name:/What's your name/}).click();
-  await expect(page.getByRole('region',{name:"Short dialogue: What's your name?"})
-    .locator('.micro-dialogue-polish')).toHaveText([
+  const names=page.getByRole('region',{name:"Short dialogue: What's your name?"});
+  await expect(names.locator('.micro-dialogue-polish')).toHaveText([
       'Cześć, jak masz na imię?', 'Mam na imię Andrew.'
     ]);
+  await names.getByRole('button',{name:'Their address.'}).click();
+  await expect(names.getByRole('status')).toContainText('Not quite');
+  await expect(names.getByRole('status')).toContainText('Mam na imię Andrew');
+  await names.getByRole('button',{name:'Listen first'}).click();
+  await expect(names.getByRole('status')).toHaveCount(0);
+  await expect(names.getByRole('button',{name:'Their name.'})).toBeEnabled();
   await page.getByRole('button',{name:'Library'}).first().click();
   await page.getByRole('searchbox',{name:'Search lessons'}).fill('Grocery store very basic shopping');
   await page.getByRole('button',{name:/Grocery store very basic shopping/}).click();
@@ -184,6 +196,10 @@ test('E2 short dialogues stay inside reading lessons and allow read/listen witho
   ]);
   await grocery.getByRole('button',{name:'Listen first'}).click();
   await expect(grocery.locator('.micro-dialogue-hidden')).toHaveCount(3);
+  await expect(grocery.getByRole('button',{name:'Show English translations'})).toHaveCount(0);
+  await grocery.getByRole('button',{name:'Red apples.'}).click();
+  await expect(grocery.getByRole('status')).toContainText('Correct!');
+  await expect(grocery.locator('.micro-dialogue-polish')).toHaveCount(0);
   await grocery.getByRole('button',{name:'Back to reading'}).click();
   await expect(page.getByText('0 of 9 explored')).toBeVisible();
   expect(errors).toEqual([]);
