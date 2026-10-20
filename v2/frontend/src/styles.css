@@ -437,3 +437,15 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .speak-scores dd{margin:.2rem 0 0;font-weight:700;font-variant-numeric:tabular-nums}
 .speak-scores p{font-size:.85rem;color:var(--muted, #506172);margin:0}
 @media(max-width:360px){.speak-scores dl{grid-template-columns:1fr}}
+
+/* Combined Speak result: ONLY coloured text and one overall number.
+   No per-syllable percentages, labels, background chips or legend. */
+.speak-blended-word{display:inline-flex;align-items:baseline;justify-content:center;
+  gap:.12em;max-width:100%;white-space:nowrap}
+.speak-blended-part{display:inline;color:var(--text,#243e45)}
+.speak-blended-part.close{color:#237451}
+.speak-blended-part.review{color:#ae740e}
+.speak-blended-part.focus{color:#bf3d49}
+.speak-blended-part.uncertain{color:#667784}
+.speak-blend-result{justify-items:center;margin-top:.5rem}
+.speak-blend-result .speak-word-score-primary{justify-content:center}
