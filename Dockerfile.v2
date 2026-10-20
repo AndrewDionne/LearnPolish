@@ -16,7 +16,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PTP_RENDER_FAMILY_MODE=disabled \
     PTP_SPEECH_ENABLED=0
 WORKDIR /srv/ptp
-RUN pip install --no-cache-dir "Flask==3.1.1" "gunicorn>=23,<25"
+RUN pip install --no-cache-dir "Flask==3.1.1" "gunicorn>=23,<25" "psycopg[binary]>=3.2,<4"
 COPY v2/server/ /srv/ptp/v2/server/
 COPY --from=frontend /repo/v2/frontend/dist/ /srv/ptp/v2/frontend/dist/
 WORKDIR /srv/ptp/v2/server
