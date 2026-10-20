@@ -1,5 +1,11 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
+## Owner choice: natural Polish playback speeds limited to 0.75× / 0.85× / 1× (2026-10-20)
+
+**Owner explicitly said:** "0.5x is too slow, and we certainly do not need anything over 1x speed." Honor this across the existing V2 Listen playback and the private voice-audition listening page. **Exactly three rates**: `0.75×` for careful listening, `0.85×` moderately slowed, `1×` default and hard maximum. No `0.5×` or `1.25×` (or any higher) offered by our UI. V2 had `0.75/1/1.25` before correction, not a native `0.5` control; the separate owner-private HTML uses browser audio controls that may offer many built-in rates. V2 rate options now come from typed `AUDIO_RATES` in `v2/frontend/src/audio.ts`, used by `App.tsx` Listen mode. Private `listen.html` gets lightweight in-page rate controls, single selected speed shared by every recording, noplaybackrate browser hint and a hash-pinned, networkless inline listener clamping even browser-native rate changes back into our allowed set. No source audio time-stretch, no Azure/Groq calls, no cache/content replacements; 1× original waveform remains unchanged when played at default speed. CI tests cover static list/limit and offline script integrity. **Physical browser validation remains pending.** Preserve owner’s separate millisecond playback bug as *unresolved* pending `--diagnose`/native decoder results; rate changes are not a codec/MP3 fix.
+
+
+
 ## Owner reports 3 old Azure greeting MP3s open but play only milliseconds — decoder diagnosis (2026-10-20)
 
 **Confirmed owner terminal:** `PathToPolish-Private-AI/voice-audition-01/manifest.json` has **exactly THREE** `Dzień dobry` recordings: Zofia, Marek, Agnieszka (generated in earlier owner run, NOT our new paired pilot). `--preflight` correctly reported `audition_output_absent:false`; the owner's subsequent `--pairs 4 --send` failed closed on existing directory; **no new eight-clip synthesis happened**. `--listen` returned the local page path, but owner says browser audio plays for only a millisecond before stopping. Real audio data unavailable to ChatGPT, so DO NOT claim browser, Azure, browser CSP, or encoding has been causally isolated; hashes/ID3 header do NOT prove playable MP3 frames. Do not request credentials, MP3 contents, resubmission/overwriting or extra paid API calls.
