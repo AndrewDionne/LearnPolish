@@ -74,7 +74,7 @@ export default function SpeakPanel({item, playing, onPlayReference, onStopRefere
 
   const onReference = () => {
     preview.current?.pause();
-    if (item.audio) onPlayReference(item.audio);
+    if (item.audio && item.referenceReview !== 'practice_only') onPlayReference(item.audio);
   };
 
   const hasGuide = Boolean(item.pronunciationGuide || item.pronunciation);
@@ -136,7 +136,8 @@ export default function SpeakPanel({item, playing, onPlayReference, onStopRefere
       {expandedGuide && !guide && item.pronunciation && <p className="speak-english-fallback">Approximate English sounds: <strong>{item.pronunciation}</strong></p>}
       {expandedGuide && guide && !colourParts && <p className="speak-guide-caption">English approximation · Emphasis marks the stressed syllable</p>}
     </div>
-    {item.audio && <button type="button" className="audio-btn speak-audio-button"
+    {item.referenceReview === 'practice_only' && <p className="speak-reference-pending">Record and replay for practice. An exact spoken reference is still being reviewed.</p>}
+    {item.audio && item.referenceReview !== 'practice_only' && <button type="button" className="audio-btn speak-audio-button"
       disabled={capture.phase === 'requesting' || capture.phase === 'recording' || capture.phase === 'processing'}
       onClick={onReference}>{playing === item.audio ? 'Playing example' : '▶ Hear example'}</button>}
     <div className="speak-record-actions">
