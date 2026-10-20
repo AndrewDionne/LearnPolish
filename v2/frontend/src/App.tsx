@@ -499,7 +499,7 @@ export default function App() {
             </div>}
             <div className="answer-actions"><button type="button" className="secondary-action" onClick={() => jump(0)}>Practise again</button>
               {batched && batchIndex < totalBatches - 1
-                ? <button type="button" className="primary-action" onClick={() => changeBatch(batchIndex + 1)}>Next {Math.min(8, active.items.length - (batchIndex + 1) * 8)} expressions →</button>
+                ? <button type="button" className="primary-action" onClick={() => changeBatch(batchIndex + 1)}>Continue to {practiceBatchLabel(active, batchIndex + 1)} →</button>
                 : soundReturn && active.id === soundReturn.practiceLessonId ? <button type="button" className="primary-action" onClick={returnFromSoundPractice}>Return to {soundReturn.sourceWord} →</button>
                 : <button type="button" className="primary-action" onClick={() => goTo('library')}>Back to library →</button>}
             </div>

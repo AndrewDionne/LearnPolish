@@ -77,9 +77,12 @@ The **11 backend-unscorable reference expressions**, grouped by module, are:
 
 The **3 additional unfinished reference texts** are `Mam na imię…` (Conversation 1), `Jak dojść do …?` (Road Terminology), and `Przepraszam, jak dojadę do …?` (Transit 1). The current proxy can strip `…`, but the spoken target remains underspecified: either author a specific completed example or keep it for ungraded speaking practice. These are **14 problematic Speak items total**, with no overlap between those 11 and these 3.
 
-## Implemented short beginner sessions (2026-10-20)
+## Curated Numbers 1–20 practice ranges (2026-10-20, supersedes arbitrary eight-item groups)
 
-Large, completely recorded **vocabulary** lessons now open in **8-item practice groups** (including E1 greetings, numbers, shopping and transport). This is a *learner-facing session boundary*, not a new learning module. All item IDs, MP3s, XP and retention keys remain canonical. Learners can choose any group from the compact picker, finish a part then advance to the next part, or switch Learn ↔ Speak ↔ Listen without changing groups. Reopening starts at the first not-yet-explored item group rather than making the learner repeat already encountered groups; all groups remain manually accessible for practice. Small contrast lessons remain full sets, as do six longer reading modules (their recorded passage position is still preserved). Short personal sets or imported vocabulary with incomplete audio do not receive inappropriate partial-page UI; due reviews remain scoped to exactly due cards. This is not completion of native-speech editorial review or a claim that Azure scoring is calibrated.
+The owner rejected automatic 1–8 / 9–16 / 17–20 slicing as educationally arbitrary. **Numbers 1–20 remains ONE existing learning module** with its original 20 recorded items, full item-level progress, and identical audio/XP identities. Learners may work through **Numbers 1–10** and **Numbers 11–20** as optional internal sections, without creating two lesson records. Moving between Learn, Listen and Speak preserves the chosen range. Re-entry starts at the first unvisited range, and earlier ranges remain accessible. The separate `numbers_1-20` catalog still contains 20 items.
+
+**All other vocabulary lessons remain intact, without automatic chunking.** Splitting greetings, shopping or directions into groups requires genuine pedagogical boundaries and explicit content review; a universal count-based cap is not authorized. Small sound-contrast lessons, Read sessions, due review queues and partial-audio personal sets retain existing behavior. These changes do not certify reference audio, syllable splits, Azure/Whisper scoring, or any other pronunciation quality decision.
+
 
 ## Owner direction and proposed granular rollout (2026-10-20)
 

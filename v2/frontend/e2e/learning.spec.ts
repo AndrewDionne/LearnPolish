@@ -23,7 +23,7 @@ test('Home to library to Learn and progress survives reload', async ({ page }) =
   expect(errors).toEqual([]);
 });
 
-test('long vocabulary lessons offer 8-item groups that continue across Learn Speak and Listen', async ({ page }) => {
+test('numbers 1–20 stays one lesson with natural 1–10 / 11–20 sections across modes', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('/');
@@ -33,18 +33,18 @@ test('long vocabulary lessons offer 8-item groups that continue across Learn Spe
 
   const groups = page.getByRole('combobox', {name: 'Practice group'});
   await expect(groups).toBeVisible();
-  await expect(groups.locator('option')).toHaveText(['Part 1: 1–8', 'Part 2: 9–16', 'Part 3: 17–20']);
+  await expect(groups.locator('option')).toHaveText(['Numbers 1–10', 'Numbers 11–20']);
   await expect(groups).toHaveValue('0');
   await expect(page.locator('.item-count')).toContainText('1');
 
   // Completing a short session does not modify the 20-item lesson catalog.
-  for (let index = 0; index < 8; index++) {
+  for (let index = 0; index < 10; index++) {
     await page.getByRole('button', { name: /Reveal meaning/ }).click();
     await page.getByRole('button', { name: /Got it/ }).click();
   }
   await expect(page.getByRole('heading', { name: 'Nicely done!' })).toBeVisible();
-  await expect(page.getByText('You made it through 8 items')).toBeVisible();
-  await page.getByRole('button', { name: 'Next 8 expressions →' }).click();
+  await expect(page.getByText('You made it through 10 items')).toBeVisible();
+  await page.getByRole('button', { name: 'Continue to Numbers 11–20 →' }).click();
   await expect(groups).toHaveValue('1');
   await expect(page.locator('.item-count')).toContainText('1');
   await expect(page.getByRole('button', { name: 'Speak', exact: true })).toBeVisible();
@@ -57,17 +57,17 @@ test('long vocabulary lessons offer 8-item groups that continue across Learn Spe
   await expect(page.getByText('What did you hear?')).toBeVisible();
 
   // Learners can return to any part and switching mode stays on that part.
-  await groups.selectOption('2');
-  await expect(groups).toHaveValue('2');
+  await groups.selectOption('0');
+  await expect(groups).toHaveValue('0');
   await page.getByRole('button', { name: 'Learn', exact: true }).click();
-  await expect(groups).toHaveValue('2');
-  await expect(page.locator('.item-count')).toContainText('/ 4');
+  await expect(groups).toHaveValue('0');
+  await expect(page.locator('.item-count')).toContainText('/ 10');
   await page.getByRole('button', { name: 'Library' }).first().click();
   await page.getByRole('searchbox', { name: 'Search lessons' }).fill('numbers 1-20');
   await page.getByRole('button', { name: /numbers 1-20/i }).click();
-  // Eight completed items: automatically resume at the first unvisited group.
+  // Ten completed items: automatically resume at the unvisited eleven–twenty section.
   await expect(groups).toHaveValue('1');
-  await expect(page.locator('.item-count')).toContainText('/ 8');
+  await expect(page.locator('.item-count')).toContainText('/ 10');
   expect(errors).toEqual([]);
 });
 
