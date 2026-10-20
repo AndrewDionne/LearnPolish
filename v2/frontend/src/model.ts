@@ -17,6 +17,8 @@ export type MicroDialogue = {
   turns: {itemId:string; speaker:'A'|'B'}[];
   /** One editorial, source-grounded listening/reading check. */
   comprehension: ComprehensionCheck;
+  /** Only existing same-lesson recorded lines; never a fabricated target or speech score. */
+  replyPractice: {promptItemId:string;replyItemId:string;choiceItemIds:[string,string,string];correctIndex:number};
 };
 /** Explicitly validated learning difficulty only; missing defaults to beginner XP. */
 export type LearningDifficulty = 1 | 2 | 3 | 4 | 5;
@@ -162,6 +164,23 @@ export function validateLesson(value: unknown): value is Lesson {
         typeof dialogue.comprehension.feedback === 'string' &&
         dialogue.comprehension.feedback.trim().length >= 10 &&
         Array.isArray(dialogue.turns) && dialogue.turns.length >= 2 && dialogue.turns.length <= 4 &&
+        !!dialogue.replyPractice &&
+        Array.isArray(dialogue.replyPractice.choiceItemIds) &&
+        dialogue.replyPractice.choiceItemIds.length === 3 &&
+        new Set(dialogue.replyPractice.choiceItemIds).size === 3 &&
+        Number.isInteger(dialogue.replyPractice.correctIndex) &&
+        dialogue.replyPractice.correctIndex >= 0 &&
+        dialogue.replyPractice.correctIndex < 3 &&
+        dialogue.turns.length >= 2 &&
+        dialogue.replyPractice.promptItemId === dialogue.turns[dialogue.turns.length-2].itemId &&
+        dialogue.replyPractice.replyItemId === dialogue.turns[dialogue.turns.length-1].itemId &&
+        dialogue.replyPractice.choiceItemIds[dialogue.replyPractice.correctIndex] === dialogue.replyPractice.replyItemId &&
+        dialogue.replyPractice.choiceItemIds.every((candidate,i)=>{
+          const selected=x.items?.find(item=>item.id===candidate);
+          return !!selected?.audio && selected.referenceReview !== 'practice_only' &&
+            (i===dialogue.replyPractice.correctIndex ||
+              !dialogue.turns.some(turn=>turn.itemId===candidate));
+        }) &&
         dialogue.turns.every((turn,i) => {
           const itemIndex=x.items?.findIndex(item=>item.id===turn.itemId) ?? -1;
           const previous=i > 0 ? (x.items?.findIndex(item=>item.id===dialogue.turns[i-1].itemId) ?? -1) : -1;
