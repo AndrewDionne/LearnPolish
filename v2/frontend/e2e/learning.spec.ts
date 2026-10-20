@@ -67,7 +67,7 @@ test('numbers 1–20 stays one lesson with natural 1–10 / 11–20 sections acr
   await page.getByRole('button', { name: /numbers 1-20/i }).click();
   // Ten completed items: automatically resume at the unvisited eleven–twenty section.
   await expect(groups).toHaveValue('1');
-  await expect(page.locator('.item-count')).toContainText('/ 8');
+  await expect(page.locator('.item-count')).toContainText('/ 10');
   expect(errors).toEqual([]);
 });
 
