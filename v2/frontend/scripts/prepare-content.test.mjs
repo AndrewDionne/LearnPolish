@@ -123,16 +123,46 @@ test('new catalog retires bundled sound examples while retaining all other legac
     'ulica Świętokrzyska','Krzysztof Wiśniewski',
     'Przystanek autobusowy','Czy mogę to przymierzyć?'
   ]);
+  assert.deepEqual(sounds.map(lesson => [lesson.id, ...lesson.soundGroups.map(group=>group.id)]),[
+    ['contrast_c_cz_cie','c','cz','ci'],
+    ['contrast_s_sz_sie','s','sz','si'],
+    ['contrast_z_zh_zi','z','zh','zi'],
+    ['contrast_l_lstroked','l','lstroked'],
+    ['contrast_krzy_przy','krzy','przy']
+  ]);
   for (const lesson of sounds) {
     assert.equal(lesson.source, 'curated');
     assert.equal(lesson.needsReview, true);
     assert.ok(lesson.soundGroups.every(group => group.itemIds.length >= 2));
     for (const item of lesson.items) {
+      assert.ok(item.soundFocus, 'Sound Lab focus must be authored for '+item.polish);
+      assert.equal(item.polish.split(item.soundFocus).length,2,
+        'Exactly one matching focus in '+item.polish);
       assert.ok(item.audio?.startsWith('generated/audio/'));
       assert.ok(fs.existsSync(path.join('public', item.audio)));
       assert.ok(!item.polish.includes(',') && !item.polish.includes(' / '));
     }
   }
+});
+
+test('sound focus must match exactly one recorded Polish substring', () => {
+  buildContent();
+  const catalog = JSON.parse(fs.readFileSync(path.resolve('public/generated/lessons.json'),'utf8')).lessons;
+  const definitions = JSON.parse(fs.readFileSync(path.resolve('../content/sound-contrasts.json'),'utf8'));
+  const bad = structuredClone(definitions);
+  bad[0].groups[0].examples[0].focus='sz';
+  assert.throws(() => buildSoundCurriculum(catalog,bad), /invalid or ambiguous focus letters/);
+  const missing = structuredClone(definitions);
+  delete missing[0].groups[0].examples[0].focus;
+  assert.throws(() => buildSoundCurriculum(catalog,missing), /invalid or ambiguous focus letters/);
+  const ambiguous = structuredClone(definitions);
+  // "Sześć" contains two occurrences of the letter "ś"? Use existing "Siedem"'s e twice.
+  ambiguous[1].groups[2].examples[1].focus='e';
+  assert.throws(() => buildSoundCurriculum(catalog,ambiguous), /invalid or ambiguous focus letters/);
+  const valid = buildSoundCurriculum(catalog,definitions);
+  assert.equal(valid.flatMap(lesson=>lesson.items).length,26);
+  const difficult=valid.find(lesson=>lesson.id==='contrast_c_cz_cie');
+  assert.deepEqual(difficult.items.map(item=>item.soundFocus), ['c','c','Cz','Cz','ć','ć']);
 });
 
 test('curriculum rejects incorrect audio/text mapping rather than playing mismatched speech', () => {
