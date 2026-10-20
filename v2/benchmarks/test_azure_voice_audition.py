@@ -45,8 +45,8 @@ class AzureVoiceAuditionSafetyTests(unittest.TestCase):
                          ["pl-PL-MarekNeural", "pl-PL-AgnieszkaNeural"])
         self.assertEqual(len({x["itemId"] for x in pairs}), 4)
         self.assertNotIn("pl-PL-ZofiaNeural", [x["voiceId"] for x in pairs])
-        with patch.object(audition, "plan_from_generated_catalog", return_value=plan), \\
-             patch.object(audition, "generate", side_effect=AssertionError("no API")), \\
+        with patch.object(audition, "plan_from_generated_catalog", return_value=plan), \
+             patch.object(audition, "generate", side_effect=AssertionError("no API")), \
              redirect_stdout(io.StringIO()) as output:
             self.assertEqual(audition.main([]), 0)
         self.assertIn('"files": 8', output.getvalue())
@@ -61,7 +61,7 @@ class AzureVoiceAuditionSafetyTests(unittest.TestCase):
 
     def test_options_prevent_mixing_legacy_and_paired_modes(self):
         plan = self.make_plan()
-        with patch.object(audition, "plan_from_generated_catalog", return_value=plan), \\
+        with patch.object(audition, "plan_from_generated_catalog", return_value=plan), \
              patch.object(audition, "generate", side_effect=AssertionError("no API")):
             with self.assertRaises(SystemExit) as failure:
                 audition.main(["--pairs", "4", "--limit", "3"])
