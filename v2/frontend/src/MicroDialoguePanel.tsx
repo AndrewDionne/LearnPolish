@@ -19,16 +19,26 @@ type Props = {
 export default function MicroDialoguePanel({
   lesson,dialogue,playing,rate,audioError,onRateChange,onPlay,onStop,onClose,
 }: Props) {
-  const [view,setView] = useState<'read'|'listen'>('read');
+  const [view,setView] = useState<'read'|'listen'|'reply'>('read');
   const [revealed,setRevealed] = useState(false);
   const [translated,setTranslated] = useState(false);
   const [answer,setAnswer] = useState<number|null>(null);
+  const [replyAnswer,setReplyAnswer] = useState<number|null>(null);
   const byId=new Map(lesson.items.map(item=>[item.id,item]));
   const turns=dialogue.turns.map(turn=>({speaker:turn.speaker,item:byId.get(turn.itemId)}));
   if (turns.some(turn=>!turn.item?.audio || turn.item.referenceReview === 'practice_only')) return null;
   const revealPolish=view==='read'||revealed;
   const showTranslationControl=view==='read'||revealed||answer!==null;
   const check=dialogue.comprehension;
+  const reply=dialogue.replyPractice;
+  const promptItem=byId.get(reply.promptItemId);
+  const replyItem=byId.get(reply.replyItemId);
+  const choiceItems=reply.choiceItemIds.map(id=>byId.get(id));
+  if (!promptItem?.audio || !replyItem?.audio || choiceItems.some(item=>!item?.audio)) return null;
+  const resetPractice = (next: 'read'|'listen'|'reply') => {
+    onStop(); setView(next); setRevealed(false); setTranslated(false);
+    setAnswer(null); setReplyAnswer(null);
+  };
   return <section className="micro-dialogue-panel" aria-label={'Short dialogue: '+dialogue.title}>
     <div className="micro-dialogue-heading">
       <div><span className="eyebrow">SHORT CONVERSATION</span><h2>{dialogue.title}</h2>
@@ -36,14 +46,43 @@ export default function MicroDialoguePanel({
       <button type="button" className="secondary-action" onClick={()=>{onStop();onClose();}}>Back to reading</button>
     </div>
     <div className="micro-dialogue-view" role="group" aria-label="Dialogue practice style">
-      <button type="button" aria-pressed={view==='read'} onClick={()=>{onStop();setView('read');setRevealed(false);setTranslated(false);setAnswer(null);}}>Read dialogue</button>
-      <button type="button" aria-pressed={view==='listen'} onClick={()=>{onStop();setView('listen');setRevealed(false);setTranslated(false);setAnswer(null);}}>Listen first</button>
+      <button type="button" aria-pressed={view==='read'} onClick={()=>resetPractice('read')}>Read dialogue</button>
+      <button type="button" aria-pressed={view==='listen'} onClick={()=>resetPractice('listen')}>Listen first</button>
+      <button type="button" aria-pressed={view==='reply'} onClick={()=>resetPractice('reply')}>Take a turn</button>
     </div>
     <fieldset className="speed-picker"><legend>Playback speed</legend>
       {AUDIO_RATES.map(speed=><button type="button" key={speed} aria-pressed={rate===speed}
         className={rate===speed?'chosen':''} onClick={()=>onRateChange(speed)}>{speed}×</button>)}
     </fieldset>
-    <ol className="micro-dialogue-turns">
+    {view==='reply' ? <section className="micro-dialogue-reply" aria-label="Choose your reply">
+      <div className="micro-dialogue-turn speaker-prompt">
+        <div className="micro-dialogue-speaker">{dialogue.speakers[dialogue.turns[dialogue.turns.length-2].speaker]}</div>
+        <p lang="pl" className="micro-dialogue-polish">{promptItem.polish}</p>
+        <button type="button" className="audio-btn"
+          aria-label="Play the other speaker" onClick={()=>onPlay(promptItem.audio!)}>
+          <span aria-hidden="true">{playing===promptItem.audio?'◼':'▶'}</span> Play their line
+        </button>
+      </div>
+      <fieldset className="micro-dialogue-check">
+        <legend>Your turn</legend>
+        <p className="micro-dialogue-question">How would you respond in Polish?</p>
+        <div className="micro-dialogue-options" role="group" aria-label="Choose your Polish reply">
+          {choiceItems.map((item,i)=>item&&<button type="button" lang="pl" key={item.id}
+            aria-pressed={replyAnswer===i} disabled={replyAnswer!==null}
+            onClick={()=>{onStop();setReplyAnswer(i);}}>{item.polish}</button>)}
+        </div>
+        {replyAnswer!==null && <div className="micro-dialogue-reply-feedback" role="status">
+          <strong>{replyAnswer===reply.correctIndex?'That fits!':'Try this reply:'}</strong>
+          <p lang="pl">{replyItem.polish}</p>
+          <p>{replyItem.english}</p>
+          <button type="button" className="audio-btn" onClick={()=>onPlay(replyItem.audio!)}
+            aria-label="Play the correct reply">▶ Play the reply</button>
+          <button type="button" className="secondary-action" onClick={()=>{onStop();setReplyAnswer(null);}}>
+            Try the reply again
+          </button>
+        </div>}
+      </fieldset>
+    </section> : <ol className="micro-dialogue-turns">
       {turns.map(({speaker,item},i)=>item && <li key={item.id} className={'micro-dialogue-turn speaker-'+speaker.toLowerCase()}>
         <div className="micro-dialogue-speaker">{dialogue.speakers[speaker]}</div>
         {revealPolish
@@ -56,9 +95,9 @@ export default function MicroDialoguePanel({
           <span aria-hidden="true">{playing===item.audio?'◼':'▶'}</span> {playing===item.audio?'Playing':'Play turn '+(i+1)}
         </button>
       </li>)}
-    </ol>
+    </ol>}
     {audioError && <p role="alert" className="audio-error">{audioError}</p>}
-    <fieldset className="micro-dialogue-check">
+    {view!=='reply' && <fieldset className="micro-dialogue-check">
       <legend>Check understanding</legend>
       <p className="micro-dialogue-question">{check.prompt}</p>
       <div className="micro-dialogue-options" role="group" aria-label="Choose the dialogue answer">
@@ -68,11 +107,11 @@ export default function MicroDialoguePanel({
       </div>
       {answer!==null && <p className={answer===check.correctIndex?'answer-good':'answer-review'}
         role="status">{answer===check.correctIndex?'Correct!':'Not quite — listen again.'} {check.feedback}</p>}
-    </fieldset>
-    <div className="micro-dialogue-actions">
+    </fieldset>}
+    {view!=='reply' && <div className="micro-dialogue-actions">
       {view==='listen'&&!revealed&&<button type="button" className="primary-action" onClick={()=>setRevealed(true)}>Reveal Polish dialogue</button>}
       {showTranslationControl&&!translated&&<button type="button" className="secondary-action" onClick={()=>setTranslated(true)}>Show English translations</button>}
       {showTranslationControl&&translated&&<button type="button" className="secondary-action" onClick={()=>setTranslated(false)}>Hide translations</button>}
-    </div>
+    </div>}
   </section>;
 }

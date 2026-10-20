@@ -31,6 +31,25 @@
         ],
         "correctIndex": 0,
         "feedback": "Dziękuję, mam się dobrze means Thank you, I am well."
+      },
+      "replyPractice": {
+        "promptTurn": 0,
+        "replyTurn": 1,
+        "choices": [
+          {
+            "index": 3,
+            "polish": "Mam na imię Andrew."
+          },
+          {
+            "index": 1,
+            "polish": "Dziękuję, mam się dobrze."
+          },
+          {
+            "index": 5,
+            "polish": "Przepraszam, nie rozumiem."
+          }
+        ],
+        "correctIndex": 1
       }
     },
     {
@@ -62,6 +81,25 @@
         ],
         "correctIndex": 1,
         "feedback": "Mam na imię Andrew means My name is Andrew."
+      },
+      "replyPractice": {
+        "promptTurn": 0,
+        "replyTurn": 1,
+        "choices": [
+          {
+            "index": 1,
+            "polish": "Dziękuję, mam się dobrze."
+          },
+          {
+            "index": 5,
+            "polish": "Przepraszam, nie rozumiem."
+          },
+          {
+            "index": 3,
+            "polish": "Mam na imię Andrew."
+          }
+        ],
+        "correctIndex": 2
       }
     },
     {
@@ -98,6 +136,25 @@
         ],
         "correctIndex": 2,
         "feedback": "Poproszę czerwone jabłka means Red apples, please."
+      },
+      "replyPractice": {
+        "promptTurn": 1,
+        "replyTurn": 2,
+        "choices": [
+          {
+            "index": 5,
+            "polish": "Nie, dziękuję. To wszystko."
+          },
+          {
+            "index": 3,
+            "polish": "Poproszę czerwone jabłka."
+          },
+          {
+            "index": 7,
+            "polish": "Proszę, płacę kartą."
+          }
+        ],
+        "correctIndex": 1
       }
     }
   ]

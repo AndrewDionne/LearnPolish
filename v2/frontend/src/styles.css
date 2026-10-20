@@ -496,3 +496,13 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .micro-dialogue-options button:disabled:not([aria-pressed=true]){opacity:.65;cursor:default}
 .micro-dialogue-check [role=status]{font-size:13px;line-height:1.6;margin:12px 0 0}
 @media(max-width:540px){.micro-dialogue-options{grid-template-columns:1fr}}
+
+/* Source-matched E2 turn taking: spoken prompt, one learner answer, existing reply audio. */
+.micro-dialogue-reply{display:grid;gap:15px}
+.micro-dialogue-reply>.micro-dialogue-turn{max-width:100%;width:100%}
+.micro-dialogue-reply-feedback{margin-top:12px;padding:13px;border:1px solid #c9e4db;border-radius:10px;background:#f6faf8;color:#244c56}
+.micro-dialogue-reply-feedback strong{font-size:14px;color:#195949}
+.micro-dialogue-reply-feedback p{margin:7px 0;font-size:14px;line-height:1.45}
+.micro-dialogue-reply-feedback p[lang=pl]{font-weight:700;font-size:17px}
+.micro-dialogue-reply-feedback .audio-btn{min-height:44px;margin:6px 10px 0 0}
+.micro-dialogue-reply-feedback .secondary-action{min-height:44px;margin-top:6px}
