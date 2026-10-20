@@ -42,6 +42,23 @@ class AzureVoiceAuditionSafetyTests(unittest.TestCase):
                 audition.main(["--send"])
         self.assertEqual(raised.exception.code, 2)
 
+    def test_gallery_opens_official_browser_demo_without_paid_synthesis(self):
+        plan = self.make_plan()
+        with patch.object(audition, "plan_from_generated_catalog", return_value=plan), \
+             patch.object(audition, "generate", side_effect=AssertionError("no synthesis")), \
+             patch.object(audition.webbrowser, "open", return_value=True) as opened, \
+             redirect_stdout(io.StringIO()):
+            self.assertEqual(audition.main(["--gallery"]), 0)
+        opened.assert_called_once_with("https://speech.microsoft.com/audiocontentcreation")
+
+    def test_listen_invokes_local_player_not_provider(self):
+        from voice_audition_player import main as player_main
+        with patch.object(audition, "generate", side_effect=AssertionError("no synthesis")), \
+             patch("voice_audition_player.main", return_value=0) as opened, \
+             redirect_stdout(io.StringIO()):
+            self.assertEqual(audition.main(["--listen"]), 0)
+        opened.assert_called_once_with(["--open"])
+
     def test_reject_modified_polish_duplicate_paths_and_too_many_clips(self):
         plan = self.make_plan()
         self.assertEqual(len(audition.select_audition_rows(plan, 3)), 3)
