@@ -55,6 +55,39 @@ class RenderHostTests(unittest.TestCase):
         self.assertEqual(client.get("/").status_code, 503)
         self.assertEqual(client.get("/assets/bundle.js").status_code, 503)
 
+    def test_explicit_neon_uses_remote_ready_probe_not_sqlite_disk(self):
+        from flask import Flask
+        from unittest.mock import patch
+        import render_app
+
+        def fake_family(**kwargs):
+            self.assertEqual(kwargs["postgres_url"],
+                             "postgresql://v2:secret@neon.example.com/Path_to_Polish_DB")
+            self.assertIsNone(kwargs["database_path"])
+            self.assertTrue(kwargs["allowed_origins"])
+            api = Flask("isolated-v2-neon")
+            @api.get("/api/v2/family/health")
+            def health():
+                return {"ok": True}
+            return api
+
+        url = "postgresql://v2:secret@neon.example.com/Path_to_Polish_DB"
+        with patch.object(render_app, "create_family_app", side_effect=fake_family), \
+             patch.object(render_app, "postgres_ready", return_value=True) as probe:
+            app = create_render_app(dist_path=self.dist, family_mode="enabled",
+                                    postgres_url=url,
+                                    public_origin="https://path-to-polish.onrender.com",
+                                    require_email=False)
+            client = app.test_client()
+            self.assertEqual(client.get("/health/ready").json,
+                             {"ready": True, "family_available": True})
+            self.assertEqual(client.get("/").status_code, 200)
+            self.assertEqual(client.get("/api/v2/family/health").status_code, 200)
+            probe.assert_called_with(url)
+            probe.return_value = False
+            self.assertEqual(client.get("/").status_code, 503)
+            self.assertEqual(client.get("/health/ready").status_code, 503)
+
     def test_free_mode_never_creates_ephemeral_family_accounts(self):
         with patch.dict(os.environ, {"PTP_FAMILY_DB": str(self.db),
                                      "PTP_RENDER_REQUIRE_EMAIL": "0"}):
