@@ -64,6 +64,7 @@ export function validateLesson(value: unknown): value is Lesson {
       typeof item.polish === 'string' && item.polish.trim().length > 0 &&
       typeof item.english === 'string' && item.english.trim().length > 0 &&
       (item.soundPractice === undefined || (
+        !!item.soundPractice &&
         typeof item.soundPractice.lessonId === 'string' && item.soundPractice.lessonId.length > 0 &&
         typeof item.soundPractice.groupId === 'string' && item.soundPractice.groupId.length > 0 &&
         typeof item.soundPractice.label === 'string' && item.soundPractice.label.length > 0
