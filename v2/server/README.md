@@ -1,6 +1,6 @@
 # V2 Private Family Service — Render integration prepared, not deployed
 
-This is isolated V2 infrastructure, deliberately separate from legacy /api/auth and /api/score. The proposed single-origin Render V2 frontend+API host is [`RENDER_V2.md`](RENDER_V2.md); it has **not** been provisioned or approved for real family accounts.
+This is isolated V2 infrastructure, deliberately separate from legacy /api/auth and /api/score. **The owner requires Render FREE only**, so the [Render V2 hosting plan](RENDER_V2.md) deploys the React PWA with `PTP_RENDER_FAMILY_MODE=disabled`. Render Free's ephemeral filesystem cannot safely retain SQLite family accounts: the family API remains a tested *local-only/undeployed* capability until a durable free storage solution and production privacy safeguards exist. This repository does not authorize paid hosting or activate Azure. The free Render host is not yet physically deployed.
 Requires a private persistent SQLite database; do not deploy on ephemeral storage. It has not undergone production security approval.
 
 ## Local setup

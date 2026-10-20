@@ -1,37 +1,18 @@
-# Opt-in Render Blueprint: deploying this provisions a PAID web service and disk.
-# Do not apply before reviewing billing, backup, SMTP and minor privacy requirements.
+# FREE-ONLY Path to Polish V2 Blueprint. No persistent disk or paid resources.
+# Deploys the offline-first learner UI, NOT family accounts/sync.
 services:
   - type: web
     name: path-to-polish-v2
     runtime: docker
     region: frankfurt
-    plan: starter
+    plan: free
     branch: main
     dockerfilePath: ./Dockerfile.v2
     dockerContext: .
     healthCheckPath: /health/ready
-    numInstances: 1
     autoDeployTrigger: checksPass
-    disk:
-      name: family-data
-      mountPath: /var/data
-      sizeGB: 1
     envVars:
-      - key: PTP_FAMILY_DB
-        value: /var/data/family/family.sqlite
-      - key: PTP_PUBLIC_ORIGIN
-        value: https://path-to-polish-v2.onrender.com
-      - key: PTP_RENDER_REQUIRE_EMAIL
-        value: "1"
+      - key: PTP_RENDER_FAMILY_MODE
+        value: disabled
       - key: PTP_SPEECH_ENABLED
         value: "0"
-      - key: PTP_FAMILY_SMTP_HOST
-        sync: false
-      - key: PTP_FAMILY_SMTP_PORT
-        value: "465"
-      - key: PTP_FAMILY_SMTP_USER
-        sync: false
-      - key: PTP_FAMILY_SMTP_PASSWORD
-        sync: false
-      - key: PTP_FAMILY_SMTP_FROM
-        sync: false

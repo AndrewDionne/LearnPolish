@@ -1,4 +1,4 @@
-"""Offline contract tests: same V2 host, DB readiness and static route privacy."""
+"""Offline tests for Render Free V2 readiness, privacy, and no-data-loss mode."""
 import json
 import os
 from pathlib import Path
@@ -32,47 +32,75 @@ class RenderHostTests(unittest.TestCase):
     def tearDown(self):
         self.folder.cleanup()
 
-    def host(self):
-        return create_render_app(dist_path=self.dist, database_path=str(self.db),
-                                 public_origin="http://127.0.0.1:4173", require_email=False)
+    def preview(self):
+        return create_render_app(dist_path=self.dist, family_mode="disabled")
 
-    def test_single_host_serves_frontend_and_real_family_health(self):
-        client = self.host().test_client()
-        self.assertEqual(client.get("/health/ready").json, {"ready": True})
+    def family(self):
+        return create_render_app(dist_path=self.dist, family_mode="enabled",
+                                 database_path=str(self.db),
+                                 public_origin="http://127.0.0.1:4173",
+                                 require_email=False)
+
+    def test_free_mode_serves_v2_only_when_static_content_is_ready(self):
+        client = self.preview().test_client()
+        self.assertEqual(client.get("/health/ready").json,
+                         {"ready": True, "family_available": False})
         self.assertEqual(client.get("/").status_code, 200)
         self.assertIn(b"V2", client.get("/").data)
         self.assertEqual(client.get("/assets/bundle.js").status_code, 200)
-        response = client.get("/api/v2/family/health")
-        self.assertEqual(response.status_code, 200)
-        self.assertTrue(response.json["ok"])
         self.assertEqual(client.get("/").headers["Cache-Control"], "no-store")
 
-    def test_does_not_serve_shell_if_database_disappears(self):
-        client = self.host().test_client()
+        (self.dist / "generated" / "lessons.json").unlink()
+        self.assertEqual(client.get("/health/ready").status_code, 503)
+        self.assertEqual(client.get("/").status_code, 503)
+        self.assertEqual(client.get("/assets/bundle.js").status_code, 503)
+
+    def test_free_mode_never_creates_ephemeral_family_accounts(self):
+        with patch.dict(os.environ, {"PTP_FAMILY_DB": str(self.db),
+                                     "PTP_RENDER_REQUIRE_EMAIL": "0"}):
+            client = self.preview().test_client()
+        self.assertFalse(self.db.exists())
+        for method, path in (("get", "/api/v2/family/health"),
+                             ("post", "/api/v2/family/signup"),
+                             ("post", "/api/v2/family/groups/1/activity")):
+            response = getattr(client, method)(path)
+            self.assertEqual(response.status_code, 503)
+            self.assertEqual(response.json["error"], "family_service_not_connected")
+        self.assertFalse(self.db.exists())
+
+    def test_explicit_durable_family_mode_checks_db_and_api_together(self):
+        client = self.family().test_client()
+        self.assertEqual(client.get("/health/ready").json,
+                         {"ready": True, "family_available": True})
+        self.assertEqual(client.get("/api/v2/family/health").status_code, 200)
         self.db.unlink()
         self.assertEqual(client.get("/health/ready").status_code, 503)
         self.assertEqual(client.get("/").status_code, 503)
         self.assertEqual(client.get("/assets/bundle.js").status_code, 503)
-        self.assertNotIn(b"V2", client.get("/").data)
 
     def test_no_private_path_or_api_fallback_servable(self):
-        client = self.host().test_client()
-        for path in ("/.env", "/generated/../../render_wsgi.py",
-                     "/api/nonexistent", "/health/private", "/no-such-file.js"):
-            self.assertEqual(client.get(path).status_code, 404, path)
+        for host in (self.preview, self.family):
+            client = host().test_client()
+            for path in ("/.env", "/generated/../../render_wsgi.py",
+                         "/api/nonexistent", "/health/private", "/no-such-file.js"):
+                self.assertEqual(client.get(path).status_code, 404, path)
 
-    def test_invalid_origin_and_missing_persistence_fail_closed(self):
+    def test_invalid_origin_and_unguarded_family_enabling_fail_closed(self):
         for value in ("https://*.example.com", "http://example.com",
                       "https://user:password@example.com", "https://example.com/path"):
             with self.assertRaises(RuntimeError):
                 _trusted_origin(value)
         with self.assertRaises(RuntimeError):
-            create_render_app(dist_path=self.dist, database_path="family.sqlite",
+            create_render_app(dist_path=self.dist, family_mode="enabled",
+                              database_path="family.sqlite",
                               public_origin="https://example.com", require_email=False)
         with patch.dict(os.environ, {}, clear=True):
             with self.assertRaises(RuntimeError):
-                create_render_app(dist_path=self.dist, database_path=str(self.db),
+                create_render_app(dist_path=self.dist, family_mode="enabled",
+                                  database_path=str(self.db),
                                   public_origin="https://example.com", require_email=True)
+        with self.assertRaises(RuntimeError):
+            create_render_app(dist_path=self.dist, family_mode="unknown")
 
 
 if __name__ == "__main__":
