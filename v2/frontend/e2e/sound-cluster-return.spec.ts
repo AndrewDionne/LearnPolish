@@ -91,7 +91,7 @@ test('sound lesson is browsable directly, and abandoning a detour does not leave
   await page.getByRole('searchbox',{name:'Search lessons'}).fill('KRZY');
   await page.getByRole('button',{name:/KRZY · PRZY/}).click();
   await expect(page.locator('.contrast-group')).toHaveCount(2);
-  await expect(page.getByRole('button',{name:'Back to library'})).toHaveCount(0);
+  await expect(page.getByRole('button',{name:/Back to library/})).toBeVisible();
   await expect(page.getByRole('button',{name:/Back to Świętokrzyska/})).toHaveCount(0);
   await page.getByRole('button',{name:'Speak',exact:true}).click();
   await expect(page.getByText('ulica Świętokrzyska',{exact:true})).toBeVisible();
