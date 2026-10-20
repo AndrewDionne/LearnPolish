@@ -15,6 +15,7 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+import webbrowser
 from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -127,18 +128,37 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--limit", type=int, default=3, help="1–24 candidate files; default 3")
     parser.add_argument("--send", action="store_true", help="Explicit Azure synthesis call(s)")
+    parser.add_argument("--gallery", action="store_true", help="Open official Microsoft voice demo; no Azure API request")
+    parser.add_argument("--listen", action="store_true", help="Play previously generated, checksum-verified local audition clips")
     parser.add_argument("--approve-generation", action="store_true")
     parser.add_argument("--confirm-speech-f0", action="store_true")
     parser.add_argument("--confirm-no-paid-billing", action="store_true")
     args = parser.parse_args(argv)
+    if args.listen:
+        if args.send or args.gallery:
+            parser.error("--listen cannot be combined with --send or --gallery")
+        from voice_audition_player import main as open_private_player
+        try:
+            return open_private_player(["--open"])
+        except (ValueError, FileNotFoundError, json.JSONDecodeError) as error:
+            parser.error("No verified local audition available. Use --gallery for the public demo, or generate approved clips first.")
     plan = plan_from_generated_catalog()
     rows = select_audition_rows(plan, args.limit)
+    if args.gallery:
+        if args.send:
+            parser.error("--gallery cannot be combined with --send")
+        webbrowser.open("https://speech.microsoft.com/audiocontentcreation")
+        print("Opened Microsoft audio content creation demo. Choose Polish (Poland), then Zofia/Marek/Agnieszka and press Play.")
+        return 0
     preview = {
         "status": "READY_TO_REQUEST_ONLY" if args.send else "PREVIEW_ONLY",
         "files": len(rows), "characters": sum(r["characters"] for r in rows),
         "voices": sorted({r["voiceId"] for r in rows}),
         "new_requests": 0 if not args.send else len(rows),
         "output": "PathToPolish-Private-AI/voice-audition-01/",
+        "explanation": "PREVIEW ONLY: no voice sample has been generated or played." if not args.send else "Requesting privately gated new voice clips.",
+        "hear_voices_now": "https://speech.microsoft.com/audiocontentcreation",
+        "listen_after_generation": "python3 v2/benchmarks/azure_voice_audition.py --listen",
     }
     if not args.send:
         print(json.dumps(preview, indent=2))
@@ -154,7 +174,17 @@ def main(argv: list[str] | None = None) -> int:
     except Exception:
         print("Synthesis stopped; inspect the private output directory. No automatic retries or overwrites.", file=sys.stderr)
         raise SystemExit(1) from None
+    # The private browser page is generated only from the verified original text
+    # and checksummed local clips; no network calls are used to play recordings.
+    from voice_audition_player import write_player
+    try:
+        listening_page = write_player(OUTPUT, select_audition_rows(plan, 24), plan["voices"])
+    except Exception:
+        print("Synthesis completed but local player creation failed. Private MP3 files are still present; inspect before retrying.", file=sys.stderr)
+        raise SystemExit(1) from None
     print(json.dumps({
+        "listening_page": str(listening_page),
+        "listen_command": "python3 v2/benchmarks/azure_voice_audition.py --listen",
         "status": "PRIVATE_SYNTHETIC_AUDIO_UNREVIEWED",
         "clips": len(completed),
         "review": "Native Polish listening comparison required before publishing.",
