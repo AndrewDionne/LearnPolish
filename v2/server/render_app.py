@@ -11,6 +11,8 @@ from __future__ import annotations
 import os
 from pathlib import Path
 import sqlite3
+from threading import Lock
+from time import monotonic
 from urllib.parse import quote, urlparse
 
 from flask import Flask, jsonify, make_response, send_from_directory
@@ -79,13 +81,25 @@ def create_render_app(*, dist_path: str | Path | None = None,
             response.headers["Cache-Control"] = "no-store"
             return response
 
+    # Shared readiness snapshot: static V2 assets must not create a new Neon
+    # connection per CSS/JS/audio request (or keep a free DB awake unnecessarily).
+    # A failed probe is retried promptly; a healthy probe has a bounded TTL.
+    readiness_cache = {"checked_at": float("-inf"), "ok": False}
+    readiness_lock = Lock()
+
     def storage_ready() -> bool:
         if not (dist / "index.html").is_file() or not catalog.is_file() or not (dist / "sw.js").is_file():
             return False
         if not family_enabled:
             return True
         if neon:
-            return postgres_ready(neon)
+            with readiness_lock:
+                now = monotonic()
+                ttl = 30 if readiness_cache["ok"] else 5
+                if now - readiness_cache["checked_at"] >= ttl:
+                    readiness_cache["ok"] = postgres_ready(neon)
+                    readiness_cache["checked_at"] = now
+                return readiness_cache["ok"]
         path = Path(database)
         if not path.is_file() or path.is_symlink():
             return False
