@@ -115,12 +115,12 @@ def _json():
 
 
 def create_app(database_path: str | None = None, catalog_path: str | None = None,
-               postgres_url: str | None = None,
                allowed_origins: tuple[str, ...] | None = None,
                recovery_sender: Callable[[str, str], None] | None = None,
                verification_sender: Callable[[str, str], None] | None = None,
                speech_enabled: bool | None = None,
-               speech_assessor: Callable | None = None) -> Flask:
+               speech_assessor: Callable | None = None,
+               postgres_url: str | None = None) -> Flask:
     pg_url = postgres_url or os.environ.get("PTP_FAMILY_DATABASE_URL")
     path = database_path or os.environ.get("PTP_FAMILY_DB")
     catalog = catalog_path or os.environ.get("PTP_FAMILY_CATALOG")
