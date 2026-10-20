@@ -27,6 +27,13 @@ test('new catalog retires bundled sound examples while retaining all other legac
   const report = buildContent();
   assert.equal(report.lessons, 26);
   assert.equal(report.items, 482);
+  assert.equal(report.pronunciationGrouping.total,482);
+  assert.equal(report.pronunciationGrouping.authored,1);
+  assert.ok(report.pronunciationGrouping.editorial>=19);
+  assert.equal(report.pronunciationGrouping.total,
+    report.pronunciationGrouping.authored+
+    report.pronunciationGrouping.editorial+
+    report.pronunciationGrouping.drafts);
   assert.equal(report.reading, 6);
   assert.equal(report.sounds, 5);
   assert.equal(report.curatedAudioReferences, 26);
@@ -46,6 +53,14 @@ test('new catalog retires bundled sound examples while retaining all other legac
     {id:'speak_swietokrzyska:0',polish:'Świętokrzyska'},
   ]);
   assert.equal(spoken.items[0].audio, undefined);
+  const fromRoad=catalog.find(lesson=>lesson.id==='Road_Terminology');
+  const ulica=fromRoad.items.find(item=>item.polish==='ulica');
+  assert.deepEqual(ulica.pronunciationSegments,{
+    method:'editorial-draft-v1',segments:['u','li','ca']});
+  const fromConversation=catalog.find(lesson=>lesson.id==='Conversation_1');
+  const greeting=fromConversation.items.find(item=>item.polish==='Dzień dobry');
+  assert.deepEqual(greeting.pronunciationSegments,{
+    method:'editorial-draft-v1',segments:['Dzień ','do','bry']});
   assert.deepEqual(spoken.items[0].soundPractice,{
     lessonId:'contrast_krzy_przy',groupId:'krzy',label:'krzy'
   });
