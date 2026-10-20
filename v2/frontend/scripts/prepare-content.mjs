@@ -281,9 +281,40 @@ export function attachMicroDialogues(lessons, specification) {
       usedTurns.add(expectedId);
       return {itemId: expectedId, speaker: turn.speaker};
     });
+    // Contextual response exercise: all choices are exact ORIGINAL reading
+    // lines from this lesson, with their own existing MP3s. The one correct
+    // reply must be the next turn in this exact micro-dialogue.
+    const reply=scene.replyPractice;
+    if (!reply || !Number.isSafeInteger(reply.promptTurn) ||
+        !Number.isSafeInteger(reply.replyTurn) ||
+        reply.promptTurn < 0 || reply.replyTurn !== reply.promptTurn + 1 ||
+        reply.replyTurn !== scene.turns.length - 1 ||
+        !Array.isArray(reply.choices) || reply.choices.length !== 3 ||
+        !Number.isInteger(reply.correctIndex) ||
+        reply.correctIndex < 0 || reply.correctIndex > 2 ||
+        new Set(reply.choices.map(choice=>choice.index)).size !== 3 ||
+        reply.choices.some(choice => {
+          const item=lesson.items[choice.index];
+          const expectedAudio='generated/audio/' + encodeURIComponent(lesson.id) + '/' + choice.index + '.mp3';
+          return !Number.isSafeInteger(choice.index) || choice.index < 0 ||
+            !item || item.polish !== choice.polish ||
+            item.referenceReview === 'practice_only' || item.audio !== expectedAudio ||
+            !fs.existsSync(path.join(outRoot,expectedAudio.slice('generated/'.length)));
+        }) ||
+        reply.choices[reply.correctIndex].index !== scene.turns[reply.replyTurn].index ||
+        reply.choices.some((choice,i)=>i!==reply.correctIndex &&
+          scene.turns.some(turn=>turn.index===choice.index))) {
+      throw new Error('Invalid source-grounded E2 reply choices: ' + key);
+    }
+    const replyPractice={
+      promptItemId:turns[reply.promptTurn].itemId,
+      replyItemId:turns[reply.replyTurn].itemId,
+      choiceItemIds:reply.choices.map(choice=>lesson.items[choice.index].id),
+      correctIndex:reply.correctIndex,
+    };
     lesson.microDialogues ??= [];
     lesson.microDialogues.push({id:scene.id,title:scene.title,
-      speakers:{A:scene.speakers.A,B:scene.speakers.B},turns,
+      speakers:{A:scene.speakers.A,B:scene.speakers.B},turns,replyPractice,
       comprehension:{
         prompt:question.prompt,options:question.options,
         correctIndex:question.correctIndex,feedback:question.feedback,
