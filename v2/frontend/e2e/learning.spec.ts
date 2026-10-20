@@ -105,6 +105,31 @@ test('ambiguous and unfinished greetings remain one lesson but have no scored or
   await expect(page.locator('.item-count')).toContainText('/ 26');
 });
 
+test('other ambiguous lessons retain all original cards but exclude unverified Listen audio',async({page})=>{
+  for(const fixture of [
+    {search:'Road Terminology',name:/Road Terminology/i,skip:10,phrase:'Jak dojść do …?',listen:25},
+    {search:'Food and Dinning',name:/Food and Dinning/i,skip:2,phrase:'Czy ma pan/pani menu po angielsku?',listen:23}
+  ]){
+    await page.goto('/');
+    await page.getByRole('button',{name:'Explore lessons'}).click();
+    await page.getByRole('searchbox',{name:'Search lessons'}).fill(fixture.search);
+    await page.getByRole('button',{name:fixture.name}).click();
+    await expect(page.getByRole('combobox',{name:'Practice group'})).toHaveCount(0);
+    for(let i=0;i<fixture.skip;i++)await page.getByRole('button',{name:/Skip to next/}).click();
+    await expect(page.getByText(fixture.phrase,{exact:true})).toBeVisible();
+    await expect(page.getByRole('button',{name:'Reference pending'})).toBeDisabled();
+    await page.getByRole('button',{name:'Speak',exact:true}).click();
+    // The existing switch-mode action starts again at the beginning of the same lesson.
+    for(let i=0;i<fixture.skip;i++)await page.getByRole('button',{name:'Next',exact:true}).click();
+    await expect(page.getByText(fixture.phrase,{exact:true})).toBeVisible();
+    await expect(page.getByText(/An exact spoken reference is still being reviewed/)).toBeVisible();
+    await expect(page.getByRole('button',{name:'Start recording'})).toBeVisible();
+    await expect(page.getByRole('button',{name:'Check my pronunciation'})).toHaveCount(0);
+    await page.getByRole('button',{name:'Listen',exact:true}).click();
+    await expect(page.locator('.item-count')).toContainText('/ '+fixture.listen);
+  }
+});
+
 test('responsive mobile library and lesson controls', async ({ page, isMobile }) => {
   if (!isMobile) test.skip();
   await page.goto('/');
