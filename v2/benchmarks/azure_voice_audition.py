@@ -184,10 +184,20 @@ def main(argv: list[str] | None = None) -> int:
                         help="Read-only local credentials/folder check; no provider requests")
     parser.add_argument("--gallery", action="store_true", help="Open official Microsoft voice demo; no Azure API request")
     parser.add_argument("--listen", action="store_true", help="Play previously generated, checksum-verified local audition clips")
+    parser.add_argument("--diagnose", action="store_true",
+                        help="Check verified local audio durations using afinfo/ffprobe; no provider calls")
     parser.add_argument("--approve-generation", action="store_true")
     parser.add_argument("--confirm-speech-f0", action="store_true")
     parser.add_argument("--confirm-no-paid-billing", action="store_true")
     args = parser.parse_args(argv)
+    if args.diagnose:
+        if args.send or args.gallery or args.listen or args.preflight or args.limit is not None or args.pairs is not None:
+            parser.error("--diagnose checks existing private audio only; do not combine it with other actions")
+        from voice_audition_player import main as inspect_private_audio
+        try:
+            return inspect_private_audio(["--diagnose"])
+        except (ValueError, FileNotFoundError, json.JSONDecodeError):
+            parser.error("No verified private audio found; nothing to diagnose")
     if args.preflight and (args.send or args.listen or args.gallery):
         parser.error("--preflight cannot be combined with --send, --listen or --gallery")
     if args.listen:

@@ -1,5 +1,13 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
+## Owner reports 3 old Azure greeting MP3s open but play only milliseconds — decoder diagnosis (2026-10-20)
+
+**Confirmed owner terminal:** `PathToPolish-Private-AI/voice-audition-01/manifest.json` has **exactly THREE** `Dzień dobry` recordings: Zofia, Marek, Agnieszka (generated in earlier owner run, NOT our new paired pilot). `--preflight` correctly reported `audition_output_absent:false`; the owner's subsequent `--pairs 4 --send` failed closed on existing directory; **no new eight-clip synthesis happened**. `--listen` returned the local page path, but owner says browser audio plays for only a millisecond before stopping. Real audio data unavailable to ChatGPT, so DO NOT claim browser, Azure, browser CSP, or encoding has been causally isolated; hashes/ID3 header do NOT prove playable MP3 frames. Do not request credentials, MP3 contents, resubmission/overwriting or extra paid API calls.
+
+**Remediation branch:** offline `python3 v2/benchmarks/azure_voice_audition.py --diagnose` validates manifest/actual bytes then uses macOS `afinfo` / available `ffprobe` to report duration and decoder accept/reject for each of three clips, with zero provider requests and no printed secrets. `--listen` now refreshes *only HTML markup* atomically after checks (old HTML can be stale), with preload metadata plus direct MP3 open link; existing MP3 and manifest remain byte-for-byte untouched. Recommend native `afplay` check if `afinfo` returns plausible duration but browser still halts. Tests cover diagnostics, invalid MP3s, HTML refresh and no-network route. Never conflate checksum-verified with acoustically playable/approved. Exact procedure in `v2/content/VOICE_PRODUCTION.md`. User's next evidence is `--diagnose` JSON or native playback results, not a new `--send`. GitHub remains sole durable source; merge only on passing CI.
+
+
+
 ## Marek/Agnieszka first audio: local preflight and partial-run playback recovery (2026-10-20)
 
 **Continuity from issue #77 / merged PR #81:** Owner-selected paired first four `Dzień dobry`, `Dziękuję`, `Przepraszam`, `Sześć`; currently **zero generated MP3s** by chat/CI, and local Azure Speech F0/no-paid tier has NOT been independently verified. Avoid adding more preparatory UI or bulk production; the owner needs to hear actual clips.

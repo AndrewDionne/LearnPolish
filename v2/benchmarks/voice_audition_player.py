@@ -12,6 +12,8 @@ import html
 import json
 from pathlib import Path
 import re
+import shutil
+import subprocess
 import webbrowser
 from urllib.parse import quote
 
@@ -72,6 +74,57 @@ def verified_clips(manifest: dict, planned_rows: list[dict], output: Path) -> li
     return rows
 
 
+def local_audio_probe(file: Path) -> dict:
+    """No provider calls. Ask an installed native decoder for MP3 duration."""
+    if shutil.which("afinfo"):
+        try:
+            proc = subprocess.run(["afinfo", str(file)], capture_output=True,
+                                  text=True, timeout=15, check=False)
+        except (OSError, subprocess.TimeoutExpired):
+            return {"tool": "afinfo", "result": "probe_failed", "duration_seconds": None}
+        if proc.returncode != 0:
+            return {"tool": "afinfo", "result": "not_decodable", "duration_seconds": None}
+        found = re.search(r"(?:estimated\s+)?duration:\s*([0-9]+(?:\.[0-9]+)?)\s*sec",
+                          proc.stdout, flags=re.IGNORECASE)
+        if found:
+            duration = float(found.group(1))
+            return {"tool": "afinfo", "result": "unusually_short" if duration < 0.3 else "duration_detected",
+                    "duration_seconds": duration}
+        return {"tool": "afinfo", "result": "duration_unconfirmed", "duration_seconds": None}
+    if shutil.which("ffprobe"):
+        try:
+            proc = subprocess.run(
+                ["ffprobe", "-v", "error", "-show_entries", "format=duration:stream=codec_name",
+                 "-of", "json", str(file)],
+                capture_output=True, text=True, timeout=15, check=False)
+            if proc.returncode:
+                return {"tool": "ffprobe", "result": "not_decodable", "duration_seconds": None}
+            details = json.loads(proc.stdout)
+            codecs = {stream.get("codec_name") for stream in details.get("streams", [])}
+            if "mp3" not in codecs:
+                return {"tool": "ffprobe", "result": "not_mp3_codec", "duration_seconds": None}
+            duration = float(details.get("format", {}).get("duration", 0))
+            return {"tool": "ffprobe",
+                    "result": "unusually_short" if duration < 0.3 else "duration_detected",
+                    "duration_seconds": duration}
+        except (OSError, subprocess.TimeoutExpired, ValueError, TypeError, KeyError):
+            return {"tool": "ffprobe", "result": "probe_failed", "duration_seconds": None}
+    return {"tool": None, "result": "no_local_decoder_available", "duration_seconds": None}
+
+
+def playback_diagnostics(clips: list[dict], output: Path) -> dict:
+    return {
+        "status": "LOCAL_AUDIO_INSPECTION_ONLY",
+        "provider_requests_made": 0,
+        "clips": [
+            {"voice": clip["voiceId"], "polish": clip["polish"],
+             "bytes": clip["audioBytes"], **local_audio_probe(output / clip["audioPath"])}
+            for clip in clips
+        ],
+        "interpretation": "Checks decoder metadata, not human listening. If decoding fails the MP3 is not verified playable; if it succeeds but HTML playback stops, compare with afplay to isolate browser behavior.",
+    }
+
+
 def render_player(clips: list[dict], plans: list[dict], voices: list[dict]) -> str:
     by_identity = {(clip["itemId"], clip["voiceId"]): clip for clip in clips}
     # An ungenerated third-choice voice should not occupy every pilot row.
@@ -93,9 +146,10 @@ def render_player(clips: list[dict], plans: list[dict], voices: list[dict]) -> s
                 href = quote(clip["audioPath"], safe="/-_.")
                 buttons.append(
                     '<section class="voice"><h3>' + name + '</h3>'
-                    '<audio controls preload="none" aria-label="' + name + " — " +
+                    '<audio controls preload="metadata" aria-label="' + name + " — " +
                     html.escape(polish, quote=True) + '" src="' + href +
-                    '">Your browser does not support audio playback.</audio></section>')
+                    '">Your browser does not support audio playback.</audio>' +
+                    '<a class="direct-audio" href="' + href + '">Open MP3 directly</a></section>')
             else:
                 buttons.append(
                     '<section class="voice missing"><h3>' + name + '</h3>'
@@ -122,13 +176,14 @@ h1 { font-size:clamp(2rem,4vw,3rem); margin:.2em 0; letter-spacing:-.04em; } .in
 audio { display:block; width:100%; min-width:0; height:42px; }
 .voice.missing { color:#7e8796; border:1px dashed #c7cdd9; background:#fafbfc; }
 .voice p { font-size:.87rem; margin:12px 0; }
+.direct-audio { display:inline-block; margin-top:10px; font-size:.82rem; color:#344e85; }
 footer { color:#525a68; font-size:.88rem; margin-top:24px; }
 @media(max-width:680px){ .voices{grid-template-columns:1fr;} body{padding:18px;} }
 </style></head><body><header><div class="brand">Path to Polish / Content Lab</div>
 <h1>Compare Polish voices</h1>
 <p class="intro">Compare the same Polish phrase spoken by Marek and Agnieszka (and other voices only if recordings exist). Pay particular attention to <strong>natural word endings, final consonants and cadence</strong>. These are <strong>unreviewed synthetic recordings</strong>, not approved lesson audio.</p>
 </header><main>""" + "".join(headings) + """</main>
-<footer>All playable clips are local, checksum-verified files. Listening here does not call Azure or upload any voice data. Do not use these test recordings as phonetic ground truth.</footer>
+<footer>Audio files are source/hash verified, but may still be unplayable due to encoding or browser restrictions. Use the Open MP3 directly link or the offline --diagnose CLI to distinguish these cases. No audio is uploaded and no provider is called when listening.</footer>
 </body></html>
 """
 
@@ -146,21 +201,37 @@ def write_player(output: Path, plans: list[dict], voices: list[dict]) -> Path:
     return page
 
 
+def refresh_player(output: Path, clips: list[dict], plans: list[dict], voices: list[dict]) -> Path:
+    """Update only HTML, never private MP3s or their manifest."""
+    page = output / PLAYER
+    if page.is_symlink():
+        raise ValueError("Refusing symlinked private listening page")
+    temporary = output / (PLAYER + ".tmp")
+    with temporary.open("x", encoding="utf-8") as handle:
+        handle.write(render_player(clips, plans, voices))
+    temporary.replace(page)
+    return page
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--open", action="store_true", help="Open local listening HTML in default browser")
+    parser.add_argument("--diagnose", action="store_true",
+                        help="Verify saved MP3s and inspect local decoder duration; no provider calls")
     args = parser.parse_args(argv)
     # Import only when running; tests can supply trusted fixture rows without API use.
     from azure_voice_audition import plan_from_generated_catalog, select_audition_rows
     plan = plan_from_generated_catalog()
     rows = select_audition_rows(plan, 24)
-    page = OUTPUT / PLAYER
-    if page.exists() and not page.is_symlink():
-        # Always verify against the source hashes, not just the old HTML.
-        manifest = json.loads((OUTPUT / "manifest.json").read_text(encoding="utf-8"))
-        verified_clips(manifest, rows, OUTPUT)
-    else:
-        page = write_player(OUTPUT, rows, plan["voices"])
+    manifest_path = OUTPUT / "manifest.json"
+    if manifest_path.is_symlink() or not manifest_path.is_file():
+        raise ValueError("Missing private source-audition manifest")
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    clips = verified_clips(manifest, rows, OUTPUT)
+    if args.diagnose:
+        print(json.dumps(playback_diagnostics(clips, OUTPUT), ensure_ascii=False, indent=2))
+        return 0
+    page = refresh_player(OUTPUT, clips, rows, plan["voices"])
     print("Private voice audition listening page: " + str(page))
     if args.open:
         webbrowser.open(page.as_uri())

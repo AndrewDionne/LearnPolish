@@ -133,6 +133,26 @@ python3 v2/benchmarks/azure_voice_audition.py --listen
 
 That command builds a private, offline `listen.html` page from whatever **source-verified MP3s already exist**, even if just one clip was produced. It does **not** contact Azure, generate more audio, overwrite previous clips or silently retry the failed request. If the private output directory already exists, a second `--send` intentionally fails to avoid duplicate charges or overwriting audio. **Preserve the partial results and review them rather than deleting/rerunning the directory by default.** The complete first pilot remains 4 phrases × 2 voices, not a launch-scale bulk job. This work fixes recoverability only; it does not confer native speaker certification or authorize paid usage.
 
+## Existing three-voice greeting clips: millisecond playback investigation (2026-10-20)
+
+**Actual owner evidence:** the private `voice-audition-01/manifest.json` contains precisely **3 previous `Dzień dobry` voice recordings** — Zofia, Marek and Agnieszka. That directory existed **before** the owner ran the new `--pairs 4 --send` command, so the current **no-overwrite guard correctly refused to generate any of the new eight-clip pilot**. The existing `--listen` command opened `listen.html`, but the user reports pressing Play advances only a millisecond and stops. We have **not inspected the actual private MP3s** (they stay on the owner's Mac); a matching hash and three-byte `ID3` signature do not prove any playable audio content. Do not infer a provider defect or browser bug without a decoder check. Do **not** delete the existing directory or submit new provider requests.
+
+**After syncing `main`**, the first diagnostic command from repo root is:
+
+```bash
+python3 v2/benchmarks/azure_voice_audition.py --diagnose
+```
+
+This is entirely offline; it checks all three existing files against their canonical manifest, then asks **macOS `afinfo`** for actual decoder duration (falling back to `ffprobe` where installed). It shows each voice, Polish phrase, byte length and either `duration_detected`, `unusually_short`, `not_decodable`, `duration_unconfirmed`, or `no_local_decoder_available`. It never prints Azure keys, sends speech requests, overwrites files, or changes the manifest. A reported duration is **not proof that a voice sounds correct** — direct listening remains necessary.
+
+Then run:
+
+```bash
+python3 v2/benchmarks/azure_voice_audition.py --listen
+```
+
+`--listen` now **revalidates hashes and regenerates only the already-existing `listen.html` markup** so older versions of the HTML cannot silently persist through a code update. The audio controls preload duration metadata. Each voice also has an **Open MP3 directly** link to bypass the surrounding player. The original MP3 and `manifest.json` are never edited; this does not incur Azure billing. If the browser is still silent but `afinfo` shows a plausible duration, try direct Mac playback: `afplay "PathToPolish-Private-AI/voice-audition-01/pl-PL-MarekNeural/Conversation_1_0.mp3"`. If `afplay` works, investigate browser/HTML or file permissions; if the native decoder rejects the file or finds almost zero duration, the existing MP3 is not a usable test and must not be labeled production ready. Share the sanitized `--diagnose` report to choose the next *grounded* repair; do not delete/re-generate based on a guess.
+
 ## Human quality and future release gates
 
 1. Resolve the two fixed reference problems, after matching the actual audio or explicitly authoring new reference speech. Do NOT quietly change the displayed word while retaining the old MP3.

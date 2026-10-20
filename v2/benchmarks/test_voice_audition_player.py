@@ -1,6 +1,9 @@
 import hashlib
+import io
 import json
+from contextlib import redirect_stdout
 from pathlib import Path
+import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -53,6 +56,8 @@ class VoiceAuditionPlayerTests(unittest.TestCase):
         html = player.render_player(verified, self.planned, self.voices)
         self.assertIn('lang="pl">Dzień dobry', html)
         self.assertEqual(html.count("<audio controls"), 3)
+        self.assertEqual(html.count('class="direct-audio"'), 3)
+        self.assertIn('preload="metadata"', html)
         self.assertEqual(html.count("Not generated"), 0)
         self.assertIn("Zofia", html)
         self.assertIn("Marek", html)
@@ -63,6 +68,54 @@ class VoiceAuditionPlayerTests(unittest.TestCase):
         self.assertTrue(path.is_file())
         with self.assertRaises(FileExistsError):
             player.write_player(self.output, self.planned, self.voices)
+
+    def test_private_audio_diagnosis_checks_native_duration_not_just_id3(self):
+        good = subprocess.CompletedProcess(["afinfo"], 0,
+                "estimated duration: 1.425 sec\\n", "")
+        broken = subprocess.CompletedProcess(["afinfo"], 1, "", "not an audio file")
+        with patch.object(player.shutil, "which", return_value="/usr/bin/afinfo"), \
+             patch.object(player.subprocess, "run", side_effect=[good, broken]) as run:
+            readable = player.local_audio_probe(self.output / self.clips[0]["audioPath"])
+            invalid = player.local_audio_probe(self.output / self.clips[1]["audioPath"])
+        self.assertEqual(readable["tool"], "afinfo")
+        self.assertEqual(readable["result"], "duration_detected")
+        self.assertAlmostEqual(readable["duration_seconds"], 1.425)
+        self.assertEqual(invalid["result"], "not_decodable")
+        self.assertIsNone(invalid["duration_seconds"])
+        self.assertEqual(run.call_count, 2)
+        with patch.object(player.shutil, "which", return_value=None):
+            unknown = player.local_audio_probe(self.output / self.clips[0]["audioPath"])
+        self.assertEqual(unknown["result"], "no_local_decoder_available")
+
+    def test_existing_player_html_is_refreshed_without_touching_mp3_or_manifest(self):
+        report = self.save_manifest()
+        clips = player.verified_clips(report, self.planned, self.output)
+        old_page = self.output / player.PLAYER
+        old_page.write_text("stale html", encoding="utf-8")
+        original_manifest = (self.output / "manifest.json").read_bytes()
+        audio_file = self.output / self.clips[0]["audioPath"]
+        original_mp3 = audio_file.read_bytes()
+        new_page = player.refresh_player(self.output, clips, self.planned, self.voices)
+        self.assertEqual(new_page, old_page)
+        self.assertIn("Open MP3 directly", new_page.read_text(encoding="utf-8"))
+        self.assertNotIn("stale html", new_page.read_text(encoding="utf-8"))
+        self.assertEqual((self.output / "manifest.json").read_bytes(), original_manifest)
+        self.assertEqual(audio_file.read_bytes(), original_mp3)
+        self.assertFalse((self.output / "listen.html.tmp").exists())
+
+    def test_diagnose_command_never_refreshes_html_or_sends_provider_requests(self):
+        report = self.save_manifest()
+        with patch("azure_voice_audition.plan_from_generated_catalog", return_value={"voices": self.voices}), \
+             patch("azure_voice_audition.select_audition_rows", return_value=self.planned), \
+             patch.object(player, "OUTPUT", self.output), \
+             patch.object(player, "local_audio_probe",
+                 return_value={"tool": "afinfo", "result": "duration_detected", "duration_seconds": 1.1}), \
+             redirect_stdout(io.StringIO()) as stdout:
+            self.assertEqual(player.main(["--diagnose"]), 0)
+        detail = json.loads(stdout.getvalue())
+        self.assertEqual(detail["provider_requests_made"], 0)
+        self.assertEqual(len(detail["clips"]), 3)
+        self.assertFalse((self.output / "listen.html").exists())
 
     def test_partial_generation_never_displays_unavailable_play_button(self):
         report = self.save_manifest(self.clips[:2])

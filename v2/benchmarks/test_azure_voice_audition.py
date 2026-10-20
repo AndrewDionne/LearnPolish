@@ -79,6 +79,16 @@ class AzureVoiceAuditionSafetyTests(unittest.TestCase):
                 audition.main(["--send"])
         self.assertEqual(raised.exception.code, 2)
 
+    def test_diagnose_delegates_to_offline_native_player_without_synthesis(self):
+        with patch.object(audition, "generate", side_effect=AssertionError("no synthesis")), \
+             patch("voice_audition_player.main", return_value=0) as checked, \
+             redirect_stdout(io.StringIO()):
+            self.assertEqual(audition.main(["--diagnose"]), 0)
+        checked.assert_called_once_with(["--diagnose"])
+        with self.assertRaises(SystemExit) as error:
+            audition.main(["--diagnose", "--send"])
+        self.assertEqual(error.exception.code, 2)
+
     def test_gallery_opens_official_browser_demo_without_paid_synthesis(self):
         plan = self.make_plan()
         with patch.object(audition, "plan_from_generated_catalog", return_value=plan), \
