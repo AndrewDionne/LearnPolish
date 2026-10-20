@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'none'; object-src 'none'; form-action 'none'; base-uri 'none'">
+<title>Path to Polish · Private Syllable Listening Lab</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#203740;background:#f4f8f6}
+*{box-sizing:border-box}body{max-width:850px;margin:32px auto;padding:0 18px;line-height:1.5}h1{font-size:25px;margin:0 0 6px}p{margin:8px 0 18px;color:#475e63}
+.panel{border:1px solid #ccded6;border-radius:14px;background:white;padding:20px;margin:16px 0}
+label{font-size:14px;font-weight:650}input[type=file]{display:block;max-width:100%;margin-top:8px}
+button{border:1px solid #237f70;border-radius:9px;background:#e7f5ee;color:#155b4c;font:700 14px inherit;padding:10px 14px;min-height:44px;cursor:pointer}
+button:disabled{opacity:.55;cursor:not-allowed}button:focus-visible,input:focus-visible{outline:3px solid #167269;outline-offset:3px}
+.controls{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}
+.wave{width:100%;height:148px;display:block;border-radius:10px;border:1px solid #e3ece8;background:#fbfefd;touch-action:none}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.tile{border:1px solid #d9e7e1;border-radius:10px;padding:12px;text-align:center}
+.tile strong{display:block;font-size:25px;white-space:nowrap}.tile small{display:block;min-height:20px;color:#607b7b;font-size:12px}
+.tile button{width:100%;margin-top:8px;padding:8px}
+.cut{display:flex;gap:12px;align-items:center;margin:10px 0}
+.cut label{flex:0 0 110px}.cut input{min-width:0;flex:1;accent-color:#277e6d}.cut output{flex:0 0 72px;text-align:right;font-variant-numeric:tabular-nums}
+#status{min-height:25px}#status[role=alert]{color:#9b2a35}
+.notes{font-size:12px;color:#4f6669}
+@media(max-width:620px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.cut{flex-wrap:wrap}.cut label{flex:0 0 100%}.cut output{flex:0 0 65px}body{margin:16px auto}.panel{padding:14px}}
+</style>
+</head>
+<body>
+<header><h1>Private syllable listening lab</h1>
+<p>Hear the actual sound you recorded for <strong lang="pl">Świę·to·krzy·ska</strong>.
+No Whisper guess, Azure request, generated voice or pronunciation grade.</p></header>
+<section class="panel">
+<label for="wav">Choose your original private WAV (mono, PCM16, 16 kHz, max 30 seconds)</label>
+<input id="wav" type="file" accept=".wav,audio/wav">
+<div class="controls"><button id="whole" disabled type="button">▶ Listen to entire recording</button><button id="stop" disabled type="button">■ Stop</button></div>
+<p id="status" role="status" aria-live="polite">Choose a local WAV. Your audio never leaves this browser.</p>
+</section>
+<section class="panel" aria-label="Listen to individual syllables">
+<h2>Listen by syllable</h2>
+<p>Move the start, three breaks and end until every clip sounds right. The initial breaks are <strong>evenly spaced guesses</strong>, not machine-aligned syllables.</p>
+<canvas id="wave" class="wave" width="820" height="148" role="img" aria-label="Original audio waveform with movable boundary markers; use sliders below to adjust precise times"></canvas>
+<div class="grid">
+<div class="tile"><strong lang="pl">Świę</strong><small id="time0">—</small><button disabled data-segment="0" type="button">▶ Świę</button></div>
+<div class="tile"><strong lang="pl">to</strong><small id="time1">—</small><button disabled data-segment="1" type="button">▶ to</button></div>
+<div class="tile"><strong lang="pl">krzy</strong><small id="time2">—</small><button disabled data-segment="2" type="button">▶ krzy</button></div>
+<div class="tile"><strong lang="pl">ska</strong><small id="time3">—</small><button disabled data-segment="3" type="button">▶ ska</button></div>
+</div>
+<div id="cuts">
+<div class="cut"><label for="cut0">Word start</label><input id="cut0" type="range" min="0" max="1" value="0" step=".001" disabled><output for="cut0">—</output></div>
+<div class="cut"><label for="cut1">Świę / to</label><input id="cut1" type="range" min="0" max="1" value=".25" step=".001" disabled><output for="cut1">—</output></div>
+<div class="cut"><label for="cut2">to / krzy</label><input id="cut2" type="range" min="0" max="1" value=".5" step=".001" disabled><output for="cut2">—</output></div>
+<div class="cut"><label for="cut3">krzy / ska</label><input id="cut3" type="range" min="0" max="1" value=".75" step=".001" disabled><output for="cut3">—</output></div>
+<div class="cut"><label for="cut4">Word end</label><input id="cut4" type="range" min="0" max="1" value="1" step=".001" disabled><output for="cut4">—</output></div>
+</div>
+<div class="controls"><button id="save" type="button" disabled>Save timing JSON (no audio)</button></div>
+<p class="notes">This saves a private original-WAV fingerprint and your reviewed time ranges. It does not save, upload or alter the recording and cannot produce syllable accuracy percentages. Listen critically: consonants may overlap boundaries and a forced alignment can be wrong even when clips sound plausible.</p>
+</section>
+<script>
+(()=>{
+'use strict';
+const labels=['Świę','to','krzy','ska'];
+const fileInput=document.getElementById('wav');
+const status=document.getElementById('status');
+const ctx=document.getElementById('wave').getContext('2d');
+const sliders=[0,1,2,3,4].map(i=>document.getElementById('cut'+i));
+const durationOutputs=[...document.querySelectorAll('.cut output')];
+const segments=[...document.querySelectorAll('button[data-segment]')];
+const buttons={whole:document.getElementById('whole'),stop:document.getElementById('stop'),save:document.getElementById('save')};
+let sound=null,context=null,active=null,rawBytes=null,rawDigest='',position=[0,.25,.5,.75,1],duration=0;
+const minWidth=.045;
+function message(value,isError=false){status.textContent=value;status.setAttribute('role',isError?'alert':'status');}
+function stop(){if(active){try{active.stop()}catch{}try{active.disconnect()}catch{}active=null;}}
+function boundariesValid(times=position){
+  return times.length===5 && times.every(Number.isFinite) && times[0]>=0 &&
+    times[4]<=duration+.00001 && times.every((t,i)=>i===0||t-times[i-1]>=minWidth);
+}
+function draw(){
+ const w=ctx.canvas.width,h=ctx.canvas.height;
+ ctx.clearRect(0,0,w,h);ctx.fillStyle='#fbfefd';ctx.fillRect(0,0,w,h);
+ if(!sound||duration<=0)return;
+ const samples=sound.getChannelData(0),mid=h/2,columns=w;
+ ctx.strokeStyle='#789f9a';ctx.lineWidth=1;
+ for(let x=0;x<columns;x++){
+   const start=Math.floor((x/columns)*samples.length),end=Math.max(start+1,Math.ceil(((x+1)/columns)*samples.length));
+   let lo=1,hi=-1;
+   const stride=Math.max(1,Math.floor((end-start)/24));
+   for(let i=start;i<end;i+=stride){const y=samples[i];if(y<lo)lo=y;if(y>hi)hi=y;}
+   ctx.beginPath();ctx.moveTo(x,mid-hi*(mid-8));ctx.lineTo(x,mid-lo*(mid-8));ctx.stroke();
+ }
+ ctx.font='13px sans-serif';ctx.textBaseline='top';
+ position.forEach((sec,i)=>{
+   let x=Math.max(1,Math.min(w-2,sec/duration*w));
+   ctx.strokeStyle=(i===0||i===4)?'#445b63':'#127d69';
+   ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke();
+   ctx.fillStyle='#203d41';ctx.fillText(String(i),Math.min(w-16,x+3),3);
+ });
+}
+function update(){
+ sliders.forEach((slider,i)=>{slider.value=String(position[i]);durationOutputs[i].textContent=position[i].toFixed(3)+' s';});
+ segments.forEach((button,i)=>{document.getElementById('time'+i).textContent=position[i].toFixed(2)+'–'+position[i+1].toFixed(2)+' s';});
+ draw();
+}
+function setCut(i,sec){
+ if(!sound)return;
+ const low=i===0?0:position[i-1]+minWidth;
+ const high=i===4?duration:position[i+1]-minWidth;
+ position[i]=Math.min(high,Math.max(low,sec));stop();update();
+}
+async function play(from,to){
+ if(!sound||!boundariesValid())return;
+ stop();
+ if(!context)context=new AudioContext();
+ await context.resume();
+ const node=context.createBufferSource();
+ node.buffer=sound;node.connect(context.destination);
+ active=node;node.onended=()=>{if(active===node){active=null;node.disconnect();}};
+ node.start(0,from,Math.max(.03,to-from));
+}
+function enable(yes){
+ buttons.whole.disabled=!yes;buttons.stop.disabled=!yes;buttons.save.disabled=!yes;
+ sliders.forEach(x=>x.disabled=!yes);segments.forEach(x=>x.disabled=!yes);
+}
+fileInput.addEventListener('change',async()=>{
+ stop();enable(false);sound=null;rawBytes=null;rawDigest='';duration=0;draw();
+ const file=fileInput.files?.[0];if(!file)return;
+ if(!/\.wav$/i.test(file.name)||file.size<44||file.size>10_000_000){message('Choose a WAV smaller than 10 MB.',true);return;}
+ try{
+  const bytes=await file.arrayBuffer();
+  const data=new DataView(bytes);
+  const str=(offset,n)=>String.fromCharCode(...new Uint8Array(bytes,offset,n));
+  if(str(0,4)!=='RIFF'||str(8,4)!=='WAVE'||str(12,4)!=='fmt '||
+     data.getUint16(20,true)!==1||data.getUint16(22,true)!==1||
+     data.getUint32(24,true)!==16000||data.getUint16(34,true)!==16||
+     str(36,4)!=='data')throw Error('This lab accepts the original canonical 16-kHz mono PCM16 WAV only.');
+  if(!window.crypto?.subtle)throw Error('SHA-256 is unavailable in this browser; open this file in a current browser.');
+  rawDigest=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(b=>b.toString(16).padStart(2,'0')).join('');
+  if(!context)context=new AudioContext();
+  const decoded=await context.decodeAudioData(bytes.slice(0));
+  if(decoded.numberOfChannels!==1||decoded.duration<.3||decoded.duration>30)throw Error('Original voice must be mono and 0.3–30 seconds.');
+  sound=decoded;rawBytes=file.size;duration=decoded.duration;
+  position=[0,duration*.25,duration*.5,duration*.75,duration];
+  if(!boundariesValid())throw Error('Recording is too short to isolate four intervals.');
+  sliders.forEach(s=>{s.max=String(duration);s.step='.001';});
+  enable(true);update();message('Loaded locally. Slide each boundary, listen, and save time intervals; none are pronunciation grades.');
+ }catch(error){enable(false);sound=null;message(error instanceof Error?error.message:'Could not read WAV.',true);}
+});
+sliders.forEach((s,i)=>s.addEventListener('input',()=>setCut(i,Number(s.value))));
+ctx.canvas.addEventListener('pointerdown',event=>{
+ if(!sound)return;
+ const rect=ctx.canvas.getBoundingClientRect();
+ const fraction=Math.min(1,Math.max(0,(event.clientX-rect.left)/rect.width));
+ const proposed=fraction*duration;
+ let idx=0,min=Infinity;
+ for(let i=0;i<position.length;i++){const d=Math.abs(position[i]-proposed);if(d<min){min=d;idx=i;}}
+ ctx.canvas.setPointerCapture(event.pointerId);
+ ctx.canvas.dataset.drag=String(idx);setCut(idx,proposed);
+});
+ctx.canvas.addEventListener('pointermove',event=>{
+ if(!sound||!ctx.canvas.hasPointerCapture(event.pointerId))return;
+ const rect=ctx.canvas.getBoundingClientRect();
+ setCut(Number(ctx.canvas.dataset.drag),((event.clientX-rect.left)/rect.width)*duration);
+});
+ctx.canvas.addEventListener('pointerup',event=>{if(ctx.canvas.hasPointerCapture(event.pointerId))ctx.canvas.releasePointerCapture(event.pointerId);});
+ctx.canvas.addEventListener('pointercancel',event=>{if(ctx.canvas.hasPointerCapture(event.pointerId))ctx.canvas.releasePointerCapture(event.pointerId);});
+buttons.whole.addEventListener('click',()=>void play(0,duration));
+buttons.stop.addEventListener('click',stop);
+segments.forEach((button,i)=>button.addEventListener('click',()=>void play(position[i],position[i+1])));
+buttons.save.addEventListener('click',()=>{
+ if(!sound||!boundariesValid()||!rawDigest)return;
+ const record={schemaVersion:1,method:'manual-syllable-audition-v1',
+  polish:'Świętokrzyska',syllables:labels,sourceSha256:rawDigest,
+  sourceBytes:rawBytes,sourceDurationSeconds:Math.round(duration*1e6)/1e6,
+  intervals:labels.map((polish,i)=>({polish,startSeconds:position[i],endSeconds:position[i+1]})),
+  assessmentStatus:'timing_only_unverified',scores:null};
+ const blob=new Blob([JSON.stringify(record,null,2)+'\n'],{type:'application/json'});
+ const url=URL.createObjectURL(blob),a=document.createElement('a');
+ a.href=url;a.download='ptp-private-syllable-timings.json';document.body.append(a);a.click();a.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),1000);
+ message('Only timing metadata exported. Keep JSON and original audio in PathToPolish-Private-AI, never in Git.');
+});
+window.addEventListener('pagehide',()=>{stop();if(context)void context.close();});
+draw();
+})();
+</script>
+</body>
+</html>
