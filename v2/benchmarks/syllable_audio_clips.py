@@ -78,7 +78,7 @@ def _manual_intervals(record: object, raw: bytes, duration: float) -> list[tuple
     return parsed
 
 
-def prepare_clips(audio: Path, timings: Path, target: Path) -> dict:
+def prepare_clips(audio: Path, timings: Path, target: Path, *, _test_private_root: Path | None = None) -> dict:
     """Create private audition WAV clips; refuse stale hashes, overwrite or ambiguity."""
     original = _read_private_source(audio)
     _private_directory(timings.parent)
@@ -92,8 +92,8 @@ def prepare_clips(audio: Path, timings: Path, target: Path) -> dict:
     check_research_location(target)
     # Only use an ignored private child of the canonical research folder.
     root = Path(__file__).resolve().parents[2]
-    private_root = root / "PathToPolish-Private-AI"
-    if private_root not in target.absolute().parents or target.resolve(strict=False).is_relative_to(private_root.resolve()) is False:
+    private_root = _test_private_root if _test_private_root is not None else root / "PathToPolish-Private-AI"
+    if private_root.absolute() not in target.absolute().parents or not target.resolve(strict=False).is_relative_to(private_root.resolve()):
         raise ValueError("Clips must remain inside the canonical ignored PathToPolish-Private-AI folder")
     with wave.open(str(audio), "rb") as wav:
         if wav.getnchannels()!=1 or wav.getsampwidth()!=2 or wav.getframerate()!=SAMPLE_RATE or wav.getcomptype()!="NONE":
