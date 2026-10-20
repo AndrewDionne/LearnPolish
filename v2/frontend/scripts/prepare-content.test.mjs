@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import fs from 'node:fs';
 import path from 'node:path';
-import { migrateLesson, buildContent, buildSoundCurriculum } from './prepare-content.mjs';
+import { migrateLesson, buildContent, buildSoundCurriculum, attachReferenceReview } from './prepare-content.mjs';
 import {inspectSpeakCatalog,printAuditMarkdown} from './speak-readiness.mjs';
 
 test('migrates vocabulary into versioned, stable IDs', () => {
@@ -27,6 +27,7 @@ test('rejects malformed lesson data', () => {
 test('new catalog retires bundled sound examples while retaining all other legacy lessons and audio', () => {
   const report = buildContent();
   assert.equal(report.lessons, 26);
+  assert.equal(report.referenceReviewItems,2);
   assert.equal(report.items, 482);
   assert.equal(report.pronunciationGrouping.total,482);
   assert.equal(report.pronunciationGrouping.authored,1);
@@ -90,6 +91,11 @@ test('new catalog retires bundled sound examples while retaining all other legac
   assert.deepEqual(ulica.pronunciationSegments,{
     method:'editorial-draft-v1',segments:['u','li','ca']});
   const fromConversation=catalog.find(lesson=>lesson.id==='Conversation_1');
+  assert.deepEqual(fromConversation.items.filter(x=>x.referenceReview).map(x=>x.id),
+    ['Conversation_1:24','Conversation_1:25']);
+  assert.equal(fromConversation.items.filter(x=>x.referenceReview).length,2);
+  assert.ok(fromConversation.items[24].audio && fromConversation.items[25].audio);
+  assert.equal(fromConversation.items[23].referenceReview,undefined);
   const greeting=fromConversation.items.find(item=>item.polish==='Dzień dobry');
   assert.deepEqual(greeting.pronunciationSegments,{
     method:'editorial-draft-v1',segments:['Dzień ','do','bry']});
@@ -184,4 +190,23 @@ test('authored reading questions reject a changed or mismatched Polish sentence'
     () => attachReadingCurriculum([lesson], {schemaVersion:1,curricula:[{...definitions.curricula[0]}]}),
     /Invalid or mismatched reading check|Reading curriculum/,
   );
+});
+
+test('source blocker review fails closed without changing original lesson or audio mapping',()=>{
+  const lesson={id:'Conversation_1',items:Array.from({length:26},(_,index)=>({
+    id:'Conversation_1:'+index,polish:index===24?'Jak ma pan/pani na imię?':
+      index===25?'Mam na imię…':'Dzień dobry',audio:'generated/audio/Conversation_1/'+index+'.mp3'
+  }))};
+  const source=JSON.parse(fs.readFileSync(path.resolve('../content/voice-production.json'),'utf8'));
+  assert.equal(attachReferenceReview([lesson],source),2);
+  assert.deepEqual(lesson.items.filter(item=>item.referenceReview).map(item=>item.id),
+    ['Conversation_1:24','Conversation_1:25']);
+  assert.equal(lesson.items[24].polish,'Jak ma pan/pani na imię?');
+  assert.equal(lesson.items[25].polish,'Mam na imię…');
+  const changed=structuredClone(lesson);
+  changed.items[24].polish='Jak ma pani na imię?';
+  assert.throws(()=>attachReferenceReview([changed],source),/Changed or missing/);
+  const missing=structuredClone(source);
+  missing.sourceBlockers.pop();
+  assert.throws(()=>attachReferenceReview([lesson],missing),/Missing the two/);
 });
