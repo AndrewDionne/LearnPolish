@@ -27,7 +27,7 @@ test('rejects malformed lesson data', () => {
 test('new catalog retires bundled sound examples while retaining all other legacy lessons and audio', () => {
   const report = buildContent();
   assert.equal(report.lessons, 26);
-  assert.equal(report.referenceReviewItems,2);
+  assert.equal(report.referenceReviewItems,14);
   assert.equal(report.items, 482);
   assert.equal(report.pronunciationGrouping.total,482);
   assert.equal(report.pronunciationGrouping.authored,1);
@@ -60,11 +60,13 @@ test('new catalog retires bundled sound examples while retaining all other legac
     authored:audit.summary.authored,
     speakBlockedReferences:audit.summary.speakBlockedReferences,
     speakUnfinishedReferences:audit.summary.speakUnfinishedReferences,
+    practiceOnlyReferences:audit.summary.practiceOnlyReferences,
   },{
     modules:26,speakModules:20,readingModules:6,items:482,
     spokenItems:431,readingItems:51,withAudio:481,
     editorial:23,autoDraft:458,authored:1,
     speakBlockedReferences:11,speakUnfinishedReferences:3,
+    practiceOnlyReferences:14,
   });
   const unread=audit.modules.filter(x=>!x.speakAvailable);
   assert.equal(unread.length,6);
@@ -94,6 +96,7 @@ test('new catalog retires bundled sound examples while retaining all other legac
   assert.deepEqual(fromConversation.items.filter(x=>x.referenceReview).map(x=>x.id),
     ['Conversation_1:24','Conversation_1:25']);
   assert.equal(fromConversation.items.filter(x=>x.referenceReview).length,2);
+  assert.equal(catalog.flatMap(lesson=>lesson.items).filter(item=>item.referenceReview==='practice_only').length,14);
   assert.ok(fromConversation.items[24].audio && fromConversation.items[25].audio);
   assert.equal(fromConversation.items[23].referenceReview,undefined);
   const greeting=fromConversation.items.find(item=>item.polish==='Dzień dobry');
@@ -192,21 +195,33 @@ test('authored reading questions reject a changed or mismatched Polish sentence'
   );
 });
 
-test('source blocker review fails closed without changing original lesson or audio mapping',()=>{
-  const lesson={id:'Conversation_1',items:Array.from({length:26},(_,index)=>({
-    id:'Conversation_1:'+index,polish:index===24?'Jak ma pan/pani na imię?':
-      index===25?'Mam na imię…':'Dzień dobry',audio:'generated/audio/Conversation_1/'+index+'.mp3'
-  }))};
-  const source=JSON.parse(fs.readFileSync(path.resolve('../content/voice-production.json'),'utf8'));
-  assert.equal(attachReferenceReview([lesson],source),2);
-  assert.deepEqual(lesson.items.filter(item=>item.referenceReview).map(item=>item.id),
-    ['Conversation_1:24','Conversation_1:25']);
-  assert.equal(lesson.items[24].polish,'Jak ma pan/pani na imię?');
-  assert.equal(lesson.items[25].polish,'Mam na imię…');
-  const changed=structuredClone(lesson);
-  changed.items[24].polish='Jak ma pani na imię?';
-  assert.throws(()=>attachReferenceReview([changed],source),/Changed or missing/);
-  const missing=structuredClone(source);
-  missing.sourceBlockers.pop();
-  assert.throws(()=>attachReferenceReview([lesson],missing),/Missing the two/);
+test('all fourteen original source blockers are fixed-ID, content-matched and without invented MP3s',()=>{
+  buildContent();
+  const first=JSON.parse(fs.readFileSync(path.resolve('../content/voice-production.json'),'utf8'));
+  const rest=JSON.parse(fs.readFileSync(path.resolve('../content/additional-speak-reference-blockers.json'),'utf8'));
+  const built=JSON.parse(fs.readFileSync(path.resolve('public/generated/lessons.json'),'utf8'));
+  const vocabulary=structuredClone(built.lessons.filter(lesson=>lesson.kind==='vocabulary' && lesson.source==='legacy'));
+  const originals=new Map(vocabulary.flatMap(lesson=>lesson.items.map(item=>[item.id,{polish:item.polish,audio:item.audio}])));
+  for(const lesson of vocabulary)for(const item of lesson.items)delete item.referenceReview;
+  assert.equal(attachReferenceReview(vocabulary,first,rest),14);
+  const reviewed=vocabulary.flatMap(lesson=>lesson.items).filter(item=>item.referenceReview==='practice_only');
+  assert.equal(reviewed.length,14);
+  assert.deepEqual(new Set(reviewed.map(item=>item.id)),
+    new Set([...first.sourceBlockers,...rest.sourceBlockers].map(item=>item.itemId)));
+  for(const item of reviewed){
+    assert.deepEqual({polish:item.polish,audio:item.audio},originals.get(item.id));
+  }
+  const changed=structuredClone(vocabulary);
+  changed.find(l=>l.id==='Road_Terminology').items[21].polish='droga wojewódzka sześćset trzydzieści cztery';
+  assert.throws(()=>attachReferenceReview(changed,first,rest),/Changed or missing Speak audio review/);
+  const missing=structuredClone(rest);missing.sourceBlockers.pop();
+  assert.throws(()=>attachReferenceReview(vocabulary,first,missing),/Expected exact/);
+  const changedIds=structuredClone(rest);changedIds.sourceBlockers[0].itemId='other:0';
+  assert.throws(()=>attachReferenceReview(vocabulary,first,changedIds),/Unexpected edited/);
+  const newUnreviewed=structuredClone(vocabulary);
+  newUnreviewed.find(l=>l.id==='Road_Terminology').items.push({
+    id:'Road_Terminology:unreviewed',polish:'Droga 999',audio:'generated/audio/Road_Terminology/99.mp3'
+  });
+  assert.throws(()=>attachReferenceReview(newUnreviewed,first,rest),/Unreviewed new alternative/);
+  assert.ok(printAuditMarkdown(inspectSpeakCatalog(built)).includes('Practice only'));
 });
