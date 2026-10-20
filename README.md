@@ -31,8 +31,10 @@ The GitHub Pages previously hosted **V2**, built from `v2/frontend/dist/`. After
 
 The public static app does not automatically provide private family sign-in/sync or Azure pronunciation assessment. Those rely on a separately deployed and secured V2 API and stay disabled in the default public build. No Speech key is used in browser artifacts.
 
-## V1 reference
+## V1 is reference-only; V2 accounts start fresh
 
-V1 code and original lesson material remain in Git history and under `app/`, `docs/`, and older scripts **for reference only**. Currently V2's [content preparation](v2/frontend/scripts/prepare-content.mjs) still reads `docs/sets/` and `docs/static/` at build time for imported lesson JSON and trusted MP3s, so **do not delete those files** yet. The migration is one-way and does not imply the V1 UI is supported.
+**No V1 personal data is being migrated.** New Neon V2 accounts, groups, sessions, earned XP and progress begin from zero in the isolated `ptp_v2` schema. Existing legacy `public` tables are not a compatibility target, and no V1 passwords, scores or memberships are copied. Live-data deletion is a separate irreversible action, not part of the schema migration.
+
+V1's **lesson source material is different from V1 account history**: the canonical [V2 content builder](v2/frontend/scripts/prepare-content.mjs) still reads `docs/sets/` JSON and `docs/static/` MP3 assets for active V2 lessons. Before deleting those old directories, move their required lessons and recordings to V2-owned paths and test the V2 content/audio build. Old V1 runtime/UI is not supported.
 
 Decisions, delivery and test evidence are tracked in [`chat ai workflow.md`](chat%20ai%20workflow.md) and [`V2_REBUILD_PLAN.md`](V2_REBUILD_PLAN.md). Private recordings, provider results, and API credentials must remain local and Git-ignored.
