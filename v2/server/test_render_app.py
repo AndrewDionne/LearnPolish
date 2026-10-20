@@ -73,7 +73,8 @@ class RenderHostTests(unittest.TestCase):
 
         url = "postgresql://v2:secret@neon.example.com/Path_to_Polish_DB"
         with patch.object(render_app, "create_family_app", side_effect=fake_family), \
-             patch.object(render_app, "postgres_ready", return_value=True) as probe:
+             patch.object(render_app, "postgres_ready", return_value=True) as probe, \
+             patch.object(render_app, "monotonic", return_value=0) as clock:
             app = create_render_app(dist_path=self.dist, family_mode="enabled",
                                     postgres_url=url,
                                     public_origin="https://path-to-polish.onrender.com",
@@ -83,8 +84,13 @@ class RenderHostTests(unittest.TestCase):
                              {"ready": True, "family_available": True})
             self.assertEqual(client.get("/").status_code, 200)
             self.assertEqual(client.get("/api/v2/family/health").status_code, 200)
-            probe.assert_called_with(url)
+            probe.assert_called_once_with(url)
+            # Repeat bundled asset fetches within one ready window do not
+            # open new Neon connections, avoiding free-compute waste.
+            self.assertEqual(client.get("/assets/bundle.js").status_code, 200)
+            probe.assert_called_once_with(url)
             probe.return_value = False
+            clock.return_value = 31
             self.assertEqual(client.get("/").status_code, 503)
             self.assertEqual(client.get("/health/ready").status_code, 503)
 
