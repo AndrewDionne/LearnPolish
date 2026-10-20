@@ -151,6 +151,9 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
         for item in lesson["items"]
         if isinstance(item.get("polish"), str) and 1 <= len(item["polish"]) <= 300
         and item.get("referenceReview") != "practice_only"
+        # Independent backend gate: a malformed/missing catalog review flag
+        # must never make alternatives, digits or ellipses a provider target.
+        and re.search(r"[/0-9…]|\\.{3,}",item["polish"]) is None
     }
     speech_segments = {
         item["id"]: item["pronunciationSegments"]["segments"]
