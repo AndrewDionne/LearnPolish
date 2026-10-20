@@ -39,6 +39,31 @@ The last command prints all 58 exact Polish/English/source-audio entries; source
 
 **No voice has been selected as the instructional standard yet.** Verify voice availability for the owner's actual Azure region, then compare the actual speech for greetings, numerals, `c/cz/ć` and `s/sz/ś` listening exercises. Polish accent, timing, natural stress, soft palatal consonants and difficult clusters need native-speaker spot checks. Current Microsoft locale catalog lists these voices: https://learn.microsoft.com/pl-pl/azure/ai-services/speech-service/language-support?tabs=tts . Billing eligibility and terms are separate.
 
+## Actually hearing the voices — corrected UX (2026-10-20)
+
+The first `python3 v2/benchmarks/azure_voice_audition.py` **only printed a JSON preview**. It was never meant to play speech, but the absence of an audible comparison was understandably confusing. There are now **two clearly different ways to hear voices**:
+
+**1. Hear available Azure voices immediately (without our own paid synthesis):**
+
+```bash
+# From the repo root; opens Microsoft's public online demonstration
+python3 v2/benchmarks/azure_voice_audition.py --gallery
+```
+
+Or visit **https://speech.microsoft.com/audiocontentcreation** directly. Select **Polish (Poland)**, then audition **Zofia**, **Marek** and **Agnieszka** with exactly the same words: `Dzień dobry. Dziękuję. Przepraszam.`. Microsoft's lightweight online demo offers Play without connecting this project's private Azure credentials. This is a **Microsoft browser demonstration**, not our own local files and not a verified sample of all 24 planned expressions. The voice gallery may change UI/availability over time.
+
+**2. Listen to our exact Polish sample recordings once you have consciously generated a private audition:**
+
+```bash
+# AFTER the owner has explicitly sent and received private Azure recordings,
+# this opens the offline local audio comparison HTML; no provider inference:
+python3 v2/benchmarks/azure_voice_audition.py --listen
+```
+
+Once the optional `--send` command below has completed, it writes a private `PathToPolish-Private-AI/voice-audition-01/listen.html` page containing native browser audio controls for each generated voice. It groups recordings by the same Polish phrase for side-by-side listening; missing clips show **Not generated** instead of fake Play controls. The player verifies the approved item ID, phrase, candidate voice, source-text hash, local audio file and SHA-256 against the manifest before opening. It uses only local MP3s, no remote fonts/scripts/APIs, and never overwrites old recordings or exposes them to the public app.
+
+If `--listen` reports that no recordings exist, that's expected until the user has independently confirmed free-tier/no-paid usage and intentionally run the gated `--send`. **Do not interpret that as a failure of the app's existing audio**. This audition HTML is owner-private, not a public V2 voice switcher.
+
 ## Very small, explicit Azure voice audition — no automatic spend
 
 The separate runner is **offline-only unless a user explicitly adds ALL guarded switches**. Its input comes from the same generated V2 catalog, not from manually retyped text. It writes only to a new `PathToPolish-Private-AI/voice-audition-01/` directory ignored by Git. Never copy private provider keys or raw recordings to GitHub.
@@ -50,7 +75,7 @@ The separate runner is **offline-only unless a user explicitly adds ALL guarded 
 python3 v2/benchmarks/azure_voice_audition.py
 ```
 
-Default preview estimates **three requests for the SAME first greeting in Zofia, Marek, and Agnieszka**, to compare voice quality fairly. `--limit 24` previews the complete bounded eight-expression × three-voice list. No files or folders are written in preview mode.
+Default preview estimates **three requests for the SAME first greeting in Zofia, Marek, and Agnieszka**, to compare voice quality fairly, and prints an **explicit preview-only/no-sound message** and the browser-gallery URL. `--limit 24` previews the complete bounded eight-expression × three-voice list. No files or folders are written in preview mode.
 
 **Only if the account owner independently verifies the Microsoft Speech F0 resource, zero-paid configuration, local voice availability and explicitly approves these provider requests**, the manually triggered *optional* three-clip command is:
 
@@ -64,7 +89,7 @@ python3 v2/benchmarks/azure_voice_audition.py \
   --confirm-no-paid-billing
 ```
 
-**WARNING:** It sends 3 independent synthesis requests to Microsoft. Flags express the owner's confirmation; code cannot verify the account's free-credit balance or prevent external billing. The tool **never automatically sends**, retries, changes provider or silently falls back to gTTS. A missing private folder or previous `voice-audition-01` aborts; it never overwrites clips. Successful generated audio is saved with source-text and MP3 SHA-256, voice name and an **unreviewed** status in a local JSON manifest, rather than adding audio directly to app/production. A failed run may leave partial private files requiring review before a new attempt.
+**WARNING:** It sends 3 independent synthesis requests to Microsoft. Flags express the owner's confirmation; code cannot verify the account's free-credit balance or prevent external billing. The tool **never automatically sends**, retries, changes provider or silently falls back to gTTS. A missing private folder or previous `voice-audition-01` aborts; it never overwrites clips. Successful generated audio is saved with source-text and MP3 SHA-256, voice name and an **unreviewed** status in a local JSON manifest, rather than adding audio directly to app/production. It also generates the verified local `listen.html` comparison page, which you can open via `--listen`. A failed run may leave partial private files requiring review before a new attempt.
 
 ## Human quality and future release gates
 
