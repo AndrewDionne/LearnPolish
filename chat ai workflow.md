@@ -1,5 +1,13 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
+## Work in progress — first 58 Speak references and optional voice production (2026-10-20)
+
+**Owner request:** Proceed with adding pronunciation-flow content and a controlled choice of lesson voices. Source-of-truth work in [`v2/content/VOICE_PRODUCTION.md`](v2/content/VOICE_PRODUCTION.md), [`v2/content/voice-production.json`](v2/content/voice-production.json), new V2 `scripts/voice-production.mjs` + regression tests, and opt-in `v2/benchmarks/azure_voice_audition.py` + offline tests. [Issue #77](https://github.com/AndrewDionne/LearnPolish/issues/77). First 58 across `Conversation_1` 26, `contrast_c_cz_cie` 6, `contrast_s_sz_sie` 6, `numbers_1-20` 20: all have imported MP3s with **voice identity unverified**; 56 have fixed textual targets; two Greetings references (`Conversation_1:24` ambiguous `pan/pani`, `Conversation_1:25` unfinished name) are flagged NOT graded and must be corrected with new verified audio. Actual native-reviewed syllable grouping count 0.
+
+**Architecture decision at this stage:** audition Zofia, Marek and Agnieszka as *candidates*, without presupposing a winning primary/secondary voice. Offline CLI `cd v2/frontend && npm run content && npm run audit:voice` audits original MP3 hashes, exact prompt/segment text, cues and first 58 blockers; eight canonical audition prompts × three voices are a proposed **24-clip** list. Optional `python3 v2/benchmarks/azure_voice_audition.py` defaults to *preview only, no network*. A future explicit send requires `--send --approve-generation --confirm-speech-f0 --confirm-no-paid-billing` plus private Azure key+region and produces brand-new **Git-ignored, native-unreviewed** files; do not run/send from CI or chat or automatically. No live provider calls, paid resources or replacements were authorized by this request. No V2 voice-picker option appears until approved matching voice MP3 variants exist; default audio behavior stays unchanged. Speak's text-colour + one experimental blended number contract stays intact.
+
+
+
 ## Beginner curriculum rollout direction — E1 vocabulary/Speak/Listen → E2 micro-dialogues → E3 extended Read/Listen (2026-10-20)
 
 **Owner direction:** prioritize beginner vocabulary, listening and speaking as an integrated learning loop; second, **very basic 2–4-turn multi-line Read + Listen dialogues**; later, longer reading and listening scenes. Detailed, ranked, owner-reviewable **26-module coverage** is durably recorded in [`v2/content/SPEAK_MODULE_READINESS.md`](v2/content/SPEAK_MODULE_READINESS.md), section **Owner direction and proposed granular rollout**. This is a CURRICULUM/CONTENT PLAN, not activation of an external AI service or an approval of every individual rank.
