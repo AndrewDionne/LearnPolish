@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 
-export type AudioRate = 0.75 | 1 | 1.25;
+/** Natural-range Polish listening: never offer 0.5× or faster than the reference. */
+export const AUDIO_RATES = [0.75, 0.85, 1] as const;
+export type AudioRate = typeof AUDIO_RATES[number];
 type Playback = {
   playing: string | null;
   rate: AudioRate;

@@ -6,6 +6,7 @@ Never render a Play control for an absent, changed, symlinked, or unreviewed fil
 from __future__ import annotations
 
 import argparse
+import base64
 from collections import OrderedDict
 import hashlib
 import html
@@ -23,6 +24,39 @@ FILENAME = re.compile(r"^pl-PL-[A-Za-z]+Neural/[A-Za-z0-9_-]+\.mp3$")
 VOICE_ID = re.compile(r"^pl-PL-[A-Za-z]+Neural$")
 HASH = re.compile(r"^[a-f0-9]{64}$")
 PLAYER = "listen.html"
+
+# Static, no-network, hash-pinned local rate control. Browser native playback
+# menus may vary, so ratechange also enforces the bounded app learning range.
+RATE_SCRIPT = """(() => {
+  const allowed = [0.75, 0.85, 1];
+  const audios = Array.from(document.querySelectorAll('audio[data-audition]'));
+  const buttons = Array.from(document.querySelectorAll('button[data-rate]'));
+  let selected = 1;
+  function select(speed) {
+    if (!allowed.includes(speed)) return;
+    selected = speed;
+    for (const audio of audios) {
+      audio.defaultPlaybackRate = speed;
+      audio.playbackRate = speed;
+    }
+    for (const button of buttons) {
+      const pressed = Number(button.dataset.rate) === speed;
+      button.setAttribute('aria-pressed', String(pressed));
+    }
+  }
+  for (const audio of audios) {
+    audio.addEventListener('ratechange', () => {
+      if (!allowed.includes(audio.playbackRate)) {
+        audio.playbackRate = selected;
+      }
+    });
+  }
+  for (const button of buttons) {
+    button.addEventListener('click', () => select(Number(button.dataset.rate)));
+  }
+  select(1);
+})();"""
+
 
 
 def _digest(data: bytes) -> str:
@@ -126,6 +160,7 @@ def playback_diagnostics(clips: list[dict], output: Path) -> dict:
 
 
 def render_player(clips: list[dict], plans: list[dict], voices: list[dict]) -> str:
+    script_hash = base64.b64encode(hashlib.sha256(RATE_SCRIPT.encode("utf-8")).digest()).decode("ascii")
     by_identity = {(clip["itemId"], clip["voiceId"]): clip for clip in clips}
     # An ungenerated third-choice voice should not occupy every pilot row.
     # In partial auditions, show only voices with at least one real verified clip.
@@ -146,7 +181,7 @@ def render_player(clips: list[dict], plans: list[dict], voices: list[dict]) -> s
                 href = quote(clip["audioPath"], safe="/-_.")
                 buttons.append(
                     '<section class="voice"><h3>' + name + '</h3>'
-                    '<audio controls preload="metadata" aria-label="' + name + " — " +
+                    '<audio controls controlslist="noplaybackrate" data-audition="true" preload="metadata" aria-label="' + name + " — " +
                     html.escape(polish, quote=True) + '" src="' + href +
                     '">Your browser does not support audio playback.</audio>' +
                     '<a class="direct-audio" href="' + href + '">Open MP3 directly</a></section>')
@@ -161,7 +196,7 @@ def render_player(clips: list[dict], plans: list[dict], voices: list[dict]) -> s
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; media-src 'self' file:; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; media-src 'self' file:; style-src 'unsafe-inline'; script-src 'sha256-""" + script_hash + """'; base-uri 'none'; form-action 'none'">
 <title>Path to Polish — Voice audition</title>
 <style>
 :root { color-scheme: light; font: 16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:#202538; background:#f7f8fa; }
@@ -176,14 +211,25 @@ h1 { font-size:clamp(2rem,4vw,3rem); margin:.2em 0; letter-spacing:-.04em; } .in
 audio { display:block; width:100%; min-width:0; height:42px; }
 .voice.missing { color:#7e8796; border:1px dashed #c7cdd9; background:#fafbfc; }
 .voice p { font-size:.87rem; margin:12px 0; }
+.speed-picker { display:flex; flex-wrap:wrap; align-items:center; gap:9px; margin:17px 0; padding:0; border:0; }
+.speed-picker legend { color:#4f5668; font-size:.89rem; font-weight:650; margin-bottom:8px; }
+.speed-picker button { font:inherit; cursor:pointer; min-width:63px; padding:8px 13px; background:#f5f6fb; color:#202538; border:1px solid #d8deeb; border-radius:9px; }
+.speed-picker button[aria-pressed="true"] { background:#202538; border-color:#202538; color:white; }
+.speed-picker button:focus-visible { outline:3px solid #739bdd; outline-offset:3px; }
 .direct-audio { display:inline-block; margin-top:10px; font-size:.82rem; color:#344e85; }
 footer { color:#525a68; font-size:.88rem; margin-top:24px; }
 @media(max-width:680px){ .voices{grid-template-columns:1fr;} body{padding:18px;} }
 </style></head><body><header><div class="brand">Path to Polish / Content Lab</div>
 <h1>Compare Polish voices</h1>
 <p class="intro">Compare the same Polish phrase spoken by Marek and Agnieszka (and other voices only if recordings exist). Pay particular attention to <strong>natural word endings, final consonants and cadence</strong>. These are <strong>unreviewed synthetic recordings</strong>, not approved lesson audio.</p>
-</header><main>""" + "".join(headings) + """</main>
+</header>
+<fieldset class="speed-picker"><legend>Playback speed</legend>
+<button type="button" data-rate="0.75" aria-pressed="false">0.75×</button>
+<button type="button" data-rate="0.85" aria-pressed="false">0.85×</button>
+<button type="button" data-rate="1" aria-pressed="true">1×</button>
+</fieldset><main>""" + "".join(headings) + """</main>
 <footer>Audio files are source/hash verified, but may still be unplayable due to encoding or browser restrictions. Use the Open MP3 directly link or the offline --diagnose CLI to distinguish these cases. No audio is uploaded and no provider is called when listening.</footer>
+<script>""" + RATE_SCRIPT + """</script>
 </body></html>
 """
 
