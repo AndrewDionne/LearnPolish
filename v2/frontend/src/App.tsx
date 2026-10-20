@@ -13,6 +13,7 @@ import type { DraftItem } from './personal';
 import { availableModes, comprehensionChoices, correctComprehensionAnswer, itemPractised, itemsForMode, progressKey, readingStage } from './modes';
 import type { LearningMode } from './modes';
 import { READING_POSITION_KEY, parseReadingPositions, safeReadingPosition } from './reading-position';
+import { firstUnvisitedBatch, practiceBatchCount, practiceBatchItems, practiceBatchLabel, usesPracticeBatches } from './practice-batches';
 import { REVIEW_STORAGE_KEY, countDue, dueItems, nextDue, parseReviewSchedule, recordReview } from './review';
 import type { ReviewSchedule } from './review';
 import { MAX_BACKUP_BYTES, makeBackup, parseBackup } from './backup';
@@ -31,6 +32,7 @@ type KindFilter = 'all' | LessonKind;
 type SoundPracticeReturn = {
   sourceLessonId:string;sourceItemId:string;sourceIndex:number;
   sourceGuideVisible:boolean;sourceReviewOnly:string[]|null;sourceSessionStartXp:number;
+  sourceBatchIndex:number;
   practiceLessonId:string;practiceGroupId:string;sourceWord:string;
 };
 
@@ -99,6 +101,7 @@ export default function App() {
   const [filter, setFilter] = useState<KindFilter>('all');
   const [lessonId, setLessonId] = useState<string | null>(null);
   const [index, setIndex] = useState(0);
+  const [batchIndex,setBatchIndex] = useState(0);
   const [sessionStartXp, setSessionStartXp] = useState(0);
   const [mode, setMode] = useState<LearningMode>('learn');
   // One deliberate choice for the current Speak session, OFF at lesson start.
@@ -181,9 +184,12 @@ export default function App() {
 
   const active = lessons.find(x => x.id === lessonId);
   const focusedGroup = soundReturn && soundReturn.practiceLessonId === active?.id ? soundReturn.practiceGroupId : null;
+  const batched = !!active && usesPracticeBatches(active) && !reviewOnly && !focusedGroup;
+  const totalBatches = batched && active ? practiceBatchCount(active) : 1;
   const sessionItems = active
     ? focusedGroup ? itemsForMode(active, mode).filter(item => item.soundGroupId === focusedGroup)
       : reviewOnly && mode === 'learn' ? active.items.filter(item => reviewOnly.includes(item.id))
+      : batched ? practiceBatchItems(active, mode, batchIndex)
       : itemsForMode(active, mode)
     : [];
   const current = sessionItems[index];
@@ -213,7 +219,7 @@ export default function App() {
 
   const stopAudio = () => { audio.stop(); };
   const goTo = (destination: Page) => {
-    stopAudio(); setLessonId(null); setGuideVisible(false); setSoundReturn(null); setEditorOpen(false); setReviewOnly(null); setPage(destination); setRevealed(false); setFinished(false);
+    stopAudio(); setLessonId(null); setGuideVisible(false); setSoundReturn(null); setEditorOpen(false); setReviewOnly(null); setBatchIndex(0); setPage(destination); setRevealed(false); setFinished(false);
   };
   const openLesson = (lesson: Lesson) => {
     stopAudio();
@@ -221,6 +227,7 @@ export default function App() {
     setReviewOnly(null);
     setSessionStartXp(expedition.events.length);
     setLessonId(lesson.id); setGuideVisible(false); setMode(lesson.kind === 'reading' ? 'read' : 'learn');
+    setBatchIndex(firstUnvisitedBatch(lesson, progress));
     setIndex(lesson.kind === 'reading' ? safeReadingPosition(readingPositions, lesson.id, lesson.items.length) : 0);
     setRevealed(false); setTranslationOpen(false); setListenGuess(null); setReadGuess(null); setListenRevealed(false); setFinished(false);
     setLastLesson(lesson.id); saveLastLesson(lesson.id);
@@ -235,10 +242,10 @@ export default function App() {
     setSoundReturn({
       sourceLessonId:active.id,sourceItemId:current.id,sourceIndex:index,
       sourceGuideVisible:guideVisible,sourceReviewOnly:reviewOnly,
-      sourceSessionStartXp:sessionStartXp,practiceLessonId:destination.id,
+      sourceBatchIndex:batchIndex,sourceSessionStartXp:sessionStartXp,practiceLessonId:destination.id,
       practiceGroupId:group.id,sourceWord:current.polish,
     });
-    setLessonId(destination.id); setMode('speak'); setIndex(0);
+    setLessonId(destination.id); setMode('speak'); setIndex(0); setBatchIndex(0);
     setGuideVisible(false); setReviewOnly(null);
     setSessionStartXp(expedition.events.length);
     setRevealed(false); setTranslationOpen(false); setListenGuess(null);
@@ -247,13 +254,17 @@ export default function App() {
   const returnFromSoundPractice = () => {
     if (!soundReturn || active?.id !== soundReturn.practiceLessonId) return;
     const source = lessons.find(lesson => lesson.id === soundReturn.sourceLessonId);
-    if (!source || source.items[soundReturn.sourceIndex]?.id !== soundReturn.sourceItemId) {
+    const sourceItems = source && usesPracticeBatches(source) && !soundReturn.sourceReviewOnly
+      ? practiceBatchItems(source, 'speak', soundReturn.sourceBatchIndex)
+      : source?.items;
+    if (!source || sourceItems?.[soundReturn.sourceIndex]?.id !== soundReturn.sourceItemId) {
       goTo('library'); return;
     }
     stopAudio();
     setLessonId(source.id); setMode('speak'); setIndex(soundReturn.sourceIndex);
     setGuideVisible(soundReturn.sourceGuideVisible);
     setReviewOnly(soundReturn.sourceReviewOnly);
+    setBatchIndex(soundReturn.sourceBatchIndex);
     setSessionStartXp(soundReturn.sourceSessionStartXp);
     setRevealed(false); setTranslationOpen(false); setListenGuess(null);
     setReadGuess(null); setListenRevealed(false); setFinished(false);
@@ -263,7 +274,7 @@ export default function App() {
     const due = dueItems(lesson, reviews, new Date().toISOString()).map(item => item.id);
     if (!due.length || lesson.kind === 'reading') return;
     openLesson(lesson);
-    setReviewOnly(due); setMode('learn'); setIndex(0);
+    setReviewOnly(due); setMode('learn'); setIndex(0); setBatchIndex(0);
   };
   const jump = (target: number) => {
     if (!active) return;
@@ -272,6 +283,12 @@ export default function App() {
     setIndex(next);
     if (mode === 'read') setReadingPositions(previous => ({ ...previous, [active.id]: next }));
     setRevealed(false); setTranslationOpen(false); setListenGuess(null); setReadGuess(null); setListenRevealed(false); setFinished(false);
+  };
+  const changeBatch = (target: number) => {
+    if (!active || !batched || target < 0 || target >= totalBatches || target === batchIndex) return;
+    stopAudio(); setBatchIndex(target); setIndex(0);
+    setRevealed(false); setTranslationOpen(false); setListenGuess(null);
+    setReadGuess(null); setListenRevealed(false); setFinished(false);
   };
   const switchMode = (next: LearningMode) => {
     if (!active || !availableModes(active).includes(next)) return;
@@ -460,6 +477,11 @@ export default function App() {
           <div className="mode-row" role="group" aria-label="Learning modes">
             {availableModes(active).map(value => <button type="button" key={value} aria-pressed={mode === value} className={'mode ' + (mode === value ? 'active' : '')} onClick={() => switchMode(value)}>{value === 'learn' ? active.kind === 'sounds' ? 'Sounds' : 'Learn' : value === 'read' ? 'Read' : value === 'speak' ? 'Speak' : 'Listen'}</button>)}
           </div>
+          {batched && <label className="practice-group-picker">Practice group
+            <select aria-label="Practice group" value={batchIndex} onChange={event => changeBatch(Number(event.target.value))}>
+              {Array.from({length:totalBatches},(_,part) => <option key={part} value={part}>{practiceBatchLabel(active,part)}</option>)}
+            </select>
+          </label>}
           {active.kind === 'sounds' && mode === 'learn' && !finished && active.soundGroups && <SoundContrastDeck lesson={active} focusGroupId={focusedGroup ?? undefined} currentId={current.id} playing={audio.playing} onSelect={id => {
             const target = sessionItems.findIndex(item => item.id === id);
             if (target >= 0) jump(target);
@@ -475,7 +497,12 @@ export default function App() {
                 {candidate === 'learn' ? 'Learn' : candidate === 'read' ? 'Read' : candidate === 'speak' ? 'Speak' : 'Listen'} →
               </button>)}</div>
             </div>}
-            <div className="answer-actions"><button type="button" className="secondary-action" onClick={() => jump(0)}>Practise again</button>{soundReturn && active.id === soundReturn.practiceLessonId ? <button type="button" className="primary-action" onClick={returnFromSoundPractice}>Return to {soundReturn.sourceWord} →</button> : <button type="button" className="primary-action" onClick={() => goTo('library')}>Back to library →</button>}</div>
+            <div className="answer-actions"><button type="button" className="secondary-action" onClick={() => jump(0)}>Practise again</button>
+              {batched && batchIndex < totalBatches - 1
+                ? <button type="button" className="primary-action" onClick={() => changeBatch(batchIndex + 1)}>Next {Math.min(8, active.items.length - (batchIndex + 1) * 8)} expressions →</button>
+                : soundReturn && active.id === soundReturn.practiceLessonId ? <button type="button" className="primary-action" onClick={returnFromSoundPractice}>Return to {soundReturn.sourceWord} →</button>
+                : <button type="button" className="primary-action" onClick={() => goTo('library')}>Back to library →</button>}
+            </div>
           </section> : mode === 'speak' ? <SpeakPanel key={current.id} item={current} playing={audio.playing} onPlayReference={play} onStopReference={stopAudio}
             guideVisible={guideVisible} onGuideChange={setGuideVisible}
             onPracticeSound={!soundReturn && current.soundPractice ? openSoundPractice : undefined}
