@@ -205,6 +205,57 @@ test('E2 short dialogues stay inside reading lessons and allow read/listen witho
   expect(errors).toEqual([]);
 });
 
+test('E2 turn-taking chooses authentic Polish replies without awarding XP or storing scores', async ({page})=>{
+  const errors:string[]=[];
+  page.on('pageerror',error=>errors.push(error.message));
+  await page.goto('/');
+  await page.getByRole('button',{name:'Library'}).first().click();
+  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Basic 01R');
+  await page.getByRole('button',{name:/Basic 01R/}).click();
+  const selector=page.getByRole('group',{name:'Short conversations'});
+  await selector.getByRole('button',{name:/How are you/}).click();
+  const how=page.getByRole('region',{name:'Short dialogue: How are you?'});
+  await how.getByRole('button',{name:'Take a turn'}).click();
+  await expect(how.getByRole('group',{name:'Choose your Polish reply'}).getByRole('button')).toHaveCount(3);
+  await expect(how.getByRole('button',{name:'Play the other speaker'})).toBeEnabled();
+  await expect(how.locator('.micro-dialogue-turns')).toHaveCount(0);
+  await expect(how.getByText('Cześć! Jak się masz?',{exact:true})).toBeVisible();
+  await how.getByRole('group',{name:'Choose your Polish reply'}).getByRole('button',{name:'Mam na imię Andrew.'}).click();
+  await expect(how.getByRole('status')).toContainText('Try this reply:');
+  await expect(how.getByRole('status')).toContainText('Dziękuję, mam się dobrze.');
+  await expect(how.getByRole('button',{name:'Play the correct reply'})).toBeEnabled();
+  await how.getByRole('button',{name:'Try the reply again'}).click();
+  await how.getByRole('group',{name:'Choose your Polish reply'})
+    .getByRole('button',{name:'Dziękuję, mam się dobrze.'}).click();
+  await expect(how.getByRole('status')).toContainText('That fits!');
+  await how.getByRole('button',{name:'Listen first'}).click();
+  await expect(how.getByRole('status')).toHaveCount(0);
+  await expect(how.locator('.micro-dialogue-hidden')).toHaveCount(2);
+  await how.getByRole('button',{name:'Take a turn'}).click();
+  await expect(how.getByRole('group',{name:'Choose your Polish reply'}).getByRole('button')).toHaveCount(3);
+  await how.getByRole('button',{name:'Back to reading'}).click();
+  await expect(page.getByText('0 of 6 explored')).toBeVisible();
+  await selector.getByRole('button',{name:/What's your name/}).click();
+  const names=page.getByRole('region',{name:"Short dialogue: What's your name?"});
+  await names.getByRole('button',{name:'Take a turn'}).click();
+  await names.getByRole('group',{name:'Choose your Polish reply'})
+    .getByRole('button',{name:'Mam na imię Andrew.'}).click();
+  await expect(names.getByRole('status')).toContainText('That fits!');
+  await page.getByRole('button',{name:'Library'}).first().click();
+  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Grocery store very basic shopping');
+  await page.getByRole('button',{name:/Grocery store very basic shopping/}).click();
+  await page.getByRole('group',{name:'Short conversations'}).getByRole('button',{name:/Buying apples/}).click();
+  const apples=page.getByRole('region',{name:'Short dialogue: Buying apples'});
+  await apples.getByRole('button',{name:'Take a turn'}).click();
+  await expect(apples.getByText('Jakie jabłka pan lubi? Czerwone czy zielone?',{exact:true})).toBeVisible();
+  await apples.getByRole('group',{name:'Choose your Polish reply'})
+    .getByRole('button',{name:'Poproszę czerwone jabłka.'}).click();
+  await expect(apples.getByRole('status')).toContainText('That fits!');
+  await apples.getByRole('button',{name:'Back to reading'}).click();
+  await expect(page.getByText('0 of 9 explored')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
 test('responsive mobile library and lesson controls', async ({ page, isMobile }) => {
   if (!isMobile) test.skip();
   await page.goto('/');
