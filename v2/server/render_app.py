@@ -16,6 +16,7 @@ from urllib.parse import quote, urlparse
 from flask import Flask, jsonify, make_response, send_from_directory
 
 from family_api import create_app as create_family_app
+from postgres_storage import postgres_ready
 from recovery_mail import configured_sender
 
 
@@ -32,6 +33,7 @@ def _trusted_origin(value: str) -> str:
 
 def create_render_app(*, dist_path: str | Path | None = None,
                       database_path: str | None = None,
+                      postgres_url: str | None = None,
                       public_origin: str | None = None,
                       require_email: bool | None = None,
                       family_mode: str | None = None):
@@ -46,10 +48,14 @@ def create_render_app(*, dist_path: str | Path | None = None,
         raise RuntimeError("PTP_RENDER_FAMILY_MODE must be explicitly disabled or enabled")
     family_enabled = mode == "enabled"
     database = ""
+    neon = ""
 
     if family_enabled:
         database = database_path or os.getenv("PTP_FAMILY_DB", "")
-        if not database or not Path(database).is_absolute():
+        neon = postgres_url or os.getenv("PTP_FAMILY_DATABASE_URL", "")
+        if bool(database) == bool(neon):
+            raise RuntimeError("Configure exactly one durable V2 database: Neon or private SQLite")
+        if database and not Path(database).is_absolute():
             raise RuntimeError("A persistent absolute PTP_FAMILY_DB is required")
         origin = _trusted_origin(public_origin or os.getenv("PTP_PUBLIC_ORIGIN", ""))
         email_required = (os.getenv("PTP_RENDER_REQUIRE_EMAIL", "1") == "1"
@@ -57,7 +63,9 @@ def create_render_app(*, dist_path: str | Path | None = None,
         if email_required and (configured_sender("verification") is None or
                                configured_sender("recovery") is None):
             raise RuntimeError("Live V2 account verification/recovery SMTP must be configured")
-        app = create_family_app(database_path=database, catalog_path=str(catalog),
+        app = create_family_app(database_path=database or None,
+                                postgres_url=neon or None,
+                                catalog_path=str(catalog),
                                 allowed_origins=(origin,))
     else:
         # The Free plan has NO durable private SQLite. Don't initialize family
@@ -76,6 +84,8 @@ def create_render_app(*, dist_path: str | Path | None = None,
             return False
         if not family_enabled:
             return True
+        if neon:
+            return postgres_ready(neon)
         path = Path(database)
         if not path.is_file() or path.is_symlink():
             return False
