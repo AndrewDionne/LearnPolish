@@ -17,9 +17,13 @@ Open **http://127.0.0.1:5186/**. Override the app-specific development port with
 
 For a production-like V2 PWA/offline preview run `./prod_like.sh`, then open **http://127.0.0.1:4186/**. For local build and test validation, run `./publish.sh`; that command does not push commits or deploy a site.
 
-## Publishing
+## Hosting migration: Render-only target
 
-The GitHub Pages site should host **V2**, built from `v2/frontend/dist/`. After all four [V2 CI](.github/workflows/v2-ci.yml) lanes pass on `main`, [Deploy V2 to GitHub Pages](.github/workflows/deploy-v2-pages.yml) builds and publishes that static artifact. The old `docs/` tree is **not** the publishing target. V2 source belongs on `main`; the deploy artifact is generated and is not committed to `docs/`.
+The owner has selected **private GitHub source + single Render web service** for the full V2 frontend and family backend. The deployable unified Render design, deliberate startup readiness checks, disk/SMTP requirements and controlled cutover are in [the Render V2 runbook](v2/server/RENDER_V2.md). The [`render.yaml`](render.yaml) describes a **paid, opt-in** Starter web service with persistent disk; merging source alone does not provision it. Do **not** confuse the currently live GitHub Pages frontend or legacy Render services with a verified unified V2 deployment. The old Pages workflow will be disabled **after** the new Render host is certified.
+
+## Previous GitHub Pages publishing
+
+The GitHub Pages previously hosted **V2**, built from `v2/frontend/dist/`. After all four [V2 CI](.github/workflows/v2-ci.yml) lanes pass on `main`, [Deploy V2 to GitHub Pages](.github/workflows/deploy-v2-pages.yml) builds and publishes that static artifact. The old `docs/` tree is **not** the publishing target. V2 source belongs on `main`; the deploy artifact is generated and is not committed to `docs/`.
 
 **One-time GitHub setting required if Pages was previously configured for `main /docs`:** in the repository choose **Settings → Pages → Build and deployment → Source → GitHub Actions**. Until this setting is changed and a deployment succeeds, the old V1 site may still appear at the public URL. Do not mistake merged V2 code for a completed public release.
 
