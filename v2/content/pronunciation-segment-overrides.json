@@ -1,0 +1,148 @@
+{
+  "schemaVersion": 1,
+  "reviewStatus": "needs_native_speaker_review",
+  "notes": "Editorial Polish syllable spelling partitions, pending independent native-speaker review. Never claim verified acoustic labels.",
+  "items": [
+    {
+      "polish": "ulica",
+      "segments": [
+        "u",
+        "li",
+        "ca"
+      ]
+    },
+    {
+      "polish": "aleja",
+      "segments": [
+        "a",
+        "le",
+        "ja"
+      ]
+    },
+    {
+      "polish": "droga",
+      "segments": [
+        "dro",
+        "ga"
+      ]
+    },
+    {
+      "polish": "osiedle",
+      "segments": [
+        "o",
+        "sie",
+        "dle"
+      ]
+    },
+    {
+      "polish": "ścieżka",
+      "segments": [
+        "ścież",
+        "ka"
+      ]
+    },
+    {
+      "polish": "wiadukt",
+      "segments": [
+        "wia",
+        "dukt"
+      ]
+    },
+    {
+      "polish": "rondo",
+      "segments": [
+        "ron",
+        "do"
+      ]
+    },
+    {
+      "polish": "Dzień dobry",
+      "segments": [
+        "Dzień ",
+        "do",
+        "bry"
+      ]
+    },
+    {
+      "polish": "Dobry wieczór",
+      "segments": [
+        "Do",
+        "bry ",
+        "wie",
+        "czór"
+      ]
+    },
+    {
+      "polish": "Dziękuję",
+      "segments": [
+        "Dzię",
+        "ku",
+        "ję"
+      ]
+    },
+    {
+      "polish": "Dzięki",
+      "segments": [
+        "Dzię",
+        "ki"
+      ]
+    },
+    {
+      "polish": "Proszę",
+      "segments": [
+        "Pro",
+        "szę"
+      ]
+    },
+    {
+      "polish": "Przepraszam",
+      "segments": [
+        "Prze",
+        "pra",
+        "szam"
+      ]
+    },
+    {
+      "polish": "Jeden",
+      "segments": [
+        "Je",
+        "den"
+      ]
+    },
+    {
+      "polish": "Cztery",
+      "segments": [
+        "Czte",
+        "ry"
+      ]
+    },
+    {
+      "polish": "Siedem",
+      "segments": [
+        "Sie",
+        "dem"
+      ]
+    },
+    {
+      "polish": "Osiem",
+      "segments": [
+        "O",
+        "siem"
+      ]
+    },
+    {
+      "polish": "Dziewięć",
+      "segments": [
+        "Dzie",
+        "więć"
+      ]
+    },
+    {
+      "polish": "Dziesięć",
+      "segments": [
+        "Dzie",
+        "sięć"
+      ]
+    }
+  ]
+}
