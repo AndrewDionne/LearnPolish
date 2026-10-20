@@ -77,6 +77,10 @@ The **11 backend-unscorable reference expressions**, grouped by module, are:
 
 The **3 additional unfinished reference texts** are `Mam na imię…` (Conversation 1), `Jak dojść do …?` (Road Terminology), and `Przepraszam, jak dojadę do …?` (Transit 1). The current proxy can strip `…`, but the spoken target remains underspecified: either author a specific completed example or keep it for ungraded speaking practice. These are **14 problematic Speak items total**, with no overlap between those 11 and these 3.
 
+## E1 Sound Lab focus letters — teaching cue added, pronunciation still unverified (2026-10-20)
+
+The existing five contrast modules now show the **exact target Polish grapheme(s)** coloured and underlined within **all 26 original example phrases**. Editorial `focus` fields in `sound-contrasts.json` are checked against the exact source text and audio mapping during migration. The target spelling remains inside the full original expression: e.g., `Cz` in *Cztery*, `ć` in *Pięć*, `Si` in *Siedem*, `Rz` in *Rzeszów* and `krzy` in *ulica Świętokrzyska*. This is a **spelling/attention aid**, not a phonetic audio assessment, not additional grouped syllable scoring, and not evidence of native-reviewed reference audio. All 26 references, 482 source items, and the 26-module inventory remain unchanged. Owner priority columns are still unset.
+
 ## Curated Numbers 1–20 practice ranges (2026-10-20, supersedes arbitrary eight-item groups)
 
 The owner rejected automatic 1–8 / 9–16 / 17–20 slicing as educationally arbitrary. **Numbers 1–20 remains ONE existing learning module** with its original 20 recorded items, full item-level progress, and identical audio/XP identities. Learners may work through **Numbers 1–10** and **Numbers 11–20** as optional internal sections, without creating two lesson records. Moving between Learn, Listen and Speak preserves the chosen range. Re-entry starts at the first unvisited range, and earlier ranges remain accessible. The separate `numbers_1-20` catalog still contains 20 items.

@@ -150,6 +150,8 @@
 .contrast-example.chosen{border-color:#318978;background:#f1f9f4;box-shadow:0 0 0 1px #31897820}
 .contrast-focus{display:grid;gap:2px;text-align:left;border:0;background:transparent;padding:10px 11px;min-width:0;flex:1}
 .contrast-focus strong{font:700 14px Outfit,sans-serif;color:#214b56;overflow-wrap:anywhere}
+/* Colour emphasis identifies authored written letter combinations, never ASR scoring. */
+.contrast-focus .sound-focus-letters{color:#146d60;font-weight:900;text-decoration:underline;text-decoration-color:#146d60;text-decoration-thickness:2px;text-underline-offset:3px}
 .contrast-focus small{font-size:10px;color:#84969b;overflow-wrap:anywhere}
 .contrast-play{width:38px;flex:none;border:0;border-left:1px solid #e2ebe8;background:transparent;color:#277b69;font-size:17px}
 .contrast-play:hover{background:#e4f5ed}

@@ -1,3 +1,24 @@
+test('Sound Lab emphasizes only authored source letters without modifying full Polish audio targets', async({page})=>{
+  await page.goto('/');
+  await page.getByRole('button',{name:'Library'}).first().click();
+  await page.getByRole('searchbox',{name:'Search lessons'}).fill('C · CZ');
+  await page.getByRole('button',{name:/C · CZ · Ć/}).click();
+  const groups=page.locator('.contrast-group');
+  await expect(groups).toHaveCount(3);
+  await expect(groups.nth(0).locator('.sound-focus-letters')).toHaveText(['c','c']);
+  await expect(groups.nth(1).locator('.sound-focus-letters')).toHaveText(['Cz','Cz']);
+  await expect(groups.nth(2).locator('.sound-focus-letters')).toHaveText(['ć','ć']);
+  await expect(groups.nth(1).locator('.contrast-focus',{hasText:'Cztery'})).toBeVisible();
+  await expect(groups.nth(1).locator('.contrast-focus',{hasText:'Czechy'})).toBeVisible();
+  await groups.nth(1).getByRole('button',{name:/Cztery/}).first().click();
+  await expect(groups.nth(1).locator('.contrast-example.chosen')).toContainText('Cztery');
+  await page.getByRole('button',{name:'Library'}).first().click();
+  await page.getByRole('searchbox',{name:'Search lessons'}).fill('KRZY');
+  await page.getByRole('button',{name:/KRZY · PRZY/}).click();
+  await expect(page.locator('.sound-focus-letters')).toHaveText(['krzy','Krzy','Przy','przy']);
+  await expect(page.locator('.contrast-focus',{hasText:'ulica Świętokrzyska'})).toBeVisible();
+});
+
 import {expect,test} from '@playwright/test';
 
 // Offline, synthetic speech only. No real microphone, Azure, Groq, login, or scores.

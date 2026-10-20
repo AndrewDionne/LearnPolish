@@ -13,12 +13,14 @@
           {
             "set": "Road_Terminology",
             "index": 2,
-            "expected": "plac"
+            "expected": "plac",
+            "focus": "c"
           },
           {
             "set": "Road_Terminology",
             "index": 0,
-            "expected": "ulica"
+            "expected": "ulica",
+            "focus": "c"
           }
         ]
       },
@@ -31,12 +33,14 @@
           {
             "set": "numbers_1-20",
             "index": 3,
-            "expected": "Cztery"
+            "expected": "Cztery",
+            "focus": "Cz"
           },
           {
             "set": "Countries_of_the_World",
             "index": 25,
-            "expected": "Czechy"
+            "expected": "Czechy",
+            "focus": "Cz"
           }
         ]
       },
@@ -49,12 +53,14 @@
           {
             "set": "numbers_1-20",
             "index": 4,
-            "expected": "Pięć"
+            "expected": "Pięć",
+            "focus": "ć"
           },
           {
             "set": "numbers_1-20",
             "index": 5,
-            "expected": "Sześć"
+            "expected": "Sześć",
+            "focus": "ć"
           }
         ]
       }
@@ -74,12 +80,14 @@
           {
             "set": "Numbers_20-100",
             "index": 16,
-            "expected": "Sto"
+            "expected": "Sto",
+            "focus": "S"
           },
           {
             "set": "Countries_of_the_World",
             "index": 35,
-            "expected": "Serbia"
+            "expected": "Serbia",
+            "focus": "S"
           }
         ]
       },
@@ -92,12 +100,14 @@
           {
             "set": "numbers_1-20",
             "index": 5,
-            "expected": "Sześć"
+            "expected": "Sześć",
+            "focus": "Sz"
           },
           {
             "set": "Countries_of_the_World",
             "index": 16,
-            "expected": "Szwecja"
+            "expected": "Szwecja",
+            "focus": "Sz"
           }
         ]
       },
@@ -110,12 +120,14 @@
           {
             "set": "Districts_of_Warszawa",
             "index": 0,
-            "expected": "Śródmieście"
+            "expected": "Śródmieście",
+            "focus": "Ś"
           },
           {
             "set": "numbers_1-20",
             "index": 6,
-            "expected": "Siedem"
+            "expected": "Siedem",
+            "focus": "Si"
           }
         ]
       }
@@ -135,12 +147,14 @@
           {
             "set": "Conversation_-_shopping",
             "index": 13,
-            "expected": "Za małe"
+            "expected": "Za małe",
+            "focus": "Z"
           },
           {
             "set": "Conversation_-_restaurant",
             "index": 12,
-            "expected": "Zupa dnia"
+            "expected": "Zupa dnia",
+            "focus": "Z"
           }
         ]
       },
@@ -153,12 +167,14 @@
           {
             "set": "Districts_of_Warszawa",
             "index": 5,
-            "expected": "Żoliborz"
+            "expected": "Żoliborz",
+            "focus": "Ż"
           },
           {
             "set": "The_Cities_of_Poland",
             "index": 16,
-            "expected": "Rzeszów"
+            "expected": "Rzeszów",
+            "focus": "Rz"
           }
         ]
       },
@@ -171,12 +187,14 @@
           {
             "set": "The_Cities_of_Poland",
             "index": 22,
-            "expected": "Zielona Góra"
+            "expected": "Zielona Góra",
+            "focus": "Zi"
           },
           {
             "set": "Names_of_Poland_1",
             "index": 8,
-            "expected": "Mateusz Woźniak"
+            "expected": "Mateusz Woźniak",
+            "focus": "ź"
           }
         ]
       }
@@ -196,12 +214,14 @@
           {
             "set": "The_Cities_of_Poland",
             "index": 8,
-            "expected": "Lublin"
+            "expected": "Lublin",
+            "focus": "L"
           },
           {
             "set": "The_Cities_of_Poland",
             "index": 26,
-            "expected": "Legnica"
+            "expected": "Legnica",
+            "focus": "L"
           }
         ]
       },
@@ -214,12 +234,14 @@
           {
             "set": "The_Cities_of_Poland",
             "index": 2,
-            "expected": "Łódź"
+            "expected": "Łódź",
+            "focus": "Ł"
           },
           {
             "set": "Countries_of_the_World",
             "index": 29,
-            "expected": "Łotwa"
+            "expected": "Łotwa",
+            "focus": "Ł"
           }
         ]
       }
@@ -239,12 +261,14 @@
           {
             "set": "Road_Terminology",
             "index": 19,
-            "expected": "ulica Świętokrzyska"
+            "expected": "ulica Świętokrzyska",
+            "focus": "krzy"
           },
           {
             "set": "Names_of_Poland_1",
             "index": 2,
-            "expected": "Krzysztof Wiśniewski"
+            "expected": "Krzysztof Wiśniewski",
+            "focus": "Krzy"
           }
         ]
       },
@@ -257,12 +281,14 @@
           {
             "set": "Transit_1",
             "index": 8,
-            "expected": "Przystanek autobusowy"
+            "expected": "Przystanek autobusowy",
+            "focus": "Przy"
           },
           {
             "set": "Conversation_-_shopping",
             "index": 15,
-            "expected": "Czy mogę to przymierzyć?"
+            "expected": "Czy mogę to przymierzyć?",
+            "focus": "przy"
           }
         ]
       }

@@ -35,6 +35,8 @@ export type LessonItem = {
   title?: string;
   audio?: string;
   soundGroupId?: string;
+  /** Curated graphemes to notice in the existing sound example, not an acoustic score. */
+  soundFocus?: string;
   comprehension?: ComprehensionCheck;
 };
 
@@ -103,6 +105,13 @@ export function validateLesson(value: unknown): value is Lesson {
       )) &&
       (item.audio === undefined || typeof item.audio === 'string') &&
       (item.soundGroupId === undefined || typeof item.soundGroupId === 'string') &&
+      (item.soundFocus === undefined || (
+        x.kind === 'sounds' && typeof item.soundFocus === 'string' &&
+        item.soundFocus.length > 0 && item.soundFocus.length <= 8 &&
+        !/\s/u.test(item.soundFocus) &&
+        item.polish.includes(item.soundFocus) &&
+        item.polish.indexOf(item.soundFocus, item.polish.indexOf(item.soundFocus) + item.soundFocus.length) === -1
+      )) &&
       (item.comprehension === undefined || (
         x.kind === 'reading' && !!item.comprehension &&
         typeof item.comprehension.prompt === 'string' && item.comprehension.prompt.length >= 12 &&
