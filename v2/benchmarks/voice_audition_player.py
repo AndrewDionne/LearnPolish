@@ -103,7 +103,7 @@ def render_player(clips: list[dict], plans: list[dict], voices: list[dict]) -> s
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; media-src 'self'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; media-src 'self' file:; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
 <title>Path to Polish — Voice audition</title>
 <style>
 :root { color-scheme: light; font: 16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:#202538; background:#f7f8fa; }
