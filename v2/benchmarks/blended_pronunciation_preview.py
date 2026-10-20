@@ -225,15 +225,33 @@ footer{{font-size:12px;color:#5b757a;margin-top:20px}}
 
 def main() -> int:
     p = argparse.ArgumentParser(description="Private 50/50 Azure + Whisper UX preview from ALREADY SAVED Świętokrzyska results; zero calls")
-    p.add_argument("--wav", required=True, type=Path)
-    p.add_argument("--azure-result", required=True, type=Path)
-    p.add_argument("--whisper-result", required=True, type=Path)
+    p.add_argument("--existing-sample", action="store_true",
+                   help="Use the already assessed 2026-10-19 adult Świętokrzyska evidence; make one private HTML preview")
+    p.add_argument("--wav", type=Path)
+    p.add_argument("--azure-result", type=Path)
+    p.add_argument("--whisper-result", type=Path)
     p.add_argument("--html-output", type=Path, help="NEW private, local .html preview; never overwrites")
     args = p.parse_args()
+    if args.existing_sample:
+        if any((args.wav, args.azure_result, args.whisper_result, args.html_output)):
+            p.error("--existing-sample cannot be combined with manual paths")
+        folder = Path(__file__).resolve().parents[2] / "PathToPolish-Private-AI" / "swietokrzyska-01"
+        wav = folder / "ptp-speech-v1--speak_swietokrzyska%3A0--20261019T123345890Z.wav"
+        azure_result = folder / "azure-compare-01.jsonl"
+        whisper_result = folder / "whisper-01.jsonl"
+        output = folder / "blended-preview-01.html"
+    else:
+        if not all((args.wav, args.azure_result, args.whisper_result)):
+            p.error("Supply --wav, --azure-result and --whisper-result, or use --existing-sample")
+        wav,azure_result,whisper_result,output = (
+            args.wav, args.azure_result, args.whisper_result, args.html_output
+        )
     try:
-        result = load_existing(args.wav, args.azure_result, args.whisper_result)
-        if args.html_output:
-            write_private_html(args.html_output, args.wav, render_html_preview(result))
+        result = load_existing(wav, azure_result, whisper_result)
+        if output:
+            write_private_html(output, wav, render_html_preview(result))
+            result["private_preview_created"] = True
+            result["preview_name"] = output.name
         print(json.dumps(result, ensure_ascii=False, indent=2))
     except (ValueError, OSError, TypeError, KeyError, json.JSONDecodeError):
         p.error("Private original audio/evidence does not match, models disagree, or preview output already exists; no provider called")
