@@ -101,6 +101,12 @@ test('normal Speak shows coloured source syllables with gaps and only 67 combine
   await expect(page.locator('.speak-word-score')).toHaveCount(0);
   await expect(page.locator('.speak-score-explanation')).toHaveCount(0);
   await expect(page.locator('.speak-blended-word')).toHaveCSS('gap',/.+/);
+  await expect(page.locator('.speak-word-english')).toHaveCount(0);
+  const guide=page.getByRole('button',{name:/Pronunciation guide/});
+  await guide.click();
+  await expect(page.locator('.speak-word-english')).toHaveText(['shfyehn','toh','KSHIH','skah']);
+  await guide.click();
+  await expect(page.locator('.speak-word-english')).toHaveCount(0);
   await expect(page.getByText('NEVER SHOW PRIVATE TRANSCRIPTION')).toHaveCount(0);
   await expect(page.getByText('84/100')).toHaveCount(0);
   await expect(page.getByText('50/100')).toHaveCount(0);
