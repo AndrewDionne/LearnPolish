@@ -147,7 +147,7 @@ test('new catalog retires bundled sound examples while retaining all other legac
 
 test('sound focus must match exactly one recorded Polish substring', () => {
   buildContent();
-  const catalog = JSON.parse(fs.readFileSync(path.resolve('public/generated/lessons.json'),'utf8')).lessons;
+  const catalog = JSON.parse(fs.readFileSync(path.resolve('public/generated/lessons.json'),'utf8')).lessons.filter(lesson=>lesson.kind!=='sounds');
   const definitions = JSON.parse(fs.readFileSync(path.resolve('../content/sound-contrasts.json'),'utf8'));
   const bad = structuredClone(definitions);
   bad[0].groups[0].examples[0].focus='sz';
