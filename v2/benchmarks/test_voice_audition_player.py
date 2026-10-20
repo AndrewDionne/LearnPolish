@@ -69,7 +69,9 @@ class VoiceAuditionPlayerTests(unittest.TestCase):
         verified = player.verified_clips(report, self.planned, self.output)
         html = player.render_player(verified, self.planned, self.voices)
         self.assertEqual(html.count("<audio controls"), 2)
-        self.assertEqual(html.count("Not generated"), 1)
+        # The reserve voice must not occupy the comparison UI when no clip exists.
+        self.assertEqual(html.count("Not generated"), 0)
+        self.assertNotIn('<h3>Agnieszka</h3>', html)
         self.assertIn("Agnieszka", html)
 
     def test_changed_bytes_and_wrong_spoken_text_fail_closed(self):
