@@ -172,7 +172,7 @@ def render_html_preview(result: dict) -> str:
 *{{box-sizing:border-box}}
 body{{margin:0;min-height:100svh;display:grid;place-items:center;padding:20px}}
 main{{display:flex;flex-direction:column;align-items:center;gap:26px;max-width:100%}}
-.word{{display:flex;justify-content:center;align-items:baseline;white-space:nowrap;margin:0;
+.word{{display:flex;justify-content:center;align-items:baseline;white-space:nowrap;margin:0;gap:.12em;
 font-size:clamp(24px,6.4vw,54px);line-height:1.16;font-weight:750;letter-spacing:-.025em}}
 .syllable{{display:inline;color:#1c3436}}
 .syllable.close{{color:#237451}}
@@ -204,7 +204,7 @@ def main() -> int:
         wav = folder / "ptp-speech-v1--speak_swietokrzyska%3A0--20261019T123345890Z.wav"
         azure_result = folder / "azure-compare-01.jsonl"
         whisper_result = folder / "whisper-01.jsonl"
-        output = folder / "blended-preview-02.html"
+        output = folder / "blended-preview-03.html"
     else:
         if not all((args.wav, args.azure_result, args.whisper_result)):
             p.error("Supply --wav, --azure-result and --whisper-result, or use --existing-sample")

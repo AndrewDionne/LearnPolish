@@ -70,6 +70,8 @@ class BlendedPreviewTests(unittest.TestCase):
         html=render_html_preview(result)
         # Exactly one unboxed coloured word and one score in the body.
         self.assertIn('<h1 class="word"',html)
+        self.assertIn('gap:.12em;',html)  # Three subtle visual breaks; no actual spaces in word
+        self.assertEqual(html.count('class="syllable '),4)
         self.assertIn('>67/100</output>',html)
         self.assertEqual(html.count('class="syllable review"'),2)
         self.assertEqual(html.count('class="syllable focus"'),1)
