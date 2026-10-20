@@ -328,9 +328,9 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
                           (identity,)).fetchone()
         fresh = not row or now-row["first_at"] >= 3600
         attempts = 1 if fresh else row["attempts"] + 1
-        con.execute("INSERT INTO verification_throttle(identity,attempts,first_at) VALUES(?,?,?)
+        con.execute("""INSERT INTO verification_throttle(identity,attempts,first_at) VALUES(?,?,?)
                  ON CONFLICT(identity) DO UPDATE
-                 SET attempts=excluded.attempts,first_at=excluded.first_at",
+                 SET attempts=excluded.attempts,first_at=excluded.first_at""",
                     (identity, attempts, now if fresh else row["first_at"]))
         return attempts > threshold
 
@@ -470,9 +470,9 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
             fresh = not throttle or now-throttle["first_at"] >= 900
             first = now if fresh else throttle["first_at"]
             count = 1 if fresh else throttle["failures"]+1
-            con.execute("INSERT INTO login_throttle(identity,failures,first_at) VALUES(?,?,?)
+            con.execute("""INSERT INTO login_throttle(identity,failures,first_at) VALUES(?,?,?)
                          ON CONFLICT(identity) DO UPDATE
-                         SET failures=excluded.failures,first_at=excluded.first_at", (key,count,first))
+                         SET failures=excluded.failures,first_at=excluded.first_at""", (key,count,first))
             return fail("invalid_credentials", 401)
         if row["verified_at"] is None:
             return fail("email_verification_required", 403)
@@ -490,9 +490,9 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
         fresh = not row or now - row["first_at"] >= window
         attempts = 1 if fresh else row["attempts"] + 1
         first = now if fresh else row["first_at"]
-        con.execute("INSERT INTO recovery_throttle(identity,attempts,first_at) VALUES(?,?,?)
+        con.execute("""INSERT INTO recovery_throttle(identity,attempts,first_at) VALUES(?,?,?)
                  ON CONFLICT(identity) DO UPDATE
-                 SET attempts=excluded.attempts,first_at=excluded.first_at",
+                 SET attempts=excluded.attempts,first_at=excluded.first_at""",
                     (identity, attempts, first))
         return attempts > threshold
 
