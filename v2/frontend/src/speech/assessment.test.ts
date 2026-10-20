@@ -68,6 +68,30 @@ describe('Pronunciation assessment contract — real Azure scores only',()=>{
       ...valid,method:'azure-pl-PL-scripted'}});
     if(fakeProvider.status==='ok')expect(fakeProvider.syllableFeedback).toBeUndefined();
   });
+  test('blended 67 score and colour-only hints remove all transcript/provider internals',()=>{
+    const base={status:'ok',engine:'azure-whisper-blend-v1',
+      calibration:'experimental-uncalibrated',combined:67,
+      colourHints:{method:'whisper-transcript-proxy-v1',reference:'Świętokrzyska',
+        segments:[{polish:'Świę',hint:'review'},{polish:'to',hint:'review'},
+                  {polish:'krzy',hint:'focus'},{polish:'ska',hint:'close'}]},
+      privateTranscript:'DO_NOT_DISPLAY_PRIVATE_TRANSCRIPT',azureAccuracy:84,whisperSimilarity:50};
+    const parsed=parseSpeechFeedback(base);
+    expect(parsed.status).toBe('ok');
+    if(parsed.status==='ok'&&parsed.engine==='azure-whisper-blend-v1'){
+      expect(parsed.combined).toBe(67);
+      expect(parsed.colourHints.segments.map(p=>p.hint)).toEqual(['review','review','focus','close']);
+    }else throw new Error('Expected blended feedback');
+    expect(JSON.stringify(parsed)).not.toContain('PRIVATE');
+    expect(JSON.stringify(parsed)).not.toContain('azureAccuracy');
+    expect(JSON.stringify(parsed)).not.toContain('whisperSimilarity');
+    for(const bad of [
+      {...base,combined:-1},{...base,combined:101},{...base,combined:NaN},
+      {...base,calibration:'certified'},
+      {...base,colourHints:{...base.colourHints,reference:'wrong'}},
+      {...base,colourHints:{...base.colourHints,segments:[
+        ...base.colourHints.segments.slice(0,-1),{polish:'ska',hint:'100%'}]}},
+    ])expect(()=>parseSpeechFeedback(bad)).toThrow('Assessment response unavailable');
+  });
   test('service disabled by default, no audio network or hidden provider calls',async()=>{
     expect(SPEECH_ASSESSMENT_AVAILABLE).toBe(false);
     const original=globalThis.fetch;
