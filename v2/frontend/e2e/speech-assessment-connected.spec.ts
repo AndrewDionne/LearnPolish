@@ -205,7 +205,7 @@ test('Świętokrzyska is a real built-in Speak test item with opt-in timing, not
   await recordValidTake(page);
   expect(calls).toBe(0);
   await page.getByRole('button',{name:'Check my pronunciation'}).click();
-  await expect(page.getByText('77.0 / 100')).toBeVisible();
+  await expect(page.locator('.speak-word-score-primary')).toHaveText('77/100');
   await expect(page.getByText(/Azure SDK call 4\.0 s/)).toBeVisible();
   await expect(page.getByText('NEVER-DISPLAY-RAW-SPEECH')).toHaveCount(0);
   expect(calls).toBe(1);
