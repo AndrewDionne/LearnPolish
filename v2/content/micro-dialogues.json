@@ -21,7 +21,17 @@
           "polish": "Dziękuję, mam się dobrze.",
           "speaker": "B"
         }
-      ]
+      ],
+      "comprehension": {
+        "prompt": "How does Person B respond to the greeting?",
+        "options": [
+          "They say they are feeling well.",
+          "They ask for directions.",
+          "They say they are hungry."
+        ],
+        "correctIndex": 0,
+        "feedback": "Dziękuję, mam się dobrze means Thank you, I am well."
+      }
     },
     {
       "lesson": "Basic_01R",
@@ -42,7 +52,17 @@
           "polish": "Mam na imię Andrew.",
           "speaker": "B"
         }
-      ]
+      ],
+      "comprehension": {
+        "prompt": "What does Person B tell the other speaker?",
+        "options": [
+          "Their address.",
+          "Their name.",
+          "Their age."
+        ],
+        "correctIndex": 1,
+        "feedback": "Mam na imię Andrew means My name is Andrew."
+      }
     },
     {
       "lesson": "Grocery_store_very_basic_shopping",
@@ -68,7 +88,17 @@
           "polish": "Poproszę czerwone jabłka.",
           "speaker": "A"
         }
-      ]
+      ],
+      "comprehension": {
+        "prompt": "Which apples does the customer decide to buy?",
+        "options": [
+          "Green apples.",
+          "Yellow apples.",
+          "Red apples."
+        ],
+        "correctIndex": 2,
+        "feedback": "Poproszę czerwone jabłka means Red apples, please."
+      }
     }
   ]
 }
