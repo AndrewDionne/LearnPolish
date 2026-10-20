@@ -150,6 +150,7 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
         item["id"]: item["polish"] for lesson in raw["lessons"]
         for item in lesson["items"]
         if isinstance(item.get("polish"), str) and 1 <= len(item["polish"]) <= 300
+        and item.get("referenceReview") != "practice_only"
     }
     speech_segments = {
         item["id"]: item["pronunciationSegments"]["segments"]
