@@ -113,8 +113,12 @@ export default function SpeakPanel({item, playing, onPlayReference, onStopRefere
     <div id="speak-word-guide" className="speak-word-stage">
       <h2 lang="pl" className={'speak-prompt' + ((expandedGuide || syllableScores) && guide ? ' with-guide' : '')}>
         {colourParts ? <span className="speak-blended-word" aria-label={item.polish}>
-          {colourParts.map((part,i)=><span key={i} className={'speak-blended-part '+part.hint}
-            aria-label={part.polish}>{part.polish}</span>)}
+          {colourParts.map((part,i)=><span key={i}
+            className={'speak-blended-segment'+(guide?.stressIndex===i?' stressed':'')}>
+            <span className={'speak-blended-part '+part.hint} aria-label={part.polish}>{part.polish}</span>
+            {expandedGuide && guide?.syllables[i]?.polish===part.polish &&
+              <span className="speak-word-english" lang="en">{guide.syllables[i].englishCue}</span>}
+          </span>)}
         </span> : (expandedGuide || syllableScores) && guide ? <span className="speak-guided-word" aria-label={item.polish}>
           {guide.syllables.map((part, index) => {
             const score=syllableScores?.[index]?.score;
