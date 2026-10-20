@@ -24,6 +24,20 @@ describe('learning modes', () => {
     expect(itemsForMode(lesson, 'read')).toHaveLength(3);
   });
 
+  test('two pending Conversation 1 references stay in Learn and Speak but not Listen',()=>{
+    const greetings: Lesson={...lesson,id:'Conversation_1',kind:'vocabulary',
+      items:[{id:'Conversation_1:23',polish:'Jak masz na imię?',english:'What is your name?',
+                 audio:'generated/audio/Conversation_1/23.mp3'},
+             {id:'Conversation_1:24',polish:'Jak ma pan/pani na imię?',english:'Formal name question',
+                 audio:'generated/audio/Conversation_1/24.mp3',referenceReview:'practice_only'},
+             {id:'Conversation_1:25',polish:'Mam na imię…',english:'My name is',
+                 audio:'generated/audio/Conversation_1/25.mp3',referenceReview:'practice_only'}]};
+    expect(availableModes(greetings)).toEqual(['learn','speak','listen']);
+    expect(itemsForMode(greetings,'listen').map(item=>item.id)).toEqual(['Conversation_1:23']);
+    expect(itemsForMode(greetings,'learn')).toHaveLength(3);
+    expect(itemsForMode(greetings,'speak')).toHaveLength(3);
+  });
+
   test('comprehension choices include target exactly once and unique distractors', () => {
     for (let i = 0; i < lesson.items.length; i++) {
       const choices = comprehensionChoices(lesson.items, lesson.items[i], i);
