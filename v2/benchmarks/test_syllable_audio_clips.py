@@ -71,7 +71,7 @@ class SoundClipTests(unittest.TestCase):
             with wave.open(str(clip),"rb") as wav:
                 self.assertEqual(wav.getframerate(),16000)
                 self.assertEqual(wav.getnframes(),6400)
-                self.assertEqual(wav.readframes(6400),frames[i*6400:(i+1)*6400])
+                self.assertEqual(wav.readframes(6400),frames[i*6400*2:(i+1)*6400*2])
         with self.assertRaisesRegex(ValueError,"NEW output directory"):
             prepare_clips(self.wav,self.timing,folder,_test_private_root=self.root)
 
