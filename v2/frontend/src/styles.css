@@ -440,8 +440,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 
 /* Combined Speak result: ONLY coloured text and one overall number.
    No per-syllable percentages, labels, background chips or legend. */
-.speak-blended-word{display:inline-flex;align-items:baseline;justify-content:center;
+.speak-blended-word{display:inline-flex;align-items:flex-start;justify-content:center;
   gap:.12em;max-width:100%;white-space:nowrap}
+.speak-blended-segment{display:inline-flex;flex-direction:column;align-items:center;min-width:0}
 .speak-blended-part{display:inline;color:var(--text,#243e45)}
 .speak-blended-part.close{color:#237451}
 .speak-blended-part.review{color:#ae740e}
