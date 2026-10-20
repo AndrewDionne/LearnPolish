@@ -34,6 +34,8 @@ export type LessonItem = {
   soundPractice?: {lessonId:string;groupId:string;label:string};
   title?: string;
   audio?: string;
+  /** Existing written prompt/audio requires exact native verification before scoring. */
+  referenceReview?: 'practice_only';
   soundGroupId?: string;
   /** Curated graphemes to notice in the existing sound example, not an acoustic score. */
   soundFocus?: string;
@@ -104,6 +106,9 @@ export function validateLesson(value: unknown): value is Lesson {
         item.pronunciationGuide.reviewStatus === 'needs_native_speaker_review'
       )) &&
       (item.audio === undefined || typeof item.audio === 'string') &&
+      (item.referenceReview === undefined || (
+        x.kind === 'vocabulary' && item.referenceReview === 'practice_only'
+      )) &&
       (item.soundGroupId === undefined || typeof item.soundGroupId === 'string') &&
       (item.soundFocus === undefined || (
         x.kind === 'sounds' && typeof item.soundFocus === 'string' &&
