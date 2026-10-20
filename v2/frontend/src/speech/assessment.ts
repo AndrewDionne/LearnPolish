@@ -4,10 +4,45 @@ import {FAMILY_API} from '../family/api';
 
 export type SpeechTiming = {roundTripMs:number;sdkMs?:number};
 
+/** Reserved for human-calibrated acoustic syllable scores.
+ * Current pl-PL Azure aggregate adapter NEVER emits this structure.
+ * Polish phoneme names/auto syllable groups are not supplied by Azure.
+ */
+export type CalibratedSyllables = {
+  method:'reviewed-acoustic-syllables-v1';
+  reference:string;
+  segments:{polish:string;score:number|null}[];
+};
+
 export type SpeechFeedback =
   | {status:'ok'; engine:'azure-pl-PL-scripted'; calibration:'uncalibrated';
-     scores:{accuracy:number;fluency:number;completeness:number};timing?:SpeechTiming}
+     scores:{accuracy:number;fluency:number;completeness:number};
+     syllableFeedback?:CalibratedSyllables;timing?:SpeechTiming}
   | {status:'inconclusive'; reason:string;timing?:SpeechTiming};
+
+/** Validate an explicit, independently reviewed syllable result.
+ * Incomplete or malformed segmentation MUST NOT be partially shown.
+ * This does not establish model calibration by itself; server publishing
+ * is reserved until offline native controls and learner ratings validate it.
+ */
+export function parseCalibratedSyllables(input:unknown):CalibratedSyllables|null {
+  if(!input || typeof input!=='object')return null;
+  const value=input as Record<string,unknown>;
+  if(value.method!=='reviewed-acoustic-syllables-v1'||
+     typeof value.reference!=='string' || !value.reference ||
+     !Array.isArray(value.segments) || value.segments.length<2 || value.segments.length>12)return null;
+  const segments:{polish:string;score:number|null}[]=[];
+  for(const raw of value.segments){
+    if(!raw || typeof raw!=='object')return null;
+    const seg=raw as Record<string,unknown>;
+    const score=seg.score;
+    if(typeof seg.polish!=='string' || !seg.polish ||
+       !(score===null || (typeof score==='number'&&Number.isFinite(score)&&score>=0&&score<=100)))return null;
+    segments.push({polish:seg.polish,score:score as number|null});
+  }
+  if(segments.map(seg=>seg.polish).join('')!==value.reference)return null;
+  return {method:'reviewed-acoustic-syllables-v1',reference:value.reference,segments};
+}
 
 const REASONS:Record<string,string>={
   no_match:'Azure could not recognize enough speech. Try again.',
@@ -39,8 +74,10 @@ export function parseSpeechFeedback(input:unknown):SpeechFeedback {
   if(!finite(scores.accuracy)||!finite(scores.fluency)||!finite(scores.completeness)){
     throw new Error('Assessment response unavailable.');
   }
+  const syllableFeedback=parseCalibratedSyllables(row.syllableFeedback);
   return {status:'ok',engine:'azure-pl-PL-scripted',calibration:'uncalibrated',
-          scores:{accuracy:scores.accuracy,fluency:scores.fluency,completeness:scores.completeness}};
+          scores:{accuracy:scores.accuracy,fluency:scores.fluency,completeness:scores.completeness},
+          ...(syllableFeedback ? {syllableFeedback} : {})};
 }
 
 export async function requestSpeechFeedback(
