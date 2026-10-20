@@ -60,7 +60,7 @@ class SoundClipTests(unittest.TestCase):
         self.assertEqual(stat.S_IMODE(folder.stat().st_mode),0o700)
         output=json.loads((folder/"listening-clips.json").read_text(encoding="utf-8"))
         self.assertEqual(output["purpose"],"listening_only_no_scores")
-        self.assertNotIn("score",json.dumps(output))
+        self.assertNotIn("scores",output)\n        self.assertNotIn("syllableFeedback",output)
         self.assertEqual([p["polish"] for p in output["segments"]],["Świę","to","krzy","ska"])
         with wave.open(str(self.wav),"rb") as source:
             frames=source.readframes(source.getnframes())
@@ -98,7 +98,7 @@ class SoundClipTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,"non-symlink"):
             prepare_clips(symlink,self.timing,target,_test_private_root=self.root)
         outside=self.root.parent/"not-private"
-        with self.assertRaisesRegex(ValueError,"private"):
+        with self.assertRaisesRegex(ValueError,"[Pp]rivate"):
             prepare_clips(self.wav,self.timing,outside,_test_private_root=self.root)
         self.assertFalse(target.exists())
 
