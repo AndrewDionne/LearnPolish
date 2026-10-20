@@ -5,7 +5,7 @@ export type LearningMode = 'learn' | 'read' | 'listen' | 'speak';
 export function availableModes(lesson: Lesson): LearningMode[] {
   const base: LearningMode = lesson.kind === 'reading' ? 'read' : 'learn';
   const modes: LearningMode[] = lesson.kind === 'reading' ? [base] : [base, 'speak'];
-  if (lesson.items.some(item => !!item.audio)) modes.push('listen');
+  if (itemsForMode(lesson,'listen').length) modes.push('listen');
   return modes;
 }
 
