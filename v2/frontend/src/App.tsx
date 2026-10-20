@@ -6,6 +6,7 @@ import OfflineDownloadControl from './OfflineDownloadControl';
 import SpeakPanel from './speech/SpeakPanel';
 import {requestSpeechFeedback, SPEECH_ASSESSMENT_AVAILABLE, SPEECH_BLEND_AVAILABLE} from './speech/assessment';
 import SoundContrastDeck from './SoundContrastDeck';
+import MicroDialoguePanel from './MicroDialoguePanel';
 import { parseProgress, recallRate, recordAttempt, STORAGE_KEY } from './progress';
 import type { Progress } from './progress';
 import { PERSONAL_STORAGE_KEY, importPersonalLesson, makePersonalLesson, parsePersonalLessons, toPortableLesson, upsertPersonalLesson } from './personal';
@@ -105,6 +106,7 @@ export default function App() {
   const [lessonId, setLessonId] = useState<string | null>(null);
   const [index, setIndex] = useState(0);
   const [batchIndex,setBatchIndex] = useState(0);
+  const [microDialogueId,setMicroDialogueId] = useState<string|null>(null);
   const [sessionStartXp, setSessionStartXp] = useState(0);
   const [mode, setMode] = useState<LearningMode>('learn');
   // One deliberate choice for the current Speak session, OFF at lesson start.
@@ -186,6 +188,7 @@ export default function App() {
   }, [reviews]);
 
   const active = lessons.find(x => x.id === lessonId);
+  const activeMicroDialogue=active?.microDialogues?.find(dialogue=>dialogue.id===microDialogueId);
   const focusedGroup = soundReturn && soundReturn.practiceLessonId === active?.id ? soundReturn.practiceGroupId : null;
   const batched = !!active && usesPracticeBatches(active) && !reviewOnly && !focusedGroup;
   const totalBatches = batched && active ? practiceBatchCount(active) : 1;
@@ -222,12 +225,13 @@ export default function App() {
 
   const stopAudio = () => { audio.stop(); };
   const goTo = (destination: Page) => {
-    stopAudio(); setLessonId(null); setGuideVisible(false); setSoundReturn(null); setEditorOpen(false); setReviewOnly(null); setBatchIndex(0); setPage(destination); setRevealed(false); setFinished(false);
+    stopAudio(); setLessonId(null); setGuideVisible(false); setSoundReturn(null); setEditorOpen(false); setReviewOnly(null); setBatchIndex(0); setMicroDialogueId(null); setPage(destination); setRevealed(false); setFinished(false);
   };
   const openLesson = (lesson: Lesson) => {
     stopAudio();
     setSoundReturn(null);
     setReviewOnly(null);
+    setMicroDialogueId(null);
     setSessionStartXp(expedition.events.length);
     setLessonId(lesson.id); setGuideVisible(false); setMode(lesson.kind === 'reading' ? 'read' : 'learn');
     setBatchIndex(firstUnvisitedBatch(lesson, progress));
