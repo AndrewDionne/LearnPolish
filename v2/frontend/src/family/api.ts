@@ -9,7 +9,11 @@ export type FamilySummary={
   recognition:{improvement:string};
 };
 
-export function familyServiceUrl(value:string|undefined):string|null{
+export function familyServiceUrl(value:string|undefined, currentOrigin?:string):string|null{
+  if(value==='same-origin') {
+    const candidate=currentOrigin ?? (typeof window!=='undefined' ? window.location.origin : undefined);
+    return candidate ? familyServiceUrl(candidate) : null;
+  }
   if(!value)return null;
   try{
     const uri=new URL(value);
