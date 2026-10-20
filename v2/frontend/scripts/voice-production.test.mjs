@@ -84,6 +84,7 @@ test('voice auditions reject invented assets, changed Polish and duplicated cand
     /Unreviewed or inconsistent owner voice-preference ranking/);
   const bad=structuredClone(config);
   bad.voiceCandidates[0].id='en-US-AriaNeural';
+  bad.ownerVoicePreference.rankedVoiceIds[0]='en-US-AriaNeural';
   assert.throws(()=>makeVoiceProductionPlan(catalog,bad),/Invalid Polish voice candidate/);
   const attempted=structuredClone(config);
   attempted.auditionSamples.push({itemId:'Conversation_1:24',polish:'Jak ma pan/pani na imię?'});
