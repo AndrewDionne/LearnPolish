@@ -51,11 +51,16 @@ self.addEventListener('fetch', event => {
     return;
   }
   if (request.mode === 'navigate') {
-    // An installed V2 PWA always serves its verified cached shell for in-scope
-    // navigations. New deployments are handled by versioned SW updates.
+    // Prefer the live single-origin Render response so a sleeping/unready
+    // backend can withhold the app instead of showing a stale cached shell.
+    // Only when truly disconnected do we fall back to verified offline UI.
     event.respondWith((async () => {
-      const shell = await caches.open(SHELL);
-      return (await shell.match(new URL('./', SCOPE).href)) || fetch(request);
+      try {
+        return await fetch(request);
+      } catch {
+        const shell = await caches.open(SHELL);
+        return (await shell.match(new URL('./', SCOPE).href)) || Response.error();
+      }
     })());
     return;
   }
