@@ -1,4 +1,5 @@
 import hashlib
+import base64
 import io
 import json
 from contextlib import redirect_stdout
@@ -63,7 +64,17 @@ class VoiceAuditionPlayerTests(unittest.TestCase):
         self.assertIn("Marek", html)
         self.assertIn("Agnieszka", html)
         self.assertIn("default-src 'none'", html)
-        self.assertNotIn("<script", html)
+        self.assertIn('<script>' + player.RATE_SCRIPT + '</script>', html)
+        expected_hash = base64.b64encode(hashlib.sha256(
+            player.RATE_SCRIPT.encode('utf-8')).digest()).decode('ascii')
+        self.assertIn("script-src 'sha256-" + expected_hash + "'", html)
+        self.assertNotIn('src="https:', html)
+        self.assertIn('controlslist="noplaybackrate"', html)
+        for rate in ('0.75', '0.85', '1'):
+            self.assertIn('data-rate="' + rate + '"', html)
+        self.assertNotIn('data-rate="0.5"', html)
+        self.assertNotIn('data-rate="1.25"', html)
+        self.assertIn('if (!allowed.includes(audio.playbackRate))', html)
         path = player.write_player(self.output, self.planned, self.voices)
         self.assertTrue(path.is_file())
         with self.assertRaises(FileExistsError):
