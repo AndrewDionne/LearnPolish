@@ -62,6 +62,10 @@ class BlendEndpoint(unittest.TestCase):
         self.tmp=tempfile.TemporaryDirectory()
         root=pathlib.Path(self.tmp.name)
         self.catalog=root/"catalog.json"
+        self.additional=json.loads(
+            (pathlib.Path(__file__).resolve().parents[1]/
+             "content"/"additional-speak-reference-blockers.json").read_text(encoding="utf-8")
+        )["sourceBlockers"]
         self.catalog.write_text(json.dumps({"schemaVersion":1,"lessons":[
             {"id":"speak_swietokrzyska","kind":"vocabulary","items":[{
                 "id":"speak_swietokrzyska:0","polish":"Świętokrzyska",
@@ -80,6 +84,22 @@ class BlendEndpoint(unittest.TestCase):
                 "referenceReview":"practice_only",
                 "pronunciationSegments":{"method":"draft-orthographic-v1",
                     "segments":["Mam na imię…"]}}]},
+            {"id":"additional","kind":"vocabulary","items":[
+                {"id":row["itemId"],"polish":row["polish"],
+                 "referenceReview":"practice_only",
+                 "pronunciationSegments":{"method":"draft-orthographic-v1",
+                                         "segments":[row["polish"]]}}
+                for row in self.additional]},
+            {"id":"unflagged","kind":"vocabulary","items":[
+                {"id":"new:slash","polish":"Co pan/pani poleca?",
+                 "pronunciationSegments":{"method":"draft-orthographic-v1",
+                                          "segments":["Co pan/pani poleca?"]}},
+                {"id":"new:digits","polish":"Droga 999",
+                 "pronunciationSegments":{"method":"draft-orthographic-v1",
+                                          "segments":["Droga 999"]}},
+                {"id":"new:ellipsis","polish":"Jestem w …",
+                 "pronunciationSegments":{"method":"draft-orthographic-v1",
+                                          "segments":["Jestem w …"]}}]},
         ]}),encoding="utf-8")
         self.mail=[]
         self.azure=[]
@@ -133,7 +153,11 @@ class BlendEndpoint(unittest.TestCase):
 
     def test_unverified_greetings_are_rejected_before_azure_or_groq(self):
         auth=self.auth()
-        for item in ("Conversation_1:24","Conversation_1:25"):
+        blocked=["Conversation_1:24","Conversation_1:25"] + [
+            row["itemId"] for row in self.additional
+        ] + ["new:slash","new:digits","new:ellipsis"]
+        self.assertEqual(len(blocked),17)
+        for item in blocked:
             denied=self.send(auth,item=item)
             self.assertEqual(denied.status_code,400)
         self.assertEqual(self.azure,[])
