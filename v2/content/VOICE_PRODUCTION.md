@@ -114,6 +114,25 @@ This gives a single private comparison page with two columns, Marek and Agnieszk
 
 **Listening acceptance checklist:** play every paired phrase end-to-end on headphones; confirm final sounds are complete and not abruptly chopped; contrast final `m`, `ę`, final cluster `ść`; check stress, natural tempo, word spacing, rhythm and clarity of hard/soft sounds; compare any truncation across voices and check whether a player/encoder trims the tail. The result is a **human audition decision**, not acoustic ground truth. Independently native-review Polish text/segmentation and the two unresolved Greetings references before publishing.
 
+## Read-only preflight and partial-failure recovery
+
+Before attempting the **owner-controlled** eight-clip generation, inspect the local setup without contacting Azure:
+
+```bash
+# From repository root after npm run content
+python3 v2/benchmarks/azure_voice_audition.py --preflight
+```
+
+The report shows **only** whether `AZURE_SPEECH_KEY` is present, whether `AZURE_SPEECH_REGION` has a valid format, whether the Git-ignored `PathToPolish-Private-AI` directory exists, and whether the single-use output directory is absent. **It never displays credentials or verifies your Azure subscription, F0 tier, usage quotas or zero-paid billing**. It prints `speech_f0_and_no_paid_billing_verified: false` deliberately, even when everything else passes. If the private parent directory does not exist, it can be created manually from the repo root with `mkdir -p PathToPolish-Private-AI`; do not create/commit public audio directories. Check the Azure portal and ensure the private key/region are set on your own Mac before separately choosing any `--send` operation.
+
+The generator now **writes a checksum-bearing private `manifest.json` after every successful MP3**, not only when all eight clips succeed. If request #2–8 fails, the already-generated clips are playable with:
+
+```bash
+python3 v2/benchmarks/azure_voice_audition.py --listen
+```
+
+That command builds a private, offline `listen.html` page from whatever **source-verified MP3s already exist**, even if just one clip was produced. It does **not** contact Azure, generate more audio, overwrite previous clips or silently retry the failed request. If the private output directory already exists, a second `--send` intentionally fails to avoid duplicate charges or overwriting audio. **Preserve the partial results and review them rather than deleting/rerunning the directory by default.** The complete first pilot remains 4 phrases × 2 voices, not a launch-scale bulk job. This work fixes recoverability only; it does not confer native speaker certification or authorize paid usage.
+
 ## Human quality and future release gates
 
 1. Resolve the two fixed reference problems, after matching the actual audio or explicitly authoring new reference speech. Do NOT quietly change the displayed word while retaining the old MP3.
