@@ -119,6 +119,11 @@ test('new catalog retires bundled sound examples while retaining all other legac
   const reading = catalog.filter(x => x.kind === 'reading');
   const micros=reading.flatMap(lesson=>(lesson.microDialogues||[]).map(scene=>({lesson,scene})));
   assert.equal(micros.length,3);
+  assert.deepEqual(micros.map(({scene})=>scene.comprehension.correctIndex),[0,1,2]);
+  for(const {scene} of micros){
+    assert.equal(scene.comprehension.options.length,3);
+    assert.ok(scene.comprehension.feedback.length>=10);
+  }
   assert.deepEqual(micros.map(x=>[x.lesson.id,x.scene.id,x.scene.turns.length]),[
     ['Basic_01R','greeting-how-are-you',2],
     ['Basic_01R','greeting-name',2],
@@ -270,4 +275,13 @@ test('micro-dialogue review fails closed on original Polish drift or unverified 
   const repeated=structuredClone(defs);
   repeated.scenes[1].turns[0].index=0;
   assert.throws(()=>attachMicroDialogues(changed,repeated),/Invalid or mismatched/);
+  const absentCheck=structuredClone(defs);
+  delete absentCheck.scenes[0].comprehension;
+  assert.throws(()=>attachMicroDialogues(changed,absentCheck),/Invalid E2 dialogue comprehension/);
+  const duplicated=structuredClone(defs);
+  duplicated.scenes[2].comprehension.options[1]=duplicated.scenes[2].comprehension.options[0];
+  assert.throws(()=>attachMicroDialogues(changed,duplicated),/Invalid E2 dialogue comprehension/);
+  const invalidAnswer=structuredClone(defs);
+  invalidAnswer.scenes[1].comprehension.correctIndex=4;
+  assert.throws(()=>attachMicroDialogues(changed,invalidAnswer),/Invalid E2 dialogue comprehension/);
 });
