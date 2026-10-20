@@ -450,3 +450,10 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .speak-blended-part.uncertain{color:#667784}
 .speak-blend-result{justify-items:center;margin-top:.5rem}
 .speak-blend-result .speak-word-score-primary{justify-content:center}
+
+
+/* Beginner practice sessions: simple part picker, no separate lesson copies. */
+.practice-group-picker{display:flex;justify-content:flex-end;align-items:center;gap:9px;margin:8px 0 15px;font-size:12px;color:#6b8388;font-weight:600}
+.practice-group-picker select{max-width:205px;border:1px solid #d5e5df;border-radius:8px;background:#fff;color:#275b5b;font:inherit;padding:7px 10px;cursor:pointer}
+.practice-group-picker select:focus-visible{outline:3px solid #76bba8;outline-offset:2px}
+@media(max-width:480px){.practice-group-picker{justify-content:center;flex-wrap:wrap}}
