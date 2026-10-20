@@ -521,7 +521,7 @@ export default function App() {
             <AudioButton item={current} playing={audio.playing} onPlay={play}/>
             {audio.error && <p className="audio-error" role="alert">{audio.error}</p>}
             {mode === 'read' && current.audio && <fieldset className="speed-picker"><legend>Playback speed</legend>
-              {([0.75, 1, 1.25] as const).map(speed => <button type="button" key={speed} aria-pressed={audio.rate === speed} onClick={() => audio.setRate(speed)} className={audio.rate === speed ? 'chosen' : ''}>{speed}×</button>)}
+              {AUDIO_RATES.map(speed => <button type="button" key={speed} aria-pressed={audio.rate === speed} onClick={() => audio.setRate(speed)} className={audio.rate === speed ? 'chosen' : ''}>{speed}×</button>)}
             </fieldset>}
             {mode === 'read' && current.comprehension && !translationOpen && <fieldset className="reading-check"><legend>{current.comprehension.prompt}</legend>
               <div className="reading-check-options">{current.comprehension.options.map(option =>
