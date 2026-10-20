@@ -1,4 +1,4 @@
-import type { Lesson } from './model';
+import type { Lesson, LessonItem } from './model';
 
 type Props = {
   lesson: Lesson;
@@ -8,6 +8,15 @@ type Props = {
   onSelect: (itemId: string) => void;
   onPlay: (audioPath: string) => void;
 };
+
+/** Preserve the whole original word while visually emphasizing authored graphemes. */
+export function focusedPolishParts(item: LessonItem): {before:string;focus:string;after:string}|null {
+  const focus=item.soundFocus;
+  if(!focus)return null;
+  const at=item.polish.indexOf(focus);
+  if(at<0 || item.polish.indexOf(focus,at+focus.length)!==-1)return null;
+  return {before:item.polish.slice(0,at),focus,after:item.polish.slice(at+focus.length)};
+}
 
 /** Compare short individual recordings side by side; no automatic phonetic grading. */
 export default function SoundContrastDeck({ lesson, focusGroupId, currentId, playing, onSelect, onPlay }: Props) {
@@ -29,7 +38,10 @@ export default function SoundContrastDeck({ lesson, focusGroupId, currentId, pla
             if (!item) return null;
             return <div key={item.id} className={'contrast-example ' + (currentId === item.id ? 'chosen' : '')}>
               <button type="button" className="contrast-focus" aria-pressed={currentId === item.id} onClick={() => onSelect(item.id)}>
-                <strong lang="pl">{item.polish}</strong><small>{item.english}</small>
+                <strong lang="pl">{(() => {
+                  const parts=focusedPolishParts(item);
+                  return parts ? <>{parts.before}<span className="sound-focus-letters">{parts.focus}</span>{parts.after}</> : item.polish;
+                })()}</strong><small>{item.english}</small>
               </button>
               <button className="contrast-play" type="button" aria-label={'Play ' + item.polish} disabled={!item.audio} onClick={() => {
                 onSelect(item.id);
