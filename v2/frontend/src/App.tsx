@@ -28,6 +28,11 @@ import type { LearningTier, VerifiedOutcome } from './expedition/expedition';
 
 type Page = 'home' | 'library' | 'practice' | 'expedition' | 'profile';
 type KindFilter = 'all' | LessonKind;
+type SoundPracticeReturn = {
+  sourceLessonId:string;sourceItemId:string;sourceIndex:number;
+  sourceGuideVisible:boolean;sourceReviewOnly:string[]|null;sourceSessionStartXp:number;
+  practiceLessonId:string;practiceGroupId:string;sourceWord:string;
+};
 
 const nav: { id: Page; label: string; symbol: string }[] = [
   { id: 'home', label: 'Home', symbol: '⌂' },
@@ -99,6 +104,7 @@ export default function App() {
   // One deliberate choice for the current Speak session, OFF at lesson start.
   // Keeps the guide open if the learner advances, without a persistent gate.
   const [guideVisible,setGuideVisible] = useState(false);
+  const [soundReturn,setSoundReturn] = useState<SoundPracticeReturn|null>(null);
   const [reviewOnly, setReviewOnly] = useState<string[] | null>(null);
   const [listenGuess, setListenGuess] = useState<string | null>(null);
   const [readGuess, setReadGuess] = useState<string | null>(null);
@@ -174,8 +180,11 @@ export default function App() {
   }, [reviews]);
 
   const active = lessons.find(x => x.id === lessonId);
+  const focusedGroup = soundReturn?.practiceLessonId === active?.id ? soundReturn.practiceGroupId : null;
   const sessionItems = active
-    ? reviewOnly && mode === 'learn' ? active.items.filter(item => reviewOnly.includes(item.id)) : itemsForMode(active, mode)
+    ? focusedGroup ? itemsForMode(active, mode).filter(item => item.soundGroupId === focusedGroup)
+      : reviewOnly && mode === 'learn' ? active.items.filter(item => reviewOnly.includes(item.id))
+      : itemsForMode(active, mode)
     : [];
   const current = sessionItems[index];
   const listeningChoices = active && current && mode === 'listen' ? comprehensionChoices(active.items, current, index, active.kind === 'reading') : [];
@@ -204,16 +213,51 @@ export default function App() {
 
   const stopAudio = () => { audio.stop(); };
   const goTo = (destination: Page) => {
-    stopAudio(); setLessonId(null); setGuideVisible(false); setEditorOpen(false); setReviewOnly(null); setPage(destination); setRevealed(false); setFinished(false);
+    stopAudio(); setLessonId(null); setGuideVisible(false); setSoundReturn(null); setEditorOpen(false); setReviewOnly(null); setPage(destination); setRevealed(false); setFinished(false);
   };
   const openLesson = (lesson: Lesson) => {
     stopAudio();
+    setSoundReturn(null);
     setReviewOnly(null);
     setSessionStartXp(expedition.events.length);
     setLessonId(lesson.id); setGuideVisible(false); setMode(lesson.kind === 'reading' ? 'read' : 'learn');
     setIndex(lesson.kind === 'reading' ? safeReadingPosition(readingPositions, lesson.id, lesson.items.length) : 0);
     setRevealed(false); setTranslationOpen(false); setListenGuess(null); setReadGuess(null); setListenRevealed(false); setFinished(false);
     setLastLesson(lesson.id); saveLastLesson(lesson.id);
+  };
+  const openSoundPractice = () => {
+    if (!active || !current?.soundPractice || mode !== 'speak' || soundReturn) return;
+    const focus = current.soundPractice;
+    const destination = lessons.find(lesson => lesson.id === focus.lessonId && lesson.kind === 'sounds');
+    const group = destination?.soundGroups?.find(g => g.id === focus.groupId);
+    if (!destination || !group?.itemIds.length) return;
+    stopAudio();
+    setSoundReturn({
+      sourceLessonId:active.id,sourceItemId:current.id,sourceIndex:index,
+      sourceGuideVisible:guideVisible,sourceReviewOnly:reviewOnly,
+      sourceSessionStartXp:sessionStartXp,practiceLessonId:destination.id,
+      practiceGroupId:group.id,sourceWord:current.polish,
+    });
+    setLessonId(destination.id); setMode('speak'); setIndex(0);
+    setGuideVisible(false); setReviewOnly(null);
+    setSessionStartXp(expedition.events.length);
+    setRevealed(false); setTranslationOpen(false); setListenGuess(null);
+    setReadGuess(null); setListenRevealed(false); setFinished(false);
+  };
+  const returnFromSoundPractice = () => {
+    if (!soundReturn || active?.id !== soundReturn.practiceLessonId) return;
+    const source = lessons.find(lesson => lesson.id === soundReturn.sourceLessonId);
+    if (!source || source.items[soundReturn.sourceIndex]?.id !== soundReturn.sourceItemId) {
+      goTo('library'); return;
+    }
+    stopAudio();
+    setLessonId(source.id); setMode('speak'); setIndex(soundReturn.sourceIndex);
+    setGuideVisible(soundReturn.sourceGuideVisible);
+    setReviewOnly(soundReturn.sourceReviewOnly);
+    setSessionStartXp(soundReturn.sourceSessionStartXp);
+    setRevealed(false); setTranslationOpen(false); setListenGuess(null);
+    setReadGuess(null); setListenRevealed(false); setFinished(false);
+    setSoundReturn(null);
   };
   const openDueReview = (lesson: Lesson) => {
     const due = dueItems(lesson, reviews, new Date().toISOString()).map(item => item.id);
@@ -404,7 +448,7 @@ export default function App() {
         {!loading && loadError && <section className="empty-state" role="alert"><h2>Lessons could not load</h2><p>{loadError}</p><p>Run <code>npm run content</code> in v2/frontend, then reload. Your progress remains saved locally.</p></section>}
 
         {!loading && !loadError && active && current && <div className={'learning' + (mode === 'speak' ? ' speak-focused' : '')}>
-          <div className="lesson-tools"><button type="button" className="back-link" onClick={() => goTo('library')}>← Back to library</button>{mode !== 'speak' && <div><button type="button" onClick={() => exportFile(active)}>Export JSON</button><OfflineDownloadControl lesson={active}/>{active.source === 'personal' && <><button type="button" onClick={() => beginEdit(active)}>Edit lesson</button><button type="button" className="delete-link" onClick={() => deletePersonalLesson(active)}>Delete</button></>}</div>}</div>
+          <div className="lesson-tools"><button type="button" className="back-link" onClick={soundReturn && active.id === soundReturn.practiceLessonId ? returnFromSoundPractice : () => goTo('library')}>{soundReturn && active.id === soundReturn.practiceLessonId ? '← Back to ' + soundReturn.sourceWord : '← Back to library'}</button>{mode !== 'speak' && <div><button type="button" onClick={() => exportFile(active)}>Export JSON</button><OfflineDownloadControl lesson={active}/>{active.source === 'personal' && <><button type="button" onClick={() => beginEdit(active)}>Edit lesson</button><button type="button" className="delete-link" onClick={() => deletePersonalLesson(active)}>Delete</button></>}</div>}</div>
           {mode === 'speak'
             ? <div className="learning-head speak-compact-head"><span className="item-count">{index + 1} <span>/ {sessionItems.length}</span></span></div>
             : <div className="learning-head">
@@ -416,7 +460,7 @@ export default function App() {
           <div className="mode-row" role="group" aria-label="Learning modes">
             {availableModes(active).map(value => <button type="button" key={value} aria-pressed={mode === value} className={'mode ' + (mode === value ? 'active' : '')} onClick={() => switchMode(value)}>{value === 'learn' ? active.kind === 'sounds' ? 'Sounds' : 'Learn' : value === 'read' ? 'Read' : value === 'speak' ? 'Speak' : 'Listen'}</button>)}
           </div>
-          {active.kind === 'sounds' && mode === 'learn' && !finished && active.soundGroups && <SoundContrastDeck lesson={active} currentId={current.id} playing={audio.playing} onSelect={id => {
+          {active.kind === 'sounds' && mode === 'learn' && !finished && active.soundGroups && <SoundContrastDeck lesson={active} focusGroupId={focusedGroup ?? undefined} currentId={current.id} playing={audio.playing} onSelect={id => {
             const target = sessionItems.findIndex(item => item.id === id);
             if (target >= 0) jump(target);
           }} onPlay={play}/>}
@@ -431,9 +475,10 @@ export default function App() {
                 {candidate === 'learn' ? 'Learn' : candidate === 'read' ? 'Read' : candidate === 'speak' ? 'Speak' : 'Listen'} →
               </button>)}</div>
             </div>}
-            <div className="answer-actions"><button type="button" className="secondary-action" onClick={() => jump(0)}>Practise again</button><button type="button" className="primary-action" onClick={() => goTo('library')}>Back to library →</button></div>
+            <div className="answer-actions"><button type="button" className="secondary-action" onClick={() => jump(0)}>Practise again</button>{soundReturn && active.id === soundReturn.practiceLessonId ? <button type="button" className="primary-action" onClick={returnFromSoundPractice}>Return to {soundReturn.sourceWord} →</button> : <button type="button" className="primary-action" onClick={() => goTo('library')}>Back to library →</button>}</div>
           </section> : mode === 'speak' ? <SpeakPanel key={current.id} item={current} playing={audio.playing} onPlayReference={play} onStopReference={stopAudio}
             guideVisible={guideVisible} onGuideChange={setGuideVisible}
+            onPracticeSound={!soundReturn && current.soundPractice ? openSoundPractice : undefined}
             onAssess={SPEECH_ASSESSMENT_AVAILABLE && familyConnection && active.source !== 'personal'
               ? (capture, signal) => requestSpeechFeedback(capture, familyConnection.token, signal)
               : undefined}
