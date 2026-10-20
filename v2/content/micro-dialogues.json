@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "editorialStatus": "draft_source_text_and_existing_audio_mapping_not_native_reviewed",
+  "scenes": [
+    {
+      "lesson": "Basic_01R",
+      "id": "greeting-how-are-you",
+      "title": "How are you?",
+      "speakers": {
+        "A": "Person A",
+        "B": "Person B"
+      },
+      "turns": [
+        {
+          "index": 0,
+          "polish": "Cześć! Jak się masz?",
+          "speaker": "A"
+        },
+        {
+          "index": 1,
+          "polish": "Dziękuję, mam się dobrze.",
+          "speaker": "B"
+        }
+      ]
+    },
+    {
+      "lesson": "Basic_01R",
+      "id": "greeting-name",
+      "title": "What's your name?",
+      "speakers": {
+        "A": "Person A",
+        "B": "Person B"
+      },
+      "turns": [
+        {
+          "index": 2,
+          "polish": "Cześć, jak masz na imię?",
+          "speaker": "A"
+        },
+        {
+          "index": 3,
+          "polish": "Mam na imię Andrew.",
+          "speaker": "B"
+        }
+      ]
+    },
+    {
+      "lesson": "Grocery_store_very_basic_shopping",
+      "id": "buying-apples",
+      "title": "Buying apples",
+      "speakers": {
+        "A": "Customer",
+        "B": "Shop assistant"
+      },
+      "turns": [
+        {
+          "index": 1,
+          "polish": "Dzień dobry, poproszę kilogram jabłek.",
+          "speaker": "A"
+        },
+        {
+          "index": 2,
+          "polish": "Jakie jabłka pan lubi? Czerwone czy zielone?",
+          "speaker": "B"
+        },
+        {
+          "index": 3,
+          "polish": "Poproszę czerwone jabłka.",
+          "speaker": "A"
+        }
+      ]
+    }
+  ]
+}

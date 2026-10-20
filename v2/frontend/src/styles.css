@@ -459,3 +459,26 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .practice-group-picker select{max-width:205px;border:1px solid #d5e5df;border-radius:8px;background:#fff;color:#275b5b;font:inherit;padding:7px 10px;cursor:pointer}
 .practice-group-picker select:focus-visible{outline:3px solid #76bba8;outline-offset:2px}
 @media(max-width:480px){.practice-group-picker{justify-content:center;flex-wrap:wrap}}
+
+
+/* E2 preview: authentic existing dialogue lines, not new lesson cards or XP. */
+.micro-dialogue-picker{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:12px 0 16px}
+.micro-dialogue-picker>span{font-size:12px;font-weight:750;color:#365961;margin-right:4px}
+.micro-dialogue-picker button,.micro-dialogue-view button{min-height:44px;border:1px solid #b9d2cf;border-radius:9px;background:#fff;color:#285650;font-size:12px;font-weight:650;font-family:inherit;padding:9px 12px;cursor:pointer}
+.micro-dialogue-picker button[aria-pressed=true],.micro-dialogue-view button[aria-pressed=true]{background:#176e69;color:white;border-color:#176e69}
+.micro-dialogue-panel{padding:clamp(16px,3.5vw,27px);background:#fff;border:1px solid #d6e6e2;border-radius:14px;display:grid;gap:17px}
+.micro-dialogue-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:13px}
+.micro-dialogue-heading h2{margin:5px 0 4px;font-size:22px;color:#244c56}
+.micro-dialogue-heading p{margin:0;font-size:12px;color:#48656c}
+.micro-dialogue-panel .secondary-action{min-height:44px}
+.micro-dialogue-view{display:flex;gap:8px;flex-wrap:wrap}
+.micro-dialogue-turns{list-style:none;padding:0;margin:0;display:grid;gap:12px}
+.micro-dialogue-turn{padding:14px 16px;border:1px solid #dce7e3;border-radius:12px;max-width:90%;background:#f7faf8}
+.micro-dialogue-turn.speaker-b{justify-self:end;background:#f3f7fb;border-color:#d4e2ed}
+.micro-dialogue-speaker{font-size:12px;font-weight:750;color:#365860}
+.micro-dialogue-polish{font-size:clamp(16px,2.6vw,19px);line-height:1.5;color:#203f44;margin:8px 0}
+.micro-dialogue-hidden{font-size:13px;color:#4e676d;margin:12px 0}
+.micro-dialogue-english{font-size:13px;color:#365965;line-height:1.5;margin:5px 0 12px}
+.micro-dialogue-turn .audio-btn{min-height:44px;margin-top:5px}
+.micro-dialogue-actions{display:flex;gap:10px;flex-wrap:wrap}
+@media(max-width:520px){.micro-dialogue-heading{flex-direction:column}.micro-dialogue-turn{max-width:100%;width:100%}.micro-dialogue-actions button{flex:1}}

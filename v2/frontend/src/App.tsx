@@ -6,6 +6,7 @@ import OfflineDownloadControl from './OfflineDownloadControl';
 import SpeakPanel from './speech/SpeakPanel';
 import {requestSpeechFeedback, SPEECH_ASSESSMENT_AVAILABLE, SPEECH_BLEND_AVAILABLE} from './speech/assessment';
 import SoundContrastDeck from './SoundContrastDeck';
+import MicroDialoguePanel from './MicroDialoguePanel';
 import { parseProgress, recallRate, recordAttempt, STORAGE_KEY } from './progress';
 import type { Progress } from './progress';
 import { PERSONAL_STORAGE_KEY, importPersonalLesson, makePersonalLesson, parsePersonalLessons, toPortableLesson, upsertPersonalLesson } from './personal';
@@ -105,6 +106,7 @@ export default function App() {
   const [lessonId, setLessonId] = useState<string | null>(null);
   const [index, setIndex] = useState(0);
   const [batchIndex,setBatchIndex] = useState(0);
+  const [microDialogueId,setMicroDialogueId] = useState<string|null>(null);
   const [sessionStartXp, setSessionStartXp] = useState(0);
   const [mode, setMode] = useState<LearningMode>('learn');
   // One deliberate choice for the current Speak session, OFF at lesson start.
@@ -186,6 +188,7 @@ export default function App() {
   }, [reviews]);
 
   const active = lessons.find(x => x.id === lessonId);
+  const activeMicroDialogue=active?.microDialogues?.find(dialogue=>dialogue.id===microDialogueId);
   const focusedGroup = soundReturn && soundReturn.practiceLessonId === active?.id ? soundReturn.practiceGroupId : null;
   const batched = !!active && usesPracticeBatches(active) && !reviewOnly && !focusedGroup;
   const totalBatches = batched && active ? practiceBatchCount(active) : 1;
@@ -222,12 +225,13 @@ export default function App() {
 
   const stopAudio = () => { audio.stop(); };
   const goTo = (destination: Page) => {
-    stopAudio(); setLessonId(null); setGuideVisible(false); setSoundReturn(null); setEditorOpen(false); setReviewOnly(null); setBatchIndex(0); setPage(destination); setRevealed(false); setFinished(false);
+    stopAudio(); setLessonId(null); setGuideVisible(false); setSoundReturn(null); setEditorOpen(false); setReviewOnly(null); setBatchIndex(0); setMicroDialogueId(null); setPage(destination); setRevealed(false); setFinished(false);
   };
   const openLesson = (lesson: Lesson) => {
     stopAudio();
     setSoundReturn(null);
     setReviewOnly(null);
+    setMicroDialogueId(null);
     setSessionStartXp(expedition.events.length);
     setLessonId(lesson.id); setGuideVisible(false); setMode(lesson.kind === 'reading' ? 'read' : 'learn');
     setBatchIndex(firstUnvisitedBatch(lesson, progress));
@@ -296,6 +300,7 @@ export default function App() {
   const switchMode = (next: LearningMode) => {
     if (!active || !availableModes(active).includes(next)) return;
     stopAudio();
+    setMicroDialogueId(null);
     setMode(next);
     setSessionStartXp(expedition.events.length);
     setReviewOnly(null);
@@ -473,13 +478,20 @@ export default function App() {
             ? <div className="learning-head speak-compact-head"><span className="item-count">{index + 1} <span>/ {sessionItems.length}</span></span></div>
             : <div className="learning-head">
             <div><span className="eyebrow">{reviewOnly ? 'DUE REVIEW' : lessonLabel(active.kind)} · {active.title}</span><h1>{reviewOnly ? 'Review what matters' : mode === 'listen' ? 'Train your ear' : mode === 'read' ? 'Read & understand' : active.kind === 'sounds' ? 'Hear the difference' : 'Learn the language'}</h1><p>{reviewOnly ? 'These expressions are due for recall practice. Answer honestly; missed items remain available for review.' : mode === 'listen' ? 'Listen first, choose the meaning, then compare your answer with the Polish transcript.' : mode === 'read' ? 'Read naturally, then reveal the translation. Your reading position is remembered.' : active.kind === 'sounds' ? active.soundGroups ? 'Play each recording individually and compare neighbouring sound families. Audio quality and pronunciation notes await native review.' : 'Compare the examples and listen carefully. These lessons await native-speaker review.' : 'Think of the Polish expression before revealing its meaning.'}</p></div>
-            <span className="item-count">{index + 1} <span>/ {sessionItems.length}</span></span>
+            <span className="item-count">{activeMicroDialogue && mode === 'read' ? 'Dialogue' : index + 1} {!activeMicroDialogue && <span>/ {sessionItems.length}</span>}</span>
           </div>}
           {active.progression && <p className="pathway-hint">Reading pathway · Step {active.progression.order} · {readingStage(active.progression.stage)} — {active.progression.goal}</p>}
-          <div className="lesson-meter" role="progressbar" aria-label="Lesson progress" aria-valuemin={0} aria-valuemax={sessionItems.length} aria-valuenow={index + 1}><span style={{ width: (100 * (index + 1) / sessionItems.length) + '%' }} /></div>
+          {!(activeMicroDialogue && mode === 'read') && <div className="lesson-meter" role="progressbar" aria-label="Lesson progress" aria-valuemin={0} aria-valuemax={sessionItems.length} aria-valuenow={index + 1}><span style={{ width: (100 * (index + 1) / sessionItems.length) + '%' }} /></div>}
           <div className="mode-row" role="group" aria-label="Learning modes">
             {availableModes(active).map(value => <button type="button" key={value} aria-pressed={mode === value} className={'mode ' + (mode === value ? 'active' : '')} onClick={() => switchMode(value)}>{value === 'learn' ? active.kind === 'sounds' ? 'Sounds' : 'Learn' : value === 'read' ? 'Read' : value === 'speak' ? 'Speak' : 'Listen'}</button>)}
           </div>
+          {mode === 'read' && active.microDialogues?.length && <div className="micro-dialogue-picker" role="group" aria-label="Short conversations">
+            <span>Short conversations</span>
+            {active.microDialogues.map(dialogue=><button type="button" key={dialogue.id}
+              aria-pressed={microDialogueId===dialogue.id} onClick={()=>{
+                stopAudio(); setMicroDialogueId(dialogue.id);
+              }}>{dialogue.title} · {dialogue.turns.length} turns</button>)}
+          </div>}
           {batched && <label className="practice-group-picker">Practice group
             <select aria-label="Practice group" value={batchIndex} onChange={event => changeBatch(Number(event.target.value))}>
               {Array.from({length:totalBatches},(_,part) => <option key={part} value={part}>{practiceBatchLabel(active,part)}</option>)}
@@ -489,7 +501,12 @@ export default function App() {
             const target = sessionItems.findIndex(item => item.id === id);
             if (target >= 0) jump(target);
           }} onPlay={play}/>}
-          {finished ? <section className="flashcard complete-card" aria-live="polite">
+          {activeMicroDialogue && mode === 'read'
+            ? <MicroDialoguePanel key={activeMicroDialogue.id} lesson={active} dialogue={activeMicroDialogue}
+                playing={audio.playing} rate={audio.rate} audioError={audio.error}
+                onRateChange={audio.setRate} onPlay={play} onStop={stopAudio}
+                onClose={()=>setMicroDialogueId(null)}/>
+            : finished ? <section className="flashcard complete-card" aria-live="polite">
             <span className="card-label">{reviewOnly ? 'REVIEW COMPLETE' : 'SESSION COMPLETE'}</span>
             <h2>Nicely done!</h2>
             <p>You made it through {sessionItems.length} {sessionItems.length === 1 ? 'item' : 'items'} in {mode === 'listen' ? 'listening practice' : mode === 'read' ? 'reading practice' : mode === 'speak' ? 'speaking practice (unscored)' : 'learning practice'}.</p>
@@ -570,7 +587,7 @@ export default function App() {
               <button type="button" className="primary-action" onClick={() => record(true)}>{mode === 'read' ? 'Finished reading →' : 'Got it →'}</button>
             </div>)}
           </section>}
-          {mode !== 'speak' && <div className="lesson-footer">
+          {mode !== 'speak' && !(activeMicroDialogue && mode === 'read') && <div className="lesson-footer">
             <button type="button" onClick={() => jump(index - 1)} disabled={index === 0}>← Previous</button>
             <span>{completedIn(active)} of {active.items.length} explored</span>
             <button type="button" onClick={() => jump(index + 1)} disabled={index === sessionItems.length - 1}>Skip to next →</button>

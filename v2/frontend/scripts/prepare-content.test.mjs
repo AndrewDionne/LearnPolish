@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import fs from 'node:fs';
 import path from 'node:path';
-import { migrateLesson, buildContent, buildSoundCurriculum, attachReferenceReview } from './prepare-content.mjs';
+import { migrateLesson, buildContent, buildSoundCurriculum, attachReferenceReview, attachMicroDialogues } from './prepare-content.mjs';
 import {inspectSpeakCatalog,printAuditMarkdown} from './speak-readiness.mjs';
 
 test('migrates vocabulary into versioned, stable IDs', () => {
@@ -40,6 +40,7 @@ test('new catalog retires bundled sound examples while retaining all other legac
   assert.equal(report.sounds, 5);
   assert.equal(report.curatedAudioReferences, 26);
   assert.equal(report.authoredReadingChecks, 24);
+  assert.equal(report.microDialogues,3);
   assert.equal(report.readingPathwayLessons, 6);
   assert.equal(report.audioCopied, 455);
   assert.equal(report.missingAudio, 1);
@@ -116,6 +117,21 @@ test('new catalog retires bundled sound examples while retaining all other legac
   assert.equal(shared.syllables.map(s=>s.polish).join(''),item.polish);
   assert.deepEqual(shared.syllables.map(s=>s.englishCue),['shfyehn','toh','KSHIH','skah']);
   const reading = catalog.filter(x => x.kind === 'reading');
+  const micros=reading.flatMap(lesson=>(lesson.microDialogues||[]).map(scene=>({lesson,scene})));
+  assert.equal(micros.length,3);
+  assert.deepEqual(micros.map(x=>[x.lesson.id,x.scene.id,x.scene.turns.length]),[
+    ['Basic_01R','greeting-how-are-you',2],
+    ['Basic_01R','greeting-name',2],
+    ['Grocery_store_very_basic_shopping','buying-apples',3],
+  ]);
+  for (const {lesson,scene} of micros) {
+    for (const turn of scene.turns) {
+      const item=lesson.items.find(item=>item.id===turn.itemId);
+      assert.ok(item?.audio);
+      assert.ok(fs.existsSync(path.join('public',item.audio)));
+      assert.equal(item.referenceReview,undefined);
+    }
+  }
   assert.deepEqual(reading.map(x => x.progression.order).sort((a,b)=>a-b), [1,2,3,4,5,6]);
   assert.equal(reading.reduce((count,x) => count + x.items.filter(i => !!i.comprehension).length,0),24);
   for (const item of reading.flatMap(x => x.items).filter(x => !!x.comprehension)) {
@@ -224,4 +240,34 @@ test('all fourteen original source blockers are fixed-ID, content-matched and wi
   });
   assert.throws(()=>attachReferenceReview(newUnreviewed,first,rest),/Unreviewed new alternative/);
   assert.ok(printAuditMarkdown(inspectSpeakCatalog(built)).includes('Practice only'));
+});
+
+test('micro-dialogue review fails closed on original Polish drift or unverified audio',()=>{
+  buildContent();
+  const catalog=JSON.parse(fs.readFileSync(path.resolve('public/generated/lessons.json'),'utf8'));
+  const defs=JSON.parse(fs.readFileSync(path.resolve('../content/micro-dialogues.json'),'utf8'));
+  const source=structuredClone(catalog.lessons.filter(lesson=>lesson.kind==='reading'));
+  for(const lesson of source)delete lesson.microDialogues;
+  assert.equal(attachMicroDialogues(source,defs),3);
+  assert.deepEqual(source.filter(lesson=>lesson.microDialogues)
+    .map(lesson=>[lesson.id,lesson.microDialogues.length]),[
+    ['Basic_01R',2],['Grocery_store_very_basic_shopping',1]
+  ]);
+  const wrong=structuredClone(defs);
+  wrong.scenes[0].turns[0].polish='Cześć, jak się masz?';
+  const changed=structuredClone(catalog.lessons.filter(lesson=>lesson.kind==='reading'));
+  for(const lesson of changed)delete lesson.microDialogues;
+  assert.throws(()=>attachMicroDialogues(changed,wrong),/Invalid or mismatched/);
+  const skipped=structuredClone(defs);
+  skipped.scenes[2].turns[1].index=7;
+  assert.throws(()=>attachMicroDialogues(changed,skipped),/Invalid or mismatched/);
+  const badAudio=structuredClone(changed);
+  badAudio.find(lesson=>lesson.id==='Basic_01R').items[0].audio=undefined;
+  assert.throws(()=>attachMicroDialogues(badAudio,defs),/Invalid or mismatched/);
+  const badReview=structuredClone(changed);
+  badReview.find(lesson=>lesson.id==='Basic_01R').items[0].referenceReview='practice_only';
+  assert.throws(()=>attachMicroDialogues(badReview,defs),/Invalid or mismatched/);
+  const repeated=structuredClone(defs);
+  repeated.scenes[1].turns[0].index=0;
+  assert.throws(()=>attachMicroDialogues(changed,repeated),/Invalid or mismatched/);
 });
