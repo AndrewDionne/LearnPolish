@@ -26,6 +26,8 @@ export type LessonItem = {
   english: string;
   pronunciation?: string;
   pronunciationGuide?: EnglishPronunciationGuide;
+  /** Authored optional route to an existing recorded sound exercise, not a diagnosis. */
+  soundPractice?: {lessonId:string;groupId:string;label:string};
   title?: string;
   audio?: string;
   soundGroupId?: string;
@@ -61,6 +63,11 @@ export function validateLesson(value: unknown): value is Lesson {
       !!item && typeof item.id === 'string' &&
       typeof item.polish === 'string' && item.polish.trim().length > 0 &&
       typeof item.english === 'string' && item.english.trim().length > 0 &&
+      (item.soundPractice === undefined || (
+        typeof item.soundPractice.lessonId === 'string' && item.soundPractice.lessonId.length > 0 &&
+        typeof item.soundPractice.groupId === 'string' && item.soundPractice.groupId.length > 0 &&
+        typeof item.soundPractice.label === 'string' && item.soundPractice.label.length > 0
+      )) &&
       (item.pronunciationGuide === undefined || (
         !!item.pronunciationGuide &&
         Array.isArray(item.pronunciationGuide.syllables) &&
@@ -121,6 +128,18 @@ export function parseManifest(value: unknown): Lesson[] {
   }
   if (new Set(data.lessons.map(x => x.id)).size !== data.lessons.length) {
     throw new Error('Duplicate lesson IDs');
+  }
+  // Cross-reference deliberate links; never render phantom/misdirected sound drills.
+  const lessonsById = new Map(data.lessons.map(lesson => [lesson.id, lesson]));
+  for (const lesson of data.lessons) for (const item of lesson.items) {
+    const focus = item.soundPractice;
+    if (!focus) continue;
+    const destination = lessonsById.get(focus.lessonId);
+    const group = destination?.soundGroups?.find(g => g.id === focus.groupId);
+    if (destination?.kind !== 'sounds' || !group?.itemIds.length ||
+        !group.itemIds.every(id => destination.items.some(ex => ex.id === id && !!ex.audio))) {
+      throw new Error('Invalid sound-practice destination for ' + item.id);
+    }
   }
   return data.lessons;
 }
