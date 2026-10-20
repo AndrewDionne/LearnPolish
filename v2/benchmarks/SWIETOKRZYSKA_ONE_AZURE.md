@@ -1,5 +1,29 @@
 # Świętokrzyska — single-call Azure phoneme feasibility test
 
+## PHYSICAL TEST COMPLETE — 2026-10-20 (do not rerun)
+
+The owner completed the preview and **exactly one additional real** Azure Speech F0 request on the same original 3.12s adult voice (SHA-256 `0f4ff4b3d01165dc5e27fd9c10336f19aedf4aefdca430798c2b1777e5df1626`). Existing result `PathToPolish-Private-AI/swietokrzyska-01/azure-phoneme-01.jsonl` is authoritative **and must not be overwritten or resubmitted simply for an alternate grouping**.
+
+| Physical observation | Result |
+|---|---|
+| Actual provider requests this tranche | **1 Azure; 0 Groq/TTS** |
+| Overall accuracy / word accuracy | **84.0 / 84.0** |
+| Fluency / completeness | **100.0 / 100.0** |
+| SDK total time | **11,250.9 ms** |
+| Valid, time-ordered phoneme scores | **10** |
+| Named Polish phones | **0** |
+| Authored grouping hypothesis `Świę/to/krzy/ska` | **5/2/3/3 = 13**, not matched |
+| Four-group diagnostic | **None** (`null`) |
+| Legitimate learner syllable grades | **Not available** |
+
+`status=phoneme_evidence_only`; `reason=phone_count_differs_from_authored_hypothesis`; `can_publish_learner_syllable_grades=false`. The instrument behaved correctly: it **did not** partition 10 anonymous phoneme scores according to an invented alternative grouping. A different 10-phone partition would merely hide the mismatch; word estimate **84** is uncalibrated and **cannot** be distributed over the four printed syllables.
+
+Latency is also a product risk: this run took **11.25s**, versus 1.92s and 2.46s previously on the same source. Three observations are not a reliable p95 or benchmark, so avoid claiming either the worst or best is typical.
+
+**Agreed simplest viable path:** discontinue automatic syllable-grade research for this iteration; show the legitimate single-call Azure **word pronunciation estimate** (with accurate caveat), retain retry/Next and optional English guide and KRZY Sound Lab. Do not add forced alignment, manual syllable slicing or another AI model. No more provider calls without new owner authorization/free-tier check. This private evidence remains on the owner's Mac.
+
+
+
 **2026-10-20. One original adult recording, one Azure request, no Whisper, no manual clipping or forced alignment.** The owner wants a fast word score and four syllable ratings *only if reliable*.
 
 ## Already observed — on this exact 3.120s original recording
