@@ -103,11 +103,16 @@ test('explicit consent -> native Azure numbers -> replay/next without fabricated
   await expect(page.getByRole('button',{name:'Check my pronunciation'})).toBeVisible();
   expect(calls).toBe(0);
   await page.getByRole('button',{name:'Check my pronunciation'}).click();
-  await expect(page.getByText('93.0 / 100')).toBeVisible();
+  await expect(page.getByRole('status').getByText('Pronunciation estimate')).toBeVisible();
+  await expect(page.locator('.speak-word-score-primary')).toHaveText('93/100');
+  await expect(page.locator('.speak-word-score-primary')).toHaveAttribute('aria-label','Azure word pronunciation accuracy estimate: 93 out of 100');
+  await expect(page.locator('.speak-word-score')).toHaveCount(0);
+  await expect(page.getByText('82.0 / 100')).not.toBeVisible();
+  await expect(page.getByText('90.0 / 100')).not.toBeVisible();
+  await page.locator('.speak-score-explanation summary').click();
+  await expect(page.getByText(/not a syllable rating or pass\/fail grade/)).toBeVisible();
   await expect(page.getByText('82.0 / 100')).toBeVisible();
   await expect(page.getByText('90.0 / 100')).toBeVisible();
-  await page.locator('.speak-score-explanation summary').click();
-  await expect(page.getByText(/not calibrated against Polish speakers/)).toBeVisible();
   await expect(page.getByText('DO_NOT_DISPLAY_PRIVATE_TRANSCRIPT')).toHaveCount(0);
   expect(calls).toBe(1);
   await page.getByRole('button',{name:'Next',exact:true}).click();
@@ -200,7 +205,7 @@ test('Świętokrzyska is a real built-in Speak test item with opt-in timing, not
   await recordValidTake(page);
   expect(calls).toBe(0);
   await page.getByRole('button',{name:'Check my pronunciation'}).click();
-  await expect(page.getByText('77.0 / 100')).toBeVisible();
+  await expect(page.locator('.speak-word-score-primary')).toHaveText('77/100');
   await expect(page.getByText(/Azure SDK call 4\.0 s/)).toBeVisible();
   await expect(page.getByText('NEVER-DISPLAY-RAW-SPEECH')).toHaveCount(0);
   expect(calls).toBe(1);

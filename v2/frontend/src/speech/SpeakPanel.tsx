@@ -152,14 +152,16 @@ export default function SpeakPanel({item, playing, onPlayReference, onStopRefere
           {feedback.timing.roundTripMs >= 10000 ? ' That delay is longer than our target; recording and replay still work.' : ''}
         </p>}
         {feedback?.status === 'ok' && <div className="speak-scores" role="status">
-          <strong>Azure pronunciation estimate</strong>
-          <dl>
-            <div><dt>Accuracy</dt><dd>{feedback.scores.accuracy.toFixed(1)} / 100</dd></div>
-            <div><dt>Fluency</dt><dd>{feedback.scores.fluency.toFixed(1)} / 100</dd></div>
-            <div><dt>Completeness</dt><dd>{feedback.scores.completeness.toFixed(1)} / 100</dd></div>
-          </dl>
-          <details className="speak-score-explanation"><summary>About these scores</summary>
-            <p>Provider estimates are not calibrated against Polish speakers, are not pass/fail grades, and do not identify which Polish sound needs improvement.</p>
+          <span className="speak-score-heading">Pronunciation estimate</span>
+          <div className="speak-word-score-primary" aria-label={`Azure word pronunciation accuracy estimate: ${Math.round(feedback.scores.accuracy)} out of 100`}>
+            <strong>{Math.round(feedback.scores.accuracy)}</strong><span>/100</span>
+          </div>
+          <details className="speak-score-explanation"><summary>About this score</summary>
+            <p>This is Azure's word-level estimate, not a syllable rating or pass/fail grade. It has not been calibrated against independent Polish speakers.</p>
+            <dl>
+              <div><dt>Fluency</dt><dd>{feedback.scores.fluency.toFixed(1)} / 100</dd></div>
+              <div><dt>Completeness</dt><dd>{feedback.scores.completeness.toFixed(1)} / 100</dd></div>
+            </dl>
           </details>
         </div>}
       </div>}

@@ -426,12 +426,14 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 /* Explicit, consent-first Speak feedback. Raw scores are NOT Polish-grade certification. */
 .speak-feedback{margin-top:1rem;padding:1rem;border:1px solid var(--border, #cbd5e1);border-radius:12px;display:grid;gap:.7rem}
 .speak-feedback .secondary-action{justify-self:start;min-height:44px}
-.speak-scores{display:grid;gap:.6rem}
-.speak-scores dl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.55rem;margin:0}
-.speak-scores dl>div{padding:.75rem .55rem;border-radius:10px;background:var(--card, #fff);border:1px solid var(--border, #cbd5e1);min-width:0}
+.speak-scores{display:grid;gap:.35rem;justify-items:start}
+.speak-score-heading{font-size:.9rem;font-weight:700;color:var(--text, #243e45)}
+.speak-word-score-primary{display:flex;align-items:baseline;gap:.25rem;font-variant-numeric:tabular-nums;line-height:1.1}
+.speak-word-score-primary strong{font-size:clamp(2.4rem,6vw,3.2rem);font-weight:800;letter-spacing:-.04em}
+.speak-word-score-primary span{font-size:1.1rem;font-weight:600;color:var(--muted, #506172)}
+.speak-scores dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.55rem;margin:.7rem 0 0}
+.speak-scores dl>div{padding:.6rem .7rem;border-radius:10px;background:var(--card, #fff);border:1px solid var(--border, #cbd5e1);min-width:0}
 .speak-scores dt{font-size:.8rem;color:var(--muted, #506172)}
-.speak-scores dt small{display:block;font-size:.71rem;line-height:1.4;font-weight:500;margin-top:.25rem}
-.speak-scores .speak-next-step{font-weight:600;color:var(--text, #243e45)}
-.speak-scores dd{margin:.2rem 0 0;font-weight:750;font-variant-numeric:tabular-nums}
+.speak-scores dd{margin:.2rem 0 0;font-weight:700;font-variant-numeric:tabular-nums}
 .speak-scores p{font-size:.85rem;color:var(--muted, #506172);margin:0}
 @media(max-width:360px){.speak-scores dl{grid-template-columns:1fr}}
