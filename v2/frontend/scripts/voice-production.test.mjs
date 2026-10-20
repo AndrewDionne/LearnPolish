@@ -25,6 +25,10 @@ test('first 58 real built-in Speak exercises produce an exact, cost-free audio p
   assert.equal(plan.summary.sourceBlockers,2);
   assert.equal(plan.summary.auditionSamples,8);
   assert.equal(plan.summary.proposedAudioFiles,24);
+  // The first paired pilot includes one difficult, word-final soft consonant.
+  assert.deepEqual(plan.audition
+    .filter(row=>row.voiceId==='pl-PL-MarekNeural').slice(0,4)
+    .map(row=>row.polish), ['Dzień dobry','Dziękuję','Przepraszam','Sześć']);
   assert.deepEqual(plan.voices.map(v=>v.id),[
     'pl-PL-MarekNeural','pl-PL-AgnieszkaNeural','pl-PL-ZofiaNeural'
   ]);

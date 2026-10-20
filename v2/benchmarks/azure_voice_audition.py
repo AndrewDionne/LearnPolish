@@ -62,6 +62,26 @@ def select_audition_rows(plan: dict, limit: int) -> list[dict]:
     return rows[:limit]
 
 
+def select_paired_rows(plan: dict, samples: int) -> list[dict]:
+    """Small owner-preferred two-speaker pilot; validates every planned row first."""
+    all_rows = select_audition_rows(plan, 24)
+    ordered_voices = plan.get("ownerVoicePreference", {}).get("rankedVoiceIds")
+    declared_voices = [voice.get("id") for voice in plan.get("voices", [])]
+    if not isinstance(ordered_voices, list) or ordered_voices != declared_voices or len(ordered_voices) != 3:
+        raise ValueError("Owner voice ranking is missing or inconsistent")
+    if not isinstance(samples, int) or not 1 <= samples <= 8:
+        raise ValueError("Paired pilot requires 1–8 actual lesson samples")
+    sample_ids = list(dict.fromkeys(row["itemId"] for row in all_rows))
+    if len(sample_ids) != 8:
+        raise ValueError("The planned sample count has changed")
+    chosen = set(sample_ids[:samples])
+    pair = set(ordered_voices[:2])
+    rows = [row for row in all_rows if row["itemId"] in chosen and row["voiceId"] in pair]
+    if len(rows) != 2 * samples:
+        raise ValueError("Both preferred voices must exist for every selected phrase")
+    return rows
+
+
 def azure_request(row: dict, key: str, region: str) -> bytes:
     if not REGION.fullmatch(region):
         raise ValueError("Azure Speech region must be a canonical region ID")
@@ -126,7 +146,9 @@ def generate(rows: list[dict], *, key: str, region: str, output: Path = OUTPUT) 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--limit", type=int, default=3, help="1–24 candidate files; default 3")
+    parser.add_argument("--limit", type=int, default=None, help="Legacy contiguous sample count 1–24; includes Zofia")
+    parser.add_argument("--pairs", type=int, default=None,
+                        help="1–8 same-phrase Marek/Agnieszka pairs (default 4 pairs)")
     parser.add_argument("--send", action="store_true", help="Explicit Azure synthesis call(s)")
     parser.add_argument("--gallery", action="store_true", help="Open official Microsoft voice demo; no Azure API request")
     parser.add_argument("--listen", action="store_true", help="Play previously generated, checksum-verified local audition clips")
@@ -142,8 +164,11 @@ def main(argv: list[str] | None = None) -> int:
             return open_private_player(["--open"])
         except (ValueError, FileNotFoundError, json.JSONDecodeError) as error:
             parser.error("No verified local audition available. Use --gallery for the public demo, or generate approved clips first.")
+    if args.limit is not None and args.pairs is not None:
+        parser.error("Choose --pairs or --limit, not both")
     plan = plan_from_generated_catalog()
-    rows = select_audition_rows(plan, args.limit)
+    rows = (select_audition_rows(plan, args.limit) if args.limit is not None
+            else select_paired_rows(plan, 4 if args.pairs is None else args.pairs))
     if args.gallery:
         if args.send:
             parser.error("--gallery cannot be combined with --send")
@@ -153,6 +178,8 @@ def main(argv: list[str] | None = None) -> int:
     preview = {
         "status": "READY_TO_REQUEST_ONLY" if args.send else "PREVIEW_ONLY",
         "files": len(rows), "characters": sum(r["characters"] for r in rows),
+        "pilot": "Marek and Agnieszka, same real lesson phrases" if args.limit is None
+                 else "Custom legacy three-candidate subset",
         "voices": sorted({r["voiceId"] for r in rows}),
         "new_requests": 0 if not args.send else len(rows),
         "output": "PathToPolish-Private-AI/voice-audition-01/",
