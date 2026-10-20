@@ -22,6 +22,7 @@ from private_storage import prepare_database
 from postgres_storage import PgIntegrityError, open_postgres, postgres_ready
 from recovery_mail import configured_sender
 from speech_assessment import InvalidAudio, checked_wav, assessment_from_sdk, azure_scripted_assess, MAX_WAV_BYTES
+from speech_blend import blend_assessment, groq_whisper_transcribe
 
 REGIONS = frozenset((
     "dolnośląskie", "kujawsko-pomorskie", "lubelskie", "lubuskie",
@@ -120,7 +121,9 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
                verification_sender: Callable[[str, str], None] | None = None,
                speech_enabled: bool | None = None,
                speech_assessor: Callable | None = None,
-               postgres_url: str | None = None) -> Flask:
+               postgres_url: str | None = None,
+               speech_blend_enabled: bool | None = None,
+               speech_transcriber: Callable | None = None) -> Flask:
     pg_url = postgres_url or os.environ.get("PTP_FAMILY_DATABASE_URL")
     path = database_path or os.environ.get("PTP_FAMILY_DB")
     catalog = catalog_path or os.environ.get("PTP_FAMILY_CATALOG")
@@ -148,7 +151,28 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
         for item in lesson["items"]
         if isinstance(item.get("polish"), str) and 1 <= len(item["polish"]) <= 300
     }
+    speech_segments = {
+        item["id"]: item["pronunciationSegments"]["segments"]
+        for lesson in raw["lessons"] for item in lesson["items"]
+        if item["id"] in speech_references and
+        isinstance(item.get("pronunciationSegments"), dict) and
+        item["pronunciationSegments"].get("method") in ("authored-v1", "draft-orthographic-v1") and
+        isinstance(item["pronunciationSegments"].get("segments"), list) and
+        1 <= len(item["pronunciationSegments"]["segments"]) <= 32 and
+        all(isinstance(part, str) and part for part in item["pronunciationSegments"]["segments"]) and
+        "".join(item["pronunciationSegments"]["segments"]) == item["polish"]
+    }
     speech_active = (os.environ.get("PTP_SPEECH_ENABLED") == "1") if speech_enabled is None else speech_enabled
+    blend_active = (os.environ.get("PTP_SPEECH_BLEND_ENABLED") == "1") if speech_blend_enabled is None else speech_blend_enabled
+    groq_key = os.environ.get("GROQ_API_KEY", "")
+    if blend_active and not speech_active:
+        raise RuntimeError("Speech blend cannot run without explicitly enabled Azure speech")
+    if blend_active and speech_transcriber is None and (
+        os.environ.get("PTP_GROQ_FREE_CONFIRMED") != "1" or
+        os.environ.get("PTP_GROQ_NO_PAID_BILLING") != "1" or
+        not groq_key or not groq_key.isascii() or not groq_key.isprintable()
+    ):
+        raise RuntimeError("Speech blend requires explicitly confirmed no-paid Groq plan and a private API key")
     speech_key = os.environ.get("AZURE_SPEECH_KEY", "")
     speech_region = os.environ.get("AZURE_SPEECH_REGION", "")
     if speech_active and speech_assessor is None:
@@ -158,6 +182,7 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
                 speech_region != "germanywestcentral"):
             raise RuntimeError("Speak assessment requires explicitly confirmed F0/no-paid resource and valid private Azure key/region")
     assess = speech_assessor or azure_scripted_assess
+    transcribe = speech_transcriber or groq_whisper_transcribe
     origins = allowed_origins if allowed_origins is not None else tuple(
         x.strip() for x in os.getenv("PTP_FAMILY_ORIGINS", "").split(",") if x.strip()
     )
@@ -217,7 +242,8 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
 
     @app.before_request
     def guard():
-        if (request.path != "/api/v2/family/speech/assess" and
+        if (request.path not in ("/api/v2/family/speech/assess",
+                                  "/api/v2/family/speech/assess-blend") and
                 request.content_length is not None and request.content_length > 16_000):
             return jsonify(error="request_too_large"), 413
         origin = request.headers.get("Origin")
@@ -314,6 +340,61 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
         response = jsonify({"item_id": item_id, "engine": "azure-pl-PL-scripted",
                             "audio_seconds": round(duration, 2), **result})
         response.headers["Server-Timing"] = f"speech-sdk;dur={sdk_ms}"
+        return response
+
+    @app.post("/api/v2/family/speech/assess-blend")
+    @auth
+    def assess_blended_speech(user):
+        """One explicitly approved recording to Azure then Groq, no history."""
+        if not speech_active or not blend_active:
+            return fail("speech_blend_unavailable", 503)
+        if (request.mimetype != "multipart/form-data" or
+                request.form.get("approve_azure_audio_upload") != "yes" or
+                request.form.get("approve_groq_audio_upload") != "yes"):
+            return fail("explicit_both_voice_upload_consents_required")
+        item_id = request.form.get("item_id")
+        if (not isinstance(item_id, str) or
+                item_id not in speech_references or item_id not in speech_segments):
+            return fail("pronunciation_segments_required")
+        audio = request.files.get("audio")
+        if audio is None or audio.mimetype not in ("audio/wav","audio/x-wav","audio/wave"):
+            return fail("invalid_audio")
+        try:
+            duration, checked = checked_wav(audio.read(MAX_WAV_BYTES+1))
+        except InvalidAudio as exc:
+            return fail(str(exc))
+        # Existing durable per-user/global limit counts each attempt before
+        # external requests. No automatic retry or provider cost refund.
+        day=datetime.now(timezone.utc).date().isoformat()
+        con=db()
+        con.execute("BEGIN IMMEDIATE")
+        local=con.execute("SELECT requests FROM speech_usage WHERE user_id=? AND day=?",
+                          (user["id"],day)).fetchone()
+        total=con.execute("SELECT COALESCE(SUM(requests),0) FROM speech_usage WHERE day=?",
+                          (day,)).fetchone()[0]
+        if (local and local["requests"]>=12) or total>=30:
+            con.rollback()
+            return fail("speech_daily_free_quota_guard",429)
+        con.execute("""INSERT INTO speech_usage(user_id,day,requests) VALUES(?,?,1)
+                    ON CONFLICT(user_id,day) DO UPDATE SET requests=requests+1""",
+                    (user["id"],day))
+        con.commit()
+        started=time.perf_counter()
+        try:
+            azure=assessment_from_sdk(assess(checked,speech_references[item_id],
+                                              speech_key,speech_region))
+            if azure["status"]=="ok":
+                hypothesis=transcribe(checked,groq_key)
+                result=blend_assessment(azure,speech_references[item_id],
+                                        speech_segments[item_id],hypothesis)
+            else:
+                result={"status":"inconclusive","reason":"provider_inconclusive"}
+        except Exception:
+            # Never expose/persist recording, raw Whisper text or provider error.
+            result={"status":"inconclusive","reason":"provider_unavailable"}
+        elapsed=round(max(0,time.perf_counter()-started)*1000,1)
+        response=jsonify({"item_id":item_id,"audio_seconds":round(duration,2),**result})
+        response.headers["Server-Timing"]=f"speech-blend;dur={elapsed}"
         return response
 
     @app.get("/api/v2/family/health")
