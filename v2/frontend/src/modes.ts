@@ -10,7 +10,7 @@ export function availableModes(lesson: Lesson): LearningMode[] {
 }
 
 export function itemsForMode(lesson: Lesson, mode: LearningMode): LessonItem[] {
-  if (mode === 'listen') return lesson.items.filter(item => !!item.audio);
+  if (mode === 'listen') return lesson.items.filter(item => !!item.audio && item.referenceReview !== 'practice_only');
   return lesson.items;
 }
 
