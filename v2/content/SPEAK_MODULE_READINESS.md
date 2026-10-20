@@ -42,7 +42,11 @@ Each contrast module has a genuine recorded example for every item. The groups a
 | L · Ł | 4 | 0/0/4 | 4/4 | 0 | **Core sound distinctions** | — |
 | KRZY · PRZY consonant clusters | 4 | 0/0/4 | 4/4 | 0 | **Core sound distinctions** | — |
 
-## Reading & dialogues — 6 modules currently **without** Speak mode
+## Reading & dialogues — 6 modules currently **without** Speak mode## E2: first short dialogue practices inside existing reading lessons (2026-10-21)
+
+**Implemented pilot (pending CI):** three source-matched optional **micro-dialogues** are attached to two existing Reading lessons: `Basic_01R` has two exchanges of **2 turns** each (greeting/how are you; asking a name), and `Grocery_store_very_basic_shopping` has one **3-turn** apple purchase (Customer → Shop assistant → Customer). They use the exact original Polish + English + individual mapped MP3 recordings at the exact existing reading indexes; no newly generated or edited audio. The learner can see both speakers together, play any turn, switch to `Listen first` to conceal Polish until revealing, and optionally reveal the English translations. This is **additional practice inside the original reading lesson**, not an extra lesson, not automatically sliced reading passages, not true uninterrupted dialogue audio, and not pronunciation grading. The catalog remains 26 modules / 482 items / 51 reading passages, 6 reading lessons, 24 authored comprehension questions, 14 ungraded Speak reference blockers, and unchanged user progress/XP. Polish fluency and voice match await actual/native audio review. The next E2 extension should follow owner UX feedback and review of these actual scenes, not bulk creation of fabricated dialogues.
+
+
 
 All 51 reading items have source audio and automatic pronunciation text groups (none editorial-reviewed), but `availableModes()` intentionally offers **Read**, not Speak. This is a **workflow absence**, distinct from normal vocabulary drafts needing review. Their often longer sentences may need a different, phrase-aware assessment experience, rather than turning on the current short-utterance Azure SDK route wholesale.
 
