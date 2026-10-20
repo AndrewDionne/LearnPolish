@@ -31,13 +31,19 @@ npm run audit:voice -- --json
 
 The last command prints all 58 exact Polish/English/source-audio entries; source MP3 SHA-256; pronunciation segments and provenance; the two blocked prompts; missing/non-aligned English guide status; three unapproved candidates and **24 potential audition clips**. `audit:voice` hashes the *existing* MP3 bytes but **does not** inspect their language, naturalness or identity. It does not modify data, create an audio file, call an external API or enable remote scoring. Changed target text, missing audio, unlisted blocker, wrong sound-contrast ID, duplicate voice or stale sample spelling fail closed. This audit is part of `npm run check`.
 
-## Candidate voices
+## Owner's ranked candidate voices (2026-10-20)
 
-- Zofia: `pl-PL-ZofiaNeural` — female primary candidate.
-- Marek: `pl-PL-MarekNeural` — male alternate candidate.
-- Agnieszka: `pl-PL-AgnieszkaNeural` — second female comparison.
+The owner compared Polish voices in Microsoft's browser demo and stated the following **preferred order**, now the authoritative *audition priority* in `voice-production.json`:
 
-**No voice has been selected as the instructional standard yet.** Verify voice availability for the owner's actual Azure region, then compare the actual speech for greetings, numerals, `c/cz/ć` and `s/sz/ś` listening exercises. Polish accent, timing, natural stress, soft palatal consonants and difficult clusters need native-speaker spot checks. Current Microsoft locale catalog lists these voices: https://learn.microsoft.com/pl-pl/azure/ai-services/speech-service/language-support?tabs=tts . Billing eligibility and terms are separate.
+1. **Marek — `pl-PL-MarekNeural`: provisional primary voice**, male.
+2. **Agnieszka — `pl-PL-AgnieszkaNeural`: provisional alternate voice**, female.
+3. **Zofia — `pl-PL-ZofiaNeural`: third choice**, female.
+
+**Specific qualitative observation:** Zofia sounded good overall, but a bit **clipped at the end**; Marek and Agnieszka both had **better follow-through**. This is the owner's real listening preference, not an objective acoustic measurement or native-speaker certification. Preserve the perceived phrase-ending quality as a release gate: compare the same source text at word/sentence ends for final vowel/syllable completion, consonant release, cadence and unwanted audio-truncation; don't prematurely blame the voice if an MP3 encoder or playback clip is cutting off its tail. Audition hard Polish consonants, normal stress and connected speech before bulk rendering. Short teaching prompts and multi-line dialogue turns can behave differently from demos.
+
+**Decision boundary:** This approves **ranking for planned auditions**, *not* paid audio generation, replacing legacy audio, enabling speech assessment, or deployment. The old "Zofia as main teaching voice" proposal has been superseded by the owner's preference. The default current app still plays its original, unverified imported MP3. Wait for final reviewed, local MP3s before wiring Marek/Agnieszka as user-selectable production audio.
+
+Current Microsoft locale catalog: https://learn.microsoft.com/pl-pl/azure/ai-services/speech-service/language-support?tabs=tts . Billing eligibility and terms are separate.
 
 ## Actually hearing the voices — corrected UX (2026-10-20)
 
@@ -75,7 +81,7 @@ The separate runner is **offline-only unless a user explicitly adds ALL guarded 
 python3 v2/benchmarks/azure_voice_audition.py
 ```
 
-Default preview estimates **three requests for the SAME first greeting in Zofia, Marek, and Agnieszka**, to compare voice quality fairly, and prints an **explicit preview-only/no-sound message** and the browser-gallery URL. `--limit 24` previews the complete bounded eight-expression × three-voice list. No files or folders are written in preview mode.
+Default preview estimates **three requests for the SAME first greeting in Marek, Agnieszka, and Zofia (owner-preferred ranking)**, to compare voice quality fairly, and prints an **explicit preview-only/no-sound message** and the browser-gallery URL. `--limit 24` previews the complete bounded eight-expression × three-voice list. No files or folders are written in preview mode.
 
 **Only if the account owner independently verifies the Microsoft Speech F0 resource, zero-paid configuration, local voice availability and explicitly approves these provider requests**, the manually triggered *optional* three-clip command is:
 

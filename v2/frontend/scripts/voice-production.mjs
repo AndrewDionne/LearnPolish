@@ -42,6 +42,18 @@ export function makeVoiceProductionPlan(manifest, specification, options={}){
 
   const voiceIds=specification.voiceCandidates.map(v=>v.id);
   unique(voiceIds,'voice candidate');
+  const preference=specification.ownerVoicePreference;
+  assert(preference &&
+    preference.status==='provisional_owner_listening_preference_not_approved_production_audio' &&
+    typeof preference.source==='string' && !!preference.source &&
+    typeof preference.observation==='string' && !!preference.observation &&
+    Array.isArray(preference.rankedVoiceIds) &&
+    preference.rankedVoiceIds.length===voiceIds.length &&
+    preference.rankedVoiceIds.every((id,index)=>id===voiceIds[index]) &&
+    Array.isArray(preference.qualityFocus) && preference.qualityFocus.length>=2 &&
+    preference.qualityFocus.every(x=>typeof x==='string' && !!x) &&
+    typeof preference.nextGate==='string' && !!preference.nextGate,
+    'Unreviewed or inconsistent owner voice-preference ranking');
   for(const voice of specification.voiceCandidates){
     assert(/^pl-PL-[A-Za-z]+Neural$/.test(voice.id) &&
       typeof voice.label==='string' && !!voice.label &&
@@ -146,6 +158,7 @@ export function makeVoiceProductionPlan(manifest, specification, options={}){
       networkCalls:0
     },
     voices:specification.voiceCandidates,
+    ownerVoicePreference:preference,
     lessons,items,audition
   };
 }
@@ -169,8 +182,11 @@ export function previewMarkdown(plan){
     ...plan.items.filter(x=>x.blockerReason)
       .map(x=>'- '+x.itemId+' — '+x.polish+' → '+x.blockerReason),
     '',
-    '## Audition candidates (not generated)',
-    ...plan.voices.map(v=>'- '+v.label+' ('+v.id+')'),
+    '## Owner-preferred audition order (not yet production approved)',
+    ...plan.voices.map((v,index)=>(index+1)+'. '+v.label+' ('+v.id+')'),
+    '',
+    'Owner quality concern: '+plan.ownerVoicePreference.observation,
+    'Next gate: '+plan.ownerVoicePreference.nextGate,
     '',
     'To inspect every item and the exact proposed clips: npm run audit:voice -- --json',
     ''

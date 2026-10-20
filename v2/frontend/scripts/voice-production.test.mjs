@@ -25,6 +25,13 @@ test('first 58 real built-in Speak exercises produce an exact, cost-free audio p
   assert.equal(plan.summary.sourceBlockers,2);
   assert.equal(plan.summary.auditionSamples,8);
   assert.equal(plan.summary.proposedAudioFiles,24);
+  assert.deepEqual(plan.voices.map(v=>v.id),[
+    'pl-PL-MarekNeural','pl-PL-AgnieszkaNeural','pl-PL-ZofiaNeural'
+  ]);
+  assert.deepEqual(plan.ownerVoicePreference.rankedVoiceIds,plan.voices.map(v=>v.id));
+  assert.equal(plan.ownerVoicePreference.status,
+    'provisional_owner_listening_preference_not_approved_production_audio');
+  assert.ok(plan.ownerVoicePreference.observation.includes('clipped'));
   assert.equal(plan.summary.producedAudioFiles,0);
   assert.equal(plan.summary.networkCalls,0);
   assert.ok(plan.summary.proposedCharacters>0);
@@ -67,8 +74,17 @@ test('voice auditions reject invented assets, changed Polish and duplicated cand
   const dup=structuredClone(config);
   dup.voiceCandidates[1].id=dup.voiceCandidates[0].id;
   assert.throws(()=>makeVoiceProductionPlan(catalog,dup),/Duplicate voice candidate/);
+  const stalePreference=structuredClone(config);
+  stalePreference.ownerVoicePreference.rankedVoiceIds.reverse();
+  assert.throws(()=>makeVoiceProductionPlan(catalog,stalePreference),
+    /Unreviewed or inconsistent owner voice-preference ranking/);
+  const noApproval=structuredClone(config);
+  noApproval.ownerVoicePreference.status='approved_for_production';
+  assert.throws(()=>makeVoiceProductionPlan(catalog,noApproval),
+    /Unreviewed or inconsistent owner voice-preference ranking/);
   const bad=structuredClone(config);
   bad.voiceCandidates[0].id='en-US-AriaNeural';
+  bad.ownerVoicePreference.rankedVoiceIds[0]='en-US-AriaNeural';
   assert.throws(()=>makeVoiceProductionPlan(catalog,bad),/Invalid Polish voice candidate/);
   const attempted=structuredClone(config);
   attempted.auditionSamples.push({itemId:'Conversation_1:24',polish:'Jak ma pan/pani na imię?'});
