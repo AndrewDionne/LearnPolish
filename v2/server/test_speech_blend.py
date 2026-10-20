@@ -71,6 +71,15 @@ class BlendEndpoint(unittest.TestCase):
                 "id":"test_other:0","polish":"Dzień dobry",
                 "pronunciationSegments":{"method":"draft-orthographic-v1",
                        "segments":["Dzień ","do","bry"]}}]},
+            {"id":"Conversation_1","kind":"vocabulary","items":[{
+                "id":"Conversation_1:24","polish":"Jak ma pan/pani na imię?",
+                "referenceReview":"practice_only",
+                "pronunciationSegments":{"method":"draft-orthographic-v1",
+                    "segments":["Jak ma pan/pani na imię?"]}},
+                {"id":"Conversation_1:25","polish":"Mam na imię…",
+                "referenceReview":"practice_only",
+                "pronunciationSegments":{"method":"draft-orthographic-v1",
+                    "segments":["Mam na imię…"]}}]},
         ]}),encoding="utf-8")
         self.mail=[]
         self.azure=[]
@@ -119,6 +128,14 @@ class BlendEndpoint(unittest.TestCase):
         self.assertEqual(self.send(auth,azure="no").status_code,400)
         self.assertEqual(self.send(auth,item="unknown").status_code,400)
         self.assertEqual(self.send(auth,audio=b"not-wav").status_code,400)
+        self.assertEqual(self.azure,[])
+        self.assertEqual(self.groq,[])
+
+    def test_unverified_greetings_are_rejected_before_azure_or_groq(self):
+        auth=self.auth()
+        for item in ("Conversation_1:24","Conversation_1:25"):
+            denied=self.send(auth,item=item)
+            self.assertEqual(denied.status_code,400)
         self.assertEqual(self.azure,[])
         self.assertEqual(self.groq,[])
 
