@@ -74,6 +74,10 @@ def verified_clips(manifest: dict, planned_rows: list[dict], output: Path) -> li
 
 def render_player(clips: list[dict], plans: list[dict], voices: list[dict]) -> str:
     by_identity = {(clip["itemId"], clip["voiceId"]): clip for clip in clips}
+    # An ungenerated third-choice voice should not occupy every pilot row.
+    # In partial auditions, show only voices with at least one real verified clip.
+    active_voices = [voice for voice in voices
+                     if any(clip["voiceId"] == voice["id"] for clip in clips)]
     samples = OrderedDict()
     for plan in plans:
         if plan["itemId"] in {x["itemId"] for x in clips}:
@@ -81,7 +85,7 @@ def render_player(clips: list[dict], plans: list[dict], voices: list[dict]) -> s
     headings = []
     for item_id, polish in samples.items():
         buttons = []
-        for voice in voices:
+        for voice in active_voices:
             voice_id = voice["id"]
             name = html.escape(voice["label"])
             clip = by_identity.get((item_id, voice_id))
@@ -112,7 +116,7 @@ header { margin-bottom:28px; } .brand { color:#506080; letter-spacing:.08em; fon
 h1 { font-size:clamp(2rem,4vw,3rem); margin:.2em 0; letter-spacing:-.04em; } .intro { max-width:760px; color:#4f5668; }
 .sample { padding:22px; border:1px solid #e1e4ed; border-radius:18px; background:white; margin:16px 0; }
 .sample h2 { margin:0 0 14px; font-size:1.48rem; font-weight:680; }
-.voices { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+.voices { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr)); gap:14px; }
 .voice { padding:12px; border-radius:13px; background:#f5f6fb; }
 .voice h3 { font-size:1rem; margin:0 0 9px; font-weight:680; }
 audio { display:block; width:100%; min-width:0; height:42px; }
@@ -122,7 +126,7 @@ footer { color:#525a68; font-size:.88rem; margin-top:24px; }
 @media(max-width:680px){ .voices{grid-template-columns:1fr;} body{padding:18px;} }
 </style></head><body><header><div class="brand">Path to Polish / Content Lab</div>
 <h1>Compare Polish voices</h1>
-<p class="intro">Play the same phrase across voices, then compare clarity, rhythm and difficult Polish sounds. These are <strong>unreviewed synthetic recordings</strong>, not approved lesson audio. Missing voices are deliberately disabled.</p>
+<p class="intro">Compare the same Polish phrase spoken by Marek and Agnieszka (and other voices only if recordings exist). Pay particular attention to <strong>natural word endings, final consonants and cadence</strong>. These are <strong>unreviewed synthetic recordings</strong>, not approved lesson audio.</p>
 </header><main>""" + "".join(headings) + """</main>
 <footer>All playable clips are local, checksum-verified files. Listening here does not call Azure or upload any voice data. Do not use these test recordings as phonetic ground truth.</footer>
 </body></html>
