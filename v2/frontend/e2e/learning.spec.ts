@@ -71,6 +71,40 @@ test('numbers 1–20 stays one lesson with natural 1–10 / 11–20 sections acr
   expect(errors).toEqual([]);
 });
 
+test('ambiguous and unfinished greetings remain one lesson but have no scored or implied reference',async({page})=>{
+  await page.goto('/');
+  await page.getByRole('button',{name:'Explore lessons'}).click();
+  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Conversation 1');
+  await page.getByRole('button',{name:/Conversation 1/}).click();
+  await expect(page.getByRole('combobox',{name:'Practice group'})).toHaveCount(0);
+  for(let i=0;i<24;i++){
+    await page.getByRole('button',{name:/Skip to next/}).click();
+  }
+  await expect(page.getByText('Jak ma pan/pani na imię?',{exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Reference pending'})).toBeDisabled();
+  await page.getByRole('button',{name:'Speak',exact:true}).click();
+  // Existing mode switching intentionally starts from the first expression.
+  // Visit the exact original item ID without granting XP to skipped recordings.
+  for(let i=0;i<24;i++){
+    await page.getByRole('button',{name:'Next',exact:true}).click();
+  }
+  await expect(page.getByText('Jak ma pan/pani na imię?',{exact:true})).toBeVisible();
+  await expect(page.getByText(/An exact spoken reference is still being reviewed/)).toBeVisible();
+  await expect(page.getByRole('button',{name:'Start recording'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Check my pronunciation'})).toHaveCount(0);
+  await expect(page.getByRole('button',{name:/Hear example/})).toHaveCount(0);
+  await page.getByRole('button',{name:'Next',exact:true}).click();
+  await expect(page.getByText('Mam na imię…',{exact:true})).toBeVisible();
+  await expect(page.getByText(/An exact spoken reference is still being reviewed/)).toBeVisible();
+  await expect(page.getByRole('button',{name:'Check my pronunciation'})).toHaveCount(0);
+  await page.getByRole('button',{name:'Listen',exact:true}).click();
+  await expect(page.locator('.item-count')).toContainText('/ 24');
+  await expect(page.getByText('Jak ma pan/pani na imię?',{exact:true})).toHaveCount(0);
+  await expect(page.getByText('Mam na imię…',{exact:true})).toHaveCount(0);
+  await page.getByRole('button',{name:'Learn',exact:true}).click();
+  await expect(page.locator('.item-count')).toContainText('/ 26');
+});
+
 test('responsive mobile library and lesson controls', async ({ page, isMobile }) => {
   if (!isMobile) test.skip();
   await page.goto('/');

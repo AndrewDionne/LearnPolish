@@ -60,7 +60,12 @@ class SpeechApiTests(unittest.TestCase):
         self.catalog.write_text(json.dumps({"schemaVersion":1,"lessons":[
             {"id":"a","kind":"vocabulary","items":[{"id":"a:0","polish":"Dzień dobry"}]},
             {"id":"speak_swietokrzyska","kind":"vocabulary","items":[
-                {"id":"speak_swietokrzyska:0","polish":"Świętokrzyska"}]}
+                {"id":"speak_swietokrzyska:0","polish":"Świętokrzyska"}]},
+            {"id":"Conversation_1","kind":"vocabulary","items":[
+                {"id":"Conversation_1:24","polish":"Jak ma pan/pani na imię?",
+                 "referenceReview":"practice_only"},
+                {"id":"Conversation_1:25","polish":"Mam na imię…",
+                 "referenceReview":"practice_only"}]}
         ]}))
         self.calls=[]
         self.mail=[]
@@ -102,6 +107,17 @@ class SpeechApiTests(unittest.TestCase):
         self.assertEqual(self.send(auth,audio=b"abc").status_code,400)
         self.assertEqual(self.send(auth,audio=wav_bytes(amplitude=0)).status_code,400)
         self.assertEqual(self.calls,[])
+
+    def test_unverified_greeting_references_cannot_consume_provider_requests(self):
+        auth=self.auth("pending@example.com")
+        for item in ("Conversation_1:24","Conversation_1:25"):
+            denied=self.send(auth,item=item)
+            self.assertEqual(denied.status_code,400)
+        self.assertEqual(self.calls,[])
+        with self.app.app_context():
+            import sqlite3
+            with sqlite3.connect(self.database) as con:
+                self.assertEqual(con.execute("SELECT COUNT(*) FROM speech_usage").fetchone()[0],0)
 
     def test_one_consented_request_returns_real_scalar_scores_not_server_stored(self):
         auth=self.auth("b@example.com")

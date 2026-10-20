@@ -74,8 +74,11 @@ function LessonTile({ lesson, completed, onOpen }: { lesson: Lesson; completed: 
 function AudioButton({ item, playing, onPlay }: {
   item: LessonItem; playing: string | null; onPlay: (path: string) => void;
 }) {
-  return <button type="button" className="audio-btn" disabled={!item.audio} title={!item.audio ? 'Reference audio unavailable' : 'Play Polish recording'} onClick={() => item.audio && onPlay(item.audio)}>
-    <span aria-hidden="true">{item.audio && playing === item.audio ? '◼' : '▶'}</span> {item.audio && playing === item.audio ? 'Playing audio' : item.audio ? 'Play audio' : 'No audio'}
+  const available=!!item.audio && item.referenceReview !== 'practice_only';
+  return <button type="button" className="audio-btn" disabled={!available}
+    title={!available ? 'Verified reference recording unavailable' : 'Play Polish recording'}
+    onClick={() => available && item.audio && onPlay(item.audio)}>
+    <span aria-hidden="true">{available && playing === item.audio ? '◼' : '▶'}</span> {available && playing === item.audio ? 'Playing audio' : available ? 'Play audio' : item.referenceReview === 'practice_only' ? 'Reference pending' : 'No audio'}
   </button>;
 }
 
@@ -507,7 +510,7 @@ export default function App() {
             guideVisible={guideVisible} onGuideChange={setGuideVisible}
             onPracticeSound={!soundReturn && current.soundPractice ? openSoundPractice : undefined}
             blended={SPEECH_BLEND_AVAILABLE && !!current.pronunciationSegments}
-            onAssess={SPEECH_ASSESSMENT_AVAILABLE && familyConnection && active.source !== 'personal'
+            onAssess={current.referenceReview !== 'practice_only' && SPEECH_ASSESSMENT_AVAILABLE && familyConnection && active.source !== 'personal'
               ? (capture, signal) => requestSpeechFeedback(capture, familyConnection.token, signal,
                   SPEECH_BLEND_AVAILABLE && !!current.pronunciationSegments)
               : undefined}
