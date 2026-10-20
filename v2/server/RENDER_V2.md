@@ -1,42 +1,33 @@
-# Path to Polish — Render-only V2 hosting handover
+# Path to Polish V2 — Render FREE only
 
-## Decision and status
+## Owner constraint: no paid services
 
-GitHub is the durable **source**, and should be made private after the new Render V2 service is verified. Render is the intended **sole host**. At the time of this change, Render already contains TWO **legacy/free** web services for this repository: `Path to Polish` (`path-to-polish.onrender.com`, Frankfurt) and `flashcards` (Ohio). Neither hosts the actual V2 family API. Do NOT mistake those for the new unified service or silently replace them.
+**Render Free only.** The owner rejected the paid Starter+disk proposal on 2026-10-20. The authoritative [`render.yaml`](../../render.yaml) is now `plan: free`, with **no disk, database, SMTP, Azure, or other paid add-ons**. Source remains in `AndrewDionne/LearnPolish`; GitHub privacy and GitHub Pages retirement happen only after verified Render hosting.
 
-This tranche implements the deployable, single-process V2 React + Flask image and isolated readiness tests. **It does not create a paid Render service, provision secrets, initialize a production family database, or make the repository private.** The existing GitHub Pages URL may still serve V2 until a verified Render cutover.
+Render Free is subject to its published monthly allowances. Its web-service filesystem is **ephemeral** and free web services sleep after 15 minutes of inactivity. The initial wake can take about one minute; **Render shows its loading page while it starts**. The browser cannot skip that cold start, but there is no longer a separate sleeping API to wake AFTER the V2 frontend loads. Check latest official [Render Free limitations](https://render.com/docs/free) before setup; if your workspace has a payment method, excess bandwidth/build minutes **may still incur charges**. A free plan is not an unconditional zero-bill guarantee. Configure account spending/usage controls or avoid deployment if the current billing configuration could charge overages.
 
-## Why one Render web service?
+## Free deployment scope: honest capability, safe storage
 
-The former static Pages frontend could load while a different Render backend slept. This produces a misleading first screen. Here, the same Flask/Gunicorn service serves **both** the built React frontend and the `/api/v2/family/*` endpoints from one HTTPS origin. Startup requires built catalog, private persistent SQLite path, expected HTTPS origin and email delivery when `PTP_RENDER_REQUIRE_EMAIL=1`. The service health check is `GET /health/ready`: 200 only when the database tables and catalog are readable. GET `/` and asset responses are **503** if storage is unavailable, without exposing a half-ready UI. Production browser build uses `VITE_FAMILY_API_URL=same-origin`, not a second waking API host.
+One V2 Docker image includes the built React/TypeScript V2 learner PWA, trusted imported lesson/audio assets, a Flask same-origin file server and `GET /health/ready` from **one Render process**. The server validates the bundled lesson manifest and shell before binding. The home page and assets return 503 if a previously ready host loses required local assets; the browser PWA fetches online navigations before using a cached offline shell. When the service is asleep, users see Render's loading page, then the complete offline-first learner UI.
 
-Production V2 PWA navigations fetch the live response first. If Render returns 503 during startup, the service worker does not substitute a stale cached UI. Genuine network disconnection can still use the PWA's previously installed offline shell. Offline practice remains available by design, but it cannot promise online family sync without a connection.
+**Free persistent family storage is not available on this Render service.** Render erases files (including SQLite) on redeploy, restart and sleep, and free web services cannot attach disks. Consequently `PTP_RENDER_FAMILY_MODE=disabled` is the safe default and **the free frontend is built with `VITE_FAMILY_API_URL` empty**. It DOES NOT activate registration, emailed verification, permanent server XP/family memberships, cross-device sync, or Azure speech inference. The old V2 family backend remains source code / local CI implementation only; it is neither silently simulated nor exposed to free users. Keep the existing personal/local PWA learning history and optional downloaded offline packs on each user's browser. Browser storage is device-local and can be erased by browser controls.
 
-**Cold starts:** a free Render web service still sleeps after 15 minutes of inactivity and can take about a minute to wake; Render itself displays a loading page while spinning up. Unified hosting prevents the two-service mismatch, not the wait itself. A paid always-on **Starter** service eliminates free-tier idle spin-down. **Data safety:** Render free service storage is ephemeral and cannot hold this SQLite account data; the Blueprint therefore describes a **paid Starter service + persistent 1 GB disk**. This is a billing change and must be explicitly approved before the Blueprint is applied. There is no reliable free permanent database currently provisioned in this workspace.
+**Full V2 family online capabilities will need a separate durable free database solution and production privacy/guardian/SMTP review.** This has NOT been implemented. Do not try to work around persistence by writing user accounts to Render's ephemeral filesystem or committing them to GitHub. Do not enable unverified minors or upload real speech to external providers.
 
-## Implementation and checks
+## Deploy / verify without paying for compute plans
 
-- `Dockerfile.v2` builds the V2 React app using the existing legacy JSON/audio **as data inputs only**, then copies only `v2/frontend/dist` and `v2/server` into the runtime image.
-- `v2/server/render_app.py` composes existing validated family Flask routes with the static React build; `render_wsgi.py` is the Gunicorn entry point.
-- `render.yaml` defines **optional** paid Render creation with one Frankfurt web service, attached private persistent disk, readiness health check and SMTP secrets as `sync:false` (never put actual credentials in Git). No Render instance is created simply by committing this YAML unless the user explicitly links a Blueprint.
-- `PTP_PUBLIC_ORIGIN` must match the service's real HTTPS origin. Update this before going live if Render allocates a different hostname or you use a custom domain; otherwise same-origin browser POSTs fail closed.
-- `PTP_FAMILY_DB` must live under the attached Render disk (`/var/data/family/family.sqlite` in the example). Database and directory must remain owner-private, no symlinks. SQLite storage and backup/restore are not interchangeable with Render Postgres.
-- SMTP verification and recovery credentials must work before sign-up is enabled; `PTP_RENDER_REQUIRE_EMAIL=1` deliberately refuses startup without configured SMTP. This check verifies configuration, not deliverability; actual sending must also be tested. Provider assessment is **OFF** by default (`PTP_SPEECH_ENABLED=0`); no audio uploads or Azure/Groq calls during CI or hosting setup.
+- Repository deployment contract: [`render.yaml`](../../render.yaml): `type: web`, `plan: free`, Frankfurt, `Dockerfile.v2`, no disk.
+- Existing `Path to Polish` (Frankfurt, `path-to-polish.onrender.com`) and `flashcards` (Ohio) Render services are legacy/free V1. **Neither is the unified V2 host.** Prefer repurposing the existing Frankfurt service when possible, so you don't add to the workspace's shared free resource consumption. The available connected Render tools cannot change that service's runtime/build commands in place, so use Render's dashboard for an in-place Docker migration, or explicitly replace it with a free Blueprint after reviewing current usage and billing settings. Do not automatically create an additional service without checking free hours / billing.
+- After deploying, verify `/health/ready` reports `{"ready":true,"family_available":false}`, the root displays V2, bundled audio plays, and disconnected practice works; confirm no `/api/v2/family/*` request can create an account. Confirm the first cold browser visit does not display V2 as ready before Render starts, and inspect logs for errors.
+- Only after physical verification, disable the old Pages workflow and Pages site. Then change GitHub visibility manually in **Settings → General → Danger Zone → Change repository visibility → Private**, after verifying the Render GitHub App's private repository access at [Render's Git provider guide](https://render.com/docs/git-provider). If private repo access fails, restore Render repository permissions before any further deploy.
+- CI tests are synthetic and do not prove a Docker image is actually deployed, or certify family accounts and children. Preserve V1 lesson/audio inputs because the V2 build still imports `docs/sets/` and `docs/static/`.
 
-For local checks (not a real deployment):
+## Local source checks
+
 ```bash
 cd v2/frontend && npm run check
 cd ../..
 python -m unittest discover -s v2/server -p 'test_*.py' -v
 ```
-The Render host tests use a disposable private SQLite database and synthetic frontend files; no provider calls or real family data.
 
-## Controlled cutover steps
-
-1. Review the paid Starter+disk cost and privately arrange a dependable off-site backup/restore approach, email verification delivery and production security/privacy review. Family accounts for minors require a verified guardian and consent model **before enablement**.
-2. In the Render dashboard, deploy this repo's **single V2** `render.yaml` Blueprint (or equivalent Docker web service + disk). Confirm Render has GitHub App access to `AndrewDionne/LearnPolish` **after it becomes private**; reconnect the repository if necessary.
-3. Configure real SMTP secrets and exact `PTP_PUBLIC_ORIGIN` on Render, never in GitHub. Confirm the Render service's build, `/health/ready`, actual `/`, static assets, family health/API sign-in workflow and phone/browser audio & offline behavior. Check backend data survives restart/redeploy and test restore drill before family use. Never test registration with minors.
-4. **Only after new Render V2 is healthy**, disable/archive the old `Path to Polish` and `flashcards` Render services, turn off the GitHub Pages deploy workflow/site, and change GitHub repo visibility via **Settings → General → Danger Zone → Change repository visibility → Private**. GitHub connector currently does not expose the visibility mutation. Ensure Render still has access to the now-private GitHub repo and new commits can deploy.
-5. Check Render URL on actual Mac/iPhone after changing visibility and repeat a deploy; do not delete V1 lesson/audio inputs while V2's content generator still uses them.
-
-Do not represent a saved private GitHub repository or a configured Blueprint as successful Render hosting until actual live health/route checks confirm it. The backend is still experimental and has not passed guardian enrollment, incident response, and operational backup certification.
+No special paid services, API keys, private learner WAV, or external inference needed.
