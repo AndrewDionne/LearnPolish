@@ -97,6 +97,16 @@ lessons for `c / cz / ć`, `s / sz / ś`, `z / ż / ź`,
 - **Not yet provided:** a precisely matched standalone *Świętokrzyska* example recording, real acoustic per-syllable scoring, score-driven automatic identification of weak clusters. Do not conflate the new optional manual link with real assessment feedback or silently replace its word reference with `ulica Świętokrzyska`.
 - Hosted Render Free still has family backend and Azure speech assessment disabled until authenticated Neon and secure email setup; Sound Lab navigation is local frontend content and does not require a login.
 
+## Evidence-gated syllable scoring presentation shipped (PR #66, 2026-10-20)
+
+**[PR #66](https://github.com/AndrewDionne/LearnPolish/pull/66) MERGED**, squash `5d4bfde1537153eea66ccedd7cfde5662359ab19`, after [four-suite CI #39408267740](https://github.com/AndrewDionne/LearnPolish/actions/runs/39408267740) **PASS** on exact head `898b612942f7cb3859dedcb8008089d1b1f8230f`.
+
+- **UI plumbing implemented, NOT real syllable grading:** `v2/frontend/src/speech/assessment.ts` accepts a reserved `reviewed-acoustic-syllables-v1` structure only when every spelling segment and value passes strict validation. `SpeakPanel.tsx` can show scores under the same segmented Polish word regardless of pronunciation-guide switch; guide On adds English cues beneath. A genuinely unassessed segment is a dash, **not zero**; an assessment reset removes old measurements, Next stays accessible. Existing aggregate Azure scores continue unchanged.
+- **Production provider intentionally does not emit reserved syllable data.** No real syllable percentages appear from current Azure/Whisper. The connected-browser regression uses synthetic graded fixtures ONLY to verify the UI, does not contact Azure and is not presented to users as acoustic results.
+- **Private evidence diagnostic** `v2/benchmarks/polish_phoneme_evidence.py` inspects an already saved, original `pl-PL` Azure raw SDK result offline without uploading audio. It returns only sanitized structural counts, not raw transcripts/scores/phoneme identities, and always `can_publish_syllable_scores: false` until independent native/learner validation is completed. Details and safe command in [`v2/benchmarks/POLISH_SYLLABLE_SCORING.md`](benchmarks/POLISH_SYLLABLE_SCORING.md).
+- **Verified Microsoft documentation:** Polish pronunciation assessment may expose phoneme numeric accuracy, but phoneme names and native syllable grouping are `en-US`-limited. Human-reviewed Polish segmentation plus validation are necessary; our four displayed syllables cannot simply be derived from a word-level 84/100 score, Whisper text similarity, or unlabelled phoneme counts. No Azure/Groq requests, new paid resources, authentic Świętokrzyska example audio or actual grade were created during PR #66.
+- Next genuine scoring advance: privately run the **offline** phoneme structure probe on an existing raw adult Polish Azure result (not the previous sanitized-only latency summary); then decide whether an independently validated phoneme-to-syllable mapping is feasible. Obtain a correctly licensed, reviewed exact `Świętokrzyska` reference and labelled native/learner controls before enabling `reviewed-acoustic-syllables-v1` on the server.
+
 ## Current code audit / exact gaps
 
 - `v2/content/pronunciation-swietokrzyska.json`: curated `Świę | to |
@@ -105,14 +115,16 @@ lessons for `c / cz / ć`, `s / sz / ś`, `z / ż / ź`,
 - `v2/frontend/src/speech/SpeakPanel.tsx`: recording, replay, optional
   aggregate Azure numbers, Record another take and Next already exist;
   English cues appear only under the Pronunciation guide toggle.
-  **No live per-syllable colour/score feedback**.
+  Scored-word rendering is now wired behind a validated acoustic result contract;
+  **no real scored syllables are currently produced by the server**.
 - `v2/benchmarks/phonetic_similarity.py`: actual numeric per-syllable
   estimates are calculated solely from normalized *Whisper text* and
   displayed only in an owner-private HTML PoC; no acoustic timing/phoneme
   evidence or production API contract.
 - `v2/server/speech_assessment.py` and `v2/frontend/src/speech/assessment.ts`:
-  transport currently exposes only three Azure aggregate scalars; does not
-  convey credible Polish phoneme/syllable scores.
+  server transport currently exposes only three Azure aggregate scalars and
+  does **not** produce independently reviewed Polish syllable scores;
+  frontend now reserves a strict validated-syllable response type.
 - `v2/frontend/scripts/prepare-content.mjs`: the built-in single-word
   Świętokrzyska Speak item explicitly has **no native example audio**.
   The primary "listen first" loop cannot meet product acceptance for
