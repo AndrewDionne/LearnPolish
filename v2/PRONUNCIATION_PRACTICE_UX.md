@@ -86,6 +86,17 @@ before showing a `krzy` deep link. Existing curated Sound Lab contrast
 lessons for `c / cz / ć`, `s / sz / ś`, `z / ż / ź`,
 `l / ł` remain useful for matching sound patterns in other words.
 
+## Implemented tranche — Sound Lab clusters + contextual return (2026-10-20)
+
+**[PR #65](https://github.com/AndrewDionne/LearnPolish/pull/65) merged** into `main` as squash commit `8dee533e57b3c61298772b636b90e71a512266b0`. Exact tested head `c4a52185131c5a1b480d8f712807d06f686c041a`; [CI 39406514863](https://github.com/AndrewDionne/LearnPolish/actions/runs/39406514863) all **4 suites PASS**, including real desktop/mobile Playwright sound detour and family-connected lanes.
+
+- New curated Sound Lab `contrast_krzy_przy` teaches two common cluster contexts, `KRZY` (/kʂɨ/) and `PRZY` (/pʂɨ/), using FOUR verified existing MP3 paths and exact canonical Polish utterances: `ulica Świętokrzyska`, `Krzysztof Wiśniewski`, `Przystanek autobusowy`, and `Czy mogę to przymierzyć?`. Audio is entire phrases/words, NOT isolated `krzy` or `przy`. Native-speaker editorial review remains pending.
+- Sound practice link is *authored* on the built-in `Świętokrzyska` card; `parseManifest` validates the referenced lesson/group and playable recordings. The link shows after a usable Speak take, even without a provider result. It is **a learner-initiated opportunity, NOT an inferred error diagnosis**. Sound Lab also remains browsable normally via Library.
+- Clicking opens the two-item KRZY subset in Speak; its **Sounds** toggle shows only the KRZY comparison. The source lesson/item index, mode and guide-visible state remain in transient React state. Both **Back to Świętokrzyska** and the completion **Return to Świętokrzyska** restore the original word ready for a new take, preserving optional pronunciation-guide status. Global Library navigation clears the detour. No fake phonetic scores or new inference/uploads.
+- The new set makes total curated Sound Lab lessons **5**, with 26 reference items across those lessons. Four sound references were reused; no separate spoken audio was generated, no new external provider charges or storage schema changes.
+- **Not yet provided:** a precisely matched standalone *Świętokrzyska* example recording, real acoustic per-syllable scoring, score-driven automatic identification of weak clusters. Do not conflate the new optional manual link with real assessment feedback or silently replace its word reference with `ulica Świętokrzyska`.
+- Hosted Render Free still has family backend and Azure speech assessment disabled until authenticated Neon and secure email setup; Sound Lab navigation is local frontend content and does not require a login.
+
 ## Current code audit / exact gaps
 
 - `v2/content/pronunciation-swietokrzyska.json`: curated `Świę | to |
@@ -107,11 +118,13 @@ lessons for `c / cz / ć`, `s / sz / ś`, `z / ż / ź`,
   The primary "listen first" loop cannot meet product acceptance for
   this word until an independently reviewed recording is supplied.
 - `v2/content/sound-contrasts.json` + `SoundContrastDeck.tsx`:
-  Sound Lab provides grouped recorded words with **listen-and-compare**,
-  but no scored single-sound take loop, deep link mapping, or return-to-item.
-- `v2/frontend/src/App.tsx`: lesson, index, mode and guide are component
-  state; `openLesson` currently resets card/mode/guide, so a Sound Lab
-  detour requires explicit scoped return-context restoration.
+  Sound Lab now includes KRZY/PRZY cluster practice with a focused drill
+  and direct Library access; it still lacks standalone isolated-syllable
+  reference audio and validated phonetic scoring.
+- `v2/frontend/src/App.tsx`: the optional Sound Lab detour now keeps
+  a scoped in-memory return context, restoring the exact original Speak
+  card, lesson position and pronunciation guide; ordinary library
+  navigation continues to clear that context.
 - Free Render deployment currently disables account/speech provider backend,
   so this is not yet a live scoring feature on hosted V2.
 
