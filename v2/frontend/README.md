@@ -1,6 +1,6 @@
-# Path to Polish V2 — Foundation and Library / Learn preview
+# Path to Polish — canonical V2 frontend
 
-This is a **new React + TypeScript + Vite application** built inside the existing LearnPolish repository. It does not replace the legacy GitHub Pages app yet.
+**This React + TypeScript + Vite frontend is the canonical Path to Polish application.** GitHub Pages deployment is built from this folder after green V2 CI on `main`. Historical V1 HTML/Flask under `docs/` and `app/` are retained only for reference and current one-way lesson/audio migration, not as the application entry point. Public static hosting does not imply that the separate private family API or Azure assessment backend is deployed.
 
 ## Run locally
 
@@ -20,7 +20,7 @@ To prepare a distributable build:
 
     npm run build
 
-The production bundle is written to \`v2/frontend/dist/\`, intentionally **not** to legacy \`docs/\`. This is a development preview only; it does not change the live site.
+The production bundle is written to \`v2/frontend/dist/\`, **not** to legacy \`docs/\`. The tested V2 bundle is the only intended GitHub Pages publication artifact. Enable **GitHub Actions** as the repository Pages source for the public URL to switch from V1.
 
 ## Implemented in this slice
 - One design/navigation system for desktop and mobile: Home, Library, Practice, My progress.
