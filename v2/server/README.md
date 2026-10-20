@@ -3,6 +3,10 @@
 This is isolated V2 infrastructure, deliberately separate from legacy /api/auth and /api/score. **The owner requires Render FREE only**, so the [Render V2 hosting plan](RENDER_V2.md) deploys the React PWA with `PTP_RENDER_FAMILY_MODE=disabled`. Render Free's ephemeral filesystem cannot safely retain SQLite family accounts: the family API remains a tested *local-only/undeployed* capability until a durable free storage solution and production privacy safeguards exist. This repository does not authorize paid hosting or activate Azure. The free Render host is not yet physically deployed.
 Requires a private persistent SQLite database; do not deploy on ephemeral storage. It has not undergone production security approval.
 
+## Optional Neon persistence (no live migration yet)
+
+The existing owner's Neon `Path_to_Polish_DB` in Frankfurt contains V1 `public` tables and must be preserved. V2 has a separate `ptp_v2` [Postgres migration](migrations/001_neon_ptp_v2.sql), a reviewed-connection-only `PTP_FAMILY_DATABASE_URL` backend through `postgres_storage.py`, and a Render-ready health check. No live migrations or SMTP setup have been performed. SQLite remains the local/CI fallback. The free Render Blueprint still disables family sign-up until the Neon and email gates are certified. See [Render V2 runbook](RENDER_V2.md).
+
 ## Local setup
 
 First run the V2 content build in v2/frontend to generate public/generated/lessons.json. Configure:

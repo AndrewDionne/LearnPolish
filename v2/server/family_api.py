@@ -19,6 +19,7 @@ from typing import Callable
 
 from flask import Flask, g, jsonify, request
 from private_storage import prepare_database
+from postgres_storage import PgIntegrityError, open_postgres, postgres_ready
 from recovery_mail import configured_sender
 from speech_assessment import InvalidAudio, checked_wav, assessment_from_sdk, azure_scripted_assess, MAX_WAV_BYTES
 
@@ -118,11 +119,15 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
                recovery_sender: Callable[[str, str], None] | None = None,
                verification_sender: Callable[[str, str], None] | None = None,
                speech_enabled: bool | None = None,
-               speech_assessor: Callable | None = None) -> Flask:
+               speech_assessor: Callable | None = None,
+               postgres_url: str | None = None) -> Flask:
+    pg_url = postgres_url or os.environ.get("PTP_FAMILY_DATABASE_URL")
     path = database_path or os.environ.get("PTP_FAMILY_DB")
     catalog = catalog_path or os.environ.get("PTP_FAMILY_CATALOG")
-    if not path or not catalog or path == ":memory:":
-        raise RuntimeError("Explicit persistent PTP_FAMILY_DB and PTP_FAMILY_CATALOG required")
+    if not catalog or (not path and not pg_url) or path == ":memory:":
+        raise RuntimeError("Explicit durable Postgres or SQLite and PTP_FAMILY_CATALOG required")
+    if pg_url and path:
+        raise RuntimeError("Select exactly one V2 account storage backend")
     raw = json.loads(Path(catalog).read_text(encoding="utf-8"))
     if raw.get("schemaVersion") != 1 or not isinstance(raw.get("lessons"), list):
         raise RuntimeError("Invalid V2 built-in catalog")
@@ -165,19 +170,28 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
     # All other routes preserve their previous 16 kB request limit.
     app.config["MAX_CONTENT_LENGTH"] = MAX_WAV_BYTES + 2000
     app.config["JSON_SORT_KEYS"] = True
-    # Never let SQLite create a potentially world-readable account database.
-    # Existing directories/files must already be owner-private; reject symlinks.
-    path = prepare_database(path)
-    with sqlite3.connect(path) as con:
-        con.execute("PRAGMA foreign_keys=ON")
-        con.executescript(DDL)
+    if pg_url:
+        # Fail closed: schema migration is a separate reviewed operator action.
+        # Never create/overwrite V1 public tables or identities at app startup.
+        if not postgres_ready(pg_url):
+            raise RuntimeError("Required isolated ptp_v2 Neon schema is unavailable")
+    else:
+        # SQLite remains for local development and existing hermetic CI.
+        # Production Render Free must never persist accounts to its ephemeral disk.
+        path = prepare_database(path)
+        with sqlite3.connect(path) as con:
+            con.execute("PRAGMA foreign_keys=ON")
+            con.executescript(DDL)
 
     def db():
         if "db" not in g:
-            g.db = sqlite3.connect(path, isolation_level=None, timeout=15)
-            g.db.row_factory = sqlite3.Row
-            g.db.execute("PRAGMA foreign_keys=ON")
-            g.db.execute("PRAGMA busy_timeout=15000")
+            if pg_url:
+                g.db = open_postgres(pg_url)
+            else:
+                g.db = sqlite3.connect(path, isolation_level=None, timeout=15)
+                g.db.row_factory = sqlite3.Row
+                g.db.execute("PRAGMA foreign_keys=ON")
+                g.db.execute("PRAGMA busy_timeout=15000")
         return g.db
 
     @app.teardown_appcontext
@@ -314,7 +328,9 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
                           (identity,)).fetchone()
         fresh = not row or now-row["first_at"] >= 3600
         attempts = 1 if fresh else row["attempts"] + 1
-        con.execute("INSERT OR REPLACE INTO verification_throttle VALUES(?,?,?)",
+        con.execute("""INSERT INTO verification_throttle(identity,attempts,first_at) VALUES(?,?,?)
+                 ON CONFLICT(identity) DO UPDATE
+                 SET attempts=excluded.attempts,first_at=excluded.first_at""",
                     (identity, attempts, now if fresh else row["first_at"]))
         return attempts > threshold
 
@@ -362,9 +378,9 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
             return fail("too_many_attempts",429)
         try:
             user_id = con.execute(
-                "INSERT INTO users(email,name,salt,password_hash) VALUES(?,?,?,?)",
-                (email,name,salt,_password(password,salt))).lastrowid
-        except sqlite3.IntegrityError:
+                "INSERT INTO users(email,name,salt,password_hash) VALUES(?,?,?,?) RETURNING id",
+                (email,name,salt,_password(password,salt))).fetchone()["id"]
+        except (sqlite3.IntegrityError, PgIntegrityError):
             con.rollback()
             return fail("account_unavailable",409)
         # A pending signup never becomes an authenticated family member.
@@ -454,7 +470,9 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
             fresh = not throttle or now-throttle["first_at"] >= 900
             first = now if fresh else throttle["first_at"]
             count = 1 if fresh else throttle["failures"]+1
-            con.execute("INSERT OR REPLACE INTO login_throttle VALUES(?,?,?)", (key,count,first))
+            con.execute("""INSERT INTO login_throttle(identity,failures,first_at) VALUES(?,?,?)
+                         ON CONFLICT(identity) DO UPDATE
+                         SET failures=excluded.failures,first_at=excluded.first_at""", (key,count,first))
             return fail("invalid_credentials", 401)
         if row["verified_at"] is None:
             return fail("email_verification_required", 403)
@@ -472,7 +490,9 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
         fresh = not row or now - row["first_at"] >= window
         attempts = 1 if fresh else row["attempts"] + 1
         first = now if fresh else row["first_at"]
-        con.execute("INSERT OR REPLACE INTO recovery_throttle VALUES(?,?,?)",
+        con.execute("""INSERT INTO recovery_throttle(identity,attempts,first_at) VALUES(?,?,?)
+                 ON CONFLICT(identity) DO UPDATE
+                 SET attempts=excluded.attempts,first_at=excluded.first_at""",
                     (identity, attempts, first))
         return attempts > threshold
 
@@ -565,8 +585,8 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
             return fail("invalid_group_name")
         con = db()
         con.execute("BEGIN IMMEDIATE")
-        gid = con.execute("INSERT INTO families(name,owner_id) VALUES(?,?)",
-                          (name,user["id"])).lastrowid
+        gid = con.execute("INSERT INTO families(name,owner_id) VALUES(?,?) RETURNING id",
+                          (name,user["id"])).fetchone()["id"]
         con.execute("INSERT INTO members VALUES(?,?,?)",(gid,user["id"],_now()))
         con.commit()
         return jsonify(id=gid,name=name), 201
