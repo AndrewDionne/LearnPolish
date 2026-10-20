@@ -46,6 +46,12 @@ Each contrast module has a genuine recorded example for every item. The groups a
 
 ### E2 comprehension pilot (2026-10-21)
 
+### E2 reply choice, actual learner turn-taking (2026-10-21)
+
+Within the SAME three E2 source-authored dialogues, the new **Take a turn** practice style presents the recorded speaker's preceding utterance and three **original same-lesson Polish reading lines** as response options. Each correct reply is the **next existing dialogue turn with its existing MP3**, verified structurally against source text and original audio mapping; after selecting, the learner can inspect and play the recorded correct reply and retry. The exercise is a transient written choice, **not** automatic recognition of user speech or acoustic pronunciation proof. It adds no lessons, edits no prior reading passages/audio, saves no scores or XP and maintains existing Read/Listen functionality. All recording provenance/native quality review gates remain unchanged. Tests cover the original three scenes, distractors from authentic reading lines, missing-audio/data drift and no reading progress changes.
+
+
+
 The same THREE existing scene records now contain one **authored three-choice listening/reading comprehension check** each, focusing on how the second speaker is doing, the supplied name, and the colour of apples selected. In **Listen first**, Polish and English stay hidden until explicit reveal (or English after an answer), with selectable original turn recordings available throughout; feedback follows one answer without saving a score, claiming phonetic quality or awarding XP. Switching back to **Read dialogue** resets the temporary question while preserving original saved reading progress. No new passages, lessons, learner profiles, audio, API calls or family rewards. Both content migration and frontend schema reject malformed questions and ambiguous duplicate choices. Native human/voice review remains pending.
 
 
