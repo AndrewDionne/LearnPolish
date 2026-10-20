@@ -170,7 +170,7 @@ h1{{font-size:clamp(1.4rem,3vw,1.9rem);margin:0 0 6px}}
 .sound .polish{{font-size:clamp(26px,5.6vw,48px);font-weight:750;letter-spacing:-1.3px;line-height:1.18;
 white-space:nowrap;border-radius:6px;padding:3px 1px}}
 .sound .cue{{display:none;font-size:clamp(10px,1.8vw,13px);white-space:nowrap;color:#47656a;font-weight:650;padding:6px 2px 0}}
-#guide:checked ~ .word .cue{{display:inline}}
+.card:has(#guide:checked) .word .cue{{display:inline}}
 .sound.close .polish{{background:#cee9d9;color:#195f3c}}
 .sound.review .polish{{background:#ffebbb;color:#754b10}}
 .sound.focus .polish{{background:#f7cbca;color:#882e31}}
@@ -199,7 +199,7 @@ footer{{font-size:12px;color:#5b757a;margin-top:20px}}
 <h1>Combined pronunciation feedback</h1>
 <p class="description">One overall estimate, plus colour-only hints from Whisper.</p></header>
 <main><section class="card">
-<input id="guide" type="checkbox"><label for="guide" class="guide-label">Pronunciation guide</label>
+<label for="guide" class="guide-label">Pronunciation guide <input id="guide" type="checkbox"></label>
 <div class="word" role="group" aria-label="Świętokrzyska. Colours suggest possible transcript mismatches.">
 {''.join(html_parts)}
 </div>
