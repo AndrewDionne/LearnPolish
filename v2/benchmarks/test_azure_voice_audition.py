@@ -1,5 +1,9 @@
 import hashlib
 import io
+import json
+import os
+from pathlib import Path
+import tempfile
 import unittest
 from contextlib import redirect_stdout
 from unittest.mock import patch
@@ -105,6 +109,62 @@ class AzureVoiceAuditionSafetyTests(unittest.TestCase):
         plan["audition"][0]["suggestedLocalFilename"] = "../outside.mp3"
         with self.assertRaisesRegex(ValueError, "Unsafe voice"):
             audition.select_audition_rows(plan, 3)
+
+    def test_read_only_preflight_does_not_expose_key_or_contact_provider(self):
+        plan = self.make_plan()
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp) / "PathToPolish-Private-AI" / "voice-audition-01"
+            with patch.object(audition, "plan_from_generated_catalog", return_value=plan), \
+                 patch.object(audition, "generate", side_effect=AssertionError("no calls")), \
+                 patch.object(audition, "OUTPUT", folder), \
+                 patch.dict(os.environ, {"AZURE_SPEECH_KEY": "private-test-key-do-not-print",
+                                        "AZURE_SPEECH_REGION": "westeurope"}), \
+                 redirect_stdout(io.StringIO()) as out:
+                self.assertEqual(audition.main(["--preflight"]), 0)
+            report = json.loads(out.getvalue())
+            self.assertEqual(report["status"], "LOCAL_PREFLIGHT_ONLY")
+            self.assertEqual(report["proposed_requests"], 8)
+            self.assertTrue(report["azure_key_present"])
+            self.assertTrue(report["azure_region_format_valid"])
+            self.assertEqual(report["provider_requests_made"], 0)
+            self.assertFalse(report["speech_f0_and_no_paid_billing_verified"])
+            self.assertNotIn("private-test-key-do-not-print", out.getvalue())
+            with patch.object(audition, "plan_from_generated_catalog", return_value=plan):
+                with self.assertRaises(SystemExit) as rejected:
+                    audition.main(["--preflight", "--send"])
+            self.assertEqual(rejected.exception.code, 2)
+
+    def test_partial_provider_failure_retains_verified_playable_audio_without_retry(self):
+        from voice_audition_player import verified_clips, write_player
+        plan = self.make_plan()
+        pair = audition.select_paired_rows(plan, 1)
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / ".gitignore").write_text("PathToPolish-Private-AI/\\n", encoding="utf-8")
+            private = root / "PathToPolish-Private-AI"
+            private.mkdir()
+            output = private / "voice-audition-01"
+            synthetic = b"ID3" + b"x" * 180
+            with patch.object(audition, "ROOT", root), \
+                 patch.object(audition, "OUTPUT", output), \
+                 patch.object(audition, "azure_request",
+                     side_effect=[synthetic, RuntimeError("synthetic provider failure")]) as synth:
+                with self.assertRaisesRegex(RuntimeError, "synthetic provider failure"):
+                    audition.generate(pair, key="test-only", region="westeurope", output=output)
+                self.assertEqual(synth.call_count, 2)
+                report = json.loads((output / "manifest.json").read_text(encoding="utf-8"))
+                self.assertEqual(len(report["clips"]), 1)
+                self.assertEqual(report["status"], "synthetic_audio_unreviewed")
+                self.assertFalse((output / "manifest.json.tmp").exists())
+                self.assertEqual(len(verified_clips(report, plan["audition"], output)), 1)
+                page = write_player(output, plan["audition"],
+                                    [{"id": v["id"], "label": v["id"]} for v in plan["voices"]])
+                html = page.read_text(encoding="utf-8")
+                self.assertEqual(html.count("<audio controls"), 1)
+                self.assertNotIn("AgnieszkaNeural</h3>", html)
+                with self.assertRaisesRegex(FileExistsError, "will not be overwritten"):
+                    audition.generate(pair, key="test-only", region="westeurope", output=output)
+                self.assertEqual(synth.call_count, 2)
 
     def test_ssml_escapes_text_and_selects_exact_polish_voice(self):
         row = self.make_plan()["audition"][0]
