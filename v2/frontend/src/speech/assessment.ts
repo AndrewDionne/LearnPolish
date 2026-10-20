@@ -25,7 +25,7 @@ export type SpeechFeedback =
      scores:{accuracy:number;fluency:number;completeness:number};
      syllableFeedback?:CalibratedSyllables;timing?:SpeechTiming}
   | {status:'ok';engine:'azure-whisper-blend-v1';calibration:'experimental-uncalibrated';
-     combined:number;colourHints:ColourHints;timing?:SpeechTiming}
+     combined:number;colourHints:ColourHints;syllableFeedback?:never;timing?:SpeechTiming}
   | {status:'inconclusive';reason:string;timing?:SpeechTiming};
 
 /** Validate an explicit, independently reviewed syllable result.
