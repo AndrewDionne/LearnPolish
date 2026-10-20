@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Lesson, LessonItem, LessonKind } from './model';
 import { lessonLabel, parseManifest } from './model';
-import { useLessonAudio } from './audio';
+import { AUDIO_RATES, useLessonAudio } from './audio';
 import OfflineDownloadControl from './OfflineDownloadControl';
 import SpeakPanel from './speech/SpeakPanel';
 import {requestSpeechFeedback, SPEECH_ASSESSMENT_AVAILABLE, SPEECH_BLEND_AVAILABLE} from './speech/assessment';
@@ -497,7 +497,7 @@ export default function App() {
               : active.kind === 'reading' ? 'Listen carefully, then reveal the transcript and assess your understanding.' : 'Play the recording. Choose the closest English meaning before revealing the Polish.'}</p>
             <AudioButton item={current} playing={audio.playing} onPlay={play}/>
             <fieldset className="speed-picker"><legend>Playback speed</legend>
-              {([0.75, 1, 1.25] as const).map(speed => <button type="button" key={speed} aria-pressed={audio.rate === speed} onClick={() => audio.setRate(speed)} className={audio.rate === speed ? 'chosen' : ''}>{speed}×</button>)}
+              {AUDIO_RATES.map(speed => <button type="button" key={speed} aria-pressed={audio.rate === speed} onClick={() => audio.setRate(speed)} className={audio.rate === speed ? 'chosen' : ''}>{speed}×</button>)}
             </fieldset>
             {audio.error && <p className="audio-error" role="alert">{audio.error}</p>}
             {listenGuess === null && !listenRevealed && (listeningChoices.length > 0 ? <div className="listening-options" role="group" aria-label={current.comprehension ? 'Answer the listening question' : 'Choose the meaning'}>
