@@ -110,14 +110,49 @@ def azure_request(row: dict, key: str, region: str) -> bytes:
     return mp3
 
 
+def _persist_partial_manifest(output: Path, completed: list[dict]) -> None:
+    """Persist each completed clip so a later Azure failure does not prevent listening."""
+    report = {
+        "schemaVersion": 1, "status": "synthetic_audio_unreviewed",
+        "notes": "Partial or complete owner-private synthetic preview. Never commit these files.",
+        "clips": completed,
+    }
+    temporary = output / "manifest.json.tmp"
+    # This folder is new for the run. The temporary file must not pre-exist.
+    with temporary.open("x", encoding="utf-8") as handle:
+        json.dump(report, handle, ensure_ascii=False, indent=2)
+        handle.write("\n")
+    temporary.replace(output / "manifest.json")
+
+
+def local_preflight(rows: list[dict], environ: dict[str, str], output: Path = OUTPUT) -> dict:
+    """Read-only local setup check. Cannot certify Azure F0 or paid-billing state."""
+    region = environ.get("AZURE_SPEECH_REGION", "")
+    parent = output.parent
+    return {
+        "status": "LOCAL_PREFLIGHT_ONLY",
+        "proposed_requests": len(rows),
+        "proposed_characters": sum(row["characters"] for row in rows),
+        "preferred_voices": list(dict.fromkeys(row["voiceId"] for row in rows)),
+        "private_folder_exists": parent.is_dir() and not parent.is_symlink(),
+        "audition_output_absent": not output.exists() and not output.is_symlink(),
+        "azure_key_present": bool(environ.get("AZURE_SPEECH_KEY", "").strip()),
+        "azure_region_present": bool(region.strip()),
+        "azure_region_format_valid": bool(REGION.fullmatch(region)),
+        "speech_f0_and_no_paid_billing_verified": False,
+        "provider_requests_made": 0,
+        "next": "Independently verify Speech F0/no-paid billing in Azure. Preflight never contacts Microsoft.",
+    }
+
+
 def generate(rows: list[dict], *, key: str, region: str, output: Path = OUTPUT) -> list[dict]:
     if not key.strip() or not REGION.fullmatch(region):
         raise ValueError("Missing private Azure key/region")
     if not (ROOT / ".gitignore").is_file() or output != OUTPUT:
         raise ValueError("Only the fixed Git-ignored owner-private output is supported")
-    if not output.parent.is_dir():
-        raise ValueError("Owner private research folder missing; do not create it automatically")
-    if output.exists():
+    if not output.parent.is_dir() or output.parent.is_symlink():
+        raise ValueError("Owner private research folder missing or symlinked; do not create it automatically")
+    if output.exists() or output.is_symlink():
         raise FileExistsError("Existing audition directory will not be overwritten")
     output.mkdir(mode=0o700)
     completed = []
@@ -134,13 +169,7 @@ def generate(rows: list[dict], *, key: str, region: str, output: Path = OUTPUT) 
             "textSha256": row["textSha256"], "audioSha256": sha256(audio),
             "audioBytes": len(audio), "reviewStatus": "needs_native_speaker_listening_review"
         })
-    report = {
-        "schemaVersion": 1, "status": "synthetic_audio_unreviewed",
-        "notes": "No human voice ground truth or pronunciation grading. Never commit these files.",
-        "clips": completed,
-    }
-    (output / "manifest.json").write_text(
-        json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        _persist_partial_manifest(output, completed)
     return completed
 
 
@@ -150,12 +179,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--pairs", type=int, default=None,
                         help="1–8 same-phrase Marek/Agnieszka pairs (default 4 pairs)")
     parser.add_argument("--send", action="store_true", help="Explicit Azure synthesis call(s)")
+    parser.add_argument("--preflight", action="store_true",
+                        help="Read-only local credentials/folder check; no provider requests")
     parser.add_argument("--gallery", action="store_true", help="Open official Microsoft voice demo; no Azure API request")
     parser.add_argument("--listen", action="store_true", help="Play previously generated, checksum-verified local audition clips")
     parser.add_argument("--approve-generation", action="store_true")
     parser.add_argument("--confirm-speech-f0", action="store_true")
     parser.add_argument("--confirm-no-paid-billing", action="store_true")
     args = parser.parse_args(argv)
+    if args.preflight and (args.send or args.listen or args.gallery):
+        parser.error("--preflight cannot be combined with --send, --listen or --gallery")
     if args.listen:
         if args.send or args.gallery:
             parser.error("--listen cannot be combined with --send or --gallery")
@@ -169,6 +202,9 @@ def main(argv: list[str] | None = None) -> int:
     plan = plan_from_generated_catalog()
     rows = (select_audition_rows(plan, args.limit) if args.limit is not None
             else select_paired_rows(plan, 4 if args.pairs is None else args.pairs))
+    if args.preflight:
+        print(json.dumps(local_preflight(rows, os.environ), indent=2))
+        return 0
     if args.gallery:
         if args.send:
             parser.error("--gallery cannot be combined with --send")
@@ -199,7 +235,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         completed = generate(rows, key=key, region=region)
     except Exception:
-        print("Synthesis stopped; inspect the private output directory. No automatic retries or overwrites.", file=sys.stderr)
+        print("Synthesis stopped. Completed clips have a partial manifest; --listen can play them. No automatic retries or overwrites.", file=sys.stderr)
         raise SystemExit(1) from None
     # The private browser page is generated only from the verified original text
     # and checksummed local clips; no network calls are used to play recordings.
