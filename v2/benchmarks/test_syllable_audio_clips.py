@@ -60,7 +60,8 @@ class SoundClipTests(unittest.TestCase):
         self.assertEqual(stat.S_IMODE(folder.stat().st_mode),0o700)
         output=json.loads((folder/"listening-clips.json").read_text(encoding="utf-8"))
         self.assertEqual(output["purpose"],"listening_only_no_scores")
-        self.assertNotIn("scores",output)\n        self.assertNotIn("syllableFeedback",output)
+        self.assertNotIn("scores",output)
+        self.assertNotIn("syllableFeedback",output)
         self.assertEqual([p["polish"] for p in output["segments"]],["Świę","to","krzy","ska"])
         with wave.open(str(self.wav),"rb") as source:
             frames=source.readframes(source.getnframes())
