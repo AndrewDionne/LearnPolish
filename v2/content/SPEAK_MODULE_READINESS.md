@@ -44,6 +44,12 @@ Each contrast module has a genuine recorded example for every item. The groups a
 
 ## Reading & dialogues — 6 modules currently **without** Speak mode## E2: first short dialogue practices inside existing reading lessons (2026-10-21)
 
+### E2 comprehension pilot (2026-10-21)
+
+The same THREE existing scene records now contain one **authored three-choice listening/reading comprehension check** each, focusing on how the second speaker is doing, the supplied name, and the colour of apples selected. In **Listen first**, Polish and English stay hidden until explicit reveal (or English after an answer), with selectable original turn recordings available throughout; feedback follows one answer without saving a score, claiming phonetic quality or awarding XP. Switching back to **Read dialogue** resets the temporary question while preserving original saved reading progress. No new passages, lessons, learner profiles, audio, API calls or family rewards. Both content migration and frontend schema reject malformed questions and ambiguous duplicate choices. Native human/voice review remains pending.
+
+
+
 **Implemented pilot (pending CI):** three source-matched optional **micro-dialogues** are attached to two existing Reading lessons: `Basic_01R` has two exchanges of **2 turns** each (greeting/how are you; asking a name), and `Grocery_store_very_basic_shopping` has one **3-turn** apple purchase (Customer → Shop assistant → Customer). They use the exact original Polish + English + individual mapped MP3 recordings at the exact existing reading indexes; no newly generated or edited audio. The learner can see both speakers together, play any turn, switch to `Listen first` to conceal Polish until revealing, and optionally reveal the English translations. This is **additional practice inside the original reading lesson**, not an extra lesson, not automatically sliced reading passages, not true uninterrupted dialogue audio, and not pronunciation grading. The catalog remains 26 modules / 482 items / 51 reading passages, 6 reading lessons, 24 authored comprehension questions, 14 ungraded Speak reference blockers, and unchanged user progress/XP. Polish fluency and voice match await actual/native audio review. The next E2 extension should follow owner UX feedback and review of these actual scenes, not bulk creation of fabricated dialogues.
 
 
