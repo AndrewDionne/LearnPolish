@@ -156,7 +156,7 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
         for lesson in raw["lessons"] for item in lesson["items"]
         if item["id"] in speech_references and
         isinstance(item.get("pronunciationSegments"), dict) and
-        item["pronunciationSegments"].get("method") in ("authored-v1", "draft-orthographic-v1") and
+        item["pronunciationSegments"].get("method") in ("authored-v1", "editorial-draft-v1", "draft-orthographic-v1") and
         isinstance(item["pronunciationSegments"].get("segments"), list) and
         1 <= len(item["pronunciationSegments"]["segments"]) <= 32 and
         all(isinstance(part, str) and part for part in item["pronunciationSegments"]["segments"]) and
