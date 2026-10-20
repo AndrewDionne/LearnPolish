@@ -57,7 +57,13 @@ All 51 reading items have source audio and automatic pronunciation text groups (
 
 **Retired, not missing:** `letter_recognition_1`, `letter_recognition_2`, `letter_recognition_3` are still present as legacy source JSON but **intentionally excluded** from V2. Their former bundled word examples were replaced by the five curated sound-contrast modules. Do not treat them as three unbuilt V2 modules.
 
-## Concrete input issues to resolve before treating normal Speak data as ready## Conversation 1: practice-only reference safeguards (2026-10-20)
+## Concrete input issues to resolve before treating normal Speak data as ready
+
+## All 14 source-blocked Speak references have practice-only safeguards (2026-10-20)
+
+Following the initial two Conversation 1 safeguards, the remaining **12** reference-blocked items across **six existing lessons** are now registered by their original IDs and exact Polish spellings in `additional-speak-reference-blockers.json`. All **14** remain present as Learn and unscored local Speak practice, keeping existing lesson item counts/IDs, original MP3s, review history and XP. Their legacy recordings are **not** shown as reliable Polish examples, they are excluded from Listen quizzes, and private Azure/Azure+Whisper scoring refuses both flagged source IDs and unmarked new slash/digit/ellipsis targets. This is a **guard**, NOT release-quality replacement audio or an editorial resolution of the written text. The normal `npm run audit:speak` now reports `practiceOnlyReferences:14` separately from the underlying `speakBlockedReferences:11` and `speakUnfinishedReferences:3`. Exactly matched original recorded audio must be independently verified before a completed grammatical alternative or number can be introduced, without silently changing old data. The full reference issue table below remains the editorial queue.
+
+## Conversation 1: practice-only reference safeguards (2026-10-20)
 
 The two existing Conversation 1 entries `Conversation_1:24` (`Jak ma pan/pani na imię?`) and `Conversation_1:25` (`Mam na imię…`) are now explicitly marked **practice-only reference pending** in the generated V2 catalog. Their original 26-item lesson, Polish prompts, recorded MP3 files and progress keys remain unchanged. Learners can see these items in Learn and record/replay in Speak, but **there is no claimed verified reference playback, no listening quiz on the two, and no private Azure-only or Azure+Whisper score**. Frontend and private backend enforce this independently. This removes false assessment eligibility; it **does not resolve** their content or audio provenance. Before releasing scores for either, choose a **single complete Polish utterance**, verify/replace the recording to match exact text, and have it independently reviewed. The rest of the reference issue table below remains pending.
 

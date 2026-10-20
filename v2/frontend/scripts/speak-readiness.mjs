@@ -26,7 +26,7 @@ export function inspectSpeakCatalog(manifest){
   const modules=[];
   let items=0,spokenItems=0,readingItems=0,audio=0;
   let drafts=0,editorial=0,authored=0,unsupported=0,unfinished=0;
-  let speakBlocked=0,speakUnfinished=0;
+  let speakBlocked=0,speakUnfinished=0,practiceOnly=0;
   for(const lesson of manifest.lessons){
     if(!lesson || typeof lesson.id!=='string' || !['vocabulary','sounds','reading'].includes(lesson.kind) ||
        !Array.isArray(lesson.items)||!lesson.items.length){
@@ -36,7 +36,7 @@ export function inspectSpeakCatalog(manifest){
       speakAvailable:lesson.kind!=='reading',
       items:lesson.items.length,withAudio:0,
       authored:0,editorial:0,autoDraft:0,legacyEnglishCues:0,
-      blockedReferences:[],unfinishedReferences:[]};
+      blockedReferences:[],unfinishedReferences:[],practiceOnlyReferences:[]};
     for(const item of lesson.items){
       if(typeof item.polish!=='string')throw new Error('Missing Polish target in '+lesson.id);
       const source=item.polish.trim();
@@ -51,6 +51,10 @@ export function inspectSpeakCatalog(manifest){
       else if(parts.method==='editorial-draft-v1'){entry.editorial++;editorial++;}
       else if(parts.method==='draft-orthographic-v1'){entry.autoDraft++;drafts++;}
       else throw new Error('Unexpected group provenance in '+lesson.id);
+      if(item.referenceReview==='practice_only'){
+        entry.practiceOnlyReferences.push({itemId:item.id,polish:item.polish});
+        practiceOnly++;
+      }
       const normalized=source.toLowerCase().replace(BACKEND_STRIPPABLE,'');
       if(!BACKEND_LETTERS.test(normalized)){
         entry.blockedReferences.push({itemId:item.id,polish:item.polish});
@@ -75,15 +79,16 @@ export function inspectSpeakCatalog(manifest){
       unfinishedReferences:unfinished,
       speakBlockedReferences:speakBlocked,
       speakUnfinishedReferences:speakUnfinished,
+      practiceOnlyReferences:practiceOnly,
       publicDualProviderEnabled:false},
     modules};
 }
 
 export function printAuditMarkdown(result){
-  const head='| Learning module | Mode | Items | Audio | Authored | Editorial draft | Auto draft | Blocked references | Unfinished targets |';
+  const head='| Learning module | Mode | Items | Audio | Authored | Editorial draft | Auto draft | Blocked references | Unfinished targets | Practice only |';
   const sep='|---|---|---:|---:|---:|---:|---:|---:|---:|';
   const rows=result.modules.map(m=>[m.title,m.speakAvailable?'Speak':'Read only',m.items,m.withAudio,
-    m.authored,m.editorial,m.autoDraft,m.blockedReferences.length,m.unfinishedReferences.length]
+    m.authored,m.editorial,m.autoDraft,m.blockedReferences.length,m.unfinishedReferences.length,m.practiceOnlyReferences.length]
     .map(x=>String(x).replaceAll('|','/')).join(' | '));
   return [head,sep,...rows.map(r=>'| '+r+' |')].join('\n');
 }

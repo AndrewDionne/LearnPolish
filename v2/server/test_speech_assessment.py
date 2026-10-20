@@ -57,6 +57,10 @@ class SpeechApiTests(unittest.TestCase):
         self.tmp=tempfile.TemporaryDirectory()
         self.root=pathlib.Path(self.tmp.name)
         self.catalog=self.root/"lessons.json"
+        self.additional=json.loads(
+            (pathlib.Path(__file__).resolve().parents[1]/
+             "content"/"additional-speak-reference-blockers.json").read_text(encoding="utf-8")
+        )["sourceBlockers"]
         self.catalog.write_text(json.dumps({"schemaVersion":1,"lessons":[
             {"id":"a","kind":"vocabulary","items":[{"id":"a:0","polish":"Dzień dobry"}]},
             {"id":"speak_swietokrzyska","kind":"vocabulary","items":[
@@ -65,7 +69,14 @@ class SpeechApiTests(unittest.TestCase):
                 {"id":"Conversation_1:24","polish":"Jak ma pan/pani na imię?",
                  "referenceReview":"practice_only"},
                 {"id":"Conversation_1:25","polish":"Mam na imię…",
-                 "referenceReview":"practice_only"}]}
+                 "referenceReview":"practice_only"}]},
+            {"id":"additional","kind":"vocabulary","items":[
+                {"id":entry["itemId"],"polish":entry["polish"],"referenceReview":"practice_only"}
+                for entry in self.additional]},
+            {"id":"unflagged_invalid","kind":"vocabulary","items":[
+                {"id":"new:slash","polish":"Jestem ranny / ranna"},
+                {"id":"new:unfinished","polish":"Jak dojdę do …?"},
+                {"id":"new:numeric","polish":"Droga 999"}]}
         ]}))
         self.calls=[]
         self.mail=[]
@@ -110,7 +121,11 @@ class SpeechApiTests(unittest.TestCase):
 
     def test_unverified_greeting_references_cannot_consume_provider_requests(self):
         auth=self.auth("pending@example.com")
-        for item in ("Conversation_1:24","Conversation_1:25"):
+        blocked=["Conversation_1:24","Conversation_1:25"] + [
+            row["itemId"] for row in self.additional
+        ] + ["new:slash","new:unfinished","new:numeric"]
+        self.assertEqual(len(blocked),17)
+        for item in blocked:
             denied=self.send(auth,item=item)
             self.assertEqual(denied.status_code,400)
         self.assertEqual(self.calls,[])

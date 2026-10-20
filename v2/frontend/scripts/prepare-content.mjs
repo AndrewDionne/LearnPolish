@@ -12,6 +12,8 @@ const readingChecksFile = path.join(root, 'v2/content/reading-checks.json');
 const pronunciationGuideFile = path.join(root, 'v2/content/pronunciation-swietokrzyska.json');
 const pronunciationOverridesFile = path.join(root, 'v2/content/pronunciation-segment-overrides.json');
 const voiceProductionFile = path.join(root, 'v2/content/voice-production.json');
+const otherReferenceBlockersFile = path.join(root, 'v2/content/additional-speak-reference-blockers.json');
+const UNSCORABLE_REFERENCE = /\/|[0-9]|…|\.{3,}/u;
 const retiredGroupedSoundSets = new Set(['letter_recognition_1', 'letter_recognition_2', 'letter_recognition_3']);
 
 export function migrateLesson(filename, source) {
@@ -172,25 +174,53 @@ export function attachReadingCurriculum(lessons, definitions) {
 }
 
 /**
- * The two Conversation 1 references are not exact assessable utterances.
- * Enforce the existing signed-off blocker list against the unchanged source:
- * no text rewriting and no pretending old imported MP3s match new targets.
+ * Match BOTH durable editorial registries to the canonical, unedited vocabulary.
+ * Previously-recorded MP3s are retained but cannot be treated as verified spoken
+ * examples until a complete single-text reference and that audio are reviewed.
+ * The syntax gate catches *new* slash/number/ellipsis prompts which an editor
+ * forgot to register, rather than leaking them into provider scoring.
  */
-export function attachReferenceReview(lessons, voiceSpecification) {
-  const blockers=voiceSpecification?.sourceBlockers;
-  if (voiceSpecification?.schemaVersion !== 1 || !Array.isArray(blockers) ||
-      blockers.length !== 2) throw new Error('Missing the two E1 source blockers');
-  const byId=new Map(lessons.flatMap(lesson=>lesson.items.map(item=>[item.id,item])));
-  const expected=new Set(['Conversation_1:24','Conversation_1:25']);
-  for (const blocker of blockers) {
+export function attachReferenceReview(lessons, voiceSpecification, additional) {
+  const first=voiceSpecification?.sourceBlockers;
+  const rest=additional?.sourceBlockers;
+  if (voiceSpecification?.schemaVersion!==1 || !Array.isArray(first) ||
+      first.length!==2 || additional?.schemaVersion!==1 ||
+      additional?.reviewStatus!=='source_audio_unverified_practice_only' ||
+      !Array.isArray(rest) || rest.length!==12) {
+    throw new Error('Expected exact original and additional Speak blocker registries');
+  }
+  const originalIds=['Conversation_1:24','Conversation_1:25'];
+  const additionalIds=[
+    'Conversation_-_restaurant:1','Conversation_-_restaurant:5',
+    'Emergencies_and_Health:4','Emergencies_and_Health:5',
+    'Emergencies_and_Health:15','Emergencies_and_Health:19',
+    'Food_and_Dinning:2','Food_and_Dinning:4',
+    'Getting_Around_1:23','Road_Terminology:10','Road_Terminology:21',
+    'Transit_1:4'
+  ];
+  if (first.some((entry,i)=>entry.itemId!==originalIds[i]) ||
+      rest.some((entry,i)=>entry.itemId!==additionalIds[i])) {
+    throw new Error('Unexpected edited, missing or reordered Speak reference review');
+  }
+  const vocabulary=lessons.filter(lesson=>lesson.kind==='vocabulary');
+  const byId=new Map(vocabulary.flatMap(lesson=>lesson.items.map(item=>[item.id,item])));
+  const registered=new Set();
+  for (const blocker of [...first,...rest]) {
     const item=byId.get(blocker.itemId);
-    if (!expected.delete(blocker.itemId) || !item || item.polish !== blocker.polish ||
-        typeof blocker.reason !== 'string' || blocker.reason.trim().length < 12 ||
-        !item.audio) throw new Error('Changed or missing Conversation 1 audio review: '+blocker.itemId);
+    if (!item || registered.has(blocker.itemId) || item.polish!==blocker.polish ||
+        !UNSCORABLE_REFERENCE.test(item.polish) || !item.audio ||
+        typeof blocker.reason!=='string' || blocker.reason.trim().length<12) {
+      throw new Error('Changed or missing Speak audio review: '+blocker.itemId);
+    }
+    registered.add(item.id);
     item.referenceReview='practice_only';
   }
-  if (expected.size) throw new Error('Unmarked Conversation 1 source blocker');
-  return blockers.length;
+  for (const item of vocabulary.flatMap(lesson=>lesson.items)) {
+    if (UNSCORABLE_REFERENCE.test(item.polish) && !registered.has(item.id)) {
+      throw new Error('Unreviewed new alternative, numeric or incomplete Speak reference: '+item.id);
+    }
+  }
+  return registered.size;
 }
 
 export function buildContent() {
@@ -264,7 +294,8 @@ export function buildContent() {
     JSON.parse(fs.readFileSync(pronunciationOverridesFile,'utf8')));
   const pronunciationGrouping=attachPronunciationSegments(lessons,overrides);
   const referenceReviewItems=attachReferenceReview(lessons,
-    JSON.parse(fs.readFileSync(voiceProductionFile,'utf8')));
+    JSON.parse(fs.readFileSync(voiceProductionFile,'utf8')),
+    JSON.parse(fs.readFileSync(otherReferenceBlockersFile,'utf8')));
   fs.writeFileSync(path.join(outRoot, 'lessons.json'), JSON.stringify({ schemaVersion: 1, lessons }, null, 2) + '\n');
   const report = {
     lessons: lessons.length,

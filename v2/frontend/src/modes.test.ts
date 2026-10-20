@@ -38,6 +38,19 @@ describe('learning modes', () => {
     expect(itemsForMode(greetings,'speak')).toHaveLength(3);
   });
 
+  test('only unverified recordings never expose an empty Listen tab',()=>{
+    const hold:Lesson={...lesson,kind:'vocabulary',items:[
+      {id:'pending:0',polish:'Co pan/pani poleca?',english:'What do you recommend?',
+       referenceReview:'practice_only',audio:'generated/audio/pending/0.mp3'},
+      {id:'pending:1',polish:'Jak dojść do …?',english:'How do I get to?',
+       referenceReview:'practice_only',audio:'generated/audio/pending/1.mp3'},
+    ]};
+    expect(availableModes(hold)).toEqual(['learn','speak']);
+    expect(itemsForMode(hold,'learn')).toHaveLength(2);
+    expect(itemsForMode(hold,'speak')).toHaveLength(2);
+    expect(itemsForMode(hold,'listen')).toHaveLength(0);
+  });
+
   test('comprehension choices include target exactly once and unique distractors', () => {
     for (let i = 0; i < lesson.items.length; i++) {
       const choices = comprehensionChoices(lesson.items, lesson.items[i], i);
