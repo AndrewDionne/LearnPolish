@@ -1,6 +1,6 @@
-# V2 Private Family Service — not deployed
+# V2 Private Family Service — Render integration prepared, not deployed
 
-This is isolated V2 infrastructure, deliberately separate from legacy /api/auth and /api/score.
+This is isolated V2 infrastructure, deliberately separate from legacy /api/auth and /api/score. The proposed single-origin Render V2 frontend+API host is [`RENDER_V2.md`](RENDER_V2.md); it has **not** been provisioned or approved for real family accounts.
 Requires a private persistent SQLite database; do not deploy on ephemeral storage. It has not undergone production security approval.
 
 ## Local setup
