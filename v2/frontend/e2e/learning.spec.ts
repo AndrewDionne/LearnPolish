@@ -106,12 +106,12 @@ test('ambiguous and unfinished greetings remain one lesson but have no scored or
 });
 
 test('other ambiguous lessons retain all original cards but exclude unverified Listen audio',async({page})=>{
+  await page.goto('/');
   for(const fixture of [
     {search:'Road Terminology',name:/Road Terminology/i,skip:10,phrase:'Jak dojść do …?',listen:25},
     {search:'Food and Dinning',name:/Food and Dinning/i,skip:2,phrase:'Czy ma pan/pani menu po angielsku?',listen:23}
   ]){
-    await page.goto('/');
-    await page.getByRole('button',{name:'Explore lessons'}).click();
+    await page.getByRole('button',{name:'Library'}).first().click();
     await page.getByRole('searchbox',{name:'Search lessons'}).fill(fixture.search);
     await page.getByRole('button',{name:fixture.name}).click();
     await expect(page.getByRole('combobox',{name:'Practice group'})).toHaveCount(0);
