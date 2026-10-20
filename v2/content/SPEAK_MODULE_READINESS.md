@@ -77,8 +77,76 @@ The **11 backend-unscorable reference expressions**, grouped by module, are:
 
 The **3 additional unfinished reference texts** are `Mam na imię…` (Conversation 1), `Jak dojść do …?` (Road Terminology), and `Przepraszam, jak dojadę do …?` (Transit 1). The current proxy can strip `…`, but the spoken target remains underspecified: either author a specific completed example or keep it for ungraded speaking practice. These are **14 problematic Speak items total**, with no overlap between those 11 and these 3.
 
-## Proposed prioritization for owner review
+## Owner direction and proposed granular rollout (2026-10-20)
 
-I suggest starting with **Conversation 1**, **Numbers 1–20**, and **Road Terminology**, together with the **five sound-contrast modules**. They provide basic Polish practice, cover hard letter combinations, and already contain the only 23 editorial grouping instances. Then work through Shopping / Getting Around / Transit / Restaurant / Food / Emergencies, before proper names and the larger country catalog. Decide separately whether Reading should gain phrase-level Speak; it is not just another boundary-edit task.
+**Owner-confirmed teaching priority, not yet an approval of every row order:** (1) beginner **vocabulary + listen + Speak**, emphasizing recognizable daily-use expressions and Polish sound contrasts; (2) **very short multi-line Read + Listen dialogues**; (3) **longer Read + Listen passages/dialogues** later. Do not turn all six longer reading modules into regular short-word Speak automatically. The exact set-by-set order below is a recommendation for owner review; keep the **Owner priority** cells in the inventory above unset until separately confirmed.
 
-**How to update this tracker:** Change the last-column `Owner priority` entries after owner decides; use brief values such as P1/P2/P3/Defer. As editorial boundaries are added to `v2/content/pronunciation-segment-overrides.json`, regenerate normal V2 content and rerun `npm run audit:speak` to update the A/E/D and blocked counts. **Do not call provisional segmentation "complete"**, and do not turn on paid/network providers as a side effect of content review. This Markdown snapshot is informational; source data + code remain the authoritative machine-readable state.
+### Stage E1 — beginner vocabulary, sound distinction, listening and speaking (15 existing modules / 281 items)
+
+All **281/281** E1 examples already have reference audio and an existing Speak entry point. All **23 editorial-draft instances** lie in these modules; the other 258 are automatic drafts. The **11 backend-unscorable alternatives/digit references and 3 unfinished ellipsis prompts** also all lie in E1 and require source-content decisions before AI scoring. All live provider scoring stays OFF on the public Free deployment.
+
+| Order | Existing V2 module | Items | Why this order / next editorial action |
+|---|---|---:|---|
+| E1.01 | Conversation 1 (greetings) | 26 | First useful polite phrases; choose one `pan/pani` form and complete `Mam na imię…` before scoring |
+| E1.02 | C · CZ · Ć | 6 | Fundamental difficult consonant contrast; review draft splits against recorded words |
+| E1.03 | S · SZ · Ś | 6 | High-impact hearing/speaking distinction, including soft sounds |
+| E1.04 | Numbers 1–20 | 20 | Short, repeatable everyday words; 6 editorial drafts ready for review |
+| E1.05 | L · Ł | 4 | Short high-value listening contrast without overloading beginners |
+| E1.06 | Conversation – shopping | 25 | Requesting, sizing, basic transactional vocabulary |
+| E1.07 | Food and Dinning (existing source ID/spelling) | 25 | Everyday food expressions; split 2 `pan/pani` references |
+| E1.08 | Conversation – restaurant | 25 | Ordering and simple responses; split 2 gender-alternative targets |
+| E1.09 | Z · Ż/RZ · Ź/ZI | 6 | Sound distinction after learners know several real example words |
+| E1.10 | Getting Around 1 | 26 | Basic directions, movement and city vocabulary; split 1 `pan/pani` target |
+| E1.11 | Transit 1 | 20 | Tram/bus/stops; complete 1 route question with ellipsis |
+| E1.12 | Road Terminology | 27 | Practical street terms, plus 7 existing editorial drafts; spell out one numeric spoken road reference and finish one placeholder |
+| E1.13 | KRZY · PRZY | 4 | Cluster-focused listening with actual recorded phrase examples |
+| E1.14 | Emergencies and Health | 25 | Survival expressions; split 4 gender-alternative targets |
+| E1.15 | Numbers 20–100 | 36 | Wider number comprehension after foundational numbers and transactions |
+
+**E1 learner loop:** existing audio **Listen → recognize meaning → Speak → hear/reference → record/replay → voluntarily repeat or Next**. Preserve the user's minimal Speak result: coloured Polish **text** with small visual segment gaps + one experimental blended overall score, **no per-syllable percentages, coloured boxes, explanation/legend or XP gate**. Show English pronunciation cues only when the guide is switched on. Do not show a remote score unless the authenticated, separately consented Azure/Whisper test is actually available. Rather than forcing learners through 25–36 unfamiliar entries at once, consider ordered 6–10-item *learning subsets*; these are a curriculum proposal, **not** 15 extra existing modules.
+
+**E1 implementation order within each set:** (a) settle fixed spoken targets, especially the 14 flagged entries; (b) confirm example audio matches the exact target and listenability; (c) editorial Polish segmentation review prioritizing the difficult sound combinations; (d) check Learn/Listen/Speak modes, guide toggle, retry, incomplete/inconclusive states and family/offline safeguards; (e) physically benchmark pronunciation only after explicit owner-authorized audio/provider consent. An exact orthographic split or passing synthetic test is NOT acoustic calibration.
+
+### Stage E2 — very basic multi-line Read + Listen (existing 1 bridge set, plus proposed short excerpts)
+
+**Existing bridge module:** `Basic_01R` (**6 recorded reading lines**, source audio present, currently Read + Listen but **not Speak**). Its existing passages can introduce line-by-line comprehension, but do not automatically label six independent lines a natural continuous dialogue.
+
+| Order | Short dialogue / bridge | Content source and minimum useful behavior |
+|---|---|---|
+| E2.01 | Greeting and response | New curated **2–4-turn** micro-dialogue, starting from existing greeting/Basic 01R expressions where audio is an *exact* match |
+| E2.02 | Introduce yourself | New 2–4 turns for name, polite response and a simple question; eliminate placeholder/non-fixed spoken targets |
+| E2.03 | Grocery purchase | New 2–4 turns sampled/edited from the existing 9-line grocery scene, recording new audio if text differs |
+| E2.04 | Simple ticket purchase | New 2–4 turns from ticket/buying vocabulary and the 9-line museum source |
+| E2.05 | Ask about a tram or stop | New 2–4 turns from the passenger/driver scenes, without launching either full scene yet |
+| E2.06 | Basic 01R bridge review | Retain existing 6-line set as a short Read + Listen comprehension/review pathway |
+
+**E2 UX goal:** display speaker turns together in reading order, play **a selected line** or **the short dialogue in sequence**, reveal English only when requested, and use a small number of authored comprehension prompts. Never claim combined playback/role-labelled turns already exist: the current catalog uses **one audio item per passage**, and the normal `Read` / `Listen` modes are present but this dialogue-specific composition needs design/implementation. Keep repetition of an individual line optional; implementing automated grading for longer multi-turn utterances is not an E2 prerequisite. New micro-dialogues are **proposed new units, not part of the existing 26-module/482-item count**.
+
+### Stage E3 — longer Read + Listen, names and extended content (9 existing modules / 194 items)
+
+| Order | Existing V2 module | Items | Treatment |
+|---|---|---:|---|
+| E3.01 | Grocery store – very basic shopping | 9 | Full scene after E2 short purchase conversation |
+| E3.02 | On the tram – talking to another passenger | 9 | Full route/seat conversation after short tram exchange |
+| E3.03 | Asking the tram driver for directions | 8 | Longer navigation and ticket information |
+| E3.04 | Museum – buying tickets & basic info | 9 | Full ticket/closing-time/directions scene |
+| E3.05 | H&M clothes shop – trying on a T-shirt | 10 | Full shopping, sizing and fitting-room exchange |
+| E3.06 | Districts of Warszawa | 20 | Optional name/pronunciation enrichment; ASR proper-name caution |
+| E3.07 | Cities of Poland | 29 | Broader place-name listening and recognition |
+| E3.08 | Names of Poland 1 | 32 | Optional people-name recognition; avoid confident unvalidated ASR corrections |
+| E3.09 | Countries of the World | 68 | Largest and lowest-frequency name catalog; last bulk editorial pass |
+
+E3's five existing extended reading scenes have **45/45** reference audio items and no ordinary Speak button. The four existing proper-name vocabulary sets have **149/149** audio items and Speak entry points, but their auto-generated spelling partitions/ASR proper-name behavior are **not** reviewed. These 9 remain selectable in the library today; **E3 defers new-workflow editorial investment**, not access to existing lessons. Richer listening (connected whole-scene playback, review questions, natural pacing, optional individual line repetition) belongs here after E2 succeeds.
+
+### Separate research fixture — not a beginner learning set
+
+`Speak test · Świętokrzyska` = **1 item / 0 native reference MP3**, with authored but unreviewed grouping and an existing private historical owner test. Retain it as a **lab/diagnostic fixture**, not the first beginner lesson; obtain exact native reference audio and separate external review before promoting it. It is the remaining item needed to reconcile the catalog: **E1 281 + E2 6 + E3 194 + lab 1 = 482**, and **15 + 1 + 9 + 1 = 26** existing modules.
+
+### Next action and acceptance boundary
+
+1. Begin E1.01 greetings and the paired E1.02/E1.03 sound contrast exercises; review the existing authored/editorial source and the ambiguous targets, not all 458 auto-generated draft instances.
+2. Regenerate and rerun `cd v2/frontend && npm run content && npm run audit:speak` after changing content; preserve exact source-to-audio mapping and the current regression totals until changes are intentional.
+3. Once a few E1 sets have passed the content/review gates, prototype ONE E2 2–4-turn dialogue using source-matched audio. Evaluate line-by-line and whole-scene listen UX before adding the remaining dialogues.
+4. Leave hosted AI activation, pronunciation-score calibration, the five full reading scenes, and large-scale place/name editorial review as separate later gates. Do not turn on providers, incur costs or store identifiable voice data as a side effect of this priority plan.
+
+**Track decisions:** The stage order (E1/E2/E3) follows the owner's instruction. Specific E1/E2/E3 row order is **proposed** and open to owner reprioritization. Keep the existing per-module `Owner priority` cells above unset until approved, then record actual choices there. This table is a *human plan*, not proof that any item has been certified for live two-provider pronunciation assessment.
