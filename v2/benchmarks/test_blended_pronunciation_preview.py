@@ -76,7 +76,7 @@ class BlendedPreviewTests(unittest.TestCase):
         self.assertIn('class="sound focus"',html)
         self.assertIn('class="sound close"',html)
         self.assertIn('type="checkbox"',html)
-        self.assertIn('~ .word .cue',html)
+        self.assertIn('.card:has(#guide:checked) .word .cue',html)
         self.assertNotIn('class="sound score"',html)
         self.assertNotIn("Świę 50%",html)
         self.assertNotIn("krzy 0%",html)
