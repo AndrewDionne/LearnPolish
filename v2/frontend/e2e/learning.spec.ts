@@ -130,6 +130,65 @@ test('other ambiguous lessons retain all original cards but exclude unverified L
   }
 });
 
+test('E2 short dialogues stay inside reading lessons and allow read/listen without new XP',async({page})=>{
+  const errors:string[]=[];
+  page.on('pageerror',error=>errors.push(error.message));
+  await page.goto('/');
+  await page.getByRole('button',{name:'Library'}).first().click();
+  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Basic 01R');
+  await page.getByRole('button',{name:/Basic 01R/}).click();
+  const selector=page.getByRole('group',{name:'Short conversations'});
+  await expect(selector.getByRole('button')).toHaveCount(2);
+  await selector.getByRole('button',{name:/How are you/}).click();
+  const dialogue=page.getByRole('region',{name:'Short dialogue: How are you?'});
+  await expect(dialogue).toBeVisible();
+  await expect(dialogue.locator('.micro-dialogue-polish')).toHaveText([
+    'Cześć! Jak się masz?', 'Dziękuję, mam się dobrze.'
+  ]);
+  await expect(dialogue.getByRole('button',{name:'Play Person A turn 1'})).toBeEnabled();
+  await expect(dialogue.getByRole('button',{name:'Play Person B turn 2'})).toBeEnabled();
+  await expect(dialogue.getByRole('button',{name:'0.5×'})).toHaveCount(0);
+  await expect(dialogue.getByRole('button',{name:'1.25×'})).toHaveCount(0);
+  await expect(dialogue.getByRole('button',{name:'1×'})).toHaveAttribute('aria-pressed','true');
+  await dialogue.getByRole('button',{name:'Listen first'}).click();
+  await expect(dialogue.locator('.micro-dialogue-polish')).toHaveCount(0);
+  await expect(dialogue.locator('.micro-dialogue-hidden')).toHaveCount(2);
+  await dialogue.getByRole('button',{name:'Reveal Polish dialogue'}).click();
+  await expect(dialogue.locator('.micro-dialogue-polish')).toHaveCount(2);
+  await dialogue.getByRole('button',{name:'Show English translations'}).click();
+  await expect(dialogue.locator('.micro-dialogue-english')).toHaveText([
+    'Hi! How are you?', 'Thank you, I am well.'
+  ]);
+  await dialogue.getByRole('button',{name:'Back to reading'}).click();
+  await expect(dialogue).toHaveCount(0);
+  await expect(page.getByText('Cześć! Jak się masz?',{exact:true})).toBeVisible();
+  await expect(page.getByText('0 of 6 explored')).toBeVisible();
+  await selector.getByRole('button',{name:/What's your name/}).click();
+  await expect(page.getByRole('region',{name:"Short dialogue: What's your name?"})
+    .locator('.micro-dialogue-polish')).toHaveText([
+      'Cześć, jak masz na imię?', 'Mam na imię Andrew.'
+    ]);
+  await page.getByRole('button',{name:'Library'}).first().click();
+  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Grocery store very basic shopping');
+  await page.getByRole('button',{name:/Grocery store very basic shopping/}).click();
+  await page.getByRole('group',{name:'Short conversations'})
+    .getByRole('button',{name:/Buying apples/}).click();
+  const grocery=page.getByRole('region',{name:'Short dialogue: Buying apples'});
+  await expect(grocery.locator('.micro-dialogue-speaker')).toHaveText([
+    'Customer','Shop assistant','Customer'
+  ]);
+  await expect(grocery.locator('.micro-dialogue-polish')).toHaveText([
+    'Dzień dobry, poproszę kilogram jabłek.',
+    'Jakie jabłka pan lubi? Czerwone czy zielone?',
+    'Poproszę czerwone jabłka.'
+  ]);
+  await grocery.getByRole('button',{name:'Listen first'}).click();
+  await expect(grocery.locator('.micro-dialogue-hidden')).toHaveCount(3);
+  await grocery.getByRole('button',{name:'Back to reading'}).click();
+  await expect(page.getByText('0 of 9 explored')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
 test('responsive mobile library and lesson controls', async ({ page, isMobile }) => {
   if (!isMobile) test.skip();
   await page.goto('/');
