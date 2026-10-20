@@ -107,7 +107,10 @@ describe('exact-source short dialogue schema',()=>{
   ];
   const scene={id:'how-are-you',title:'How are you?',
     speakers:{A:'Person A',B:'Person B'},
-    turns:[{itemId:'Basic_01R:0',speaker:'A'}, {itemId:'Basic_01R:1',speaker:'B'}]};
+    turns:[{itemId:'Basic_01R:0',speaker:'A'}, {itemId:'Basic_01R:1',speaker:'B'}],
+    comprehension:{prompt:'How does the second speaker feel?',
+      options:['Well, thank you','Hungry','Lost'],correctIndex:0,
+      feedback:'They say they are feeling well.'}};
   const reading={...lesson,id:'Basic_01R',kind:'reading',items,microDialogues:[scene]};
   test('accepts only source-linked, alternating, recorded reading turns',()=>{
     expect(validateLesson(reading)).toBe(true);
@@ -118,6 +121,11 @@ describe('exact-source short dialogue schema',()=>{
     expect(validateLesson({...reading,microDialogues:[{...scene,turns:[scene.turns[0],
       {...scene.turns[1],itemId:'Basic_01R:missing'}]}]})).toBe(false);
     expect(validateLesson({...reading,items:[items[0],{...items[1],audio:undefined}]})).toBe(false);
+    expect(validateLesson({...reading,microDialogues:[{...scene,comprehension:undefined}]})).toBe(false);
+    expect(validateLesson({...reading,microDialogues:[{...scene,comprehension:{
+      ...scene.comprehension,options:['Well, thank you','Well, thank you','Lost']}}]})).toBe(false);
+    expect(validateLesson({...reading,microDialogues:[{...scene,comprehension:{
+      ...scene.comprehension,correctIndex:3}}]})).toBe(false);
   });
 });
 
