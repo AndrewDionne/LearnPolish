@@ -15,6 +15,8 @@ export type MicroDialogue = {
   title: string;
   speakers: {A:string; B:string};
   turns: {itemId:string; speaker:'A'|'B'}[];
+  /** One editorial, source-grounded listening/reading check. */
+  comprehension: ComprehensionCheck;
 };
 /** Explicitly validated learning difficulty only; missing defaults to beginner XP. */
 export type LearningDifficulty = 1 | 2 | 3 | 4 | 5;
@@ -145,6 +147,20 @@ export function validateLesson(value: unknown): value is Lesson {
         typeof dialogue.title === 'string' && dialogue.title.trim().length >= 5 &&
         typeof dialogue.speakers?.A === 'string' && !!dialogue.speakers.A.trim() &&
         typeof dialogue.speakers?.B === 'string' && !!dialogue.speakers.B.trim() &&
+        !!dialogue.comprehension &&
+        typeof dialogue.comprehension.prompt === 'string' &&
+        dialogue.comprehension.prompt.trim().length >= 12 &&
+        Array.isArray(dialogue.comprehension.options) &&
+        dialogue.comprehension.options.length === 3 &&
+        dialogue.comprehension.options.every(option =>
+          typeof option === 'string' && option.trim().length >= 3) &&
+        new Set(dialogue.comprehension.options.map(option =>
+          option.trim().toLowerCase())).size === 3 &&
+        Number.isInteger(dialogue.comprehension.correctIndex) &&
+        dialogue.comprehension.correctIndex >= 0 &&
+        dialogue.comprehension.correctIndex <= 2 &&
+        typeof dialogue.comprehension.feedback === 'string' &&
+        dialogue.comprehension.feedback.trim().length >= 10 &&
         Array.isArray(dialogue.turns) && dialogue.turns.length >= 2 && dialogue.turns.length <= 4 &&
         dialogue.turns.every((turn,i) => {
           const itemIndex=x.items?.findIndex(item=>item.id===turn.itemId) ?? -1;
