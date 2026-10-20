@@ -3,28 +3,104 @@
   "reviewStatus": "candidates_not_approved",
   "notes": "First 58 exercises only. This is an offline planning manifest, NOT a synthesis authorization. Existing legacy MP3 voice/provenance is unknown until auditory review. Azure and Groq grading remain independent.",
   "lessons": [
-    {"id": "Conversation_1", "items": 26, "stage": "E1.01"},
-    {"id": "contrast_c_cz_cie", "items": 6, "stage": "E1.02"},
-    {"id": "contrast_s_sz_sie", "items": 6, "stage": "E1.03"},
-    {"id": "numbers_1-20", "items": 20, "stage": "E1.04"}
+    {
+      "id": "Conversation_1",
+      "items": 26,
+      "stage": "E1.01"
+    },
+    {
+      "id": "contrast_c_cz_cie",
+      "items": 6,
+      "stage": "E1.02"
+    },
+    {
+      "id": "contrast_s_sz_sie",
+      "items": 6,
+      "stage": "E1.03"
+    },
+    {
+      "id": "numbers_1-20",
+      "items": 20,
+      "stage": "E1.04"
+    }
   ],
   "voiceCandidates": [
-    {"id": "pl-PL-ZofiaNeural", "label": "Zofia", "role": "female_primary_candidate"},
-    {"id": "pl-PL-MarekNeural", "label": "Marek", "role": "male_alternate_candidate"},
-    {"id": "pl-PL-AgnieszkaNeural", "label": "Agnieszka", "role": "female_comparison_candidate"}
+    {
+      "id": "pl-PL-MarekNeural",
+      "label": "Marek",
+      "role": "male_preferred_primary_not_release_approved"
+    },
+    {
+      "id": "pl-PL-AgnieszkaNeural",
+      "label": "Agnieszka",
+      "role": "female_preferred_alternate_not_release_approved"
+    },
+    {
+      "id": "pl-PL-ZofiaNeural",
+      "label": "Zofia",
+      "role": "female_third_choice_not_release_approved"
+    }
   ],
   "sourceBlockers": [
-    {"itemId": "Conversation_1:24", "polish": "Jak ma pan/pani na imię?", "reason": "Choose and record an exact pan or pani question before scoring"},
-    {"itemId": "Conversation_1:25", "polish": "Mam na imię…", "reason": "Author and record a completed fixed name response before scoring"}
+    {
+      "itemId": "Conversation_1:24",
+      "polish": "Jak ma pan/pani na imię?",
+      "reason": "Choose and record an exact pan or pani question before scoring"
+    },
+    {
+      "itemId": "Conversation_1:25",
+      "polish": "Mam na imię…",
+      "reason": "Author and record a completed fixed name response before scoring"
+    }
   ],
   "auditionSamples": [
-    {"itemId": "Conversation_1:0", "polish": "Dzień dobry"},
-    {"itemId": "Conversation_1:8", "polish": "Dziękuję"},
-    {"itemId": "Conversation_1:12", "polish": "Przepraszam"},
-    {"itemId": "numbers_1-20:3", "polish": "Cztery"},
-    {"itemId": "contrast_c_cz_cie:c:0", "polish": "plac"},
-    {"itemId": "contrast_c_cz_cie:ci:0", "polish": "Pięć"},
-    {"itemId": "contrast_s_sz_sie:sz:0", "polish": "Sześć"},
-    {"itemId": "contrast_s_sz_sie:si:0", "polish": "Śródmieście"}
-  ]
+    {
+      "itemId": "Conversation_1:0",
+      "polish": "Dzień dobry"
+    },
+    {
+      "itemId": "Conversation_1:8",
+      "polish": "Dziękuję"
+    },
+    {
+      "itemId": "Conversation_1:12",
+      "polish": "Przepraszam"
+    },
+    {
+      "itemId": "numbers_1-20:3",
+      "polish": "Cztery"
+    },
+    {
+      "itemId": "contrast_c_cz_cie:c:0",
+      "polish": "plac"
+    },
+    {
+      "itemId": "contrast_c_cz_cie:ci:0",
+      "polish": "Pięć"
+    },
+    {
+      "itemId": "contrast_s_sz_sie:sz:0",
+      "polish": "Sześć"
+    },
+    {
+      "itemId": "contrast_s_sz_sie:si:0",
+      "polish": "Śródmieście"
+    }
+  ],
+  "ownerVoicePreference": {
+    "status": "provisional_owner_listening_preference_not_approved_production_audio",
+    "source": "Owner compared voices in Microsoft's Polish browser demonstration on 2026-10-20",
+    "rankedVoiceIds": [
+      "pl-PL-MarekNeural",
+      "pl-PL-AgnieszkaNeural",
+      "pl-PL-ZofiaNeural"
+    ],
+    "observation": "Zofia sounded good but sometimes clipped at the end of an utterance; Marek and Agnieszka sounded more complete with better follow-through.",
+    "qualityFocus": [
+      "Natural final syllables and consonant releases",
+      "No apparent early cut-offs at the ends of short phrases",
+      "Clear Polish consonant contrasts, stress, rhythm and comfortable pacing"
+    ],
+    "nextGate": "Listen to the same exact V2 words and phrases in locally generated MP3 files and perform a Polish-speaker quality review before approving or publishing primary/alternate audio."
+  }
 }
