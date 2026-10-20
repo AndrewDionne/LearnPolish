@@ -16,6 +16,8 @@ One V2 Docker image includes the built React/TypeScript V2 learner PWA, trusted 
 
 ## Existing Neon — durable V2 account storage (prepared, NOT deployed)
 
+**Clean-start decision (owner, 2026-10-20):** V2 does not import V1 users, passwords, family groups, scores, XP or account history. All V2 identities and shared activity begin fresh under `ptp_v2`. The old `public` schema remains inert; do not spend development effort on cross-version compatibility. Do not drop live data without separately explicit deletion approval. Lesson JSON/audio currently imported from old `docs/` files is active V2 learning content, not account history, and must be rehomed before those sources are removed.
+
 Read-only inspection confirmed a dedicated **Path_to_Polish** Neon project, Frankfurt region, with a `Path_to_Polish_DB` database containing existing **V1** tables in `public`: users, groups, scores, sets. The V2 implementation now has an optional server-side `psycopg` backend, but **no migrations have been run on the owner's live Neon database, no credentials retrieved, and no real account data altered**. Unlike free Render's ephemeral storage, Neon PostgreSQL persists data across Render sleep and redeploy.
 
 - Isolated V2 namespace: `ptp_v2` schema, created only by a reviewed manual [SQL migration](migrations/001_neon_ptp_v2.sql). The V1 `public` schema and users remain untouched. No implicit account/password migration or reuse of V1 identity hashes.
