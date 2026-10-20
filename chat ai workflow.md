@@ -1,5 +1,19 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
+## PR #72 MERGED — subtle CSS gap between coloured syllable text (2026-10-20)
+
+**Latest owner instruction:** "Is it possible to add a small space between the syllables? just to help focus the pronunciation." This is a small visual-only update to the owner-approved flat `Świę|to|krzy|ska` colour-text and overall `67/100` preview. Set CSS `.word { gap: .12em }` on its four existing coloured syllable spans, a gap approximately 3–6px across responsive word sizes. **Never insert literal spaces** in the source Polish word, never change colour scoring, blended score, syllable boundaries, guide defaults, or add UI boxes/descriptions/legends/numeric syllable grades.
+
+**[PR #72](https://github.com/AndrewDionne/LearnPolish/pull/72) MERGED** squash `0ed82098a69c19d407e6bd481e0315a697a7fc02`, exact tested head `c6361fa6a17f4f191122aa55ed6fdff1d900f815`, [four V2 CI lanes PASS #39433959395](https://github.com/AndrewDionne/LearnPolish/actions/runs/39433959395). Updated `v2/benchmarks/blended_pronunciation_preview.py` and focused synthetic benchmark test, docs `v2/benchmarks/BLENDED_PRONUNCIATION_PREVIEW.md`. Existing private preview 01 and 02 preserved; script now creates **03**. **Zero provider inference, audio uploads, new paid calls or live Speak change.**
+
+Owner Mac handoff from repo root:
+```bash
+git switch main && git pull --ff-only
+python3 v2/benchmarks/blended_pronunciation_preview.py --existing-sample
+open PathToPolish-Private-AI/swietokrzyska-01/blended-preview-03.html
+```
+If 03 already exists, open it directly; do not overwrite or rerun. After private review, any further layout work should preserve text-only color and one overall score. Composite 67 is owner-selected research blend (Azure 84 + Whisper transcription proxy 50)/2, still not an independently validated pronunciation measure and not used for XP. Only the historical, zero-network preview has been revised, **not production V2 Speak**.
+
 ## PR #71 MERGED — exactly coloured Polish text + single number, no UI clutter (2026-10-20)
 
 **Latest owner UI correction:** "No colour boxes just coloured text. No small notes, no description of what the colours mean. just the word colour coded and the score." This explicitly supersedes the previous PR #70 prototype presentation with boxed syllables, English guide toggle, caption/legend, source-metric accordion, and explanatory strings **in the visible experiment**. The **underlying experimental blend remains unchanged** on the owner's same recorded `Świętokrzyska`: Azure word accuracy **84**, Whisper transcription proxy **50**, arithmetically averaged **67/100**; colours `Świę` amber, `to` amber, `krzy` red, `ska` green. **No syllable numeric grades** and no direct Azure Polish syllable-scoring assumption.
