@@ -2,6 +2,16 @@
 
 **Experimental, offline, existing adult evidence only — 2026-10-20.**
 
+## Follow-up — subtle syllable separation (2026-10-20)
+
+The owner approved the **text-only coloured word + one overall score** and requests **a small gap between syllables**, only to aid pronunciation focus. The HTML renderer now uses CSS `gap: .12em` on the four existing coloured text spans: approximately 3–6px depending on word font size. It does **not** inject actual spaces into the Polish text, change the phonetic groups, add backgrounds or display any syllable grades. `--existing-sample` now creates a new ignored `blended-preview-03.html`; earlier `01` and `02` files are preserved.
+
+```bash
+git switch main && git pull --ff-only
+python3 v2/benchmarks/blended_pronunciation_preview.py --existing-sample
+open PathToPolish-Private-AI/swietokrzyska-01/blended-preview-03.html
+```
+
 ## Owner's minimal visual revision — 2026-10-20
 
 **Render exactly two things:** the joined Polish word **Świętokrzyska**, coloured by the existing four Whisper transcript-similarity *categories* (amber, amber, red, green) **as text itself**, and the one **67/100** overall combined number. Absolutely **no colour backgrounds or boxes** around word segments, no cards, labels, small notes, legends, descriptions, breakdown, English guides or toggles in this version. Source scores, provenance, the arithmetic and privacy safeguards remain in the internal Python result/report only. The page is deliberately a flat, static HTML visual test, not a new production speech workflow.
