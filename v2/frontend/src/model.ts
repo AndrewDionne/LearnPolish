@@ -20,7 +20,7 @@ export type EnglishPronunciationGuide = {
   reviewStatus: 'needs_native_speaker_review';
 };
 
-export type PronunciationSegments = {method:'authored-v1'|'draft-orthographic-v1';segments:string[]};
+export type PronunciationSegments = {method:'authored-v1'|'editorial-draft-v1'|'draft-orthographic-v1';segments:string[]};
 
 export type LessonItem = {
   id: string;
@@ -75,7 +75,7 @@ export function validateLesson(value: unknown): value is Lesson {
       )) &&
       (item.pronunciationSegments === undefined || (
         !!item.pronunciationSegments &&
-        ['authored-v1','draft-orthographic-v1'].includes(item.pronunciationSegments.method) &&
+        ['authored-v1','editorial-draft-v1','draft-orthographic-v1'].includes(item.pronunciationSegments.method) &&
         Array.isArray(item.pronunciationSegments.segments) &&
         item.pronunciationSegments.segments.length >= 1 &&
         item.pronunciationSegments.segments.length <= 32 &&

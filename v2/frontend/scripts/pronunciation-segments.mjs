@@ -42,13 +42,22 @@ export function draftWordParts(word) {
   return parts.filter(Boolean);
 }
 
-export function pronunciationSegmentsFor(item) {
+export function pronunciationSegmentsFor(item, overrides=new Map()) {
   if(!item || typeof item.polish!=='string' || !item.polish.trim() ||
      item.polish.length>300) return undefined;
   const guide = item.pronunciationGuide;
   if(guide && Array.isArray(guide.syllables) &&
      guide.syllables.map(x=>x.polish).join('')===item.polish){
     return {method:'authored-v1',segments:guide.syllables.map(x=>x.polish)};
+  }
+  const authored=overrides.get(item.polish);
+  if(authored){
+    if(!Array.isArray(authored) || authored.length<1 || authored.length>32 ||
+       authored.some(part=>typeof part!=='string'||!part) ||
+       authored.join('')!==item.polish){
+      throw new Error('Invalid editorial sound boundary for '+item.polish);
+    }
+    return {method:'editorial-draft-v1',segments:authored.slice()};
   }
   // Drafts remain marked draft rather than pretending that all Polish
   // digraph clusters and word boundaries are human-reviewed syllables.
@@ -72,16 +81,40 @@ export function pronunciationSegmentsFor(item) {
   return {method:'draft-orthographic-v1',segments};
 }
 
-export function attachPronunciationSegments(lessons) {
-  let total=0, drafts=0, authored=0;
+export function attachPronunciationSegments(lessons, overrides=new Map()) {
+  let total=0, drafts=0, authored=0, editorial=0;
+  const matched=new Set();
   for(const lesson of lessons){
     for(const item of lesson.items){
-      const parts=pronunciationSegmentsFor(item);
+      const parts=pronunciationSegmentsFor(item, overrides);
+      if(overrides.has(item.polish)) matched.add(item.polish);
       if(!parts)continue;
       item.pronunciationSegments=parts;
       total++;
-      if(parts.method==='authored-v1')authored++;else drafts++;
+      if(parts.method==='authored-v1')authored++;
+      else if(parts.method==='editorial-draft-v1')editorial++;
+      else drafts++;
     }
   }
-  return {total,drafts,authored};
+  if(matched.size!==overrides.size)throw new Error('Orphaned pronunciation override');
+  return {total,drafts,authored,editorial};
+}
+
+/** Exact-source editorial overrides. No NLP-generated grades or silent drift. */
+export function parsePronunciationOverrides(definitions) {
+  if(!definitions || definitions.schemaVersion!==1 ||
+     definitions.reviewStatus!=='needs_native_speaker_review' ||
+     !Array.isArray(definitions.items))throw new Error('Invalid pronunciation override catalog');
+  const map=new Map();
+  for(const entry of definitions.items){
+    if(!entry || typeof entry.polish!=='string' || !entry.polish.trim() ||
+       map.has(entry.polish) || !Array.isArray(entry.segments) ||
+       !entry.segments.length || entry.segments.length>32 ||
+       entry.segments.some(part=>typeof part!=='string' || !part) ||
+       entry.segments.join('')!==entry.polish){
+      throw new Error('Invalid, duplicate or mismatched pronunciation override');
+    }
+    map.set(entry.polish,entry.segments);
+  }
+  return map;
 }

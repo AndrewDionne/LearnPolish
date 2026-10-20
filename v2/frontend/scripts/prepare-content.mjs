@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import {attachPronunciationSegments} from './pronunciation-segments.mjs';
+import {attachPronunciationSegments,parsePronunciationOverrides} from './pronunciation-segments.mjs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -10,6 +10,7 @@ const outRoot = path.join(root, 'v2/frontend/public/generated');
 const curatedSoundsFile = path.join(root, 'v2/content/sound-contrasts.json');
 const readingChecksFile = path.join(root, 'v2/content/reading-checks.json');
 const pronunciationGuideFile = path.join(root, 'v2/content/pronunciation-swietokrzyska.json');
+const pronunciationOverridesFile = path.join(root, 'v2/content/pronunciation-segment-overrides.json');
 const retiredGroupedSoundSets = new Set(['letter_recognition_1', 'letter_recognition_2', 'letter_recognition_3']);
 
 export function migrateLesson(filename, source) {
@@ -228,7 +229,9 @@ export function buildContent() {
   };
   const readingDefinitions = JSON.parse(fs.readFileSync(readingChecksFile, 'utf8'));
   const authoredReadingChecks = attachReadingCurriculum(lessons, readingDefinitions);
-  const pronunciationGrouping=attachPronunciationSegments(lessons);
+  const overrides=parsePronunciationOverrides(
+    JSON.parse(fs.readFileSync(pronunciationOverridesFile,'utf8')));
+  const pronunciationGrouping=attachPronunciationSegments(lessons,overrides);
   fs.writeFileSync(path.join(outRoot, 'lessons.json'), JSON.stringify({ schemaVersion: 1, lessons }, null, 2) + '\n');
   const report = {
     lessons: lessons.length,
