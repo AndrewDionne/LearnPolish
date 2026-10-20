@@ -43,14 +43,16 @@ def inspect_raw(raw: object) -> dict:
     scores = []
     if isinstance(phones, list) and 2 <= len(phones) <= 64:
         for unit in phones:
-            score = unit.get("PronunciationAssessment", {}).get("AccuracyScore") if isinstance(unit, dict) else None
+            pa = unit.get("PronunciationAssessment") if isinstance(unit, dict) else None
+            score = pa.get("AccuracyScore") if isinstance(pa, dict) else None
             if _score(score) is None:
                 break
             scores.append(float(score))
     has_phones = isinstance(phones, list) and 2 <= len(phones) <= 64 and len(scores) == len(phones)
     native_count = 0
     if isinstance(syllables, list) and 1 <= len(syllables) <= 12 and all(
-        isinstance(v, dict) and _score(v.get("PronunciationAssessment", {}).get("AccuracyScore")) is not None
+        isinstance(v, dict) and isinstance(v.get("PronunciationAssessment"), dict)
+        and _score(v["PronunciationAssessment"].get("AccuracyScore")) is not None
         for v in syllables
     ):
         native_count = len(syllables)
