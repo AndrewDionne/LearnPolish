@@ -78,7 +78,7 @@ function AudioButton({ item, playing, onPlay }: {
   return <button type="button" className="audio-btn" disabled={!available}
     title={!available ? 'Verified reference recording unavailable' : 'Play Polish recording'}
     onClick={() => available && item.audio && onPlay(item.audio)}>
-    <span aria-hidden="true">{available && playing === item.audio ? '◼' : '▶'}</span> {available && playing === item.audio ? 'Playing audio' : available ? 'Play audio' : 'No verified audio'}
+    <span aria-hidden="true">{available && playing === item.audio ? '◼' : '▶'}</span> {available && playing === item.audio ? 'Playing audio' : available ? 'Play audio' : item.referenceReview === 'practice_only' ? 'Reference pending' : 'No audio'}
   </button>;
 }
 
