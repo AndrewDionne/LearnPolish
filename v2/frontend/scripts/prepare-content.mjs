@@ -88,11 +88,19 @@ export function buildSoundCurriculum(sourceLessons, definitions) {
         if (/[,\n]/.test(matched.polish) || matched.polish.includes(' / ')) {
           throw new Error(definition.id + ': bundled or alternative utterance not allowed: ' + example.expected);
         }
+        // The focus is a human-authored orthographic substring, NOT an acoustic
+        // phoneme score. Fail closed if it drifts out of the original source.
+        const focus = example.focus;
+        const start = typeof focus === 'string' && focus.length > 0 && focus.length <= 8 &&
+          !/\s/u.test(focus) ? matched.polish.indexOf(focus) : -1;
+        if (start < 0 || matched.polish.indexOf(focus, start + focus.length) !== -1) {
+          throw new Error(definition.id + ': invalid or ambiguous focus letters in ' + example.expected);
+        }
         const id = definition.id + ':' + group.id + ':' + i;
         itemIds.push(id);
         items.push({
           id, polish: matched.polish, english: matched.english,
-          audio: matched.audio, soundGroupId: group.id,
+          audio: matched.audio, soundGroupId: group.id, soundFocus: focus,
         });
       }
       groups.push({id: group.id, label: group.label, ipa: group.ipa, hint: group.hint, itemIds});
