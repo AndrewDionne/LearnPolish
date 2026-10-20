@@ -254,7 +254,10 @@ export default function App() {
   const returnFromSoundPractice = () => {
     if (!soundReturn || active?.id !== soundReturn.practiceLessonId) return;
     const source = lessons.find(lesson => lesson.id === soundReturn.sourceLessonId);
-    if (!source || source.items[soundReturn.sourceIndex]?.id !== soundReturn.sourceItemId) {
+    const sourceItems = source && usesPracticeBatches(source) && !soundReturn.sourceReviewOnly
+      ? practiceBatchItems(source, 'speak', soundReturn.sourceBatchIndex)
+      : source?.items;
+    if (!source || sourceItems?.[soundReturn.sourceIndex]?.id !== soundReturn.sourceItemId) {
       goTo('library'); return;
     }
     stopAudio();
