@@ -11,6 +11,7 @@ const curatedSoundsFile = path.join(root, 'v2/content/sound-contrasts.json');
 const readingChecksFile = path.join(root, 'v2/content/reading-checks.json');
 const pronunciationGuideFile = path.join(root, 'v2/content/pronunciation-swietokrzyska.json');
 const pronunciationOverridesFile = path.join(root, 'v2/content/pronunciation-segment-overrides.json');
+const voiceProductionFile = path.join(root, 'v2/content/voice-production.json');
 const retiredGroupedSoundSets = new Set(['letter_recognition_1', 'letter_recognition_2', 'letter_recognition_3']);
 
 export function migrateLesson(filename, source) {
@@ -170,6 +171,28 @@ export function attachReadingCurriculum(lessons, definitions) {
   return count;
 }
 
+/**
+ * The two Conversation 1 references are not exact assessable utterances.
+ * Enforce the existing signed-off blocker list against the unchanged source:
+ * no text rewriting and no pretending old imported MP3s match new targets.
+ */
+export function attachReferenceReview(lessons, voiceSpecification) {
+  const blockers=voiceSpecification?.sourceBlockers;
+  if (voiceSpecification?.schemaVersion !== 1 || !Array.isArray(blockers) ||
+      blockers.length !== 2) throw new Error('Missing the two E1 source blockers');
+  const byId=new Map(lessons.flatMap(lesson=>lesson.items.map(item=>[item.id,item])));
+  const expected=new Set(['Conversation_1:24','Conversation_1:25']);
+  for (const blocker of blockers) {
+    const item=byId.get(blocker.itemId);
+    if (!expected.delete(blocker.itemId) || !item || item.polish !== blocker.polish ||
+        typeof blocker.reason !== 'string' || blocker.reason.trim().length < 12 ||
+        !item.audio) throw new Error('Changed or missing Conversation 1 audio review: '+blocker.itemId);
+    item.referenceReview='practice_only';
+  }
+  if (expected.size) throw new Error('Unmarked Conversation 1 source blocker');
+  return blockers.length;
+}
+
 export function buildContent() {
   if (!fs.existsSync(legacySets)) throw new Error('Legacy content directory missing: ' + legacySets);
   fs.rmSync(outRoot, { recursive: true, force: true });
@@ -240,10 +263,13 @@ export function buildContent() {
   const overrides=parsePronunciationOverrides(
     JSON.parse(fs.readFileSync(pronunciationOverridesFile,'utf8')));
   const pronunciationGrouping=attachPronunciationSegments(lessons,overrides);
+  const referenceReviewItems=attachReferenceReview(lessons,
+    JSON.parse(fs.readFileSync(voiceProductionFile,'utf8')));
   fs.writeFileSync(path.join(outRoot, 'lessons.json'), JSON.stringify({ schemaVersion: 1, lessons }, null, 2) + '\n');
   const report = {
     lessons: lessons.length,
     pronunciationGrouping,
+    referenceReviewItems,
     vocabulary: lessons.filter(x => x.kind === 'vocabulary').length,
     reading: lessons.filter(x => x.kind === 'reading').length,
     sounds: lessons.filter(x => x.kind === 'sounds').length,
