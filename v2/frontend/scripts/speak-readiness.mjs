@@ -26,6 +26,7 @@ export function inspectSpeakCatalog(manifest){
   const modules=[];
   let items=0,spokenItems=0,readingItems=0,audio=0;
   let drafts=0,editorial=0,authored=0,unsupported=0,unfinished=0;
+  let speakBlocked=0,speakUnfinished=0;
   for(const lesson of manifest.lessons){
     if(!lesson || typeof lesson.id!=='string' || !['vocabulary','sounds','reading'].includes(lesson.kind) ||
        !Array.isArray(lesson.items)||!lesson.items.length){
@@ -54,10 +55,12 @@ export function inspectSpeakCatalog(manifest){
       if(!BACKEND_LETTERS.test(normalized)){
         entry.blockedReferences.push({itemId:item.id,polish:item.polish});
         unsupported++;
+        if(entry.speakAvailable)speakBlocked++;
       }
       if(PLACEHOLDER.test(source)){
         entry.unfinishedReferences.push({itemId:item.id,polish:item.polish});
         unfinished++;
+        if(entry.speakAvailable)speakUnfinished++;
       }
     }
     items+=entry.items;
@@ -70,6 +73,8 @@ export function inspectSpeakCatalog(manifest){
       items,spokenItems,readingItems,withAudio:audio,authored,
       editorial,autoDraft:drafts,blockedReferences:unsupported,
       unfinishedReferences:unfinished,
+      speakBlockedReferences:speakBlocked,
+      speakUnfinishedReferences:speakUnfinished,
       publicDualProviderEnabled:false},
     modules};
 }
