@@ -519,3 +519,16 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .lesson-tile .tile-description{font-size:12px;line-height:1.55;color:#44636a;display:block;overflow-wrap:anywhere}
 .lesson-tile .tile-detail{color:#4d6b72}
 @media(max-width:600px){.curriculum-sections{gap:26px}.curriculum-stage-heading{flex-wrap:wrap}.curriculum-stage-heading h2{font-size:21px}}
+
+/* Compact, explicit stage navigation. No curriculum locks or duplicate lesson rows. */
+.library-stage-picker{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 18px}
+.library-stage-picker button{display:inline-flex;align-items:center;gap:8px;min-height:44px;
+  background:#fff;border:1px solid #cededa;color:#355c63;border-radius:10px;
+  padding:9px 13px;font-size:12px;font-weight:700;cursor:pointer}
+.library-stage-picker button:hover:not(.selected){border-color:#65a99b;background:#f1f8f5}
+.library-stage-picker button.selected{background:#196f69;border-color:#196f69;color:#fff}
+.library-stage-picker .library-stage-count{font-size:11px;font-weight:700;line-height:1.5;
+  border-radius:99px;padding:1px 7px;background:#e6f0ed;color:#2a6660}
+.library-stage-picker button.selected .library-stage-count{background:#fff;color:#196f69}
+@media(max-width:600px){.library-stage-picker{gap:7px}
+  .library-stage-picker button{padding:9px 11px}}
