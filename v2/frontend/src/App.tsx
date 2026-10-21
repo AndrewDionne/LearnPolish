@@ -7,6 +7,7 @@ import SpeakPanel from './speech/SpeakPanel';
 import {requestSpeechFeedback, SPEECH_ASSESSMENT_AVAILABLE, SPEECH_BLEND_AVAILABLE} from './speech/assessment';
 import SoundContrastDeck from './SoundContrastDeck';
 import MicroDialoguePanel from './MicroDialoguePanel';
+import { groupLibraryLessons, libraryMatches } from './library-curriculum';
 import { parseProgress, recallRate, recordAttempt, STORAGE_KEY } from './progress';
 import type { Progress } from './progress';
 import { PERSONAL_STORAGE_KEY, importPersonalLesson, makePersonalLesson, parsePersonalLessons, toPortableLesson, upsertPersonalLesson } from './personal';
@@ -64,6 +65,7 @@ function LessonTile({ lesson, completed, onOpen }: { lesson: Lesson; completed: 
     <span className="lesson-tile-body">
       <span className="eyebrow">{lessonLabel(lesson.kind)}</span>
       <strong>{lesson.title}</strong>
+      {lesson.description && <span className="tile-description">{lesson.description}</span>}
       {lesson.progression && <span className="reading-stage">Step {lesson.progression.order} · {readingStage(lesson.progression.stage)}</span>}
       <span className="tile-detail">{lesson.items.length} {lesson.kind === 'reading' ? 'passages' : 'items'} · {completed} practised</span>
       <span className="meter" aria-hidden="true"><span style={{ width: (100 * completed / lesson.items.length) + '%' }} /></span>
@@ -218,10 +220,9 @@ export default function App() {
   const dueLessons = lessons.filter(lesson => dueItems(lesson, reviews, nowIso).length > 0);
 
   const filtered = useMemo(() => lessons.filter(x =>
-    (filter === 'all' || x.kind === filter) &&
-    (x.title.toLowerCase().includes(query.toLowerCase()) || x.items.some(i => i.polish.toLowerCase().includes(query.toLowerCase())))
-  ).sort((a,b) => a.kind === 'reading' && b.kind === 'reading'
-    ? (a.progression?.order ?? 999) - (b.progression?.order ?? 999) : 0), [lessons, filter, query]);
+    (filter === 'all' || x.kind === filter) && libraryMatches(x,query)
+  ), [lessons, filter, query]);
+  const librarySections = useMemo(() => groupLibraryLessons(filtered),[filtered]);
 
   const stopAudio = () => { audio.stop(); };
   const goTo = (destination: Page) => {
@@ -646,11 +647,21 @@ export default function App() {
         </>}
 
         {!loading && !loadError && !active && !editorOpen && page === 'library' && <>
-          <section className="page-title"><span className="eyebrow">YOUR LEARNING COLLECTION</span><h1>Lesson library<span className="title-dot">.</span></h1><p>Real Polish, organized into small lessons you can return to whenever you like.</p></section>
+          <section className="page-title"><span className="eyebrow">YOUR LEARNING COLLECTION</span><h1>Lesson library<span className="title-dot">.</span></h1><p>Start with sounds and words, build useful phrases, then practise conversations and reading. Choose any lesson at any time.</p></section>
           <div className="author-actions"><button type="button" className="primary-action" onClick={beginNew}>+ Create lesson</button><label className="import-button">Import lesson JSON<input aria-label="Import lesson JSON" type="file" accept=".json,application/json" onChange={e => { const file = e.currentTarget.files?.[0]; void importFile(file); e.currentTarget.value = ''; }} /></label></div>{importError && <p className="author-error" role="alert">{importError}</p>}
           <div className="library-controls"><label className="search-wrap"><span aria-hidden="true">⌕</span><input type="search" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search lessons or Polish phrases" aria-label="Search lessons" /></label><div className="filter-buttons" role="group" aria-label="Filter lessons">{(['all','vocabulary','reading','sounds'] as KindFilter[]).map(kind => <button type="button" key={kind} className={filter === kind ? 'chosen' : ''} onClick={() => setFilter(kind)}>{kind === 'all' ? 'All lessons' : lessonLabel(kind)}</button>)}</div></div>
           <div className="library-summary">{filtered.length} {filtered.length === 1 ? 'lesson' : 'lessons'} <span>· {filtered.reduce((total, lesson) => total + lesson.items.length, 0)} learning items</span></div>
-          <div className="lesson-grid">{filtered.map(lesson => <LessonTile key={lesson.id} lesson={lesson} completed={completedIn(lesson)} onOpen={() => openLesson(lesson)} />)}</div>
+          <div className="curriculum-sections">{librarySections.map(section=>
+            <section className="curriculum-section" aria-label={section.heading} key={section.id}>
+              <div className="curriculum-stage-heading"><div><h2>{section.heading}</h2><p>{section.description}</p></div>
+                <span>{section.tracks.reduce((total,track)=>total+track.lessons.length,0)} sets</span></div>
+              {section.tracks.map(track=><div className="curriculum-track" key={track.id}>
+                <h3>{track.heading}</h3>
+                <div className="lesson-grid">{track.lessons.map(lesson=>
+                  <LessonTile key={lesson.id} lesson={lesson} completed={completedIn(lesson)}
+                    onOpen={() => openLesson(lesson)}/>)}</div>
+              </div>)}
+            </section>)}</div>
           {filtered.length === 0 && <div className="empty-state"><h2>No matching lessons</h2><p>Try another search or select a different category.</p></div>}
           <p className="info-footnote">Built-in lessons come from the legacy collection. Personal lessons are saved to this browser only; export JSON for a portable backup.</p>
         </>}
