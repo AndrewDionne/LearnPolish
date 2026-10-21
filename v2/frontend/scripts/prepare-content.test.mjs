@@ -14,6 +14,7 @@ test('migrates vocabulary into versioned, stable IDs', () => {
 });
 
 test('library editorial audit covers all 26 stable source IDs without changing their items',()=>{
+  buildContent();
   const catalog=JSON.parse(fs.readFileSync(path.resolve('../content/library-catalog.json'),'utf8'));
   const built=JSON.parse(fs.readFileSync(path.resolve('public/generated/lessons.json'),'utf8')).lessons;
   assert.equal(catalog.lessons.length,26);
