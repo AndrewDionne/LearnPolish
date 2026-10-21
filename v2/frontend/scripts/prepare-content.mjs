@@ -10,6 +10,7 @@ const outRoot = path.join(root, 'v2/frontend/public/generated');
 const curatedSoundsFile = path.join(root, 'v2/content/sound-contrasts.json');
 const readingChecksFile = path.join(root, 'v2/content/reading-checks.json');
 const microDialoguesFile = path.join(root, 'v2/content/micro-dialogues.json');
+const libraryCatalogFile = path.join(root, 'v2/content/library-catalog.json');
 const pronunciationGuideFile = path.join(root, 'v2/content/pronunciation-swietokrzyska.json');
 const pronunciationOverridesFile = path.join(root, 'v2/content/pronunciation-segment-overrides.json');
 const voiceProductionFile = path.join(root, 'v2/content/voice-production.json');
@@ -327,6 +328,60 @@ export function attachMicroDialogues(lessons, specification) {
   return specification.scenes.length;
 }
 
+/** Names and positions are *display metadata*, never identity or content migrations.
+ * Exactly one reviewed entry for each existing built-in source lesson.
+ */
+export function attachLibraryCatalog(lessons, specification) {
+  if (specification?.schemaVersion!==1 ||
+      specification.editorialStatus!=='reviewed-for-actual-source-topic_not_phonetic_or_native_audio_certification' ||
+      !Array.isArray(specification.lessons) ||
+      specification.lessons.length!==26 ||
+      lessons.length!==specification.lessons.length) {
+    throw new Error('Library title/description catalog must cover exactly all 26 original lessons');
+  }
+  const byId=new Map(lessons.map(lesson=>[lesson.id,lesson]));
+  if (byId.size!==lessons.length) throw new Error('Duplicate source lesson ID in library');
+  const visited=new Set();
+  const positions=new Set();
+  const allowed={
+    fundamentals:['sounds','first-words','expanded-words'],
+    basic:['first-phrases','sentences'],
+    learning:['conversations-reading'],
+    practice:['lab'],
+  };
+  const counts={fundamentals:0,basic:0,learning:0,practice:0};
+  for (const entry of specification.lessons) {
+    const lesson=byId.get(entry.id);
+    const {stage,track,order}=entry.curriculum||{};
+    const key=stage+':'+track+':'+order;
+    if (!lesson || visited.has(entry.id) ||
+        typeof entry.title!=='string' || entry.title.trim().length<3 ||
+        typeof entry.description!=='string' || entry.description.trim().length<20 ||
+        entry.description.length>185 ||
+        !Object.prototype.hasOwnProperty.call(allowed,stage) ||
+        !allowed[stage].includes(track) ||
+        !Number.isSafeInteger(order) || order<1 || positions.has(key) ||
+        (track==='sounds'&&lesson.kind!=='sounds') ||
+        (track==='conversations-reading'&&lesson.kind!=='reading') ||
+        (track==='lab'&&lesson.id!=='speak_swietokrzyska') ||
+        (stage==='learning'&&lesson.kind!=='reading') ||
+        (stage==='fundamentals'&&track!=='sounds'&&lesson.kind!=='vocabulary') ||
+        (stage==='basic'&&lesson.kind!=='vocabulary')) {
+      throw new Error('Invalid or missing authored library metadata: '+entry.id);
+    }
+    visited.add(entry.id);positions.add(key);counts[stage]++;
+    lesson.title=entry.title.trim();
+    lesson.description=entry.description.trim();
+    lesson.curriculum={stage,track,order};
+  }
+  if (visited.size!==lessons.length ||
+      counts.fundamentals!==12 || counts.basic!==7 ||
+      counts.learning!==6 || counts.practice!==1) {
+    throw new Error('Missing or changed 3-stage curriculum inventory');
+  }
+  return counts;
+}
+
 export function buildContent() {
   if (!fs.existsSync(legacySets)) throw new Error('Legacy content directory missing: ' + legacySets);
   fs.rmSync(outRoot, { recursive: true, force: true });
@@ -402,11 +457,14 @@ export function buildContent() {
   const referenceReviewItems=attachReferenceReview(lessons,
     JSON.parse(fs.readFileSync(voiceProductionFile,'utf8')),
     JSON.parse(fs.readFileSync(otherReferenceBlockersFile,'utf8')));
+  const curriculumCounts=attachLibraryCatalog(lessons,
+    JSON.parse(fs.readFileSync(libraryCatalogFile,'utf8')));
   fs.writeFileSync(path.join(outRoot, 'lessons.json'), JSON.stringify({ schemaVersion: 1, lessons }, null, 2) + '\n');
   const report = {
     lessons: lessons.length,
     pronunciationGrouping,
     referenceReviewItems,
+    curriculumCounts,
     vocabulary: lessons.filter(x => x.kind === 'vocabulary').length,
     reading: lessons.filter(x => x.kind === 'reading').length,
     sounds: lessons.filter(x => x.kind === 'sounds').length,
