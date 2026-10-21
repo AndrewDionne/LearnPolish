@@ -46,6 +46,45 @@ test('26 original sets follow Fundamentals → Basic → Learning with honest de
   await expect(page.locator('.lesson-tile')).toHaveCount(26);
 });
 
+test('Library stage switcher focuses learning stages while global search and filters remain available',async({page})=>{
+  await page.goto('/');
+  await page.getByRole('button',{name:'Explore lessons'}).click();
+  const stage=page.getByRole('group',{name:'Browse learning stage'});
+  await expect(stage.getByRole('button')).toHaveCount(5);
+  await expect(stage.getByRole('button',{name:'All stages'})).toHaveAttribute('aria-pressed','true');
+  await stage.getByRole('button',{name:'Fundamentals'}).click();
+  await expect(stage.getByRole('button',{name:'Fundamentals'})).toHaveAttribute('aria-pressed','true');
+  await expect(page.locator('.lesson-tile')).toHaveCount(12);
+  await expect(page.getByRole('region',{name:'Basic'})).toHaveCount(0);
+  await expect(page.getByRole('region',{name:'Learning'})).toHaveCount(0);
+  await stage.getByRole('button',{name:'Basic'}).click();
+  await expect(page.locator('.lesson-tile')).toHaveCount(7);
+  await expect(page.getByRole('region',{name:'Basic'})).toBeVisible();
+  await stage.getByRole('button',{name:'Learning'}).click();
+  await expect(page.locator('.lesson-tile')).toHaveCount(6);
+  await expect(page.getByRole('region',{name:'Learning'})).toBeVisible();
+  await stage.getByRole('button',{name:'Practice tools'}).click();
+  await expect(page.locator('.lesson-tile')).toHaveCount(1);
+  await expect(page.getByRole('region',{name:'Practice tools'})).toBeVisible();
+  await stage.getByRole('button',{name:'All stages'}).click();
+  await expect(page.locator('.lesson-tile')).toHaveCount(26);
+  await stage.getByRole('button',{name:'Fundamentals'}).click();
+  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Grocery store very basic shopping');
+  await expect(stage.getByRole('button',{name:'All stages'})).toHaveAttribute('aria-pressed','true');
+  await expect(page.locator('.lesson-tile')).toHaveCount(1);
+  await expect(page.getByRole('region',{name:'Learning'})).toBeVisible();
+  await stage.getByRole('button',{name:'Basic'}).click();
+  await expect(page.getByRole('searchbox',{name:'Search lessons'})).toHaveValue('');
+  await expect(page.locator('.lesson-tile')).toHaveCount(7);
+  await page.getByRole('group',{name:'Filter lessons'})
+    .getByRole('button',{name:'Polish sounds'}).click();
+  await expect(stage.getByRole('button',{name:'All stages'})).toHaveAttribute('aria-pressed','true');
+  await expect(page.locator('.lesson-tile')).toHaveCount(5);
+  await page.getByRole('group',{name:'Filter lessons'})
+    .getByRole('button',{name:'All lessons'}).click();
+  await expect(page.locator('.lesson-tile')).toHaveCount(26);
+});
+
 test('Home to library to Learn and progress survives reload', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
