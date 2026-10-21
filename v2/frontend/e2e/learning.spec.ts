@@ -1,6 +1,51 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 
+test('26 original sets follow Fundamentals → Basic → Learning with honest descriptions',async({page})=>{
+  await page.goto('/');
+  await page.getByRole('button',{name:'Explore lessons'}).click();
+  const fundamental=page.getByRole('region',{name:'Fundamentals'});
+  const basic=page.getByRole('region',{name:'Basic'});
+  const learning=page.getByRole('region',{name:'Learning'});
+  const tools=page.getByRole('region',{name:'Practice tools'});
+  await expect(fundamental.locator('.lesson-tile')).toHaveCount(12);
+  await expect(basic.locator('.lesson-tile')).toHaveCount(7);
+  await expect(learning.locator('.lesson-tile')).toHaveCount(6);
+  await expect(tools.locator('.lesson-tile')).toHaveCount(1);
+  await expect(page.locator('.curriculum-stage-heading h2')).toHaveText([
+    'Fundamentals','Basic','Learning','Practice tools'
+  ]);
+  await expect(fundamental.locator('.curriculum-track h3')).toHaveText([
+    'Polish sounds','First words','Expand vocabulary'
+  ]);
+  await expect(basic.locator('.curriculum-track h3')).toHaveText([
+    'Everyday expressions','Useful phrases and short sentences'
+  ]);
+  await expect(fundamental.locator('.lesson-tile').first()).toContainText('L and Ł');
+  await expect(fundamental.getByRole('button',{name:/Numbers Beyond 20/}))
+    .toContainText('larger values up to 1,020');
+  await expect(fundamental.getByRole('button',{name:/Warsaw Districts and Landmarks/}))
+    .toContainText('districts and a few familiar local landmarks');
+  await expect(learning.locator('.lesson-tile').first()).toContainText('Everyday Conversations: Greetings');
+  await expect(basic.getByRole('button',{name:/Greetings and Introductions/}))
+    .toContainText('Say hello and goodbye');
+  await expect(tools).toContainText('still need review');
+  // Existing filename-based searches continue to work after display titles change.
+  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Food and Dinning');
+  await expect(page.locator('.lesson-tile')).toHaveCount(1);
+  await expect(basic.getByRole('button',{name:/Eating Out: Tables and Food/})).toBeVisible();
+  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Grocery store very basic shopping');
+  await expect(page.locator('.lesson-tile')).toHaveCount(1);
+  await expect(learning.getByRole('button',{name:/At the Grocery Store/})).toBeVisible();
+  await page.getByRole('searchbox',{name:'Search lessons'}).fill('');
+  await page.getByRole('group',{name:'Filter lessons'}).getByRole('button',{name:'Polish sounds'}).click();
+  await expect(fundamental.locator('.lesson-tile')).toHaveCount(5);
+  await expect(page.getByRole('region',{name:'Basic'})).toHaveCount(0);
+  await expect(page.getByRole('region',{name:'Learning'})).toHaveCount(0);
+  await page.getByRole('group',{name:'Filter lessons'}).getByRole('button',{name:'All lessons'}).click();
+  await expect(page.locator('.lesson-tile')).toHaveCount(26);
+});
+
 test('Home to library to Learn and progress survives reload', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
