@@ -1,0 +1,267 @@
+{
+  "schemaVersion": 1,
+  "editorialStatus": "reviewed-for-actual-source-topic_not_phonetic_or_native_audio_certification",
+  "notes": "Learner-facing title/description and intentional progression only. Original lesson IDs, source text, original MP3s, XP, sound focus, number practice groups, reading sequence and progress keys must not change. The Świętokrzyska lab is a diagnostic tool outside the three curriculum stages.",
+  "lessons": [
+    {
+      "id": "contrast_l_lstroked",
+      "title": "L and Ł",
+      "description": "Hear the difference between Polish L and Ł in real words.",
+      "curriculum": {
+        "stage": "fundamentals",
+        "track": "sounds",
+        "order": 1
+      }
+    },
+    {
+      "id": "contrast_c_cz_cie",
+      "title": "C, CZ and Ć",
+      "description": "Compare three Polish consonant sounds in recorded words.",
+      "curriculum": {
+        "stage": "fundamentals",
+        "track": "sounds",
+        "order": 2
+      }
+    },
+    {
+      "id": "contrast_s_sz_sie",
+      "title": "S, SZ and Ś",
+      "description": "Hear the contrasts between S, SZ and Ś or SI in everyday words.",
+      "curriculum": {
+        "stage": "fundamentals",
+        "track": "sounds",
+        "order": 3
+      }
+    },
+    {
+      "id": "contrast_z_zh_zi",
+      "title": "Z, Ż/RZ and Ź/ZI",
+      "description": "Compare the plain, deeper and softer Z-family sounds in context.",
+      "curriculum": {
+        "stage": "fundamentals",
+        "track": "sounds",
+        "order": 4
+      }
+    },
+    {
+      "id": "contrast_krzy_przy",
+      "title": "KRZY and PRZY",
+      "description": "Listen for these challenging consonant clusters inside complete expressions.",
+      "curriculum": {
+        "stage": "fundamentals",
+        "track": "sounds",
+        "order": 5
+      }
+    },
+    {
+      "id": "numbers_1-20",
+      "title": "Numbers 1-20",
+      "description": "Learn the first twenty numbers, with optional practice in two groups of ten.",
+      "curriculum": {
+        "stage": "fundamentals",
+        "track": "first-words",
+        "order": 1
+      }
+    },
+    {
+      "id": "Numbers_20-100",
+      "title": "Numbers Beyond 20",
+      "description": "Build number vocabulary with tens, combinations and larger values up to 1,020.",
+      "curriculum": {
+        "stage": "fundamentals",
+        "track": "expanded-words",
+        "order": 1
+      }
+    },
+    {
+      "id": "Road_Terminology",
+      "title": "Streets and Road Words",
+      "description": "Name roads, squares, intersections and common features of Polish streets.",
+      "curriculum": {
+        "stage": "fundamentals",
+        "track": "expanded-words",
+        "order": 2
+      }
+    },
+    {
+      "id": "Districts_of_Warszawa",
+      "title": "Warsaw Districts and Landmarks",
+      "description": "Recognize Warsaw districts and a few familiar local landmarks.",
+      "curriculum": {
+        "stage": "fundamentals",
+        "track": "expanded-words",
+        "order": 3
+      }
+    },
+    {
+      "id": "The_Cities_of_Poland",
+      "title": "Cities of Poland",
+      "description": "Hear and practise the names of Polish cities, from Warszawa to smaller centres.",
+      "curriculum": {
+        "stage": "fundamentals",
+        "track": "expanded-words",
+        "order": 4
+      }
+    },
+    {
+      "id": "Names_of_Poland_1",
+      "title": "Polish First and Last Names",
+      "description": "Get comfortable hearing and saying common Polish personal names.",
+      "curriculum": {
+        "stage": "fundamentals",
+        "track": "expanded-words",
+        "order": 5
+      }
+    },
+    {
+      "id": "Countries_of_the_World",
+      "title": "Countries in Polish",
+      "description": "Learn Polish names for countries across Europe and the wider world.",
+      "curriculum": {
+        "stage": "fundamentals",
+        "track": "expanded-words",
+        "order": 6
+      }
+    },
+    {
+      "id": "Conversation_1",
+      "title": "Greetings and Introductions",
+      "description": "Say hello and goodbye, use polite words and introduce yourself.",
+      "curriculum": {
+        "stage": "basic",
+        "track": "first-phrases",
+        "order": 1
+      }
+    },
+    {
+      "id": "Conversation_-_shopping",
+      "title": "Shopping: Useful Questions",
+      "description": "Ask prices, discuss payment and make simple shopping requests.",
+      "curriculum": {
+        "stage": "basic",
+        "track": "sentences",
+        "order": 1
+      }
+    },
+    {
+      "id": "Conversation_-_restaurant",
+      "title": "Ordering at a Restaurant",
+      "description": "Ask for food and drinks, make requests and handle the bill.",
+      "curriculum": {
+        "stage": "basic",
+        "track": "sentences",
+        "order": 2
+      }
+    },
+    {
+      "id": "Food_and_Dinning",
+      "title": "Eating Out: Tables and Food",
+      "description": "Ask for a table, describe food preferences and respond at a restaurant.",
+      "curriculum": {
+        "stage": "basic",
+        "track": "sentences",
+        "order": 3
+      }
+    },
+    {
+      "id": "Getting_Around_1",
+      "title": "Asking for Directions",
+      "description": "Ask how to get somewhere and understand everyday directions.",
+      "curriculum": {
+        "stage": "basic",
+        "track": "sentences",
+        "order": 4
+      }
+    },
+    {
+      "id": "Transit_1",
+      "title": "Public Transport Phrases",
+      "description": "Ask about stops, tickets, routes and getting around by public transport.",
+      "curriculum": {
+        "stage": "basic",
+        "track": "sentences",
+        "order": 5
+      }
+    },
+    {
+      "id": "Emergencies_and_Health",
+      "title": "Health and Emergency Phrases",
+      "description": "Ask for urgent help, describe common problems and request medical assistance.",
+      "curriculum": {
+        "stage": "basic",
+        "track": "sentences",
+        "order": 6
+      }
+    },
+    {
+      "id": "Basic_01R",
+      "title": "Everyday Conversations: Greetings",
+      "description": "Read greetings and introductions, then practise two short exchanges.",
+      "curriculum": {
+        "stage": "learning",
+        "track": "conversations-reading",
+        "order": 1
+      }
+    },
+    {
+      "id": "Grocery_store_very_basic_shopping",
+      "title": "At the Grocery Store",
+      "description": "Follow a simple apple purchase, then practise the customer-assistant exchange.",
+      "curriculum": {
+        "stage": "learning",
+        "track": "conversations-reading",
+        "order": 2
+      }
+    },
+    {
+      "id": "H_M_clothes_shop_trying_on_a_T-shirt",
+      "title": "Buying Clothes: A T-Shirt",
+      "description": "Read a clothing-store interaction about sizes, fitting rooms and paying.",
+      "curriculum": {
+        "stage": "learning",
+        "track": "conversations-reading",
+        "order": 3
+      }
+    },
+    {
+      "id": "On_the_tram_talking_to_another_passenger",
+      "title": "On the Tram: A Conversation",
+      "description": "Follow a passenger asking about seats, stops and the city centre.",
+      "curriculum": {
+        "stage": "learning",
+        "track": "conversations-reading",
+        "order": 4
+      }
+    },
+    {
+      "id": "Asking_the_tram_driver_for_directions",
+      "title": "Asking a Tram Driver",
+      "description": "Read questions about destinations, stops and buying a ticket on the tram.",
+      "curriculum": {
+        "stage": "learning",
+        "track": "conversations-reading",
+        "order": 5
+      }
+    },
+    {
+      "id": "Museum_buying_tickets_and_basic_info",
+      "title": "At the Museum",
+      "description": "Practise a museum visit, including tickets, opening hours and finding exhibitions.",
+      "curriculum": {
+        "stage": "learning",
+        "track": "conversations-reading",
+        "order": 6
+      }
+    },
+    {
+      "id": "speak_swietokrzyska",
+      "title": "Świętokrzyska Pronunciation Lab",
+      "description": "Try recording a difficult Warsaw place name; reference audio and pronunciation guide still need review.",
+      "curriculum": {
+        "stage": "practice",
+        "track": "lab",
+        "order": 1
+      }
+    }
+  ]
+}
