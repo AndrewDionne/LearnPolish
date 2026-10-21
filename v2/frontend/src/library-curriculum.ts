@@ -34,7 +34,7 @@ export type LibrarySection = {
 };
 
 export function groupLibraryLessons(lessons:Lesson[]): LibrarySection[] {
-  const sections=LIBRARY_STAGES.map(stage=>({
+  const sections: LibrarySection[]=LIBRARY_STAGES.map(stage=>({
     id:stage.id,heading:stage.heading,description:stage.description,
     tracks:stage.tracks.map(track=>({
       id:track.id,heading:track.label,
