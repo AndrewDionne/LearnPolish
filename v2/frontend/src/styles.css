@@ -506,3 +506,16 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .micro-dialogue-reply-feedback p[lang=pl]{font-weight:700;font-size:17px}
 .micro-dialogue-reply-feedback .audio-btn{min-height:44px;margin:6px 10px 0 0}
 .micro-dialogue-reply-feedback .secondary-action{min-height:44px;margin-top:6px}
+
+/* Ordered library: headings describe a learning path without gating any lesson. */
+.curriculum-sections{display:grid;gap:32px;margin-top:14px}
+.curriculum-section{display:grid;gap:14px}
+.curriculum-stage-heading{display:flex;justify-content:space-between;align-items:start;gap:18px;border-bottom:1px solid #dae8e5;padding-bottom:13px}
+.curriculum-stage-heading h2{font-size:23px;line-height:1.2;letter-spacing:-.65px;color:#224a52;margin:0 0 6px}
+.curriculum-stage-heading p{font-size:13px;line-height:1.6;color:#4b6770;margin:0;max-width:615px}
+.curriculum-stage-heading>span{flex:none;font-size:11px;font-weight:700;color:#53747a;margin-top:7px}
+.curriculum-track{display:grid;gap:10px}
+.curriculum-track h3{font-size:13px;line-height:1.5;font-weight:750;color:#365b60;margin:2px 0}
+.lesson-tile .tile-description{font-size:12px;line-height:1.55;color:#44636a;display:block;overflow-wrap:anywhere}
+.lesson-tile .tile-detail{color:#4d6b72}
+@media(max-width:600px){.curriculum-sections{gap:26px}.curriculum-stage-heading{flex-wrap:wrap}.curriculum-stage-heading h2{font-size:21px}}
