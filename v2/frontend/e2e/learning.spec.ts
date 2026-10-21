@@ -9,8 +9,8 @@ test('Home to library to Learn and progress survives reload', async ({ page }) =
   await page.getByRole('button', { name: 'Explore lessons' }).click();
   await expect(page.getByRole('heading', { name: /Lesson library/ })).toBeVisible();
   await page.getByRole('searchbox', { name: 'Search lessons' }).fill('Dzień dobry');
-  await expect(page.getByText('Conversation 1', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: /Conversation 1/ }).click();
+  await expect(page.getByText('Greetings and Introductions', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: /Greetings and Introductions/ }).click();
   await expect(page.getByText('Dzień dobry', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: /Reveal meaning/ }).click();
   await expect(page.getByText('Good morning / Good day')).toBeVisible();
@@ -74,8 +74,8 @@ test('numbers 1–20 stays one lesson with natural 1–10 / 11–20 sections acr
 test('ambiguous and unfinished greetings remain one lesson but have no scored or implied reference',async({page})=>{
   await page.goto('/');
   await page.getByRole('button',{name:'Explore lessons'}).click();
-  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Conversation 1');
-  await page.getByRole('button',{name:/Conversation 1/}).click();
+  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Greetings and Introductions');
+  await page.getByRole('button',{name:/Greetings and Introductions/}).click();
   await expect(page.getByRole('combobox',{name:'Practice group'})).toHaveCount(0);
   for(let i=0;i<24;i++){
     await page.getByRole('button',{name:/Skip to next/}).click();
@@ -108,8 +108,8 @@ test('ambiguous and unfinished greetings remain one lesson but have no scored or
 test('other ambiguous lessons retain all original cards but exclude unverified Listen audio',async({page})=>{
   await page.goto('/');
   for(const fixture of [
-    {search:'Road Terminology',name:/Road Terminology/i,skip:10,phrase:'Jak dojść do …?',listen:25},
-    {search:'Food and Dinning',name:/Food and Dinning/i,skip:2,phrase:'Czy ma pan/pani menu po angielsku?',listen:23}
+    {search:'Streets and Road Words',name:/Streets and Road Words/i,skip:10,phrase:'Jak dojść do …?',listen:25},
+    {search:'Eating Out: Tables and Food',name:/Eating Out: Tables and Food/i,skip:2,phrase:'Czy ma pan/pani menu po angielsku?',listen:23}
   ]){
     await page.getByRole('button',{name:'Library'}).first().click();
     await page.getByRole('searchbox',{name:'Search lessons'}).fill(fixture.search);
@@ -135,8 +135,8 @@ test('E2 short dialogues stay inside reading lessons and allow read/listen witho
   page.on('pageerror',error=>errors.push(error.message));
   await page.goto('/');
   await page.getByRole('button',{name:'Library'}).first().click();
-  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Basic 01R');
-  await page.getByRole('button',{name:/Basic 01R/}).click();
+  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Everyday Conversations: Greetings');
+  await page.getByRole('button',{name:/Everyday Conversations: Greetings/}).click();
   const selector=page.getByRole('group',{name:'Short conversations'});
   await expect(selector.getByRole('button')).toHaveCount(2);
   await selector.getByRole('button',{name:/How are you/}).click();
@@ -181,8 +181,8 @@ test('E2 short dialogues stay inside reading lessons and allow read/listen witho
   await expect(names.getByRole('status')).toHaveCount(0);
   await expect(names.getByRole('button',{name:'Their name.'})).toBeEnabled();
   await page.getByRole('button',{name:'Library'}).first().click();
-  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Grocery store very basic shopping');
-  await page.getByRole('button',{name:/Grocery store very basic shopping/}).click();
+  await page.getByRole('searchbox',{name:'Search lessons'}).fill('At the Grocery Store');
+  await page.getByRole('button',{name:/At the Grocery Store/}).click();
   await page.getByRole('group',{name:'Short conversations'})
     .getByRole('button',{name:/Buying apples/}).click();
   const grocery=page.getByRole('region',{name:'Short dialogue: Buying apples'});
@@ -210,8 +210,8 @@ test('E2 turn-taking chooses authentic Polish replies without awarding XP or sto
   page.on('pageerror',error=>errors.push(error.message));
   await page.goto('/');
   await page.getByRole('button',{name:'Library'}).first().click();
-  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Basic 01R');
-  await page.getByRole('button',{name:/Basic 01R/}).click();
+  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Everyday Conversations: Greetings');
+  await page.getByRole('button',{name:/Everyday Conversations: Greetings/}).click();
   const selector=page.getByRole('group',{name:'Short conversations'});
   await selector.getByRole('button',{name:/How are you/}).click();
   const how=page.getByRole('region',{name:'Short dialogue: How are you?'});
@@ -242,8 +242,8 @@ test('E2 turn-taking chooses authentic Polish replies without awarding XP or sto
     .getByRole('button',{name:'Mam na imię Andrew.'}).click();
   await expect(names.getByRole('status')).toContainText('That fits!');
   await page.getByRole('button',{name:'Library'}).first().click();
-  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Grocery store very basic shopping');
-  await page.getByRole('button',{name:/Grocery store very basic shopping/}).click();
+  await page.getByRole('searchbox',{name:'Search lessons'}).fill('At the Grocery Store');
+  await page.getByRole('button',{name:/At the Grocery Store/}).click();
   await page.getByRole('group',{name:'Short conversations'}).getByRole('button',{name:/Buying apples/}).click();
   const apples=page.getByRole('region',{name:'Short dialogue: Buying apples'});
   await apples.getByRole('button',{name:'Take a turn'}).click();
@@ -320,16 +320,16 @@ test('Read resumes a saved passage and Listen reveals content only after answeri
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('/');
   await page.getByRole('button', { name: 'Explore lessons' }).click();
-  await page.getByRole('searchbox', { name: 'Search lessons' }).fill('Basic 01R');
-  await page.getByRole('button', { name: /Basic 01R/ }).click();
+  await page.getByRole('searchbox', { name: 'Search lessons' }).fill('Everyday Conversations: Greetings');
+  await page.getByRole('button', { name: /Everyday Conversations: Greetings/ }).click();
   await expect(page.getByText('Cześć! Jak się masz?', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Read' })).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: /Skip to next/ }).click();
   await expect(page.getByText('Dziękuję, mam się dobrze.', { exact: true })).toBeVisible();
   await page.reload();
   await page.getByRole('button', { name: 'Library' }).first().click();
-  await page.getByRole('searchbox', { name: 'Search lessons' }).fill('Basic 01R');
-  await page.getByRole('button', { name: /Basic 01R/ }).click();
+  await page.getByRole('searchbox', { name: 'Search lessons' }).fill('Everyday Conversations: Greetings');
+  await page.getByRole('button', { name: /Everyday Conversations: Greetings/ }).click();
   await expect(page.getByText('Dziękuję, mam się dobrze.', { exact: true })).toBeVisible();
 
   await page.getByRole('button', { name: 'Listen', exact: true }).click();
@@ -367,8 +367,8 @@ test('offline lesson pack is confirmed only after caching and supports an offlin
     await navigator.serviceWorker.ready;
   });
   await page.getByRole('button', { name: 'Explore lessons' }).click();
-  await page.getByRole('searchbox', { name: 'Search lessons' }).fill('Conversation 1');
-  await page.getByRole('button', { name: /Conversation 1/ }).click();
+  await page.getByRole('searchbox', { name: 'Search lessons' }).fill('Greetings and Introductions');
+  await page.getByRole('button', { name: /Greetings and Introductions/ }).click();
   await page.getByRole('button', { name: /Download for offline/ }).click();
   await expect(page.getByText('Offline ready', { exact: false })).toBeVisible({ timeout: 30000 });
   const storedAudio = await page.evaluate(async () => {
@@ -397,8 +397,8 @@ test('offline lesson pack is confirmed only after caching and supports an offlin
   console.log('OFFLINE POST-RELOAD:', JSON.stringify(after));
   await expect(page.getByText('Real progress.')).toBeVisible();
   await page.getByRole('button', { name: 'Library' }).first().click();
-  await page.getByRole('searchbox', { name: 'Search lessons' }).fill('Conversation 1');
-  await page.getByRole('button', { name: /Conversation 1/ }).click();
+  await page.getByRole('searchbox', { name: 'Search lessons' }).fill('Greetings and Introductions');
+  await page.getByRole('button', { name: /Greetings and Introductions/ }).click();
   await expect(page.getByText('Offline ready', { exact: false })).toBeVisible();
   await expect(page.getByText('Dzień dobry', { exact: true })).toBeVisible();
   await context.setOffline(false);
@@ -437,8 +437,8 @@ test('Speak Next escapes pending microphone permission and active capture withou
   });
   await page.goto('/');
   await page.getByRole('button', { name: 'Explore lessons' }).click();
-  await page.getByRole('searchbox', { name: 'Search lessons' }).fill('Conversation 1');
-  await page.getByRole('button', { name: /Conversation 1/ }).click();
+  await page.getByRole('searchbox', { name: 'Search lessons' }).fill('Greetings and Introductions');
+  await page.getByRole('button', { name: /Greetings and Introductions/ }).click();
   await page.getByRole('button', { name: 'Speak', exact: true }).click();
   await expect(page.getByText('Dzień dobry', { exact: true })).toBeVisible();
 
@@ -504,8 +504,8 @@ test('Speak records, checks acoustic quality, replays locally, and clears on nex
   });
   await page.goto('/');
   await page.getByRole('button', {name: 'Explore lessons'}).click();
-  await page.getByRole('searchbox', {name: 'Search lessons'}).fill('Conversation 1');
-  await page.getByRole('button', {name: /Conversation 1/}).click();
+  await page.getByRole('searchbox', {name: 'Search lessons'}).fill('Greetings and Introductions');
+  await page.getByRole('button', {name: /Greetings and Introductions/}).click();
   await page.getByRole('button', {name: 'Speak', exact: true}).click();
   await expect(page.getByText('Dzień dobry', {exact: true})).toBeVisible();
   const guide = page.getByRole('button',{name:/Pronunciation guide/});
@@ -571,7 +571,7 @@ test('Practice review queue targets only due cards and preserves scheduling afte
   await page.reload();
   await page.getByRole('button', {name:/Practice/}).first().click();
   await expect(page.getByText('1 due now')).toBeVisible();
-  await page.getByRole('button', {name:/Conversation 1.*1 expression.*Review/}).click();
+  await page.getByRole('button', {name:/Greetings and Introductions.*1 expression.*Review/}).click();
   await expect(page.getByText('Review what matters')).toBeVisible();
   await expect(page.getByText('Dzień dobry', {exact:true})).toBeVisible();
   await page.getByRole('button', {name:/Reveal meaning/}).click();
@@ -592,9 +592,9 @@ test('sound lab compares individually sourced MP3 examples, not bundled phrases'
   await page.goto('/');
   await page.getByRole('button', { name: 'Explore lessons' }).click();
   await page.locator('.filter-buttons').getByRole('button', { name: 'Polish sounds' }).click();
-  await expect(page.getByRole('button', { name: /C · CZ · Ć/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /C, CZ and Ć/ })).toBeVisible();
   await expect(page.getByText('letter recognition', { exact: false })).toHaveCount(0);
-  await page.getByRole('button', { name: /C · CZ · Ć/ }).click();
+  await page.getByRole('button', { name: /C, CZ and Ć/ }).click();
   const lab = page.getByRole('region', { name: 'Compare Polish sounds' });
   await expect(lab).toBeVisible();
   await expect(lab.getByRole('button', { name: 'Play plac' })).toBeVisible();
@@ -656,8 +656,8 @@ test('full browser-local backup safely restores personal lessons, recall and rev
 test('XP is awarded for actual Learn/Listen responses, but not a skipped Speak attempt', async ({page})=>{
  await page.goto('/');
  await page.getByRole('button',{name:'Explore lessons'}).click();
- await page.getByRole('searchbox',{name:'Search lessons'}).fill('Conversation 1');
- await page.getByRole('button',{name:/Conversation 1/}).click();
+ await page.getByRole('searchbox',{name:'Search lessons'}).fill('Greetings and Introductions');
+ await page.getByRole('button',{name:/Greetings and Introductions/}).click();
  await page.getByRole('button',{name:/Reveal meaning/}).click();
  await page.getByRole('button',{name:/Got it/}).click();
  await page.getByRole('button',{name:'Listen',exact:true}).click();
@@ -681,8 +681,8 @@ test('XP and expedition targets survive full backup and restore; custom weekly g
  await page.getByLabel('Explore another region').selectOption('podkarpackie');
  await expect(page.getByRole('heading',{name:'Podkarpackie'})).toBeVisible();
  await page.getByRole('button',{name:'Library'}).first().click();
- await page.getByRole('searchbox',{name:'Search lessons'}).fill('Basic 01R');
- await page.getByRole('button',{name:/Basic 01R/}).click();
+ await page.getByRole('searchbox',{name:'Search lessons'}).fill('Everyday Conversations: Greetings');
+ await page.getByRole('button',{name:/Everyday Conversations: Greetings/}).click();
  await page.getByRole('button',{name:'How are you?',exact:true}).click();
  await page.getByRole('button',{name:'Continue →',exact:true}).click();
  await page.getByRole('button',{name:/My progress|Profile/}).last().click();
@@ -712,8 +712,8 @@ test('XP and expedition targets survive full backup and restore; custom weekly g
 test('completed Read lesson hands off to Listen without leaving the lesson', async ({page})=>{
   await page.goto('/');
   await page.getByRole('button',{name:'Explore lessons'}).click();
-  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Basic 01R');
-  await page.getByRole('button',{name:/Basic 01R/}).click();
+  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Everyday Conversations: Greetings');
+  await page.getByRole('button',{name:/Everyday Conversations: Greetings/}).click();
   for(let i=0;i<5;i++) await page.getByRole('button',{name:/Skip to next/}).click();
   await page.getByRole('button',{name:/Reveal translation without answering/}).click();
   await page.getByRole('button',{name:/Finished reading/}).click();
@@ -758,8 +758,8 @@ test('late microphone permission after leaving Speak stops tracks and cannot awa
   page.on('pageerror', e => browserErrors.push(e.message));
   await page.goto('/');
   await page.getByRole('button',{name:'Explore lessons'}).click();
-  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Conversation 1');
-  await page.getByRole('button',{name:/Conversation 1/}).click();
+  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Greetings and Introductions');
+  await page.getByRole('button',{name:/Greetings and Introductions/}).click();
   await page.getByRole('button',{name:'Speak',exact:true}).click();
   await page.getByRole('button',{name:/Start recording/}).click();
   await expect(page.getByText(/Requesting microphone permission/)).toBeVisible();
