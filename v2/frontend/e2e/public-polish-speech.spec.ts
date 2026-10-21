@@ -52,8 +52,8 @@ test('two actual public-domain Polish voices pass Learn/Speak capture and next-p
   });
   await page.goto('/');
   await page.getByRole('button',{name:'Explore lessons'}).click();
-  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Conversation 1');
-  await page.getByRole('button',{name:/Conversation 1/}).click();
+  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Greetings and Introductions');
+  await page.getByRole('button',{name:/Greetings and Introductions/}).click();
   await page.getByRole('button',{name:'Speak',exact:true}).click();
   for(let index=0;index<manifest.clips.length;index++){
     await expect(page.getByText(manifest.clips[index].text,{exact:true})).toBeVisible();
