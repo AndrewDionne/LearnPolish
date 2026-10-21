@@ -693,9 +693,10 @@ test('full browser-local backup safely restores personal lessons, recall and rev
   await page.reload();
   await page.getByRole('button', {name:'Library'}).first().click();
   await expect(page.getByText('Saved Polish lesson', {exact:true})).toBeVisible();
-  // New lesson descriptions can mention "practice"; navigate by the exact
-  // named application tab, not the first substring-matching lesson tile.
-  await page.getByRole('button', {name:'Practice',exact:true}).first().click();
+  // Target application navigation, not a Library tile whose description
+  // happens to contain the word "practice".
+  const nav = page.getByRole('navigation',{name:isMobile?'Mobile navigation':'Main navigation'});
+  await nav.getByRole('button',{name:'Practice',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Keep it fresh.'})).toBeVisible();
   await expect(page.getByText('0 due now')).toBeVisible();
 });
