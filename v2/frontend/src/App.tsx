@@ -455,7 +455,7 @@ export default function App() {
       </button>
       <span className="nav-heading">EXPLORE</span>
       <nav className="side-links" aria-label="Main navigation">
-        {nav.map(item => <button key={item.id} className={'nav-link ' + (!lessonId && page === item.id ? 'selected' : '')} type="button" aria-current={!lessonId && page === item.id ? 'page' : undefined} onClick={() => goTo(item.id)}><span className="nav-icon">{item.symbol}</span>{item.label}</button>)}
+        {nav.map(item => <button key={item.id} className={'nav-link ' + (!lessonId && page === item.id ? 'selected' : '')} type="button" aria-current={!lessonId && page === item.id ? 'page' : undefined} onClick={() => goTo(item.id)}><span className="nav-icon" aria-hidden="true">{item.symbol}</span>{item.label}</button>)}
       </nav>
       <div className="sidebar-bottom">
         <div className="mini-mark">PL</div>
