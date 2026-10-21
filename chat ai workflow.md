@@ -1,5 +1,13 @@
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
+## Library stage navigation after 26-set copy audit (2026-10-21)
+
+Owner asked to continue after [PR #93](https://github.com/AndrewDionne/LearnPolish/pull/93) **MERGED**, four CI lanes green and [issue #2](https://github.com/AndrewDionne/LearnPolish/issues/2) updated. The complete 26-item catalog, human-friendly titles and the **Fundamentals (12) → Basic (7) → Learning (6)** stage grouping are authoritative, with the single unverified **Practice tools (1)** lab deliberately separate from all three educational levels. All original source and progress IDs unchanged; Numbers 1–20 is still one lesson with optional first ten/second ten.
+
+**Next actual UX increment:** make the newly grouped Library genuinely navigable on mobile and desktop without scrolling through all 26 sets. A compact **Browse learning stage** selector appears above global search and legacy Sounds/Vocabulary/Reading filters. It offers **All stages (default), Fundamentals, Basic, Learning, Practice tools**, and **Your lessons only if the user has imported/created personal sets**; counts derive from current original catalog, never hardcoded, and do not reflect XP, certification or locked prerequisites. Stage browsing filters *presentation only*; selecting a stage resets any previous query and lesson-kind filter to prevent hidden, ambiguous result states. Conversely, entering search text or switching the kind filter resets stage browsing to **All stages**, so source filename search and Polish phrase search continue globally. An explicit All stages option always restores the 26-set catalog, and a no-matches state allows resetting. Stage selection is local UI state; it is not synced or persisted as learner progress. No new lessons, splitting, metadata, audio, stage unlocks, rewards, ASR calls or deploys. `v2/frontend/src/library-curriculum.ts` contains pure stage membership/count helpers, `App.tsx` wires accessibility labels/pressed state, and responsive CSS and browser+unit regressions cover counts, back-and-forth selection, original filename search and filters. Complete 4-lane CI and merge before declaring shipped.
+
+
+
 ## Library curriculum audit and human-readable set titles/descriptions (2026-10-21)
 
 **Owner request:** "audit our library and update the title / description of each learning set. Also, lets explore a better organization. starting fundamental (sounds -> single words basic -> single words expand vocabulary) -> basic (multi-words -> short sentences) -> Learning (short conversations & reading)". This is a **curriculum/UX classification**, not a rewrite, new lessons, XP tier upgrade, phonetic/audio review, content split or prerequisite lock.
