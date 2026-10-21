@@ -659,8 +659,24 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
             """SELECT f.id,f.name FROM families f JOIN members m ON f.id=m.family_id
                WHERE m.user_id=? ORDER BY f.id""", (user["id"],)
         ).fetchall()
-        return jsonify(user={"id":user["id"],"name":user["name"]},
+        return jsonify(user={"id":user["id"],"name":user["name"],"email":user["email"]},
                        families=[dict(row) for row in families])
+
+    @app.post("/api/v2/family/account/profile")
+    @auth
+    def update_profile(user):
+        # Learner-facing identity only. Never expose email/password changes here.
+        data = _json()
+        name = data.get("name")
+        if (not isinstance(name, str) or not 1 <= len(name.strip()) <= 48 or
+                any(ord(char) < 32 or ord(char) == 127 for char in name)):
+            return fail("invalid_display_name")
+        name = name.strip()
+        con = db()
+        con.execute("BEGIN IMMEDIATE")
+        con.execute("UPDATE users SET name=? WHERE id=?", (name, user["id"]))
+        con.commit()
+        return jsonify(user={"id":user["id"],"name":name,"email":user["email"]})
 
     @app.post("/api/v2/family/groups")
     @auth

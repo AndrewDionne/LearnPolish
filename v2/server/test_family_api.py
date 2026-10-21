@@ -55,6 +55,29 @@ class FamilyApiTests(unittest.TestCase):
         self.assertEqual({person["name"] for person in members},{"Parent","Learner"})
         self.assertEqual(self.client.get(summary,headers=stranger).status_code,404)
 
+    def test_profile_is_private_editable_and_updates_group_scoreboards(self):
+        owner,child,stranger,gid=self.family()
+        endpoint="/api/v2/family/account/profile"
+        self.assertEqual(self.client.post(endpoint,json={"name":"Hacker"}).status_code,401)
+        own=self.client.get("/api/v2/family/me",headers=owner).json
+        self.assertEqual(own["user"]["email"],"parent@example.com")
+        self.assertEqual(self.client.get("/api/v2/family/me",headers=child).json["user"]["email"],
+                         "child@example.com")
+        for bad in ("","  ","X"*49,"Line\nBreak",123,None):
+            self.assertEqual(self.client.post(endpoint,headers=owner,json={"name":bad}).status_code,
+                             400)
+        saved=self.client.post(endpoint,headers=owner,json={"name":"  Polish Explorer  "})
+        self.assertEqual(saved.status_code,200)
+        self.assertEqual(saved.json["user"]["name"],"Polish Explorer")
+        self.assertEqual(self.client.get("/api/v2/family/me",headers=owner).json["user"]["name"],
+                         "Polish Explorer")
+        summary=f"/api/v2/family/groups/{gid}/summary"
+        self.assertEqual(self.client.get(summary,headers=owner).json["members"][0]["name"],
+                         "Polish Explorer")
+        self.assertEqual(self.client.get(summary,headers=stranger).status_code,404)
+        self.assertEqual(self.client.get("/api/v2/family/me",headers=stranger).json["user"]["name"],
+                         "Stranger")
+
     def test_server_authoritative_deduplicated_xp_and_rogue_destinations(self):
         owner,child,stranger,gid=self.family()
         code=self.client.post(f"/api/v2/family/groups/{gid}/invite",headers=owner).json["code"]

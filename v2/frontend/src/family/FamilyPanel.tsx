@@ -227,7 +227,7 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
     <p className="family-note">No pretend family accounts or rankings are shown.</p>
   </section>;
   return <section className="family-panel" aria-label="Family expedition">
-    <div className="family-heading"><div><span className="eyebrow">PRIVATE FAMILY EXPEDITION</span><h2>Learn together</h2></div>
+    <div className="family-heading"><div><span className="eyebrow">PRIVATE LEARNING GROUPS</span><h2>Learn together</h2></div>
       {token&&<button type="button" onClick={()=>void run(logout)} disabled={busy}>Sign out</button>}</div>
     {!token ? <div className="family-auth">
       {pendingVerification?<div className="family-verification">
@@ -295,13 +295,13 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
       </>}
     </div> : <div className="family-connected">
       <div className="family-group-actions">
-        <label>Your family group<select aria-label="Choose family group" value={group} onChange={e=>pickGroup(Number(e.target.value))}>
+        <label>Active learning group<select aria-label="Choose family group" value={group} onChange={e=>pickGroup(Number(e.target.value))}>
           <option value={0}>Choose a group</option>{groups.map(g=><option key={g.id} value={g.id}>{g.name}</option>)}
         </select></label>
         <button type="button" disabled={!group||busy} onClick={()=>void run(()=>refresh())}>Refresh rankings</button>
       </div>
       <details className="family-management" open={!group}>
-        <summary>{group?'Manage groups and invitations':'Create or join your family'}</summary>
+        <summary>{group?'Manage learning groups and invitations':'Create or join a learning group'}</summary>
         <div className="family-setup">
           <div><label>New family group<input value={familyName} maxLength={50} onChange={e=>setFamilyName(e.target.value)}/></label>
             <button type="button" disabled={busy||familyName.trim().length<3} onClick={()=>void run(create)}>Create group</button></div>
@@ -318,10 +318,11 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
       </div>}
       {summary&&<div className="family-scoreboard">
         <h3>{summary.group.name}</h3>
+        <p className="family-group-context">Group scoreboards · {summary.members.length} {summary.members.length===1?'learner':'learners'} · current group only</p>
         <div className="family-totals"><span>{summary.totals.weekly_xp} weekly family XP</span>
           <span>{summary.totals.regions_unlocked}/16 regions opened</span></div>
         <div className="family-recognition" aria-label="Family weekly recognition">
-          <h4>Our family's weekly highlights</h4>
+          <h4>Group scoreboards · this week</h4>
           <div className="family-board-filters" role="group" aria-label="Weekly recognition category">
             {RECOGNITION_CATEGORIES.map(category=><button key={category.id} type="button"
               aria-pressed={recognitionCategory===category.id}
@@ -332,8 +333,8 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
             ? <p role="status" className="family-recognition-pending">Most-improved recognition will use verified change from each learner's previous comparable performance. This family has no validated improvement measurements yet; no ranking is assigned.</p>
             : <ol aria-label={RECOGNITION_CATEGORIES.find(x=>x.id===recognitionCategory)?.label+' leaderboard'}>
                 {rankFamily(summary.members,recognitionCategory).map(({member,score,rank})=>
-                  <li key={member.id}>
-                    <strong>{rank===null?'—':rank+'.'} {member.name}</strong>
+                  <li key={member.id} className={member.id===userId?'family-current-learner':''}>
+                    <strong>{rank===null?'—':rank+'.'} {member.name}{member.id===userId?' (you)':''}</strong>
                     <span>{recognitionLabel(recognitionCategory,score)}</span>
                     <small>{member.active_days} practice days · tier {member.highest_tier||'—'} attempted · {member.team_xp} map XP</small>
                   </li>)}

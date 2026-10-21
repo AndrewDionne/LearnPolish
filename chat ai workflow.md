@@ -1,3 +1,15 @@
+## Profile, private learning groups and group scoreboards — implementation tranche (2026-10-21)
+
+Owner scope: create a useful **Profile** page; expose actual authenticated private identity and learning-group navigation; improve group scoreboards; execute E2E. Base is merged V2 Library stage navigation PR #94, not recalled chat state. **Single existing authority:** V2 family service users, memberships, invitations, verified email, deduplicated eligible activity, week-bound UTC recognition and region funding. Do not build another account backend, synthetic leaderboard, account-synced local XP or unverified acoustic mastery.
+
+On Profile, the existing browser-only local learning metrics, XP and backups remain unchanged. New `ProfilePanel` reads only the signed-in user's authenticated `GET /api/v2/family/me`, shows **their own** email and editable display name, count of joined groups and a link to Expedition's group selector and scoreboards. `POST /api/v2/family/account/profile` changes display name only, validates 1–48 trimmed noncontrol characters, requires an authenticated verified session and persists through existing SQLite or Neon/Postgres schema, without a migration. Display name updates appear on all joined group leaderboards via existing summary joins. Nothing stores identity in local practice backups. If the private service is disabled or signed out, show only honest local/offline status and CTA; never invent a logged-in profile.
+
+Existing Expedition family UI remains the only group management, invitations, opt-in and scoreboards authority. Labels clarify **learning groups**, single selected group's membership/weekly recognition and mark the current learner, without changing eligibility, opt-in or permissions. Categories: Effort, Consistency, Trailblazer, Team contribution; Most improved remains pending verified before/after evidence. No intra-family location restriction; members can contribute to any region. No new XP or activity writes. Group selection retains explicit opt-in reset and prevents stale invitation responses or cross-group summary leaks.
+
+Validation gate: Python private family API tests (including unauthorized profile edit, name controls, isolation and joined-scoreboard reflection), connected frontend Playwright for edit → group → weekly leaderboard; existing public frontend, accessibility, offline, private connected and family removal suites must stay green. Four existing CI lanes required **before merge**. This PR does not imply public deployment or ready private service, nor proof that a user's local XP syncs to their account. Further avatar personalization and score-based pronunciation progress are separate follow-on decisions.
+
+---
+
 # Path to Polish — Chat AI Workflow / Durable Continuity
 
 ## Library stage navigation after 26-set copy audit (2026-10-21)
