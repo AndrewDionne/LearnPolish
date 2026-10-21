@@ -66,8 +66,8 @@ async function connectPrivateAdult(page:import('@playwright/test').Page){
   await panel.getByLabel('Choose family group').selectOption('9');
   await panel.getByRole('checkbox',{name:/Contribute my/}).check();
   await page.getByRole('button',{name:'Library'}).first().click();
-  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Conversation 1');
-  await page.getByRole('button',{name:/Conversation 1/}).click();
+  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Greetings and Introductions');
+  await page.getByRole('button',{name:/Greetings and Introductions/}).click();
   await page.getByRole('button',{name:'Speak',exact:true}).click();
   await expect(page.getByText('Dzień dobry',{exact:true})).toBeVisible();
 }
@@ -151,7 +151,7 @@ test('inconclusive and quota outcomes stay ungraded; new take clears old feedbac
   await expect(page.getByText('Dobry wieczór',{exact:true})).toBeVisible();
 });
 
-test('Świętokrzyska is a real built-in Speak test item with opt-in timing, not fake native audio',async({page})=>{
+test('Świętokrzyska is a real built-in Świętokrzyska Pronunciation Lab item with opt-in timing, not fake native audio',async({page})=>{
   await installSyntheticMicrophone(page);
   let calls=0;
   await page.route('**/api/v2/family/speech/assess', async route=>{
@@ -235,7 +235,7 @@ test('reserved acoustic-score UI aligns exact syllables with guide OFF/ON and cl
   await connectPrivateAdult(page);
   await page.getByRole('button',{name:'Library'}).first().click();
   await page.getByRole('searchbox',{name:'Search lessons'}).fill('Świętokrzyska');
-  await page.getByRole('button',{name:/Speak test · Świętokrzyska/}).click();
+  await page.getByRole('button',{name:/Świętokrzyska Pronunciation Lab/}).click();
   await page.getByRole('button',{name:'Speak',exact:true}).click();
   const toggle=page.getByRole('button',{name:/Pronunciation guide/});
   await expect(toggle).toHaveAttribute('aria-pressed','false');
