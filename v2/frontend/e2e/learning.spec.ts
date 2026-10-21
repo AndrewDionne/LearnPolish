@@ -644,7 +644,10 @@ test('Speak handles denied microphone permissions without grading or blocking na
 });
 
 
-test('Practice review queue targets only due cards and preserves scheduling after reload', async ({page}) => {
+test('Practice review queue targets only due cards and preserves scheduling after reload', async ({page,isMobile}) => {
+  const practiceTab=page.getByRole('navigation',{
+    name:isMobile?'Mobile navigation':'Main navigation',
+  }).getByRole('button',{name:'Practice',exact:true});
   await page.goto('/');
   await page.evaluate(() => {
     localStorage.setItem('ptp-v2-review-schedule', JSON.stringify({
@@ -653,7 +656,7 @@ test('Practice review queue targets only due cards and preserves scheduling afte
     }));
   });
   await page.reload();
-  await page.getByRole('button', {name:/Practice/}).first().click();
+  await practiceTab.click();
   await expect(page.getByText('1 due now')).toBeVisible();
   await page.getByRole('button', {name:/Greetings and Introductions.*1 expression.*Review/}).click();
   await expect(page.getByText('Review what matters')).toBeVisible();
@@ -662,10 +665,10 @@ test('Practice review queue targets only due cards and preserves scheduling afte
   await page.getByRole('button', {name:/Got it/}).click();
   await expect(page.getByText('REVIEW COMPLETE', {exact:true})).toBeVisible();
   await page.getByRole('button', {name:'Back to library →', exact:true}).click();
-  await page.getByRole('button', {name:/Practice/}).first().click();
+  await practiceTab.click();
   await expect(page.getByText('0 due now')).toBeVisible();
   await page.reload();
-  await page.getByRole('button', {name:/Practice/}).first().click();
+  await practiceTab.click();
   await expect(page.getByText('0 due now')).toBeVisible();
 });
 
