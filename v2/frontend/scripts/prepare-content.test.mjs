@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import fs from 'node:fs';
 import path from 'node:path';
-import { migrateLesson, buildContent, buildSoundCurriculum, attachReferenceReview, attachMicroDialogues } from './prepare-content.mjs';
+import { migrateLesson, buildContent, buildSoundCurriculum, attachReferenceReview, attachMicroDialogues, attachLibraryCatalog } from './prepare-content.mjs';
 import {inspectSpeakCatalog,printAuditMarkdown} from './speak-readiness.mjs';
 
 test('migrates vocabulary into versioned, stable IDs', () => {
@@ -11,6 +11,42 @@ test('migrates vocabulary into versioned, stable IDs', () => {
   assert.equal(lesson.id, 'numbers_1-20');
   assert.equal(lesson.kind, 'vocabulary');
   assert.deepEqual(lesson.items[0], { id: 'numbers_1-20:0', polish: 'Jeden', english: 'One', pronunciation: 'YEH-den' });
+});
+
+test('library editorial audit covers all 26 stable source IDs without changing their items',()=>{
+  const catalog=JSON.parse(fs.readFileSync(path.resolve('../content/library-catalog.json'),'utf8'));
+  const built=JSON.parse(fs.readFileSync(path.resolve('public/generated/lessons.json'),'utf8')).lessons;
+  assert.equal(catalog.lessons.length,26);
+  assert.deepEqual(new Set(catalog.lessons.map(entry=>entry.id)),
+    new Set(built.map(lesson=>lesson.id)));
+  assert.ok(built.every(lesson=>lesson.title && lesson.description && lesson.curriculum));
+  for(const lesson of built){
+    const author=catalog.lessons.find(entry=>entry.id===lesson.id);
+    assert.equal(lesson.title,author.title);
+    assert.equal(lesson.description,author.description);
+    assert.deepEqual(lesson.curriculum,author.curriculum);
+  }
+  assert.equal(built.find(lesson=>lesson.id==='Numbers_20-100').title,'Numbers Beyond 20');
+  assert.equal(built.find(lesson=>lesson.id==='Districts_of_Warszawa').title,'Warsaw Districts and Landmarks');
+  assert.equal(built.find(lesson=>lesson.id==='speak_swietokrzyska').curriculum.stage,'practice');
+
+  const original=structuredClone(built).map(lesson=>({...lesson,title:'source title',description:undefined,curriculum:undefined}));
+  const idsBefore=original.map(lesson=>[lesson.id,lesson.items.map(item=>[item.id,item.polish,item.audio])]);
+  const result=attachLibraryCatalog(original,catalog);
+  assert.deepEqual(result,{fundamentals:12,basic:7,learning:6,practice:1});
+  assert.deepEqual(original.map(lesson=>[lesson.id,lesson.items.map(item=>[item.id,item.polish,item.audio])]),idsBefore);
+
+  const duplicate=structuredClone(catalog);
+  duplicate.lessons[1].id=duplicate.lessons[0].id;
+  assert.throws(()=>attachLibraryCatalog(structuredClone(original),duplicate),/Invalid or missing/);
+  const missing=structuredClone(catalog);missing.lessons.pop();
+  assert.throws(()=>attachLibraryCatalog(structuredClone(original),missing),/26 original/);
+  const wrongTrack=structuredClone(catalog);
+  wrongTrack.lessons[0].curriculum.track='conversations-reading';
+  assert.throws(()=>attachLibraryCatalog(structuredClone(original),wrongTrack),/Invalid or missing/);
+  const badDescription=structuredClone(catalog);
+  badDescription.lessons[0].description='x';
+  assert.throws(()=>attachLibraryCatalog(structuredClone(original),badDescription),/Invalid or missing/);
 });
 
 test('sound recognition sets are flagged for native-speaker review', () => {
@@ -27,6 +63,9 @@ test('rejects malformed lesson data', () => {
 test('new catalog retires bundled sound examples while retaining all other legacy lessons and audio', () => {
   const report = buildContent();
   assert.equal(report.lessons, 26);
+  assert.deepEqual(report.curriculumCounts,{
+    fundamentals:12,basic:7,learning:6,practice:1,
+  });
   assert.equal(report.referenceReviewItems,14);
   assert.equal(report.items, 482);
   assert.equal(report.pronunciationGrouping.total,482);
