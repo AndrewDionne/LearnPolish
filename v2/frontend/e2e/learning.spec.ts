@@ -654,7 +654,7 @@ test('sound lab compares individually sourced MP3 examples, not bundled phrases'
 });
 
 
-test('full browser-local backup safely restores personal lessons, recall and review dates', async ({ page }) => {
+test('full browser-local backup safely restores personal lessons, recall and review dates', async ({ page, isMobile }) => {
   await page.goto('/');
   await page.getByRole('button', {name:'Explore lessons'}).click();
   await page.getByRole('button', {name:/Create lesson/}).click();
