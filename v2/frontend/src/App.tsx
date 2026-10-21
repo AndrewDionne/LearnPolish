@@ -24,6 +24,7 @@ import { GOLD_STORAGE_KEY, parseGold } from './gold';
 import type { RewardMode } from './gold';
 import ExpeditionMap from './expedition/ExpeditionMap';
 import FamilyPanel from './family/FamilyPanel';
+import ProfilePanel from './family/ProfilePanel';
 import {shareFamilyActivity} from './family/api';
 import type {FamilyConnection,FamilySummary} from './family/api';
 import { EXPEDITION_STORAGE_KEY, awardXp, emptyExpedition, nextRegionCost,
@@ -44,7 +45,7 @@ const nav: { id: Page; label: string; symbol: string }[] = [
   { id: 'library', label: 'Library', symbol: '▦' },
   { id: 'practice', label: 'Practice', symbol: '◎' },
   { id: 'expedition', label: 'Expedition', symbol: '◇' },
-  { id: 'profile', label: 'My progress', symbol: '◷' },
+  { id: 'profile', label: 'Profile', symbol: '◷' },
 ];
 
 function storedLastLesson(): string | null {
@@ -718,7 +719,8 @@ export default function App() {
           <p className="info-footnote">Your personal/offline expedition remains in this browser. If an authorized private family service is configured and you opt in, future eligible practice also contributes to your family's separate shared map and friendly weekly rankings. The two ledgers are not merged automatically.</p>
         </>}
         {!loading && !loadError && !active && !editorOpen && page === 'profile' && <>
-          <section className="page-title"><span className="eyebrow">YOUR JOURNEY</span><h1>Learning progress<span className="title-dot">.</span></h1><p>Your achievements are saved in this browser while we develop secure accounts and sync.</p></section>
+          <section className="page-title"><span className="eyebrow">YOUR JOURNEY</span><h1>Your profile<span className="title-dot">.</span></h1><p>Manage your private learning identity and review the progress saved on this device.</p></section>
+          <ProfilePanel onOpenGroups={()=>goTo('expedition')}/>
           <div className="stats-row"><Counter value={lessons.length} label="Lessons available"/><Counter value={practisedCount} label="Items encountered"/><Counter value={recallRate(progress) + '%'} label="Self-rated recall"/></div>
           <section className="xp-rewards" aria-label="Your learning XP">
             <div className="xp-rewards-heading"><div><span className="eyebrow">RECOGNITION FOR YOUR WORK</span><h2>Learning XP</h2></div>
@@ -756,6 +758,6 @@ export default function App() {
       </main>
     </div>
 
-    <nav className="mobile-nav" aria-label="Mobile navigation">{nav.map(item => <button type="button" key={item.id} className={!lessonId && page === item.id ? 'selected' : ''} aria-current={!lessonId && page === item.id ? 'page' : undefined} onClick={() => goTo(item.id)}><span aria-hidden="true">{item.symbol}</span><small>{item.label === 'My progress' ? 'Profile' : item.label}</small></button>)}</nav>
+    <nav className="mobile-nav" aria-label="Mobile navigation">{nav.map(item => <button type="button" key={item.id} className={!lessonId && page === item.id ? 'selected' : ''} aria-current={!lessonId && page === item.id ? 'page' : undefined} onClick={() => goTo(item.id)}><span aria-hidden="true">{item.symbol}</span><small>{item.label}</small></button>)}</nav>
   </div>;
 }
