@@ -63,7 +63,7 @@ class FamilyApiTests(unittest.TestCase):
         self.assertEqual(own["user"]["email"],"parent@example.com")
         self.assertEqual(self.client.get("/api/v2/family/me",headers=child).json["user"]["email"],
                          "child@example.com")
-        for bad in ("","  ","X"*49,"Line\\nBreak",123,None):
+        for bad in ("","  ","X"*49,"Line\nBreak",123,None):
             self.assertEqual(self.client.post(endpoint,headers=owner,json={"name":bad}).status_code,
                              400)
         saved=self.client.post(endpoint,headers=owner,json={"name":"  Polish Explorer  "})
