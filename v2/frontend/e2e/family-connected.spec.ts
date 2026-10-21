@@ -107,6 +107,18 @@ test('two real private sessions join a family, choose different regions and shar
     await board.getByRole('button',{name:'Most improved'}).click();
     await expect(lp.getByRole('status').filter({hasText:'no validated improvement measurements'})).toBeVisible();
     await board.getByRole('button',{name:'Effort'}).click();
+    // Exercise the real backend from profile edit to reflected private group ranking.
+    await learner.getByRole('button',{name:'Profile'}).first().click();
+    const myProfile=learner.getByRole('region',{name:'Learner account'});
+    await expect(myProfile.getByLabel('Display name')).toHaveValue('Explorer B');
+    await myProfile.getByLabel('Display name').fill('Explorer B updated');
+    await myProfile.getByRole('button',{name:'Save display name'}).click();
+    await expect(myProfile.getByText('Display name updated for your learning groups.')).toBeVisible();
+    await myProfile.getByRole('button',{name:/Learning groups & scoreboards/}).click();
+    await expect(lp.getByRole('list',{name:'Effort leaderboard'}))
+      .toContainText('Explorer B updated (you)');
+    // Returned group selection and explicit contribution permission are retained.
+    await expect(lp.getByRole('checkbox',{name:/Contribute my/})).toBeChecked();
     await learner.screenshot({path:'test-results/family-connected-leaderboard.png',fullPage:true});
     // One-use invitation was consumed. It cannot grant access to a third account.
     const learnerToken=await learner.evaluate(()=>sessionStorage.getItem('ptp-v2-family-session'));
