@@ -1,4 +1,8 @@
 export type LessonKind = 'vocabulary' | 'reading' | 'sounds';
+export type CurriculumStage = 'fundamentals' | 'basic' | 'learning' | 'practice';
+export type CurriculumTrack = 'sounds' | 'first-words' | 'expanded-words' |
+  'first-phrases' | 'sentences' | 'conversations-reading' | 'lab';
+export type CurriculumPlacement = {stage:CurriculumStage;track:CurriculumTrack;order:number};
 
 export type SoundGroup = { id: string; label: string; ipa: string; hint: string; itemIds: string[] };
 
@@ -56,6 +60,10 @@ export type Lesson = {
   schemaVersion: 1;
   id: string;
   title: string;
+  /** Learner-facing editorial summary, distinct from original item text or IDs. */
+  description?: string;
+  /** Optional editorial placement; never used for XP, review or persistent identity. */
+  curriculum?: CurriculumPlacement;
   kind: LessonKind;
   items: LessonItem[];
   source: 'legacy' | 'personal' | 'curated';
@@ -76,6 +84,21 @@ export function validateLesson(value: unknown): value is Lesson {
   return x.schemaVersion === 1 &&
     typeof x.id === 'string' && x.id.length > 0 &&
     typeof x.title === 'string' && x.title.length > 0 &&
+    (x.description === undefined || (typeof x.description === 'string' &&
+      x.description.trim().length >= 10 && x.description.length <= 185)) &&
+    (x.curriculum === undefined || (
+      !!x.curriculum &&
+      Number.isSafeInteger(x.curriculum.order) && x.curriculum.order >= 1 &&
+      (x.curriculum.stage==='fundamentals' &&
+        (x.curriculum.track==='sounds' && x.kind==='sounds' ||
+         ['first-words','expanded-words'].includes(x.curriculum.track) && x.kind==='vocabulary') ||
+       x.curriculum.stage==='basic' &&
+         ['first-phrases','sentences'].includes(x.curriculum.track) && x.kind==='vocabulary' ||
+       x.curriculum.stage==='learning' &&
+         x.curriculum.track==='conversations-reading' && x.kind==='reading' ||
+       x.curriculum.stage==='practice' &&
+         x.curriculum.track==='lab' && x.kind==='vocabulary')
+    )) &&
     ['vocabulary', 'reading', 'sounds'].includes(String(x.kind)) &&
     (x.source === 'legacy' || x.source === 'personal' || x.source === 'curated') &&
     Array.isArray(x.items) && x.items.length > 0 &&

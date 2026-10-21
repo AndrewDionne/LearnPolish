@@ -54,8 +54,8 @@ test('two real private sessions join a family, choose different regions and shar
     });
     await parent.getByLabel('Explore another region').selectOption('pomorskie');
     await parent.getByRole('button',{name:'Library'}).first().click();
-    await parent.getByRole('searchbox',{name:'Search lessons'}).fill('Conversation 1');
-    await parent.getByRole('button',{name:/Conversation 1/}).click();
+    await parent.getByRole('searchbox',{name:'Search lessons'}).fill('Greetings and Introductions');
+    await parent.getByRole('button',{name:/Greetings and Introductions/}).click();
     await parent.getByRole('button',{name:/Reveal meaning/}).click();
     await parent.getByRole('button',{name:/Got it/}).click();
     await parent.getByRole('button',{name:'Expedition'}).first().click();
@@ -83,8 +83,8 @@ test('two real private sessions join a family, choose different regions and shar
     await lp.getByRole('checkbox',{name:/Contribute my/}).check();
     await learner.getByLabel('Explore another region').selectOption('małopolskie');
     await learner.getByRole('button',{name:'Library'}).first().click();
-    await learner.getByRole('searchbox',{name:'Search lessons'}).fill('Conversation 1');
-    await learner.getByRole('button',{name:/Conversation 1/}).click();
+    await learner.getByRole('searchbox',{name:'Search lessons'}).fill('Greetings and Introductions');
+    await learner.getByRole('button',{name:/Greetings and Introductions/}).click();
     await learner.getByRole('button',{name:/Reveal meaning/}).click();
     await learner.getByRole('button',{name:/Got it/}).click();
     await learner.getByRole('button',{name:'Expedition'}).first().click();

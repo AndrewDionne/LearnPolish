@@ -1,8 +1,8 @@
 test('Sound Lab emphasizes only authored source letters without modifying full Polish audio targets', async({page})=>{
   await page.goto('/');
   await page.getByRole('button',{name:'Library'}).first().click();
-  await page.getByRole('searchbox',{name:'Search lessons'}).fill('C · CZ');
-  await page.getByRole('button',{name:/C · CZ · Ć/}).click();
+  await page.getByRole('searchbox',{name:'Search lessons'}).fill('C, CZ');
+  await page.getByRole('button',{name:/C, CZ and Ć/}).click();
   const groups=page.locator('.contrast-group');
   await expect(groups).toHaveCount(3);
   await expect(groups.nth(0).locator('.sound-focus-letters')).toHaveText(['c','c']);
@@ -14,7 +14,7 @@ test('Sound Lab emphasizes only authored source letters without modifying full P
   await expect(groups.nth(1).locator('.contrast-example.chosen')).toContainText('Cztery');
   await page.getByRole('button',{name:'Library'}).first().click();
   await page.getByRole('searchbox',{name:'Search lessons'}).fill('KRZY');
-  await page.getByRole('button',{name:/KRZY · PRZY/}).click();
+  await page.getByRole('button',{name:/KRZY and PRZY/}).click();
   await expect(page.locator('.sound-focus-letters')).toHaveText(['krzy','Krzy','Przy','przy']);
   await expect(page.locator('.contrast-focus',{hasText:'ulica Świętokrzyska'})).toBeVisible();
 });
@@ -69,8 +69,8 @@ test('Świętokrzyska → focused KRZY sounds → original word without losing t
   await page.route('**/api/v2/family/speech/assess',route=>{uploads++;return route.abort();});
   await page.goto('/');
   await page.getByRole('button',{name:'Library'}).first().click();
-  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Speak test');
-  await page.getByRole('button',{name:/Speak test · Świętokrzyska/}).click();
+  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Świętokrzyska Pronunciation Lab');
+  await page.getByRole('button',{name:/Świętokrzyska Pronunciation Lab/}).click();
   await page.getByRole('button',{name:'Speak',exact:true}).click();
   await expect(page.getByText('Świętokrzyska',{exact:true})).toBeVisible();
   const toggle=page.getByRole('button',{name:/Pronunciation guide/});
@@ -110,7 +110,7 @@ test('sound lesson is browsable directly, and abandoning a detour does not leave
   await page.goto('/');
   await page.getByRole('button',{name:'Library'}).first().click();
   await page.getByRole('searchbox',{name:'Search lessons'}).fill('KRZY');
-  await page.getByRole('button',{name:/KRZY · PRZY/}).click();
+  await page.getByRole('button',{name:/KRZY and PRZY/}).click();
   await expect(page.locator('.contrast-group')).toHaveCount(2);
   await expect(page.getByRole('button',{name:/Back to library/})).toBeVisible();
   await expect(page.getByRole('button',{name:/Back to Świętokrzyska/})).toHaveCount(0);
@@ -119,14 +119,14 @@ test('sound lesson is browsable directly, and abandoning a detour does not leave
   await readyTake(page);
   await expect(page.locator('.speak-scores')).toHaveCount(0);
   await page.getByRole('button',{name:/Back to library/}).click();
-  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Speak test');
-  await page.getByRole('button',{name:/Speak test · Świętokrzyska/}).click();
+  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Świętokrzyska Pronunciation Lab');
+  await page.getByRole('button',{name:/Świętokrzyska Pronunciation Lab/}).click();
   await page.getByRole('button',{name:'Speak',exact:true}).click();
   await readyTake(page);
   await page.getByRole('button',{name:/Practise krzy sounds/}).click();
   await page.getByRole('button',{name:'Library'}).first().click();
   await page.getByRole('searchbox',{name:'Search lessons'}).fill('KRZY');
-  await page.getByRole('button',{name:/KRZY · PRZY/}).click();
+  await page.getByRole('button',{name:/KRZY and PRZY/}).click();
   await expect(page.getByRole('button',{name:/Back to Świętokrzyska/})).toHaveCount(0);
   await expect(page.locator('.contrast-group')).toHaveCount(2);
 });

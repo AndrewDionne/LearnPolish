@@ -49,14 +49,14 @@ test('Learn, Listen and Sound Lab satisfy the baseline semantic audit', async ({
   test.setTimeout(90_000);
   await page.goto('/');
   await page.getByRole('button',{name:'Explore lessons'}).click();
-  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Conversation 1');
-  await page.getByRole('button',{name:/Conversation 1/}).click();
+  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Greetings and Introductions');
+  await page.getByRole('button',{name:/Greetings and Introductions/}).click();
   await audit(page,'learn');
   await page.getByRole('button',{name:'Listen',exact:true}).click();
   await audit(page,'listen');
   await page.getByRole('button',{name:/Back to library/}).click();
-  await page.getByRole('searchbox',{name:'Search lessons'}).fill('C · CZ');
-  await page.getByRole('button',{name:/C · CZ · Ć/}).click();
+  await page.getByRole('searchbox',{name:'Search lessons'}).fill('C, CZ');
+  await page.getByRole('button',{name:/C, CZ and Ć/}).click();
   await audit(page,'sounds');
 });
 
@@ -87,8 +87,8 @@ test('Compact 320px keyboard nav, language, and minimum interactive surface chec
   await page.getByRole('button',{name:/Create lesson/}).click();
   await audit(page,'compact-editor');
   await page.getByRole('button',{name:/Cancel and return/}).click();
-  await page.getByRole('searchbox',{name:'Search lessons'}).fill('C · CZ');
-  await page.getByRole('button',{name:/C · CZ · Ć/}).click();
+  await page.getByRole('searchbox',{name:'Search lessons'}).fill('C, CZ');
+  await page.getByRole('button',{name:/C, CZ and Ć/}).click();
   await audit(page,'compact-sound-lab');
   const controls = page.locator('.contrast-play');
   for(const button of await controls.all()) {
