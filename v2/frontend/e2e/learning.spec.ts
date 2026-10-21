@@ -693,7 +693,10 @@ test('full browser-local backup safely restores personal lessons, recall and rev
   await page.reload();
   await page.getByRole('button', {name:'Library'}).first().click();
   await expect(page.getByText('Saved Polish lesson', {exact:true})).toBeVisible();
-  await page.getByRole('button', {name:'Practice'}).first().click();
+  // New lesson descriptions can mention "practice"; navigate by the exact
+  // named application tab, not the first substring-matching lesson tile.
+  await page.getByRole('button', {name:'Practice',exact:true}).first().click();
+  await expect(page.getByRole('heading',{name:'Keep it fresh.'})).toBeVisible();
   await expect(page.getByText('0 due now')).toBeVisible();
 });
 
