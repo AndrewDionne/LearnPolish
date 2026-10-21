@@ -28,6 +28,19 @@ export const LIBRARY_STAGES: readonly StageDefinition[] = [
     tracks:[{id:'lab',label:'Pronunciation lab'}]},
 ] as const;
 
+/** Stage browsing is an optional presentation filter; it never gates lessons. */
+export type LibraryView = 'all' | CurriculumStage | 'personal';
+
+export function inLibraryView(lesson:Lesson,view:LibraryView):boolean {
+  if(view==='all')return true;
+  if(view==='personal')return !lesson.curriculum;
+  return lesson.curriculum?.stage===view;
+}
+
+export function libraryViewCount(lessons:Lesson[],view:LibraryView):number {
+  return lessons.filter(lesson=>inLibraryView(lesson,view)).length;
+}
+
 export type LibrarySection = {
   id:string; heading:string; description:string;
   tracks:{id:string;heading:string;lessons:Lesson[]}[];

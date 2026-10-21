@@ -1,5 +1,5 @@
 import {describe,expect,test} from 'vitest';
-import {groupLibraryLessons,libraryMatches,LIBRARY_STAGES} from './library-curriculum';
+import {groupLibraryLessons,libraryMatches,LIBRARY_STAGES,inLibraryView,libraryViewCount} from './library-curriculum';
 import type {Lesson} from './model';
 
 const make = (id:string,title:string,stage:NonNullable<Lesson['curriculum']>['stage'],
@@ -36,6 +36,27 @@ describe('grouped curriculum library',()=>{
     const sections=groupLibraryLessons([personal,make('read','Reading','learning','conversations-reading',1)]);
     expect(sections.map(section=>section.heading)).toEqual(['Learning','Your lessons']);
     expect(groupLibraryLessons([])).toEqual([]);
+  });
+  test('stage views are presentation-only and show personal lessons separately',()=>{
+    const items=[
+      make('sound','Sounds','fundamentals','sounds',1),
+      make('number','Numbers','fundamentals','first-words',1),
+      make('basic','Phrases','basic','first-phrases',1),
+      make('read','Reading','learning','conversations-reading',1),
+      make('lab','Test','practice','lab',1),
+      {...make('personal','My phrasebook','basic','sentences',1),
+        curriculum:undefined,source:'personal' as const},
+    ];
+    expect(libraryViewCount(items,'all')).toBe(6);
+    expect(libraryViewCount(items,'fundamentals')).toBe(2);
+    expect(libraryViewCount(items,'basic')).toBe(1);
+    expect(libraryViewCount(items,'learning')).toBe(1);
+    expect(libraryViewCount(items,'practice')).toBe(1);
+    expect(libraryViewCount(items,'personal')).toBe(1);
+    expect(items.filter(item=>inLibraryView(item,'learning')).map(item=>item.id)).toEqual(['read']);
+    expect(items.filter(item=>inLibraryView(item,'personal')).map(item=>item.id)).toEqual(['personal']);
+    expect(items.filter(item=>inLibraryView(item,'all'))).toEqual(items);
+    expect(items[5].curriculum).toBeUndefined();
   });
   test('search matches new titles, descriptions, historical file IDs and Polish source',()=>{
     const lesson=make('Conversation_1','Greetings and Introductions','basic','first-phrases',1);
