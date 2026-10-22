@@ -563,7 +563,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .expedition-quick-access span{color:#4b7474;font-size:12px;line-height:1.5}
 .expedition-quick-access .secondary-action{min-height:44px;white-space:normal}
 .group-map-return{min-height:44px;margin-top:14px}
-.learner-joined-groups{flex:1 0 100%;min-width:0;margin-top:20px;padding-top:15px;border-top:1px solid #e4efeb}
+.learner-joined-groups{grid-column:1/-1;min-width:0;margin-top:12px;padding-top:15px;border-top:1px solid #e4efeb}
 .learner-joined-groups h3{font-size:14px;color:#325d60;margin:0 0 12px}
 .learner-joined-groups ul{list-style:none;display:flex;flex-wrap:wrap;gap:9px;padding:0;margin:0}
 .learner-joined-groups li{background:#eef7f3;border:1px solid #d4e7de;border-radius:9px;padding:10px 14px;
