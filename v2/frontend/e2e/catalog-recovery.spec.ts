@@ -13,9 +13,10 @@ test('catalog failure offers an in-app retry that restores learning without rese
     }
   },savedProgress);
   let attempts=0;
+  let catalogAvailable=false;
   await page.route('**/generated/lessons.json',async route=>{
     attempts++;
-    if(attempts<=2)await route.fulfill({
+    if(!catalogAvailable)await route.fulfill({
       status:503,contentType:'application/json',body:'{"error":"temporary outage"}'
     });
     else await route.continue();
@@ -25,21 +26,25 @@ test('catalog failure offers an in-app retry that restores learning without rese
   await expect(error).toContainText('Lessons could not load');
   await expect(error).toContainText('Your progress and personal lessons remain stored in this browser');
   await expect(error.getByRole('button',{name:'Retry loading lessons'})).toBeVisible();
-  expect(attempts).toBe(1);
+  const initialAttempts=attempts;
+  expect(initialAttempts).toBeGreaterThanOrEqual(1);
   await expect(page.getByText('Gathering your lessons…')).toHaveCount(0);
   expect(await page.evaluate(()=>localStorage.getItem('ptp-v2-progress'))).toBe(savedProgress);
 
   await error.getByRole('button',{name:'Retry loading lessons'}).click();
   await expect(error).toContainText('Lessons could not load');
-  expect(attempts).toBe(2);
-  // An unsuccessful retry must not silently spin, erase progress, or hide retry.
+  expect(attempts).toBeGreaterThan(initialAttempts);
+  // Remain unavailable through the whole failed retry, even if more than one
+  // request is initiated (e.g. StrictMode effects or service-worker activity).
   await expect(error.getByRole('button',{name:'Retry loading lessons'})).toBeEnabled();
   await expect(page.getByRole('heading',{name:/Small steps/})).toHaveCount(0);
 
+  const failedAttempts=attempts;
+  catalogAvailable=true;
   await error.getByRole('button',{name:'Retry loading lessons'}).click();
   await expect(page.getByRole('heading',{name:/Small steps/})).toBeVisible();
   await expect(error).toHaveCount(0);
-  expect(attempts).toBe(3);
+  expect(attempts).toBeGreaterThan(failedAttempts);
   expect(await page.evaluate(()=>localStorage.getItem('ptp-v2-progress'))).toBe(savedProgress);
   const nav=page.getByRole('navigation',{name:isMobile?'Mobile navigation':'Main navigation'});
   await nav.getByRole('button',{name:'Library',exact:true}).click();
