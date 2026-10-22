@@ -126,24 +126,55 @@ export async function requestSpeechFeedback(
       !FAMILY_API || !token || capture.check.quality!=='usable'){
     throw new Error('Pronunciation feedback is unavailable.');
   }
+  // An already-cancelled take must not initiate a provider-bound upload.
+  // The real fetch transport also receives the signal for in-flight aborts.
+  if(signal?.aborted)throw new DOMException('Pronunciation check canceled.','AbortError');
   const body=new FormData();
   body.append('item_id',capture.itemId);
   body.append('audio',capture.wav,'learner.wav');
   body.append('approve_azure_audio_upload','yes');
   if(blended)body.append('approve_groq_audio_upload','yes');
   const started=performance.now();
-  const response=await fetch(FAMILY_API+(blended?'/api/v2/family/speech/assess-blend':'/api/v2/family/speech/assess'),{
-    method:'POST',
-    headers:{Authorization:'Bearer '+token},
-    body,cache:'no-store',signal,
-  });
+  let response:Response;
+  try{
+    response=await fetch(FAMILY_API+(blended?'/api/v2/family/speech/assess-blend':'/api/v2/family/speech/assess'),{
+      method:'POST',
+      headers:{Authorization:'Bearer '+token},
+      body,cache:'no-store',signal,
+    });
+  }catch(error){
+    // Never display browser/proxy/provider exception text; it can contain
+    // internal URLs, authentication hints or even private transcription data.
+    if(signal?.aborted || (error instanceof Error && error.name==='AbortError')){
+      throw new DOMException('Pronunciation check canceled.','AbortError');
+    }
+    throw new Error('Pronunciation assessment could not be completed. Please try again later.');
+  }
+  if(signal?.aborted)throw new DOMException('Pronunciation check canceled.','AbortError');
   if(!response.ok){
     if(response.status===429)throw new Error('Daily free pronunciation assessment limit reached. You can still practise and replay.');
     if(response.status===503)throw new Error('Pronunciation assessment is not available on this server. Recording and replay still work.');
     if(response.status===401)throw new Error('Sign in again to request pronunciation feedback.');
     throw new Error('Pronunciation assessment could not be completed. Please try again later.');
   }
-  const feedback=parseSpeechFeedback(await response.json());
+  let payload:unknown;
+  try{payload=await response.json();}
+  catch{throw new Error('Assessment response unavailable.');}
+  if(signal?.aborted)throw new DOMException('Pronunciation check canceled.','AbortError');
+  // Bind every accepted result to the exact requested card and route. A
+  // stale/swapped response must never display a grade for a different word.
+  const identity=payload && typeof payload==='object'
+    ? payload as Record<string,unknown> : null;
+  if(identity?.item_id!==capture.itemId)throw new Error('Assessment response unavailable.');
+  const feedback=parseSpeechFeedback(payload);
+  if(feedback.status==='ok' && (
+    (blended && (feedback.engine!=='azure-whisper-blend-v1' ||
+      feedback.colourHints.reference!==capture.referencePolish)) ||
+    (!blended && (feedback.engine!=='azure-pl-PL-scripted' ||
+      (feedback.syllableFeedback && feedback.syllableFeedback.reference!==capture.referencePolish)))
+  )){
+    throw new Error('Assessment response unavailable.');
+  }
   const elapsed=performance.now()-started;
   const roundTripMs=Number.isFinite(elapsed) ? Math.round(Math.max(0,elapsed)) : 0;
   // This header is duration-only and is exposed by the private API. Never
