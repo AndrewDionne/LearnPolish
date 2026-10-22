@@ -109,13 +109,22 @@ test('private profile edits display name and shows only joined learning groups',
   const profile=page.getByRole('region',{name:'Learner account'});
   await expect(profile.getByLabel('Account email')).toHaveValue('learner@example.test');
   await expect(profile.getByText('1 learning group')).toBeVisible();
+  await expect(profile.getByRole('list',{name:'Joined learning groups'}))
+    .toContainText('Polish study team');
   await profile.getByLabel('Display name').fill('Confident beginner');
   await profile.getByRole('button',{name:'Save display name'}).click();
   await expect(profile.getByText('Display name updated for your learning groups.')).toBeVisible();
   await profile.getByRole('button',{name:/Learning groups & scoreboards/}).click();
+  await expect(page.getByRole('heading',{name:'Learning groups'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:/Your Poland expedition/})).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'Expedition'}).first()).toHaveAttribute('aria-current','page');
   await panel.getByLabel('Choose family group').selectOption('7');
   await expect(panel.getByRole('heading',{name:'Polish study team'})).toBeVisible();
   await expect(panel.getByRole('list',{name:'Effort leaderboard'}))
     .toContainText('Confident beginner (you)');
   await expect(panel.getByText('Group scoreboards · 1 learner · current group only')).toBeVisible();
+  await page.getByRole('button',{name:'Back to Poland map'}).click();
+  await expect(page.getByRole('heading',{name:/Your Poland expedition/})).toBeVisible();
+  await page.getByRole('button',{name:/Learning groups & scoreboards/}).first().click();
+  await expect(page.getByRole('heading',{name:'Learning groups'})).toBeVisible();
 });
