@@ -31,7 +31,7 @@ import { EXPEDITION_STORAGE_KEY, awardXp, emptyExpedition, nextRegionCost,
   parseExpedition, regionTotal, setXpGoal, unlockedRegions, xpSummary } from './expedition/expedition';
 import type { LearningTier, VerifiedOutcome } from './expedition/expedition';
 
-type Page = 'home' | 'library' | 'practice' | 'expedition' | 'profile';
+type Page = 'home' | 'library' | 'practice' | 'expedition' | 'groups' | 'profile';
 type KindFilter = 'all' | LessonKind;
 type SoundPracticeReturn = {
   sourceLessonId:string;sourceItemId:string;sourceIndex:number;
@@ -473,7 +473,7 @@ export default function App() {
       </button>
       <span className="nav-heading">EXPLORE</span>
       <nav className="side-links" aria-label="Main navigation">
-        {nav.map(item => <button key={item.id} className={'nav-link ' + (!lessonId && page === item.id ? 'selected' : '')} type="button" aria-current={!lessonId && page === item.id ? 'page' : undefined} onClick={() => goTo(item.id)}><span className="nav-icon" aria-hidden="true">{item.symbol}</span>{item.label}</button>)}
+        {nav.map(item => <button key={item.id} className={'nav-link ' + (!lessonId && (page === item.id || (page === 'groups' && item.id === 'expedition')) ? 'selected' : '')} type="button" aria-current={!lessonId && (page === item.id || (page === 'groups' && item.id === 'expedition')) ? 'page' : undefined} onClick={() => goTo(item.id)}><span className="nav-icon" aria-hidden="true">{item.symbol}</span>{item.label}</button>)}
       </nav>
       <div className="sidebar-bottom">
         <div className="mini-mark">PL</div>
@@ -484,7 +484,7 @@ export default function App() {
 
     <div className="main-shell">
       <header className="topbar">
-        <div className="crumb"><span>PATH TO POLISH</span><span className="crumb-slash">/</span><strong>{active ? active.title : nav.find(x => x.id === page)?.label}</strong></div>
+        <div className="crumb"><span>PATH TO POLISH</span><span className="crumb-slash">/</span><strong>{active ? active.title : page === 'groups' ? 'Learning groups' : nav.find(x => x.id === page)?.label}</strong></div>
         <div className="top-right"><span className="local-pill">● Local preview</span><span className="initial-badge" aria-label="Local learner">P</span></div>
       </header>
       <main className="page-content" id="main-content" ref={mainRef} tabIndex={-1}>
@@ -714,13 +714,27 @@ export default function App() {
         {!loading && !loadError && !active && !editorOpen && page === 'expedition' && <>
           <section className="page-title"><span className="eyebrow">OPEN MAP · PRIVATE FAMILY EXPEDITION</span><h1>Your Poland expedition<span className="title-dot">.</span></h1>
             <p>Choose anywhere in Poland. No forced route, voting or adjacency rules. Every region you unlock stays open.</p></section>
+          <div className="expedition-quick-access">
+            <span>Practising with others? Open shared weekly results without scrolling past the map.</span>
+            <button type="button" className="secondary-action" onClick={()=>goTo('groups')}>Learning groups &amp; scoreboards →</button>
+          </div>
           <ExpeditionMap state={expedition} onChange={setExpedition} shared={familySummary}/>
           <FamilyPanel onConnection={changeFamilyConnection} onSummary={setFamilySummary} syncMessage={familySyncStatus} syncVersion={familySyncVersion}/>
           <p className="info-footnote">Your personal/offline expedition remains in this browser. If an authorized private family service is configured and you opt in, future eligible practice also contributes to your family's separate shared map and friendly weekly rankings. The two ledgers are not merged automatically.</p>
         </>}
+        {!loading && !loadError && !active && !editorOpen && page === 'groups' && <>
+          <section className="page-title"><span className="eyebrow">LEARN TOGETHER</span>
+            <h1>Learning groups<span className="title-dot">.</span></h1>
+            <p>Choose a private group, invite learners and see your group's friendly weekly scoreboards.</p>
+          </section>
+          <button className="secondary-action group-map-return" type="button" onClick={()=>goTo('expedition')}>← Back to Poland map</button>
+          <FamilyPanel onConnection={changeFamilyConnection} onSummary={setFamilySummary}
+            syncMessage={familySyncStatus} syncVersion={familySyncVersion}/>
+          <p className="info-footnote">Group scores count only eligible practice shared with that group. Your local progress and Poland map remain separate.</p>
+        </>}
         {!loading && !loadError && !active && !editorOpen && page === 'profile' && <>
           <section className="page-title"><span className="eyebrow">YOUR JOURNEY</span><h1>Your profile<span className="title-dot">.</span></h1><p>Manage your private learning identity and review the progress saved on this device.</p></section>
-          <ProfilePanel onOpenGroups={()=>goTo('expedition')}/>
+          <ProfilePanel onOpenGroups={()=>goTo('groups')}/>
           <div className="stats-row"><Counter value={lessons.length} label="Lessons available"/><Counter value={practisedCount} label="Items encountered"/><Counter value={recallRate(progress) + '%'} label="Self-rated recall"/></div>
           <section className="xp-rewards" aria-label="Your learning XP">
             <div className="xp-rewards-heading"><div><span className="eyebrow">RECOGNITION FOR YOUR WORK</span><h2>Learning XP</h2></div>
@@ -758,6 +772,6 @@ export default function App() {
       </main>
     </div>
 
-    <nav className="mobile-nav" aria-label="Mobile navigation">{nav.map(item => <button type="button" key={item.id} className={!lessonId && page === item.id ? 'selected' : ''} aria-current={!lessonId && page === item.id ? 'page' : undefined} onClick={() => goTo(item.id)}><span aria-hidden="true">{item.symbol}</span><small>{item.label}</small></button>)}</nav>
+    <nav className="mobile-nav" aria-label="Mobile navigation">{nav.map(item => <button type="button" key={item.id} className={!lessonId && (page === item.id || (page === 'groups' && item.id === 'expedition')) ? 'selected' : ''} aria-current={!lessonId && (page === item.id || (page === 'groups' && item.id === 'expedition')) ? 'page' : undefined} onClick={() => goTo(item.id)}><span aria-hidden="true">{item.symbol}</span><small>{item.label}</small></button>)}</nav>
   </div>;
 }
