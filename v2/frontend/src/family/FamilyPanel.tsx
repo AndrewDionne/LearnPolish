@@ -41,6 +41,12 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
   // Prevent a late invite response from appearing under a different family group.
   const inviteRequestId=useRef(0);
   const initialSync=useRef(syncVersion);
+  // Mutable identity/scope invalidates network replies synchronously, before React
+  // renders the new group. A request ID alone cannot distinguish account changes.
+  const scope=useRef({token,group});
+  const operationId=useRef(0);
+  const isCurrent=(t:string,g:number)=>scope.current.token===t&&scope.current.group===g;
+  useEffect(()=>()=>{summaryRequestId.current++;inviteRequestId.current++;operationId.current++;},[]);
 
   useEffect(()=>{
     onConnection(enabled&&token&&group&&FAMILY_API?{token,groupId:group}:null);
@@ -59,7 +65,12 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
     let active=true;
     void familyRequest<{families:FamilyGroup[];user:{id:number}}>('/api/v2/family/me','GET',undefined,token)
       .then(data=>{if(active){setGroups(data.families);setUserId(data.user.id);}})
-      .catch(()=>{if(active){setError('Session expired — sign in again.');setEnabled(false);}});
+      .catch(e=>{if(!active)return;
+        setSummary(null);onSummary(null);setEnabled(false);
+        if(e instanceof FamilyRequestError&&e.status===401){
+          clearAccountSession();setError('Session expired — sign in again.');
+        }else setError('Unable to verify your account. Refresh the page or sign in again.');
+      });
     return ()=>{active=false;};
   },[token]);
 
@@ -80,14 +91,19 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
     const id=++summaryRequestId.current;
     try{
       const data=await familyRequest<FamilySummary>('/api/v2/family/groups/'+g+'/summary','GET',undefined,t);
-      if(id===summaryRequestId.current){
+      if(id===summaryRequestId.current&&isCurrent(t,g)){
         setSummary(data);onSummary(data);
       }
     }catch(e){
-      if(id===summaryRequestId.current && e instanceof FamilyRequestError && e.status===404){
+      if(id!==summaryRequestId.current||!isCurrent(t,g))return;
+      if(e instanceof FamilyRequestError&&e.status===401){
+        clearAccountSession();throw new Error('Session expired — sign in again.');
+      }
+      if(e instanceof FamilyRequestError&&e.status===404){
         dropInaccessibleGroup(g);
         throw new Error('Family access has ended. Choose another group.');
       }
+      setSummary(null);onSummary(null);setEnabled(false);
       throw e;
     }
   };
@@ -96,13 +112,17 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
     let active=true;
     const id=++summaryRequestId.current;
     void familyRequest<FamilySummary>('/api/v2/family/groups/'+group+'/summary','GET',undefined,token)
-      .then(data=>{if(active&&id===summaryRequestId.current){setSummary(data);onSummary(data);}})
-      .catch(error=>{if(active&&id===summaryRequestId.current){
-        if(error instanceof FamilyRequestError && error.status===404){
-          dropInaccessibleGroup(group);
-          setError('Family access has ended. Choose another group.');
+      .then(data=>{if(active&&id===summaryRequestId.current&&isCurrent(token,group)){
+        setSummary(data);onSummary(data);
+      }})
+      .catch(error=>{if(active&&id===summaryRequestId.current&&isCurrent(token,group)){
+        if(error instanceof FamilyRequestError&&error.status===401){
+          clearAccountSession();setError('Session expired — sign in again.');
+        }else if(error instanceof FamilyRequestError&&error.status===404){
+          dropInaccessibleGroup(group);setError('Family access has ended. Choose another group.');
         }else{
-          setError('Unable to load this private family group.');setEnabled(false);
+          setSummary(null);onSummary(null);setError('Unable to load this private family group.');
+          setEnabled(false);
         }
       }});
     return ()=>{active=false;summaryRequestId.current++;};
@@ -111,24 +131,45 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
     // The parent increments only AFTER the server acknowledges a contributed activity.
     if(syncVersion>initialSync.current&&token&&group&&FAMILY_API){
       initialSync.current=syncVersion;
-      void refresh().catch(()=>setError('Unable to refresh family results; try Refresh rankings.'));
+      const expectedToken=token,expectedGroup=group;
+      void refresh().catch(()=>{
+        if(isCurrent(expectedToken,expectedGroup))
+          setError('Unable to refresh family results; try Refresh rankings.');
+      });
     }
   },[syncVersion,token,group]);
 
   const run=async(action:()=>Promise<void>)=>{
+    const id=++operationId.current;
     setBusy(true);setError('');setStatus('');
-    try{await action();}catch(e){setError(e instanceof Error?e.message:'Family request failed');}
-    finally{setBusy(false);}
+    try{await action();}catch(e){
+      if(id===operationId.current)setError(e instanceof Error?e.message:'Family request failed');
+    }finally{if(id===operationId.current)setBusy(false);}
   };
   const saveSession=(value:string)=>{
-    setToken(value);try{sessionStorage.setItem('ptp-v2-family-session',value);}catch{/* private browsing */}
+    if(scope.current.token!==value){
+      operationId.current++;summaryRequestId.current++;inviteRequestId.current++;
+      scope.current.token=value;
+      setSummary(null);onSummary(null);
+    }
+    setToken(value);try{
+      if(value)sessionStorage.setItem('ptp-v2-family-session',value);
+      else sessionStorage.removeItem('ptp-v2-family-session');
+    }catch{/* private browsing */}
   };
   const pickGroup=(id:number)=>{
+    operationId.current++;
     summaryRequestId.current++;
     inviteRequestId.current++;
+    scope.current.group=id;
+    setBusy(false);
     setNewInvite('');setInviteCopied(false);
     setGroup(id);setSummary(null);onSummary(null);setEnabled(false);
-    try{sessionStorage.setItem('ptp-v2-family-group',String(id));sessionStorage.removeItem('ptp-v2-family-sharing');}catch{}
+    try{
+      if(id)sessionStorage.setItem('ptp-v2-family-group',String(id));
+      else sessionStorage.removeItem('ptp-v2-family-group');
+      sessionStorage.removeItem('ptp-v2-family-sharing');
+    }catch{}
   };
   const toggle=(next:boolean)=>{
     setEnabled(next);try{sessionStorage.setItem('ptp-v2-family-sharing',next?'yes':'no');}catch{}
@@ -145,7 +186,7 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
       }
       throw e;
     }
-    saveSession(data.token);setPassword('');setPendingVerification(false);setAuthMode('sign-in');
+    saveSession(data.token);pickGroup(0);setPassword('');setPendingVerification(false);setAuthMode('sign-in');
     setStatus('Signed in. Choose or create a family.');
   };
   const signUp=async()=>{
@@ -191,30 +232,39 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
   const revoked=()=>{setNewInvite('');};
 
   const create=async()=>{
-    const data=await familyRequest<FamilyGroup>('/api/v2/family/groups','POST',{name:familyName},token);
+    const t=token,g=group,id=operationId.current;
+    const data=await familyRequest<FamilyGroup>('/api/v2/family/groups','POST',{name:familyName},t);
+    if(id!==operationId.current||!isCurrent(t,g))return;
     setGroups(current=>[...current,data]);pickGroup(data.id);setFamilyName('');
-    await refresh(token,data.id);
+    await refresh(t,data.id);
   };
   const redeem=async()=>{
-    const data=await familyRequest<{group_id:number}>('/api/v2/family/invites/redeem','POST',{code:invite.trim()},token);
-    const me=await familyRequest<{families:FamilyGroup[]}>('/api/v2/family/me','GET',undefined,token);
+    const t=token,g=group,id=operationId.current;
+    const data=await familyRequest<{group_id:number}>('/api/v2/family/invites/redeem','POST',{code:invite.trim()},t);
+    if(id!==operationId.current||!isCurrent(t,g))return;
+    const me=await familyRequest<{families:FamilyGroup[]}>('/api/v2/family/me','GET',undefined,t);
+    if(id!==operationId.current||!isCurrent(t,g))return;
     setGroups(me.families);pickGroup(data.group_id);setInvite('');
-    await refresh(token,data.group_id);
+    await refresh(t,data.group_id);
   };
   const inviteMember=async()=>{
     const id=++inviteRequestId.current;
-    const chosenGroup=group;
-    const data=await familyRequest<{code:string}>('/api/v2/family/groups/'+chosenGroup+'/invite','POST',{},token);
-    if(id===inviteRequestId.current){setNewInvite(data.code);setInviteCopied(false);}
+    const chosenGroup=group,chosenToken=token;
+    const data=await familyRequest<{code:string}>('/api/v2/family/groups/'+chosenGroup+'/invite','POST',{},chosenToken);
+    if(id===inviteRequestId.current&&isCurrent(chosenToken,chosenGroup)){
+      setNewInvite(data.code);setInviteCopied(false);
+    }
   };
 
   const copyInvite=async()=>{
     if(!newInvite)return;
+    const chosenToken=token,chosenGroup=group;
     try{
       if(!navigator.clipboard?.writeText)throw new Error('Clipboard unavailable');
       await navigator.clipboard.writeText(newInvite);
-      setInviteCopied(true);
+      if(isCurrent(chosenToken,chosenGroup))setInviteCopied(true);
     }catch{
+      if(!isCurrent(chosenToken,chosenGroup))return;
       setInviteCopied(false);
       setStatus('Select the invitation code below and copy it manually.');
     }
