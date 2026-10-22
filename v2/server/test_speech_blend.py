@@ -4,6 +4,7 @@ import hashlib
 import io
 import json
 import pathlib
+import sqlite3
 import tempfile
 import unittest
 
@@ -240,9 +241,8 @@ class BlendEndpoint(unittest.TestCase):
                 self.assertNotIn("combined",result.json)
         self.assertEqual(self.azure,[])
         self.assertEqual(self.groq,[])
-        with self.app.app_context():
-            from family_api import db
-            self.assertEqual(db().execute("SELECT COALESCE(SUM(requests),0) "
+        with sqlite3.connect(pathlib.Path(self.tmp.name)/"family.sqlite") as db:
+            self.assertEqual(db.execute("SELECT COALESCE(SUM(requests),0) "
                 "FROM speech_usage").fetchone()[0],0)
 
     def test_shared_f0_daily_cap_blocks_blend_and_single_provider(self):
@@ -263,13 +263,11 @@ class BlendEndpoint(unittest.TestCase):
         self.assertNotIn("combined",denied.json)
         self.assertEqual(len(self.azure),12)
         self.assertEqual(len(self.groq),11)
-        with self.app.app_context():
-            from family_api import db
-            self.assertEqual(db().execute("SELECT requests FROM speech_usage").fetchone()[0],12)
+        with sqlite3.connect(pathlib.Path(self.tmp.name)/"family.sqlite") as db:
+            self.assertEqual(db.execute("SELECT requests FROM speech_usage").fetchone()[0],12)
 
     def test_provider_exception_remains_inconclusive_and_consumes_one_allowance(self):
         """Do not refund SDK/network failures; never leak exception text."""
-        auth=self.auth()
         def failure(*_):
             self.azure.append(("attempt",))
             raise TimeoutError("PRIVATE PROVIDER KEY AND TRANSCRIPT")
@@ -288,6 +286,5 @@ class BlendEndpoint(unittest.TestCase):
         self.assertNotIn("scores",result.json)
         self.assertNotIn("PRIVATE",result.get_data(as_text=True))
         self.assertEqual(self.groq,[])
-        with self.app.app_context():
-            from family_api import db
-            self.assertEqual(db().execute("SELECT requests FROM speech_usage").fetchone()[0],1)
+        with sqlite3.connect(pathlib.Path(self.tmp.name)/"timeout.sqlite") as db:
+            self.assertEqual(db.execute("SELECT requests FROM speech_usage").fetchone()[0],1)
