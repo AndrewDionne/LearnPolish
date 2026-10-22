@@ -1,3 +1,13 @@
+## DPT-03 synthetic unavailable-catalog recovery — 2026-10-22
+
+Owner-approved roadmap remains [v2/DEFERRED_PHYSICAL_TEST_ROADMAP.md](v2/DEFERRED_PHYSICAL_TEST_ROADMAP.md). **Independent error-state tranche** on `feat/v2-dpt03-catalog-error-retry`; earlier DPT-03 UX/accessibility PR #101 is still OPEN and must be rechecked for integration before merging either out of order. DPT-02 PR #100 previously merged at `c0542f714b2471d799d3f839217592d880ac18fc`, all four lanes green.
+
+**Observed behavior and fix:** `App.tsx` fetched `generated/lessons.json` exactly once. If temporarily unavailable, all learning views stayed hidden and only a developer-specific `npm run content` instruction was displayed, forcing a full browser reload. Introduce explicit `Retry loading lessons` on the truthful `role=alert` error state. Increment local retry state to abort any previous request, clear stale loading errors, and refetch *only* the existing validated manifest; never reset browser-local progress/personal content/reviews/XP or invent an offline catalog. If the second attempt also fails, the same recovery action must remain available, with no automatic retry loops.
+
+**Desktop/mobile browser test:** intercept original generated catalog response with 503 for first two requests, validate accessible error and retry button, recover from actual repository artifact on third attempt, retain byte-identical saved local progress, navigate Library and open an original lesson, and assert no console page errors. No public deployment, new service, audio, paid AI or human acceptance claims. Merge only after all four final-head CI lanes pass, and revalidate against merged PR #101 when applicable.
+
+---
+
 ## DPT-02 reconnect, duplicate-click and corrupted-backup completion gate — 2026-10-22
 
 Source of truth: [v2/DEFERRED_PHYSICAL_TEST_ROADMAP.md](v2/DEFERRED_PHYSICAL_TEST_ROADMAP.md). **Prior merged and certified:** PR #98 `fb5a34f433c94f289353500df12614b3e84d8dc3` ([CI #39819216754 4/4 PASS](https://github.com/AndrewDionne/LearnPolish/actions/runs/39819216754)), PR #99 `8551cf6ff2c81a240f34eb7496fb253ffe99f70e` ([CI #39823136038 4/4 PASS](https://github.com/AndrewDionne/LearnPolish/actions/runs/39823136038)). DPT-01 PR #97 previously merged.
