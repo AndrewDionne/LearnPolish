@@ -125,3 +125,28 @@ test('late group-creation response cannot change group chosen while creating',as
   await expect(panel.getByText('20 weekly family XP')).toBeVisible();
   await expect(panel.getByText('Late group')).toHaveCount(0);
 });
+
+test('temporary identity verification failure hides private state without pretending logout',async({page})=>{
+  let releaseAccount:()=>void=()=>{};
+  const held=new Promise<void>(resolve=>{releaseAccount=resolve;});
+  await page.route('**/api/v2/family/me',async route=>{
+    await held;await route.fulfill(json({error:'service_unavailable'},503));
+  });
+  await page.route('**/api/v2/family/groups/1/summary',route=>route.fulfill(json(summary(1))));
+  const panel=await seed(page);
+  await expect(panel.getByText('100 weekly family XP')).toBeVisible();
+  const late=page.waitForResponse('**/api/v2/family/me');
+  releaseAccount();await late;
+  await expect(panel.getByText('Unable to verify your account. Refresh the page or sign in again.')).toBeVisible();
+  await expect(panel.getByText('100 weekly family XP')).toHaveCount(0);
+  await expect(panel.getByLabel('Choose family group')).toHaveValue('0');
+  await expect(panel.getByRole('checkbox',{name:/Contribute my/})).toHaveCount(0);
+  const stored=await page.evaluate(()=>({
+    token:sessionStorage.getItem('ptp-v2-family-session'),
+    group:sessionStorage.getItem('ptp-v2-family-group'),
+    sharing:sessionStorage.getItem('ptp-v2-family-sharing')
+  }));
+  expect(stored.token).toBe('test-group-session'); // Temporary outage does not revoke server session.
+  expect(stored.group).toBeNull();
+  expect(stored.sharing).toBeNull();
+});
