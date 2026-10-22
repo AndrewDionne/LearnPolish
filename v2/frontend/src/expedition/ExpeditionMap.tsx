@@ -32,7 +32,7 @@ export default function ExpeditionMap({state,onChange,shared}:Props){
     </div>
     <div className="expedition-layout">
       <div className="poland-map" role="group" aria-label="Choose a Polish region from the map">
-        <svg viewBox="0 0 585 555" role="img" aria-label="Clickable outline map of Poland showing sixteen regions" preserveAspectRatio="xMidYMid meet">
+        <svg viewBox="0 0 585 555" role="group" aria-label="Clickable outline map of Poland showing sixteen regions" preserveAspectRatio="xMidYMid meet">
           {regions.map(region=><path key={region.id}
             d={region.path}
             className={'poland-region '+(unlocked.includes(region.id)?'unlocked ':'')+(region.id===state.selectedRegion?'chosen':'')}
@@ -40,7 +40,7 @@ export default function ExpeditionMap({state,onChange,shared}:Props){
             onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();select(region.id);}}}
             tabIndex={0} role="button" aria-label={region.name}
             aria-pressed={region.id===state.selectedRegion}>
-            <title>{region.name}: {unlocked.includes(region.id)?'unlocked':(region.id===state.selectedRegion?'currently selected':'available to explore')}</title>
+            <title>{region.name}</title>
           </path>)}
         </svg>
         <div className="expedition-legend"><span><i className="legend-open"/>Unlocked</span><span><i className="legend-selected"/>Selected</span><span><i className="legend-locked"/>Available</span></div>
