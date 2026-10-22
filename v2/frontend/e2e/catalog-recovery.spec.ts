@@ -1,5 +1,10 @@
 import {expect,test} from '@playwright/test';
 
+// This test controls catalog HTTP availability, not offline caching. Blocking
+// service workers here prevents cached responses from bypassing page.route;
+// the independent offline/reconnect suite still tests the actual worker.
+test.use({serviceWorkers:'block'});
+
 test('catalog failure offers an in-app retry that restores learning without resetting progress',async({page,isMobile})=>{
   const pageErrors:string[]=[];
   page.on('pageerror',e=>pageErrors.push(e.message));
