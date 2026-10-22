@@ -17,6 +17,19 @@ describe('Polish speech capture format and confidence', () => {
     expect(result.sampleRate).toBe(16000);
     expect(result.seconds).toBe(1);
   });
+  test('10-second server limit agrees with local preview before any upload', () => {
+    const usable = (seconds:number) => inspectPcm16(
+      Int16Array.from({length:Math.round(seconds*16000)},(_,i)=>Math.round(5000*Math.sin(i/11)))
+    );
+    expect(usable(0.6).quality).toBe('usable');
+    expect(usable(10).quality).toBe('usable');
+    expect(usable(10.01).quality).toBe('inconclusive');
+    expect(usable(10.01).reason).toMatch(/too long/);
+    expect(prepareAssessmentInput('lesson:0','Dzień dobry',{
+      wav:encodePcm16Wav(new Int16Array([1,2])),
+      check:usable(10.01),
+    })).toBeNull();
+  });
   test('WAV byte structure exactly matches mono 16kHz PCM16', async () => {
     const blob = encodePcm16Wav(new Int16Array([1,-2,32767,-32768]));
     const b = new DataView(await blob.arrayBuffer());
