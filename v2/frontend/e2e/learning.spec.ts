@@ -872,3 +872,47 @@ test('unconfigured private family service shows an honest disabled state, not in
   await expect(section.getByRole('button',{name:'Sign in'})).toHaveCount(0);
   await page.screenshot({path:'test-results/family-disabled-expedition.png',fullPage:true});
 });
+
+
+test('backup restore refuses quota errors without losing current browser progress',async({page})=>{
+  await page.goto('/');
+  await page.getByRole('button',{name:'Explore lessons'}).click();
+  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Greetings and Introductions');
+  await page.getByRole('button',{name:/Greetings and Introductions/}).click();
+  await page.getByRole('button',{name:/Reveal meaning/}).click();
+  await page.getByRole('button',{name:/Got it/}).click();
+  await page.getByRole('button',{name:/My progress|Profile/}).last().click();
+  const download=page.waitForEvent('download');
+  await page.getByRole('button',{name:'Export full backup'}).click();
+  const bytes=await readFile(await (await download).path());
+  const keys=['ptp-v2-personal-lessons','ptp-v2-progress','ptp-v2-review-schedule',
+    'ptp-v2-reading-position','ptp-v2-expedition','ptp-v2-last-lesson'];
+  const original=await page.evaluate(keys=>keys.map(k=>[k,localStorage.getItem(k)]),keys);
+  await page.evaluate(()=>{
+    const setter=Storage.prototype.setItem;
+    let failed=false;
+    Storage.prototype.setItem=function(key:string,value:string){
+      if(key==='ptp-v2-expedition'&&!failed){
+        failed=true;throw new DOMException('Quota exceeded','QuotaExceededError');
+      }
+      return setter.call(this,key,value);
+    };
+  });
+  page.once('dialog',dialog=>dialog.accept());
+  await page.locator('input[aria-label="Restore from backup"]').setInputFiles({
+    name:'valid-backup.json',mimeType:'application/json',buffer:bytes
+  });
+  await expect(page.getByRole('alert')).toContainText('previous saved data was preserved');
+  await expect(page.getByText(/Backup restored:/)).toHaveCount(0);
+  const after=await page.evaluate(keys=>keys.map(k=>[k,localStorage.getItem(k)]),keys);
+  expect(after).toEqual(original);
+  await page.reload();
+  await page.getByRole('button',{name:/My progress|Profile/}).last().click();
+  await expect(page.getByRole('region',{name:'Your learning XP'})).toContainText('10');
+  // The quota error occurred only once; the same, verified backup can be retried.
+  page.once('dialog',dialog=>dialog.accept());
+  await page.locator('input[aria-label="Restore from backup"]').setInputFiles({
+    name:'valid-backup.json',mimeType:'application/json',buffer:bytes
+  });
+  await expect(page.getByText(/Backup restored:/)).toBeVisible();
+});
