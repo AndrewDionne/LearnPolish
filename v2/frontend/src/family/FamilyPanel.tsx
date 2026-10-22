@@ -91,11 +91,12 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
     }catch(e){
       if(id!==summaryRequestId.current||!isCurrent(t,g))return;
       if(e instanceof FamilyRequestError&&e.status===401){
-        clearAccountSession();throw new Error('Session expired — sign in again.');
+        clearAccountSession();setError('Session expired — sign in again.');
+        return;
       }
       if(e instanceof FamilyRequestError&&e.status===404){
-        dropInaccessibleGroup(g);
-        throw new Error('Family access has ended. Choose another group.');
+        dropInaccessibleGroup(g);setError('Family access has ended. Choose another group.');
+        return;
       }
       setSummary(null);onSummary(null);setEnabled(false);
       throw e;
