@@ -21,6 +21,7 @@ import { REVIEW_STORAGE_KEY, countDue, dueItems, nextDue, parseReviewSchedule, r
 import type { ReviewSchedule } from './review';
 import { MAX_BACKUP_BYTES, makeBackup, parseBackup } from './backup';
 import { persistRestoredBackup } from './restore-storage';
+import { claimCompletion } from './completion-guard';
 import { GOLD_STORAGE_KEY, parseGold } from './gold';
 import type { RewardMode } from './gold';
 import ExpeditionMap from './expedition/ExpeditionMap';
@@ -212,6 +213,15 @@ export default function App() {
       : itemsForMode(active, mode)
     : [];
   const current = sessionItems[index];
+  // A rapid repeat activation of the same visible answer must not create a
+  // second recall/review attempt. This lock is specific to a lesson step, NOT
+  // a permanent per-item lock: intentional repeat sessions remain available.
+  const completionGuard=useRef<{step:string|null}>({step:null});
+  const completionStep=[lessonId,mode,batchIndex,index,current?.id].join('|');
+  useEffect(()=>{completionGuard.current.step=null;},
+    [lessonId,mode,batchIndex,index,current?.id,finished]);
+  const claimCurrentCompletion=()=>!!current&&!finished&&
+    claimCompletion(completionGuard.current,completionStep);
   const listeningChoices = active && current && mode === 'listen' ? comprehensionChoices(active.items, current, index, active.kind === 'reading') : [];
   const correctAnswer = current ? correctComprehensionAnswer(current) : null;
   const chosenAnswer = correctAnswer || current?.english || '';
@@ -350,7 +360,7 @@ export default function App() {
     }
   };
   const record = (remembered: boolean) => {
-    if (!current) return;
+    if (!claimCurrentCompletion()) return;
     const at = new Date().toISOString();
     setProgress(previous => recordAttempt(previous, progressKey(current.id, mode), remembered, at));
     if (mode === 'learn' || mode === 'read' || mode === 'listen') {
@@ -560,6 +570,7 @@ export default function App() {
                   SPEECH_BLEND_AVAILABLE && !!current.pronunciationSegments)
               : undefined}
             onNext={(completedTake) => {
+            if (!claimCurrentCompletion()) return;
             if (completedTake) earn(current.id, 'speak');
             if (index < sessionItems.length - 1) jump(index + 1);
             else { stopAudio(); setFinished(true); }
