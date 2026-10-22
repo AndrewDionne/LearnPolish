@@ -107,14 +107,33 @@ self.addEventListener('message', event => {
         completed++;
         report({ type: 'progress', done: completed, total: urls.length });
       }
-      // Do not send a success confirmation until every file has been stored in the durable cache.
-      for (const url of urls) {
-        const stored = await staging.match(url);
-        if (!stored) throw new Error('Offline staging failed');
-        await cache.put(url, stored);
+      // Keep existing files intact and roll back any promoted files if the
+      // durable cache runs out of space halfway through a multi-file download.
+      // Staged progress is not evidence of a completed offline lesson.
+      const originals = new Map();
+      const promoted = [];
+      try {
+        for (const url of urls) {
+          const stored = await staging.match(url);
+          if (!stored) throw new Error('Offline staging failed');
+          originals.set(url, await cache.match(url));
+          promoted.push(url); // Track before put; storage may fail during it.
+          await cache.put(url, stored);
+        }
+        const verified = await Promise.all(urls.map(url => cache.match(url)));
+        if (verified.some(item => !item)) throw new Error('Offline cache verification failed');
+      } catch (error) {
+        let rollbackFailed = false;
+        for (const url of promoted.reverse()) {
+          try {
+            const previous = originals.get(url);
+            if (previous) await cache.put(url, previous);
+            else await cache.delete(url);
+          } catch { rollbackFailed = true; }
+        }
+        if (rollbackFailed) throw new Error('Offline caching failed; incomplete files may remain. Retry download before relying on this lesson offline.');
+        throw error;
       }
-      const verified = await Promise.all(urls.map(url => cache.match(url)));
-      if (verified.some(item => !item)) throw new Error('Offline cache verification failed');
       report({ type: 'done', ready: true, done: urls.length, total: urls.length });
     } finally {
       await caches.delete(tempName);
