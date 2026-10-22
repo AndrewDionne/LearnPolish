@@ -1,3 +1,15 @@
+## Focused Learning Groups view from Profile and Expedition — 2026-10-22
+
+After **PR #95 MERGED** at `70cd0b12c98cedcab9eaf8535437c7b9e2f74419`, the owner asked to continue. User friction: Profile's previous "Learning groups & scoreboards" link reached the top of the full Poland map, leaving the family scoreboard far below it, especially on narrow screens.
+
+This tranche adds an **in-app focused Learning Groups view** without a sixth primary/mobile navigation entry. Profile opens that view directly; Expedition gains a compact shortcut to it near the top of the map. A visible "Back to Poland map" action returns to Expedition. The shared FamilyPanel remains the **only** account/management/scoreboard implementation: focused view and full Expedition overview render the same component exclusively, never two ledgers. Expedition remains active in primary navigation when Groups is focused; breadcrumb is "Learning groups". Full Expedition overview still shows the original Map and FamilyPanel to preserve established paths. No new URL route, fake player, score, group permission, speech provider call, account store, database migration, XP calculation, automatic contribution opt-in or local-history synchronization.
+
+Profile shows names of **only the groups that the verified user belongs to** from their authenticated `GET /api/v2/family/me` response. It never shows membership names to signed-out users, unconfigured deployments, or expired sessions. Group selection and explicit contribution checkboxes continue within FamilyPanel, which already resets sharing on switching groups and guards late invite/summary responses. Names are text-rendered by React and cannot inject markup.
+
+E2E gate: maintain four GitHub CI lanes (frontend migration/types/unit/build/desktop+mobile/accessibility, private backend, connected actual two-account family journeys, benchmark harness). Extend connected profile edit → focused group score → map → group shortcut and synthetic accessibility/geometry for focused group page. Merge only with green CI. Keep durable completion status in GitHub issue #2.
+
+---
+
 ## Profile, private learning groups and group scoreboards — implementation tranche (2026-10-21)
 
 Owner scope: create a useful **Profile** page; expose actual authenticated private identity and learning-group navigation; improve group scoreboards; execute E2E. Base is merged V2 Library stage navigation PR #94, not recalled chat state. **Single existing authority:** V2 family service users, memberships, invitations, verified email, deduplicated eligible activity, week-bound UTC recognition and region funding. Do not build another account backend, synthetic leaderboard, account-synced local XP or unverified acoustic mastery.
