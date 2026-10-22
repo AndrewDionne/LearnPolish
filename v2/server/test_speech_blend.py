@@ -1,8 +1,10 @@
 """Hermetic experimental two-provider Speak tests. No real Azure/Groq calls."""
 from __future__ import annotations
+import hashlib
 import io
 import json
 import pathlib
+import sqlite3
 import tempfile
 import unittest
 
@@ -10,6 +12,8 @@ from family_api import create_app
 from speech_assessment import assessment_from_sdk
 from speech_blend import blend_assessment, transcript_hints, sound_units
 from test_speech_assessment import wav_bytes
+from unittest.mock import patch
+from speech_blend import groq_whisper_transcribe
 
 
 def sample_azure(score=84):
@@ -19,6 +23,38 @@ def sample_azure(score=84):
 
 
 class BlendUnits(unittest.TestCase):
+    def test_groq_transport_one_bounded_request_with_exact_wav_and_no_retries(self):
+        """A local fake HTTPS response proves the provider adapter does not mutate takes."""
+        recording=wav_bytes(seconds=1.123,amplitude=4900)
+        seen=[]
+        class FakeResponse:
+            def __enter__(self): return self
+            def __exit__(self,*_): pass
+            def read(self,limit):
+                self_limit=limit
+                assert self_limit<=16384
+                return '{"text":"Świętokrzyska"}'.encode("utf-8")
+        def fake_open(request,timeout):
+            seen.append((request,timeout))
+            return FakeResponse()
+        with patch("speech_blend.urllib.request.urlopen",side_effect=fake_open):
+            result=groq_whisper_transcribe(recording,"SYNTHETIC-NO-REAL-KEY")
+        self.assertEqual(result,"Świętokrzyska")
+        self.assertEqual(len(seen),1)
+        req,timeout=seen[0]
+        self.assertEqual(timeout,18)
+        self.assertEqual(req.full_url,"https://api.groq.com/openai/v1/audio/transcriptions")
+        self.assertEqual(req.data.count(recording),1)
+        self.assertNotIn("SYNTHETIC-NO-REAL-KEY",str(req.data))
+        self.assertEqual(req.get_method(),"POST")
+        seen.clear()
+        with patch("speech_blend.urllib.request.urlopen",
+                   side_effect=TimeoutError("FAKE PROVIDER TIMEOUT")):
+            with self.assertRaises(TimeoutError):
+                groq_whisper_transcribe(recording,"SYNTHETIC-NO-REAL-KEY")
+        # No automatic retries hidden in this provider adapter.
+        self.assertEqual(seen,[])
+
     def test_same_historical_source_yields_50_plus_84_over_two(self):
         groups=["Świę","to","krzy","ska"]
         one=transcript_hints("Świętokrzyska",groups,"Sweczo Seska")
@@ -116,11 +152,11 @@ class BlendEndpoint(unittest.TestCase):
         self.tmp.cleanup()
 
     def fake_azure(self,wav,ref,key,region):
-        self.azure.append((len(wav),ref))
+        self.azure.append((len(wav),ref,hashlib.sha256(wav).hexdigest()))
         return sample_azure()
 
     def fake_whisper(self,wav,key):
-        self.groq.append(len(wav))
+        self.groq.append((len(wav),hashlib.sha256(wav).hexdigest()))
         return "Sveczo Seska"
 
     def auth(self):
@@ -207,3 +243,82 @@ class BlendEndpoint(unittest.TestCase):
         reply=self.send(auth)
         self.assertEqual(reply.json["status"],"inconclusive")
         self.assertEqual(self.groq,[])
+
+
+    def test_validated_take_is_identical_bytes_at_both_provider_adapters(self):
+        """No resynthesis/re-encode/alternate take, only synthetic local adapters."""
+        auth=self.auth()
+        take=wav_bytes(seconds=1.37,amplitude=5200)
+        expected=hashlib.sha256(take).hexdigest()
+        result=self.send(auth,audio=take)
+        self.assertEqual(result.status_code,200)
+        self.assertEqual(result.json["status"],"ok")
+        self.assertEqual(self.azure,[(len(take),"Świętokrzyska",expected)])
+        self.assertEqual(self.groq,[(len(take),expected)])
+        self.assertNotIn(expected,result.get_data(as_text=True))
+        self.assertNotIn(expected,self.app.test_client().get(
+            "/api/v2/family/health").get_data(as_text=True))
+
+    def test_rejected_silence_clipping_duration_and_bad_riff_cost_zero(self):
+        """Before quota/provider, reject failed captures; no retry or fake grade."""
+        auth=self.auth()
+        cases=[
+            b"RIFF"+b"bad",b"not a wave",wav_bytes(.59),
+            wav_bytes(10.01),wav_bytes(1,amplitude=0),
+            wav_bytes(1,amplitude=32767),wav_bytes(1)[:-14],
+        ]
+        for take in cases:
+            with self.subTest(audio_bytes=len(take)):
+                result=self.send(auth,audio=take)
+                self.assertEqual(result.status_code,400,result.json)
+                self.assertNotIn("scores",result.json)
+                self.assertNotIn("combined",result.json)
+        self.assertEqual(self.azure,[])
+        self.assertEqual(self.groq,[])
+        with sqlite3.connect(pathlib.Path(self.tmp.name)/"family.sqlite") as db:
+            self.assertEqual(db.execute("SELECT COALESCE(SUM(requests),0) "
+                "FROM speech_usage").fetchone()[0],0)
+
+    def test_shared_f0_daily_cap_blocks_blend_and_single_provider(self):
+        """Azure-only and two-provider share 12/user and count before SDK."""
+        auth=self.auth()
+        audio=wav_bytes()
+        first=self.client.post("/api/v2/family/speech/assess",headers=auth,
+            content_type="multipart/form-data",data={
+                "item_id":"speak_swietokrzyska:0",
+                "approve_azure_audio_upload":"yes",
+                "audio":(io.BytesIO(audio),"take.wav","audio/wav")})
+        self.assertEqual(first.status_code,200,first.json)
+        for _ in range(11):
+            self.assertEqual(self.send(auth).status_code,200)
+        denied=self.send(auth)
+        self.assertEqual(denied.status_code,429,denied.json)
+        self.assertNotIn("scores",denied.json)
+        self.assertNotIn("combined",denied.json)
+        self.assertEqual(len(self.azure),12)
+        self.assertEqual(len(self.groq),11)
+        with sqlite3.connect(pathlib.Path(self.tmp.name)/"family.sqlite") as db:
+            self.assertEqual(db.execute("SELECT requests FROM speech_usage").fetchone()[0],12)
+
+    def test_provider_exception_remains_inconclusive_and_consumes_one_allowance(self):
+        """Do not refund SDK/network failures; never leak exception text."""
+        def failure(*_):
+            self.azure.append(("attempt",))
+            raise TimeoutError("PRIVATE PROVIDER KEY AND TRANSCRIPT")
+        # An injected mock endpoint only; no real service ever contacted.
+        self.app=create_app(str(pathlib.Path(self.tmp.name)/"timeout.sqlite"),
+            str(self.catalog),("http://localhost:5173",),
+            verification_sender=lambda e,c:self.mail.append((e,c)),
+            speech_enabled=True,speech_assessor=failure,
+            speech_blend_enabled=True,speech_transcriber=self.fake_whisper)
+        self.client=self.app.test_client()
+        auth=self.auth()
+        result=self.send(auth)
+        self.assertEqual(result.status_code,200)
+        self.assertEqual(result.json["status"],"inconclusive")
+        self.assertNotIn("combined",result.json)
+        self.assertNotIn("scores",result.json)
+        self.assertNotIn("PRIVATE",result.get_data(as_text=True))
+        self.assertEqual(self.groq,[])
+        with sqlite3.connect(pathlib.Path(self.tmp.name)/"timeout.sqlite") as db:
+            self.assertEqual(db.execute("SELECT requests FROM speech_usage").fetchone()[0],1)

@@ -33,7 +33,9 @@ export function inspectPcm16(samples: Int16Array, sampleRate = 16000): AcousticC
   const clippedFraction = samples.length ? clipped / samples.length : 0;
   let reason = '';
   if (seconds < 0.6) reason = 'Recording is too short. Say the full phrase and try again.';
-  else if (seconds > 12) reason = 'Recording is too long. Try a shorter phrase.';
+  // Server checked_wav enforces MAX_SECONDS=10.0; never advertise a take
+  // as assessable locally only to reject it after a private audio upload.
+  else if (seconds > 10) reason = 'Recording is too long. Try a shorter phrase.';
   else if (rms < 0.008) reason = 'Very little sound was detected. Move closer to your microphone.';
   else if (clippedFraction > 0.02) reason = 'Recording is distorted. Move farther from the microphone.';
   return { quality: reason ? 'inconclusive' : 'usable', reason, seconds, rms, clippedFraction, sampleRate: 16000 };
