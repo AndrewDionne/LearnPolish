@@ -75,16 +75,10 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
   },[token]);
 
   const dropInaccessibleGroup=(inaccessibleId:number)=>{
-    summaryRequestId.current++;
-    inviteRequestId.current++;
-    setSummary(null);onSummary(null);
     setGroups(current=>current.filter(item=>item.id!==inaccessibleId));
-    setNewInvite('');setInviteCopied(false);
-    setEnabled(false);setGroup(0);
-    try{
-      sessionStorage.removeItem('ptp-v2-family-group');
-      sessionStorage.removeItem('ptp-v2-family-sharing');
-    }catch{/* private browsing */}
+    // Clear the live request scope together with the visible selection. Otherwise
+    // an older API response can resurrect a revoked group's data.
+    pickGroup(0);
   };
   const refresh=async(t=token,g=group)=>{
     if(!t||!g)return;
