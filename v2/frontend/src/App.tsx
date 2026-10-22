@@ -107,6 +107,7 @@ export default function App() {
   const [backupError, setBackupError] = useState('');
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
+  const [lessonLoadAttempt,setLessonLoadAttempt]=useState(0);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<KindFilter>('all');
   const [libraryView,setLibraryView] = useState<LibraryView>('all');
@@ -171,6 +172,8 @@ export default function App() {
 
   useEffect(() => {
     const controller = new AbortController();
+    setLoading(true);
+    setLoadError('');
     (async () => {
       try {
         const response = await fetch(import.meta.env.BASE_URL + 'generated/lessons.json', { signal: controller.signal });
@@ -184,7 +187,7 @@ export default function App() {
       }
     })();
     return () => controller.abort();
-  }, []);
+  }, [lessonLoadAttempt]);
 
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); } catch { /* local progress is best effort */ }
@@ -508,7 +511,7 @@ export default function App() {
       </header>
       <main className="page-content" id="main-content" ref={mainRef} tabIndex={-1}>
         {loading && <section className="empty-state" role="status"><h2>Gathering your lessons…</h2><p>Preparing your Polish library.</p></section>}
-        {!loading && loadError && <section className="empty-state" role="alert"><h2>Lessons could not load</h2><p>{loadError}</p><p>Run <code>npm run content</code> in v2/frontend, then reload. Your progress remains saved locally.</p></section>}
+        {!loading && loadError && <section className="empty-state" role="alert"><h2>Lessons could not load</h2><p>{loadError}</p><p>Check your connection and try again. Your progress and personal lessons remain stored in this browser.</p><button className="primary-action" type="button" onClick={()=>setLessonLoadAttempt(x=>x+1)}>Retry loading lessons</button></section>}
 
         {!loading && !loadError && active && current && <div className={'learning' + (mode === 'speak' ? ' speak-focused' : '')}>
           <div className="lesson-tools"><button type="button" className="back-link" onClick={soundReturn && active.id === soundReturn.practiceLessonId ? returnFromSoundPractice : () => goTo('library')}>{soundReturn && active.id === soundReturn.practiceLessonId ? '← Back to ' + soundReturn.sourceWord : '← Back to library'}</button>{mode !== 'speak' && <div><button type="button" onClick={() => exportFile(active)}>Export JSON</button><OfflineDownloadControl lesson={active}/>{active.source === 'personal' && <><button type="button" onClick={() => beginEdit(active)}>Edit lesson</button><button type="button" className="delete-link" onClick={() => deletePersonalLesson(active)}>Delete</button></>}</div>}</div>
