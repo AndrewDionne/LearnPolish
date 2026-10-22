@@ -129,7 +129,7 @@ describe('DPT-04 optional pronunciation transport — fully mocked, no external 
   test('one validated WAV is posted to the intended route with only the approved provider consents',async()=>{
     const request=await ready();
     const recordings=capture();
-    const spy=vi.fn(async (_url:string)=>reply(azure,200,{'Server-Timing':'speech-sdk;dur=12.4'}));
+    const spy=vi.fn(async (_url:string,_init?:RequestInit)=>reply(azure,200,{'Server-Timing':'speech-sdk;dur=12.4'}));
     vi.stubGlobal('fetch',spy);
     const feedback=await request(recordings,'synthetic-token');
     expect(feedback.status).toBe('ok');
@@ -148,6 +148,25 @@ describe('DPT-04 optional pronunciation transport — fully mocked, no external 
     expect([...new Uint8Array(await (submitted as Blob).arrayBuffer())]).toEqual(
       [...new Uint8Array(await recordings.wav.arrayBuffer())]);
     expect(JSON.stringify(feedback)).not.toContain('synthetic-token');
+  });
+
+  test('explicit two-provider consent is sent only to blended route, with same original WAV',async()=>{
+    const request=await ready();
+    const recording=capture();
+    const spy=vi.fn(async (_url:string,_init?:RequestInit)=>reply(blend));
+    vi.stubGlobal('fetch',spy);
+    const result=await request(recording,'synthetic-token',undefined,true);
+    expect(result.status).toBe('ok');
+    expect(spy).toHaveBeenCalledTimes(1);
+    const [url,init]=spy.mock.calls[0] as [string,RequestInit];
+    expect(url).toBe('https://private-family.test/api/v2/family/speech/assess-blend');
+    const form=init.body as FormData;
+    expect(form.get('approve_azure_audio_upload')).toBe('yes');
+    expect(form.get('approve_groq_audio_upload')).toBe('yes');
+    expect(form.get('item_id')).toBe(recording.itemId);
+    const wav=form.get('audio') as Blob;
+    expect([...new Uint8Array(await wav.arrayBuffer())]).toEqual(
+      [...new Uint8Array(await recording.wav.arrayBuffer())]);
   });
 
   test('inconclusive provider reply is not zero, does not retain provider payload',async()=>{
