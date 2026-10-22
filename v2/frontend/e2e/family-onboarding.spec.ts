@@ -117,6 +117,10 @@ test('private profile edits display name and shows only joined learning groups',
   await profile.getByRole('button',{name:/Learning groups & scoreboards/}).click();
   await expect(page.getByRole('heading',{name:'Learning groups'})).toBeVisible();
   await expect(page.getByRole('heading',{name:/Your Poland expedition/})).toHaveCount(0);
+  const groupTop=await page.getByRole('heading',{name:'Learning groups'})
+    .evaluate(element=>element.getBoundingClientRect().top);
+  expect(groupTop).toBeGreaterThanOrEqual(0);
+  expect(groupTop).toBeLessThan(300); // New destination is actually in view, not merely in DOM.
   await expect(page.getByRole('button',{name:'Expedition'}).first()).toHaveAttribute('aria-current','page');
   await panel.getByLabel('Choose family group').selectOption('7');
   await expect(panel.getByRole('heading',{name:'Polish study team'})).toBeVisible();
