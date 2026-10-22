@@ -12,6 +12,8 @@ from family_api import create_app
 from speech_assessment import assessment_from_sdk
 from speech_blend import blend_assessment, transcript_hints, sound_units
 from test_speech_assessment import wav_bytes
+from unittest.mock import patch
+from speech_blend import groq_whisper_transcribe
 
 
 def sample_azure(score=84):
@@ -21,6 +23,38 @@ def sample_azure(score=84):
 
 
 class BlendUnits(unittest.TestCase):
+    def test_groq_transport_one_bounded_request_with_exact_wav_and_no_retries(self):
+        """A local fake HTTPS response proves the provider adapter does not mutate takes."""
+        recording=wav_bytes(seconds=1.123,amplitude=4900)
+        seen=[]
+        class FakeResponse:
+            def __enter__(self): return self
+            def __exit__(self,*_): pass
+            def read(self,limit):
+                self_limit=limit
+                assert self_limit<=16384
+                return b'{"text":"Świętokrzyska"}'
+        def fake_open(request,timeout):
+            seen.append((request,timeout))
+            return FakeResponse()
+        with patch("speech_blend.urllib.request.urlopen",side_effect=fake_open):
+            result=groq_whisper_transcribe(recording,"SYNTHETIC-NO-REAL-KEY")
+        self.assertEqual(result,"Świętokrzyska")
+        self.assertEqual(len(seen),1)
+        req,timeout=seen[0]
+        self.assertEqual(timeout,18)
+        self.assertEqual(req.full_url,"https://api.groq.com/openai/v1/audio/transcriptions")
+        self.assertEqual(req.data.count(recording),1)
+        self.assertNotIn("SYNTHETIC-NO-REAL-KEY",str(req.data))
+        self.assertEqual(req.get_method(),"POST")
+        seen.clear()
+        with patch("speech_blend.urllib.request.urlopen",
+                   side_effect=TimeoutError("FAKE PROVIDER TIMEOUT")):
+            with self.assertRaises(TimeoutError):
+                groq_whisper_transcribe(recording,"SYNTHETIC-NO-REAL-KEY")
+        # No automatic retries hidden in this provider adapter.
+        self.assertEqual(seen,[])
+
     def test_same_historical_source_yields_50_plus_84_over_two(self):
         groups=["Świę","to","krzy","ska"]
         one=transcript_hints("Świętokrzyska",groups,"Sweczo Seska")
