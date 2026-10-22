@@ -921,10 +921,14 @@ test('backup restore refuses quota errors without losing current browser progres
 test('offline completion persists exactly once across reconnect and allows deliberate retry',async({page,context})=>{
   await page.goto('/');
   await page.evaluate(async()=>{await navigator.serviceWorker.ready;});
-  await page.waitForFunction(()=>!!navigator.serviceWorker.controller);
   await page.getByRole('button',{name:'Explore lessons'}).click();
   await page.getByRole('searchbox',{name:'Search lessons'}).fill('Greetings and Introductions');
   await page.getByRole('button',{name:/Greetings and Introductions/}).click();
+  // Follow the proven offline readiness gate: cache the actual lesson pack
+  // before disconnecting. A registered worker alone is not proof of readiness.
+  await page.getByRole('button',{name:/Download for offline/}).click();
+  await expect(page.getByText('Offline ready',{exact:false})).toBeVisible({timeout:30000});
+  await page.waitForFunction(()=>!!navigator.serviceWorker.controller);
   await page.getByRole('button',{name:/Reveal meaning/}).click();
   await page.getByRole('button',{name:/Got it/}).click();
   await page.waitForFunction(()=>{
