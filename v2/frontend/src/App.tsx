@@ -159,6 +159,13 @@ export default function App() {
     if (!hasMounted.current) { hasMounted.current = true; return; }
     mainRef.current?.focus({ preventScroll: true });
   }, [page, lessonId, editorOpen]);
+  // A focused group destination must be visible immediately, even if the
+  // learner came from the bottom of a long Profile or Expedition page.
+  useEffect(() => {
+    if (page === 'groups' || page === 'expedition') {
+      window.scrollTo({top:0,behavior:'auto'});
+    }
+  }, [page]);
 
   useEffect(() => {
     const controller = new AbortController();
