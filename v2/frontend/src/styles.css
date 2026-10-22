@@ -39,7 +39,7 @@
 .listening-answer .listen-transcript{font:600 clamp(25px,3.2vw,38px)/1.35 "Outfit",sans-serif;color:#224c57}
 .listening-answer>p.answer-good,.listening-answer>p.answer-review{font-size:13px;font-weight:700;padding:12px 16px;border-radius:10px}
 .answer-good{color:#277762;background:#e8f6ef}.answer-review{color:#8a6445;background:#fcf0e3}
-.complete-card{justify-content:center}.complete-card h2{font-size:43px;letter-spacing:-1px;margin:18px 0 9px}.complete-card p{font-size:15px;color:#71898e;max-width:460px;line-height:1.7}
+.complete-card{justify-content:center}.complete-card h2{font-size:43px;letter-spacing:-1px;margin:18px 0 9px}.complete-card p{font-size:15px;color:#435f66;max-width:460px;line-height:1.7}
 @media(max-width:760px){.listening-symbol{margin-top:16px;height:68px;width:68px;font-size:40px}.listening-card h2{font-size:26px}.listening-options button{padding:12px 15px}.speed-picker{gap:5px}.speed-picker legend{float:none;width:100%;text-align:center}.complete-card h2{font-size:34px}}
 
 /* Verified service-worker-managed offline packs */
