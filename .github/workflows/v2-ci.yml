@@ -38,7 +38,9 @@ permissions:
 
 jobs:
   frontend:
-    runs-on: ubuntu-latest
+    # Pin the validated runner while ubuntu-latest migrates from 24.04 to 26.04.
+    # Playwright still installs Chromium and all operating-system dependencies.
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     defaults:
       run:
@@ -96,7 +98,9 @@ jobs:
         run: python -m unittest discover -s v2/server -p 'test_*.py' -v
 
   family-connected-browser:
-    runs-on: ubuntu-latest
+    # Pin the validated runner while ubuntu-latest migrates from 24.04 to 26.04.
+    # Playwright still installs Chromium and all operating-system dependencies.
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     defaults:
       run:
