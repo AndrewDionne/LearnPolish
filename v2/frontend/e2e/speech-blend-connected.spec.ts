@@ -76,7 +76,7 @@ test('normal Speak shows coloured source syllables with gaps and only 67 combine
     expect(form).toContain('speak_swietokrzyska:0');
     expect(form).toContain('RIFF');
     await route.fulfill(ok({
-      status:'ok',engine:'azure-whisper-blend-v1',calibration:'experimental-uncalibrated',
+      item_id:'speak_swietokrzyska:0',status:'ok',engine:'azure-whisper-blend-v1',calibration:'experimental-uncalibrated',
       combined:67,colourHints:{method:'whisper-transcript-proxy-v1',reference:'Świętokrzyska',
         segments:[{polish:'Świę',hint:'review'},{polish:'to',hint:'review'},
                   {polish:'krzy',hint:'focus'},{polish:'ska',hint:'close'}]},
