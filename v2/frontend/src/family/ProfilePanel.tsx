@@ -67,6 +67,11 @@ export default function ProfilePanel({onOpenGroups}:{onOpenGroups:()=>void}){
             <span>{data.families.length} {data.families.length===1?'learning group':'learning groups'}</span>
           </div>
         </div>
+        {data.families.length>0&&<div className="learner-joined-groups">
+          <h3>Your learning groups</h3>
+          <ul aria-label="Joined learning groups">{data.families.map(group=>
+            <li key={group.id}>{group.name}</li>)}</ul>
+        </div>}
       </div>
       :<p>No verified private account is available in this session.</p>}
     {error&&<p role="alert" className="family-error">{error}</p>}
