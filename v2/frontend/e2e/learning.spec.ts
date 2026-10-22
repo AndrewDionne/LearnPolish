@@ -916,3 +916,102 @@ test('backup restore refuses quota errors without losing current browser progres
   });
   await expect(page.getByText(/Backup restored:/)).toBeVisible();
 });
+
+
+test('offline completion persists exactly once across reconnect and allows deliberate retry',async({page,context})=>{
+  await page.goto('/');
+  await page.evaluate(async()=>{await navigator.serviceWorker.ready;});
+  await page.getByRole('button',{name:'Explore lessons'}).click();
+  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Greetings and Introductions');
+  await page.getByRole('button',{name:/Greetings and Introductions/}).click();
+  // Follow the proven offline readiness gate: cache the actual lesson pack
+  // before disconnecting. A registered worker alone is not proof of readiness.
+  await page.getByRole('button',{name:/Download for offline/}).click();
+  await expect(page.getByText('Offline ready',{exact:false})).toBeVisible({timeout:30000});
+  await page.waitForFunction(()=>!!navigator.serviceWorker.controller);
+  await page.getByRole('button',{name:/Reveal meaning/}).click();
+  await page.getByRole('button',{name:/Got it/}).click();
+  await page.waitForFunction(()=>{
+    const state=JSON.parse(localStorage.getItem('ptp-v2-expedition')||'{}');
+    return state.events?.length===1;
+  });
+  await context.setOffline(true);
+  await page.reload();
+  await expect(page.getByText('Real progress.')).toBeVisible();
+  // A returning learner sees "Continue learning", not "Explore lessons".
+  // Use stable primary navigation to visit a different existing item.
+  await page.getByRole('button',{name:'Library',exact:true}).first().click();
+  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Greetings and Introductions');
+  await page.getByRole('button',{name:/Greetings and Introductions/}).click();
+  await page.getByRole('button',{name:'Skip to next →'}).click();
+  await page.getByRole('button',{name:/Reveal meaning/}).click();
+  await page.getByRole('button',{name:/Got it/}).click();
+  await page.waitForFunction(()=>{
+    const state=JSON.parse(localStorage.getItem('ptp-v2-expedition')||'{}');
+    return state.events?.length===2;
+  });
+  const before=await page.evaluate(()=>({
+    xp:JSON.parse(localStorage.getItem('ptp-v2-expedition')||'{}'),
+    reviews:JSON.parse(localStorage.getItem('ptp-v2-review-schedule')||'{}'),
+    progress:JSON.parse(localStorage.getItem('ptp-v2-progress')||'{}'),
+  }));
+  expect(before.xp.events).toHaveLength(2);
+  expect(Object.values(before.reviews)).toHaveLength(2);
+  await context.setOffline(false);
+  await page.reload();
+  const after=await page.evaluate(()=>({
+    xp:JSON.parse(localStorage.getItem('ptp-v2-expedition')||'{}'),
+    reviews:JSON.parse(localStorage.getItem('ptp-v2-review-schedule')||'{}'),
+    progress:JSON.parse(localStorage.getItem('ptp-v2-progress')||'{}'),
+  }));
+  expect(after).toEqual(before); // No reconnect replay, synthetic sync or bonus XP.
+  await page.getByRole('button',{name:'Library',exact:true}).first().click();
+  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Greetings and Introductions');
+  await page.getByRole('button',{name:/Greetings and Introductions/}).click();
+  await page.getByRole('button',{name:/Reveal meaning/}).click();
+  await page.getByRole('button',{name:/Got it/}).click();
+  const repeated=await page.evaluate(()=>({
+    xp:JSON.parse(localStorage.getItem('ptp-v2-expedition')||'{}'),
+    reviews:JSON.parse(localStorage.getItem('ptp-v2-review-schedule')||'{}'),
+  }));
+  expect(repeated.xp.events).toHaveLength(2); // Already awarded for that item/mode/day.
+  const firstId=before.xp.events[0].itemId;
+  expect(repeated.reviews[firstId].attempts).toBe(before.reviews[firstId].attempts+1);
+});
+
+test('bad JSON and forged backup records preserve all current local practice without confirmation',async({page})=>{
+  await page.goto('/');
+  await page.getByRole('button',{name:'Explore lessons'}).click();
+  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Greetings and Introductions');
+  await page.getByRole('button',{name:/Greetings and Introductions/}).click();
+  await page.getByRole('button',{name:/Reveal meaning/}).click();
+  await page.getByRole('button',{name:/Got it/}).click();
+  await page.getByRole('button',{name:/My progress|Profile/}).last().click();
+  const download=page.waitForEvent('download');
+  await page.getByRole('button',{name:'Export full backup'}).click();
+  const original=JSON.parse((await readFile(await (await download).path())).toString('utf8'));
+  const keys=['ptp-v2-personal-lessons','ptp-v2-progress','ptp-v2-review-schedule',
+    'ptp-v2-reading-position','ptp-v2-expedition','ptp-v2-last-lesson'];
+  const before=await page.evaluate(keys=>keys.map(key=>[key,localStorage.getItem(key)]),keys);
+  const corrupted=[
+    '{invalid json',
+    JSON.stringify({...original,version:999}),
+    JSON.stringify({...original,reviews:{'forged:0':{streak:-1,attempts:2,
+      lastReviewedAt:'2026-01-01T00:00:00Z',dueAt:'invalid'}}}),
+    JSON.stringify({...original,expedition:{...original.expedition,selectedRegion:'fabricated'}}),
+    JSON.stringify({...original,expedition:{...original.expedition,
+      events:[...original.expedition.events,original.expedition.events[0]]}}),
+  ];
+  for(const [index,bad] of corrupted.entries()){
+    await page.locator('input[aria-label="Restore from backup"]').setInputFiles({
+      name:'bad-backup-'+index+'.json',mimeType:'application/json',buffer:Buffer.from(bad)
+    });
+    await expect(page.getByRole('alert')).toBeVisible();
+    await expect(page.getByText(/Backup restored:/)).toHaveCount(0);
+    expect(await page.evaluate(keys=>keys.map(key=>[key,localStorage.getItem(key)]),keys)).toEqual(before);
+  }
+  await page.reload();
+  expect(await page.evaluate(keys=>keys.map(key=>[key,localStorage.getItem(key)]),keys)).toEqual(before);
+  await page.getByRole('button',{name:/My progress|Profile/}).last().click();
+  await expect(page.getByRole('region',{name:'Your learning XP'})).toContainText('10');
+});

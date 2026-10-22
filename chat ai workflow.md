@@ -1,3 +1,15 @@
+## DPT-02 reconnect, duplicate-click and corrupted-backup completion gate — 2026-10-22
+
+Source of truth: [v2/DEFERRED_PHYSICAL_TEST_ROADMAP.md](v2/DEFERRED_PHYSICAL_TEST_ROADMAP.md). **Prior merged and certified:** PR #98 `fb5a34f433c94f289353500df12614b3e84d8dc3` ([CI #39819216754 4/4 PASS](https://github.com/AndrewDionne/LearnPolish/actions/runs/39819216754)), PR #99 `8551cf6ff2c81a240f34eb7496fb253ffe99f70e` ([CI #39823136038 4/4 PASS](https://github.com/AndrewDionne/LearnPolish/actions/runs/39823136038)). DPT-01 PR #97 previously merged.
+
+**Current tranche (unmerged until CI):** The V2 XP event ledger already deduplicates by item/mode/local calendar date; reconnect has no automatic upload/replay. But rapid repeated activation of one rendered answer could independently increment **recall and review attempts**, even when XP dedup kept the score constant. Add a short-lived, synchronous **per-current-step completion guard** to Learn/Read/Listen and Speak Next. It resets when the learner moves to another card/mode/session, so intentional separate retry remains allowed. Do not change `recordAttempt`, `recordReview` scoring semantics or `awardXp` XP mathematics, and do not install a new replay queue or cloud sync. The user should still earn normal XP and progress when offline.
+
+Browser test on desktop/mobile: first real completed item online, another completed while offline, reload while offline, reconnect+reload and verify exact unchanged stored XP events/review attempt counts/recall; manually repeat an item and verify review increments as intended while today's XP does not double-award. Negative backup tests: syntactically invalid JSON, unsupported version, forged review schedule, invalid region and duplicate XP event IDs all leave six localStorage records unchanged even after a reload; success message forbidden. Unit test completion guard idempotency and legitimate repeat path.
+
+**Gate:** Four existing GitHub CI lanes must pass at final head before merging. Real device, native audio, spoken phoneme review and production deploy remain deferred. Once green, proceed with DPT-03 synthetic cross-mode accessibility, layout and audio lifecycle audits.
+
+---
+
 ## DPT-01 completed, DPT-02 storage/offline fault tranche (2026-10-22)
 
 **DPT-01 merged:** PR #97 squash `9ec95e772974ff1b9829f211f746f52a2a7ef0bb` after [final-head CI #39815402210](https://github.com/AndrewDionne/LearnPolish/actions/runs/39815402210) passed all four lanes. The owner-approved six-stage sequence and gates remain in [v2/DEFERRED_PHYSICAL_TEST_ROADMAP.md](v2/DEFERRED_PHYSICAL_TEST_ROADMAP.md).
