@@ -115,6 +115,8 @@ test('two real private sessions join a family, choose different regions and shar
     await myProfile.getByRole('button',{name:'Save display name'}).click();
     await expect(myProfile.getByText('Display name updated for your learning groups.')).toBeVisible();
     await myProfile.getByRole('button',{name:/Learning groups & scoreboards/}).click();
+    await expect(learner.getByRole('heading',{name:'Learning groups'})).toBeVisible();
+    await expect(learner.getByRole('heading',{name:/Your Poland expedition/})).toHaveCount(0);
     await expect(lp.getByRole('list',{name:'Effort leaderboard'}))
       .toContainText('Explorer B updated (you)');
     // Returned group selection and explicit contribution permission are retained.
