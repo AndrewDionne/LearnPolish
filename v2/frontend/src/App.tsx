@@ -20,6 +20,7 @@ import { firstUnvisitedBatch, practiceBatchCount, practiceBatchItems, practiceBa
 import { REVIEW_STORAGE_KEY, countDue, dueItems, nextDue, parseReviewSchedule, recordReview } from './review';
 import type { ReviewSchedule } from './review';
 import { MAX_BACKUP_BYTES, makeBackup, parseBackup } from './backup';
+import { persistRestoredBackup } from './restore-storage';
 import { GOLD_STORAGE_KEY, parseGold } from './gold';
 import type { RewardMode } from './gold';
 import ExpeditionMap from './expedition/ExpeditionMap';
@@ -435,15 +436,16 @@ export default function App() {
         'This will replace ALL personal lessons, practice history, scheduled reviews and reading positions saved in this browser. The current local data will be lost. Export a backup first if you need it.'
       );
       if (!confirmed) {setBackupStatus('Restore cancelled. Your existing data was not changed.');return;}
+      // Commit all validated records to storage FIRST. On quota/permission errors,
+      // roll back earlier keys and do not mutate the live learning session.
+      const restoredExpedition=persistRestoredBackup(data,localStorage);
       stopAudio();
       setPersonal(data.personalLessons);
       setProgress(data.progress);
       setReviews(data.reviews);
-      setExpedition(data.expedition ?? parseExpedition(null,data.gold));
+      setExpedition(restoredExpedition);
       setReadingPositions(data.readingPositions);
       setLastLesson(data.lastLessonId);
-      if (data.lastLessonId) saveLastLesson(data.lastLessonId);
-      else {try {localStorage.removeItem('ptp-v2-last-lesson');} catch { /* storage denied */ }}
       setLessonId(null); setEditorOpen(false); setReviewOnly(null); setPage('profile');
       setBackupStatus('Backup restored: ' + data.personalLessons.length + ' personal lessons and their saved practice records.');
     } catch (error) {
