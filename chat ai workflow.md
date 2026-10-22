@@ -1,3 +1,11 @@
+## Deferred-physical-testing implementation sequence — OWNER LOCK (2026-10-22)
+
+The owner explicitly instructed **lock the plan durably in GitHub, then proceed**, while physical testing remains deferred. **Authoritative roadmap:** [v2/DEFERRED_PHYSICAL_TEST_ROADMAP.md](v2/DEFERRED_PHYSICAL_TEST_ROADMAP.md), committed first on branch `feat/v2-family-session-resilience`. Sequenced gates: **DPT-01** private group session/request/membership resilience → **DPT-02** offline/cache/backup fault tolerance → **DPT-03** exhaustive synthetic E2E/visual/accessibility/performance → **DPT-04** provider-neutral pronunciation infrastructure (no inference/human accuracy claims) and **DPT-05** content metadata integrity, in parallel → **DPT-06** optional profile/avatar/recognition polish. Four CI lanes at final PR head, merge before declaring shipped. Never require physical testing for deterministic reliability improvements, and never conflate synthetic tests with real device/audio verification. Owner’s content, score, sharing, region, reference-audio and playback invariants are explicitly frozen in roadmap.
+
+**Next action in this branch:** DPT-01: guard late summary/invitation/group creation/login responses across switching groups, expired sessions and departure; ensure revoked/unauthorized accounts do not keep stale ranking or sharing in the UI; add delayed browser and backend authorization tests, then CI/merge. Status is **IN DEVELOPMENT** until final Actions validation and merge are recorded, not a delivered feature.
+
+---
+
 ## Focused Learning Groups view from Profile and Expedition — 2026-10-22
 
 After **PR #95 MERGED** at `70cd0b12c98cedcab9eaf8535437c7b9e2f74419`, the owner asked to continue. User friction: Profile's previous "Learning groups & scoreboards" link reached the top of the full Poland map, leaving the family scoreboard far below it, especially on narrow screens.
