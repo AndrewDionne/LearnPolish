@@ -191,6 +191,38 @@ class SpeechApiTests(unittest.TestCase):
         self.assertEqual(result.status_code,429)
         self.assertEqual(len(self.calls),12)
 
+    def test_30_request_global_budget_applies_across_verified_accounts_and_restarts(self):
+        """A reserved synthetic allowance is durable; only one further SDK call."""
+        first=self.auth("first@example.com")
+        second=self.auth("second@example.com")
+        from datetime import datetime, timezone
+        import sqlite3
+        day=datetime.now(timezone.utc).date().isoformat()
+        with sqlite3.connect(self.database) as con:
+            first_id=con.execute("SELECT id FROM users WHERE email=?",
+                                 ("first@example.com",)).fetchone()[0]
+            con.execute("INSERT INTO speech_usage(user_id,day,requests) VALUES(?,?,?)",
+                        (first_id,day,29))
+        allowed=self.send(second)
+        self.assertEqual(allowed.status_code,200,allowed.json)
+        blocked=self.send(second)
+        self.assertEqual(blocked.status_code,429,blocked.json)
+        self.assertEqual(len(self.calls),1)
+        self.assertNotIn("scores",blocked.json)
+        new_app=create_app(str(self.database),str(self.catalog),
+                           ("http://localhost:5173",),
+                           verification_sender=lambda e,c:None,
+                           speech_enabled=True,speech_assessor=self.fake_assessor)
+        with new_app.test_client() as client:
+            renewed=client.post(self.url,headers=second,
+                data={"item_id":"a:0","approve_azure_audio_upload":"yes",
+                      "audio":(io.BytesIO(wav_bytes()),"speech.wav","audio/wav")})
+        self.assertEqual(renewed.status_code,429)
+        self.assertEqual(len(self.calls),1)
+        with sqlite3.connect(self.database) as con:
+            self.assertEqual(con.execute(
+                "SELECT SUM(requests) FROM speech_usage WHERE day=?",(day,)).fetchone()[0],30)
+
     def test_disabled_endpoint_and_no_default_provider_key(self):
         disabled=create_app(str(self.root/"off.sqlite"),str(self.catalog),
                             ("http://localhost:5173",),
