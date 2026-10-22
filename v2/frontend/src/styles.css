@@ -556,3 +556,17 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .family-group-context{margin:0 0 11px}
 @media(max-width:760px){.learner-profile{padding:18px}.learner-account-details{flex-direction:column;gap:13px}
   .learner-account-fields{width:100%;grid-template-columns:1fr}.learner-profile-heading .secondary-action{width:100%}}
+
+/* Group navigation focuses existing private controls without adding a sixth mobile tab. */
+.expedition-quick-access{display:flex;justify-content:space-between;align-items:center;gap:15px;
+  flex-wrap:wrap;background:#f2f9f6;border:1px solid #d4e7df;border-radius:13px;padding:16px 19px;margin:18px 0}
+.expedition-quick-access span{color:#4b7474;font-size:12px;line-height:1.5}
+.expedition-quick-access .secondary-action{min-height:44px;white-space:normal}
+.group-map-return{min-height:44px;margin-top:14px}
+.learner-joined-groups{grid-column:1/-1;min-width:0;margin-top:12px;padding-top:15px;border-top:1px solid #e4efeb}
+.learner-joined-groups h3{font-size:14px;color:#325d60;margin:0 0 12px}
+.learner-joined-groups ul{list-style:none;display:flex;flex-wrap:wrap;gap:9px;padding:0;margin:0}
+.learner-joined-groups li{background:#eef7f3;border:1px solid #d4e7de;border-radius:9px;padding:10px 14px;
+  color:#2c6461;font-size:12px;font-weight:700;overflow-wrap:anywhere}
+@media(max-width:760px){.expedition-quick-access{align-items:stretch;flex-direction:column}
+  .expedition-quick-access .secondary-action{width:100%}}

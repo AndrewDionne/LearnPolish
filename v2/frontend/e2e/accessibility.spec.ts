@@ -42,6 +42,10 @@ test('Home, Library and Profile pass synthetic WCAG and responsive geometry audi
   await audit(page,'library');
   await page.getByRole('button',{name:/My progress|Profile/}).last().click();
   await audit(page,'profile');
+  await page.getByRole('button',{name:/Learning groups & scoreboards/}).click();
+  await expect(page.getByRole('heading',{name:'Learning groups'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:/Your Poland expedition/})).toHaveCount(0);
+  await audit(page,'groups');
   expect(pageErrors).toEqual([]);
 });
 
