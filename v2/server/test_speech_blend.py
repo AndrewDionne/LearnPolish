@@ -33,7 +33,7 @@ class BlendUnits(unittest.TestCase):
             def read(self,limit):
                 self_limit=limit
                 assert self_limit<=16384
-                return b'{"text":"Świętokrzyska"}'
+                return '{"text":"Świętokrzyska"}'.encode("utf-8")
         def fake_open(request,timeout):
             seen.append((request,timeout))
             return FakeResponse()
