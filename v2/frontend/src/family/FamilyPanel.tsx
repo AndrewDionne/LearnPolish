@@ -66,10 +66,13 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
     void familyRequest<{families:FamilyGroup[];user:{id:number}}>('/api/v2/family/me','GET',undefined,token)
       .then(data=>{if(active){setGroups(data.families);setUserId(data.user.id);}})
       .catch(e=>{if(!active)return;
-        setSummary(null);onSummary(null);setEnabled(false);
         if(e instanceof FamilyRequestError&&e.status===401){
           clearAccountSession();setError('Session expired — sign in again.');
-        }else setError('Unable to verify your account. Refresh the page or sign in again.');
+        }else{
+          // Service failure must not leave an old membership/opt-in visible.
+          pickGroup(0);setGroups([]);setUserId(0);
+          setError('Unable to verify your account. Refresh the page or sign in again.');
+        }
       });
     return ()=>{active=false;};
   },[token]);
@@ -99,6 +102,7 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
         return;
       }
       setSummary(null);onSummary(null);setEnabled(false);
+      setNewInvite('');inviteRequestId.current++;
       throw e;
     }
   };
@@ -117,7 +121,7 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
           dropInaccessibleGroup(group);setError('Family access has ended. Choose another group.');
         }else{
           setSummary(null);onSummary(null);setError('Unable to load this private family group.');
-          setEnabled(false);
+          setNewInvite('');inviteRequestId.current++;setEnabled(false);
         }
       }});
     return ()=>{active=false;summaryRequestId.current++;};
