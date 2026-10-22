@@ -162,3 +162,84 @@ test('320px Read, Expedition and Learning Groups retain accessible controls',asy
   await expect(page.getByRole('heading',{name:/Your Poland expedition/})).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+
+test('empty Library, no-due Practice and navigation focus remain accessible',async({page,isMobile})=>{
+  test.setTimeout(90_000);
+  const errors:string[]=[];
+  page.on('pageerror',e=>errors.push(e.message));
+  await page.goto('/');
+  const nav=page.getByRole('navigation',{name:isMobile?'Mobile navigation':'Main navigation'});
+  const main=page.locator('#main-content');
+
+  await nav.getByRole('button',{name:'Library',exact:true}).focus();
+  await page.keyboard.press('Enter');
+  await expect(main).toBeFocused();
+  await page.getByRole('searchbox',{name:'Search lessons'}).fill('no-matching-polish-set-xyz');
+  await expect(page.getByRole('heading',{name:'No matching lessons'})).toBeVisible();
+  await audit(page,'library-no-results');
+  await page.getByRole('button',{name:'Show all stages'}).click();
+  await expect(page.getByRole('heading',{name:'No matching lessons'})).toHaveCount(0);
+
+  await nav.getByRole('button',{name:'Practice',exact:true}).focus();
+  await page.keyboard.press('Enter');
+  await expect(main).toBeFocused();
+  await expect(page.getByText('No expressions are due right now.',{exact:false})).toBeVisible();
+  await audit(page,'practice-no-due');
+
+  await nav.getByRole('button',{name:'Expedition',exact:true}).focus();
+  await page.keyboard.press('Enter');
+  await expect(main).toBeFocused();
+  await page.getByRole('button',{name:/Learning groups & scoreboards/}).click();
+  await expect(main).toBeFocused();
+  await expect(page.getByRole('heading',{name:'Learning groups'})).toBeVisible();
+  await page.getByRole('button',{name:/Back to Poland map/}).click();
+  await expect(main).toBeFocused();
+  await expect(page.getByRole('heading',{name:/Your Poland expedition/})).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('keyboard mode selection does not steal focus or produce a new XP award',async({page,isMobile})=>{
+  test.setTimeout(90_000);
+  await page.goto('/');
+  const nav=page.getByRole('navigation',{name:isMobile?'Mobile navigation':'Main navigation'});
+  const main=page.locator('#main-content');
+  await nav.getByRole('button',{name:'Library',exact:true}).click();
+  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Greetings and Introductions');
+  await page.getByRole('button',{name:/Greetings and Introductions/}).focus();
+  await page.keyboard.press('Enter');
+  await expect(main).toBeFocused();
+  const original=await page.evaluate(()=>localStorage.getItem('ptp-v2-expedition'));
+  const listen=page.getByRole('button',{name:'Listen',exact:true});
+  await listen.focus();await page.keyboard.press('Enter');
+  await expect(listen).toBeFocused();
+  await expect(listen).toHaveAttribute('aria-pressed','true');
+  const speak=page.getByRole('button',{name:'Speak',exact:true});
+  await speak.focus();await page.keyboard.press('Enter');
+  await expect(speak).toBeFocused();
+  await expect(speak).toHaveAttribute('aria-pressed','true');
+  expect(await page.evaluate(()=>localStorage.getItem('ptp-v2-expedition'))).toBe(original);
+  await nav.getByRole('button',{name:'Profile',exact:true}).focus();
+  await page.keyboard.press('Enter');
+  await expect(main).toBeFocused();
+  await expect(page.getByRole('heading',{name:/Your profile/})).toBeVisible();
+});
+
+test.describe('network error-state audit (service worker deliberately excluded)',()=>{
+  test.use({serviceWorkers:'block'});
+  test('catalog HTTP failure provides keyboard-accessible retry and responsive error geometry',async({page})=>{
+    test.setTimeout(90_000);
+    await page.route('**/generated/lessons.json',route=>route.fulfill({
+      status:503,contentType:'application/json',body:'{"error":"catalog_unavailable"}'
+    }));
+    await page.goto('/');
+    const alert=page.getByRole('alert');
+    await expect(alert).toContainText('Lessons could not load');
+    await expect(alert.getByRole('button',{name:'Retry loading lessons'})).toBeVisible();
+    await audit(page,'catalog-service-error');
+    await alert.getByRole('button',{name:'Retry loading lessons'}).focus();
+    await page.keyboard.press('Enter');
+    await expect(alert).toContainText('Lessons could not load');
+    await expect(alert.getByRole('button',{name:'Retry loading lessons'})).toBeVisible();
+  });
+});
