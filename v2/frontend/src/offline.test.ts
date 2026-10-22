@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { downloadableAudio } from './offline';
+import { downloadableAudio, nextOfflineAction } from './offline';
 import type { Lesson } from './model';
 
 describe('offline manifest selection', () => {
@@ -13,5 +13,14 @@ describe('offline manifest selection', () => {
       ],
     };
     expect(downloadableAudio(lesson)).toEqual(['generated/audio/g/0.mp3']);
+  });
+});
+
+describe('offline retry intent',()=>{
+  test('removal errors offer retry removal, not a network download',()=>{
+    expect(nextOfflineAction('ready',null)).toBe('REMOVE');
+    expect(nextOfflineAction('error','REMOVE')).toBe('REMOVE');
+    expect(nextOfflineAction('error','DOWNLOAD')).toBe('DOWNLOAD');
+    expect(nextOfflineAction('absent',null)).toBe('DOWNLOAD');
   });
 });
