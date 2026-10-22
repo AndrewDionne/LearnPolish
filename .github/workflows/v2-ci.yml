@@ -38,7 +38,11 @@ permissions:
 
 jobs:
   frontend:
-    runs-on: ubuntu-latest
+    # Ubuntu 24.04 runners already include stable Google Chrome. Avoid apt/browser
+    # installation stalls while retaining full desktop/mobile browser coverage.
+    runs-on: ubuntu-24.04
+    env:
+      PTP_CI_SYSTEM_CHROME: '1'
     timeout-minutes: 20
     defaults:
       run:
@@ -54,15 +58,22 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Verify migration, types, unit tests and production build
         run: npm run check
-      - name: Install Chromium
-        run: npx playwright install --with-deps chromium
-      - name: Make ffmpeg available for public Polish Ogg decoding
+      - name: Verify preinstalled Chrome for synthetic desktop/mobile journeys
+        run: google-chrome --version
+      - name: Provide pinned FFmpeg for public Polish Ogg decoding
         run: |
-          if ! command -v ffmpeg >/dev/null 2>&1; then
-            sudo apt-get update -qq
-            sudo apt-get install -y ffmpeg
-          fi
-          ffmpeg -version | head -n 1
+          python3 -m venv "$RUNNER_TEMP/ptp-ffmpeg-env"
+          "$RUNNER_TEMP/ptp-ffmpeg-env/bin/pip" install --disable-pip-version-check "imageio-ffmpeg==0.6.0"
+          mkdir -p "$RUNNER_TEMP/ptp-tools"
+          "$RUNNER_TEMP/ptp-ffmpeg-env/bin/python" - <<'PY'
+          import os
+          from pathlib import Path
+          from imageio_ffmpeg import get_ffmpeg_exe
+          target=Path(os.environ["RUNNER_TEMP"])/"ptp-tools"/"ffmpeg"
+          target.symlink_to(get_ffmpeg_exe())
+          print("FFmpeg executable verified:",get_ffmpeg_exe())
+          PY
+          echo "$RUNNER_TEMP/ptp-tools" >> "$GITHUB_PATH"
       - name: Prepare public-domain natural Polish test WAVs (no AI)
         run: python3 ../benchmarks/public_polish_audio.py --output-dir "$RUNNER_TEMP/ptp-public-polish"
       - name: Validate identical-input six-call research preview (no AI)
@@ -96,7 +107,9 @@ jobs:
         run: python -m unittest discover -s v2/server -p 'test_*.py' -v
 
   family-connected-browser:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    env:
+      PTP_CI_SYSTEM_CHROME: '1'
     timeout-minutes: 15
     defaults:
       run:
@@ -114,8 +127,8 @@ jobs:
           python -m pip install "Flask==3.1.1" "psycopg[binary]>=3.2,<4"
           npm install --no-audit --no-fund
           npm run content
-      - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+      - name: Verify preinstalled Chrome for connected synthetic journeys
+        run: google-chrome --version
       - name: Launch isolated local family API
         run: |
           install -d -m 0700 "$RUNNER_TEMP/ptp-family"

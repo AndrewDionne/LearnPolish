@@ -1,3 +1,13 @@
+## DPT-02 certified — DPT-03 synthetic audit launch (2026-10-22)
+
+**DPT-02 COMPLETE on GitHub main:** final [PR #100](https://github.com/AndrewDionne/LearnPolish/pull/100) merged as `c0542f714b2471d799d3f839217592d880ac18fc` after [CI #39831474180 attempt 2](https://github.com/AndrewDionne/LearnPolish/actions/runs/39831474180) **4/4 PASS** (frontend desktop/mobile incl. verified offline reconnect, backend, connected family, benchmark). Earlier [PR #98](https://github.com/AndrewDionne/LearnPolish/pull/98) and [PR #99](https://github.com/AndrewDionne/LearnPolish/pull/99) remain separately certified/merged. Prior "pending/not yet merged" workflow sections are historical and superseded by this checkpoint. DPT-01 was certified as PR #97.
+
+**DPT-03 first proposed delivery slice, not shipped until CI and merge:** Extend the existing `accessibility.spec.ts` axe WCAG A/AA, screenshot and geometry audits to Read passages, due-review queue, review card/completion, open Poland Expedition map, and 320px Read/Listen/Expedition/Groups responsive flows. Capture console/page errors and preserve original route and XP authorities. Add a distinct deterministic `audio-lifecycle.spec.ts` witness using browser-native Audio surfaces with fake play/pause (zero network/paid ASR); verify starting another reference does not overlap, mode transitions stop audio and navigating to Profile stops the active reference. Audits are **synthetic**, not visual owner approval, real Safari, recording or native quality certification.
+
+**Acceptance:** zero newly detected serious/critical WCAG failures, no clipped controls/document overflow in tested screens, no active stream on page/mode change, four final-head GitHub CI jobs PASS. If audit exposes product defects, fix in same focussed PR and retain failing evidence in issue #2. Later DPT-03 slices: offline/error/empty-state audits, navigation performance and cross-mode keyboard focus before cosmetic UI review.
+
+---
+
 ## DPT-02 reconnect, duplicate-click and corrupted-backup completion gate — 2026-10-22
 
 Source of truth: [v2/DEFERRED_PHYSICAL_TEST_ROADMAP.md](v2/DEFERRED_PHYSICAL_TEST_ROADMAP.md). **Prior merged and certified:** PR #98 `fb5a34f433c94f289353500df12614b3e84d8dc3` ([CI #39819216754 4/4 PASS](https://github.com/AndrewDionne/LearnPolish/actions/runs/39819216754)), PR #99 `8551cf6ff2c81a240f34eb7496fb253ffe99f70e` ([CI #39823136038 4/4 PASS](https://github.com/AndrewDionne/LearnPolish/actions/runs/39823136038)). DPT-01 PR #97 previously merged.

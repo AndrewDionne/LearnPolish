@@ -101,3 +101,64 @@ test('Compact 320px keyboard nav, language, and minimum interactive surface chec
     expect(bbox?.height, 'sound playback touch target height').toBeGreaterThanOrEqual(44);
   }
 });
+
+
+test('Read, due review and Poland Expedition pass synthetic accessibility, focus and geometry',async({page,isMobile})=>{
+  test.setTimeout(90_000);
+  const pageErrors:string[]=[];
+  page.on('pageerror',error=>pageErrors.push(error.message));
+  await page.goto('/');
+  await page.getByRole('button',{name:'Explore lessons'}).click();
+  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Everyday Conversations: Greetings');
+  await page.getByRole('button',{name:/Everyday Conversations: Greetings/}).click();
+  await expect(page.getByRole('button',{name:'Read',exact:true})).toHaveAttribute('aria-pressed','true');
+  await audit(page,'reading-passage');
+  await page.getByRole('button',{name:'Skip to next →'}).click();
+  await audit(page,'reading-next-passage');
+  await page.getByRole('navigation',{name:isMobile?'Mobile navigation':'Main navigation'})
+    .getByRole('button',{name:'Practice',exact:true}).click();
+  await page.evaluate(()=>{
+    localStorage.setItem('ptp-v2-review-schedule',JSON.stringify({
+      'Conversation_1:0':{streak:0,attempts:1,lastReviewedAt:'2020-01-01T00:00:00.000Z',
+        dueAt:'2020-01-01T00:00:00.000Z'},
+    }));
+  });
+  await page.reload();
+  const nav=page.getByRole('navigation',{name:isMobile?'Mobile navigation':'Main navigation'});
+  await nav.getByRole('button',{name:'Practice',exact:true}).click();
+  await expect(page.getByText('1 due now')).toBeVisible();
+  await audit(page,'practice-due');
+  await page.getByRole('button',{name:/Greetings and Introductions.*1 expression.*Review/}).click();
+  await expect(page.getByText('Review what matters')).toBeVisible();
+  await audit(page,'practice-single-review');
+  await page.getByRole('button',{name:/Reveal meaning/}).click();
+  await page.getByRole('button',{name:/Got it/}).click();
+  await audit(page,'practice-review-complete');
+  await nav.getByRole('button',{name:'Expedition',exact:true}).click();
+  await expect(page.getByRole('region',{name:'Open Poland expedition map'}).locator('path[role="button"]')).toHaveCount(16);
+  await audit(page,'expedition-open-map');
+  expect(pageErrors).toEqual([]);
+});
+
+test('320px Read, Expedition and Learning Groups retain accessible controls',async({page})=>{
+  test.setTimeout(90_000);
+  await page.setViewportSize({width:320,height:720});
+  const errors:string[]=[];
+  page.on('pageerror',error=>errors.push(error.message));
+  await page.goto('/');
+  const nav=page.getByRole('navigation',{name:'Mobile navigation'});
+  await nav.getByRole('button',{name:'Library'}).click();
+  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Everyday Conversations: Greetings');
+  await page.getByRole('button',{name:/Everyday Conversations: Greetings/}).click();
+  await audit(page,'compact-read');
+  await page.getByRole('button',{name:'Listen',exact:true}).click();
+  await audit(page,'compact-reading-listen');
+  await nav.getByRole('button',{name:'Expedition'}).click();
+  await audit(page,'compact-expedition');
+  await page.getByRole('button',{name:/Learning groups & scoreboards/}).click();
+  await expect(page.getByRole('heading',{name:'Learning groups'})).toBeVisible();
+  await audit(page,'compact-groups');
+  await page.getByRole('button',{name:/Back to Poland map/}).click();
+  await expect(page.getByRole('heading',{name:/Your Poland expedition/})).toBeVisible();
+  expect(errors).toEqual([]);
+});

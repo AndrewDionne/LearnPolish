@@ -10,9 +10,12 @@ export default defineConfig({
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
+  // Hosted Ubuntu images include Google Chrome. CI can use it directly to
+  // avoid network/apt stalls during Playwright's separate browser install.
+  // Local development still uses the Playwright-managed Chromium by default.
   projects: [
-    { name: 'desktop-chromium', use: { ...devices['Desktop Chrome'] } },
-    { name: 'mobile-chromium', use: { ...devices['Pixel 7'] } },
+    { name: 'desktop-chromium', use: { ...devices['Desktop Chrome'], ...(process.env.PTP_CI_SYSTEM_CHROME === '1' ? {channel:'chrome' as const} : {}) } },
+    { name: 'mobile-chromium', use: { ...devices['Pixel 7'], ...(process.env.PTP_CI_SYSTEM_CHROME === '1' ? {channel:'chrome' as const} : {}) } },
   ],
   webServer: {
     command: 'npm run build && npm run preview',
