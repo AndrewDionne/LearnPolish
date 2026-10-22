@@ -992,6 +992,8 @@ test('bad JSON and forged backup records preserve all current local practice wit
     JSON.stringify({...original,reviews:{'forged:0':{streak:-1,attempts:2,
       lastReviewedAt:'2026-01-01T00:00:00Z',dueAt:'invalid'}}}),
     JSON.stringify({...original,expedition:{...original.expedition,selectedRegion:'fabricated'}}),
+    JSON.stringify({...original,expedition:{...original.expedition,
+      events:[...original.expedition.events,original.expedition.events[0]]}}),
   ];
   for(const [index,bad] of corrupted.entries()){
     await page.locator('input[aria-label="Restore from backup"]').setInputFiles({
