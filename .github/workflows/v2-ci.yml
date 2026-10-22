@@ -62,9 +62,10 @@ jobs:
         run: google-chrome --version
       - name: Provide pinned FFmpeg for public Polish Ogg decoding
         run: |
-          python3 -m pip install --disable-pip-version-check "imageio-ffmpeg==0.6.0"
+          python3 -m venv "$RUNNER_TEMP/ptp-ffmpeg-env"
+          "$RUNNER_TEMP/ptp-ffmpeg-env/bin/pip" install --disable-pip-version-check "imageio-ffmpeg==0.6.0"
           mkdir -p "$RUNNER_TEMP/ptp-tools"
-          python3 - <<'PY'
+          "$RUNNER_TEMP/ptp-ffmpeg-env/bin/python" - <<'PY'
           import os
           from pathlib import Path
           from imageio_ffmpeg import get_ffmpeg_exe
