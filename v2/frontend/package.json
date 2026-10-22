@@ -16,7 +16,7 @@
     "check": "npm run test:migration && npm run content && npm run typecheck && npm run test && npm run build && npm run test:offline",
     "test:e2e": "playwright test",
     "preview": "vite preview --host 127.0.0.1 --port 4173",
-    "test:offline": "node --test scripts/build-offline.test.mjs && node --check dist/sw.js",
+    "test:offline": "node --test scripts/build-offline.test.mjs scripts/offline-remove.test.mjs && node --check dist/sw.js",
     "audit:voice": "node scripts/voice-production.mjs --markdown"
   },
   "dependencies": {

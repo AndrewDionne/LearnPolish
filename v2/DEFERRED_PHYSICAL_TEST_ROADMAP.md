@@ -1,5 +1,12 @@
 # Path to Polish V2 — development while physical testing is deferred
 
+## Delivery checkpoint — 2026-10-22
+
+- **DPT-01 merged:** [PR #97](https://github.com/AndrewDionne/LearnPolish/pull/97), four CI lanes green; authenticated private-group lifecycle and late-response isolation.
+- **DPT-02 restore and download protection merged:** [PR #98](https://github.com/AndrewDionne/LearnPolish/pull/98), squash `fb5a34f433c94f289353500df12614b3e84d8dc3`, [four final-head CI lanes green after a targeted stalled-runner retry](https://github.com/AndrewDionne/LearnPolish/actions/runs/39819216754). Backup storage is committed before showing success and rolls back prior keys on quota failure; offline MP3 download promotion rolls back incomplete cache writes.
+- **DPT-02 removal and UI retry follow-up:** [PR #99](https://github.com/AndrewDionne/LearnPolish/pull/99) implements rollback for interrupted multi-MP3 REMOVE operations, correct Retry removal behavior and stale-lesson response isolation. Tests include a cache-delete failure on the second MP3 and retry. **Do not mark merged until this PR has four passing CI lanes against updated main and a verified merge SHA.**
+- **Remaining DPT-02 gate:** deterministic network reconnection and duplicate-completion tests; confirm download/remove/restore still work offline and on small screens. Then proceed to DPT-03 synthetic UX and accessibility under the frozen curriculum/voice constraints below.
+
 **Decision locked 2026-10-22.** This is the approved execution order until real-device/manual audio work resumes. GitHub code, issues, CI, and this document are the durable authorities; a chat response is not a delivery record. This roadmap is complementary to [V2_REBUILD_PLAN.md](../V2_REBUILD_PLAN.md) and [issue #2](https://github.com/AndrewDionne/LearnPolish/issues/2).
 
 ## Principles

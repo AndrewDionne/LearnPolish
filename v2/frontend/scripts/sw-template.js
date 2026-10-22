@@ -88,7 +88,31 @@ self.addEventListener('message', event => {
       return;
     }
     if (type === 'REMOVE') {
-      for (const url of urls) await cache.delete(url);
+      // Removing several audio clips must be all-or-nothing as far as storage
+      // permits. A failed deletion must not strand a previously ready lesson.
+      const originals = new Map();
+      const touched = [];
+      for (const url of urls) originals.set(url, await cache.match(url));
+      try {
+        for (const url of urls) {
+          touched.push(url); // Track before delete: the operation may throw.
+          await cache.delete(url);
+        }
+        for (const url of urls) {
+          if (await cache.match(url)) throw new Error('Offline copy removal could not be verified');
+        }
+      } catch (error) {
+        let rollbackFailed = false;
+        for (const url of touched.reverse()) {
+          try {
+            const previous = originals.get(url);
+            if (previous) await cache.put(url, previous);
+            else await cache.delete(url);
+          } catch { rollbackFailed = true; }
+        }
+        if (rollbackFailed) throw new Error('Offline removal failed; some audio may be missing. Check offline status and retry.');
+        throw error;
+      }
       report({ type: 'done', ready: false, done: 0, total: urls.length });
       return;
     }

@@ -1,10 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Lesson } from './model';
 
 type RequestType = 'STATUS' | 'DOWNLOAD' | 'REMOVE';
 type OfflineResponse = { type: 'done'; ready: boolean; done: number; total: number };
 type OfflineUpdate = OfflineResponse | { type: 'progress'; done: number; total: number } | { type: 'error'; message: string };
 type OfflineStatus = 'checking' | 'unsupported' | 'absent' | 'downloading' | 'ready' | 'error';
+export type OfflineAction = 'DOWNLOAD' | 'REMOVE';
+export function nextOfflineAction(status: OfflineStatus, failedAction: OfflineAction | null): OfflineAction {
+  // Retrying a failed removal must not silently redownload deleted material.
+  return status === 'ready' || (status === 'error' && failedAction === 'REMOVE')
+    ? 'REMOVE' : 'DOWNLOAD';
+}
 
 export function downloadableAudio(lesson: Lesson): string[] {
   return [...new Set(lesson.items.map(item => item.audio).filter((path): path is string => !!path))];
@@ -44,38 +50,55 @@ export function useOfflineLesson(lesson: Lesson) {
   const [status, setStatus] = useState<OfflineStatus>('checking');
   const [message, setMessage] = useState('');
   const [done, setDone] = useState(0);
+  const [operation,setOperation] = useState<OfflineAction|null>(null);
+  const generation=useRef(0);
   const urls = downloadableAudio(lesson);
   const total = urls.length;
 
   useEffect(() => {
     let active = true;
+    const id=++generation.current;
+    setOperation(null);
+    setDone(0);
+    setMessage('');
     if (urls.length === 0) {
       setStatus('unsupported');
-      return;
+      return () => { active=false;generation.current++; };
     }
     setStatus('checking');
     activeWorker().then(worker => sendOfflineRequest(worker, 'STATUS', urls)).then(result => {
-      if (active) { setStatus(result.ready ? 'ready' : 'absent'); setDone(result.done); }
+      if (active && id===generation.current) {
+        setStatus(result.ready ? 'ready' : 'absent');setDone(result.done);
+      }
     }).catch(error => {
-      if (active) { setStatus('unsupported'); setMessage(error instanceof Error ? error.message : 'Offline unavailable'); }
+      if (active && id===generation.current) {
+        setStatus('unsupported');setMessage(error instanceof Error ? error.message : 'Offline unavailable');
+      }
     });
-    return () => { active = false; };
+    return () => { active = false;generation.current++; };
   }, [lesson.id, lesson.items]);
 
   const action = async () => {
     if (status !== 'ready' && status !== 'absent' && status !== 'error') return;
-    const remove = status === 'ready';
+    const type=nextOfflineAction(status,operation);
+    const id=generation.current;
+    setOperation(type);
     setStatus('downloading');
     setMessage('');
     try {
       const worker = await activeWorker();
-      const result = await sendOfflineRequest(worker, remove ? 'REMOVE' : 'DOWNLOAD', urls, count => setDone(count));
+      const result = await sendOfflineRequest(worker, type, urls, count => {
+        if(id===generation.current)setDone(count);
+      });
+      if(id!==generation.current)return; // Lesson changed while the request was pending.
       setDone(result.done);
       setStatus(result.ready ? 'ready' : 'absent');
+      setOperation(null);
     } catch (error) {
+      if(id!==generation.current)return;
       setStatus('error');
-      setMessage(error instanceof Error ? error.message : 'Offline download failed');
+      setMessage(error instanceof Error ? error.message : 'Offline cache operation failed');
     }
   };
-  return { status, message, done, total, action };
+  return { status, message, done, total, operation, action };
 }
