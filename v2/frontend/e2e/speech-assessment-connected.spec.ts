@@ -43,6 +43,13 @@ function installSyntheticMicrophone(page:import('@playwright/test').Page){
   });
 }
 
+function requestedItemId(route:import('@playwright/test').Route):string{
+  const body=route.request().postDataBuffer()?.toString('latin1')??'';
+  const match=/name="item_id"\r?\n\r?\n([^\r\n]+)/.exec(body);
+  if(!match)throw new Error('Synthetic speech request omitted item_id');
+  return match[1];
+}
+
 async function connectPrivateAdult(page:import('@playwright/test').Page){
   const json=(body:unknown)=>({status:200,contentType:'application/json',body:JSON.stringify(body)});
   await page.route('**/api/v2/family/health',route=>route.fulfill(json({
@@ -92,7 +99,7 @@ test('explicit consent -> native Azure numbers -> replay/next without fabricated
     expect(body).toContain('item_id');
     expect(body).toContain('RIFF');
     await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
-      status:'ok',engine:'azure-pl-PL-scripted',calibration:'uncalibrated',
+      item_id:requestedItemId(route),status:'ok',engine:'azure-pl-PL-scripted',calibration:'uncalibrated',
       scores:{accuracy:93,fluency:82,completeness:90},
       rawText:'DO_NOT_DISPLAY_PRIVATE_TRANSCRIPT'
     })});
@@ -130,7 +137,7 @@ test('inconclusive and quota outcomes stay ungraded; new take clears old feedbac
     calls++;
     return calls===1
       ? route.fulfill({status:200,contentType:'application/json',
-          body:JSON.stringify({status:'inconclusive',reason:'no_match'})})
+          body:JSON.stringify({item_id:requestedItemId(route),status:'inconclusive',reason:'no_match'})})
       : route.fulfill({status:429,contentType:'application/json',body:'{}'});
   });
   await connectPrivateAdult(page);
@@ -162,7 +169,7 @@ test('Świętokrzyska is a real built-in Świętokrzyska Pronunciation Lab item 
     await route.fulfill({
       status:200,contentType:'application/json',
       headers:{'Server-Timing':'speech-sdk;dur=4020.0','Access-Control-Expose-Headers':'Server-Timing'},
-      body:JSON.stringify({status:'ok',engine:'azure-pl-PL-scripted',
+      body:JSON.stringify({item_id:requestedItemId(route),status:'ok',engine:'azure-pl-PL-scripted',
         calibration:'uncalibrated',scores:{accuracy:77,fluency:88,completeness:100},
         rawText:'NEVER-DISPLAY-RAW-SPEECH'}),
     });
@@ -223,7 +230,7 @@ test('reserved acoustic-score UI aligns exact syllables with guide OFF/ON and cl
   await page.route('**/api/v2/family/speech/assess',route=>route.fulfill({
     status:200,contentType:'application/json',
     body:JSON.stringify({
-      status:'ok',engine:'azure-pl-PL-scripted',calibration:'uncalibrated',
+      item_id:requestedItemId(route),status:'ok',engine:'azure-pl-PL-scripted',calibration:'uncalibrated',
       scores:{accuracy:81,fluency:90,completeness:100},
       syllableFeedback:{method:'reviewed-acoustic-syllables-v1',
         reference:'Świętokrzyska',
