@@ -937,7 +937,10 @@ test('offline completion persists exactly once across reconnect and allows delib
   });
   await context.setOffline(true);
   await page.reload();
-  await page.getByRole('button',{name:'Explore lessons'}).click();
+  await expect(page.getByText('Real progress.')).toBeVisible();
+  // A returning learner sees "Continue learning", not "Explore lessons".
+  // Use stable primary navigation to visit a different existing item.
+  await page.getByRole('button',{name:'Library',exact:true}).first().click();
   await page.getByRole('searchbox',{name:'Search lessons'}).fill('Greetings and Introductions');
   await page.getByRole('button',{name:/Greetings and Introductions/}).click();
   await page.getByRole('button',{name:'Skip to next →'}).click();
@@ -962,7 +965,7 @@ test('offline completion persists exactly once across reconnect and allows delib
     progress:JSON.parse(localStorage.getItem('ptp-v2-progress')||'{}'),
   }));
   expect(after).toEqual(before); // No reconnect replay, synthetic sync or bonus XP.
-  await page.getByRole('button',{name:'Explore lessons'}).click();
+  await page.getByRole('button',{name:'Library',exact:true}).first().click();
   await page.getByRole('searchbox',{name:'Search lessons'}).fill('Greetings and Introductions');
   await page.getByRole('button',{name:/Greetings and Introductions/}).click();
   await page.getByRole('button',{name:/Reveal meaning/}).click();
