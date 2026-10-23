@@ -669,7 +669,9 @@ export default function App() {
               if(unitSession && currentUnit && unitStep)
                 setTouristActivity(previous=>triedTouristItem(previous,currentUnit,unitSession.stepIndex,current.id));
             }
-            if (index < sessionItems.length - 1) jump(index + 1,false);
+            // An unrecorded Speak Next is navigation only: preserve the
+            // resume cursor without crediting a pronunciation attempt.
+            if (index < sessionItems.length - 1) jump(index + 1,!completedTake);
             else { stopAudio(); setFinished(true); }
           }} /> : mode === 'listen' ? <section className="flashcard listening-card" aria-live="polite">
             
