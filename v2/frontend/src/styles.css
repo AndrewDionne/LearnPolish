@@ -858,3 +858,15 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .foundation-starter-button:hover{border-color:var(--ptp-link);background:#eef6f2}
 .foundation-starter-button:focus-visible{outline:3px solid var(--ptp-link);outline-offset:2px}
 @media(max-width:560px){.foundation-starter-options{grid-template-columns:1fr}}
+
+/* C-06: compact progressive practice reveals six source-recorded starter groups. */
+.foundation-next-words{padding:0;gap:0;overflow:hidden}
+.foundation-next-toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  width:100%;padding:14px 12px;min-height:44px;text-align:left;
+  background:transparent;color:var(--ptp-ink);border:0;cursor:pointer;
+  font:650 13px/1.45 var(--ptp-font-body)}
+.foundation-next-toggle span:last-child{color:var(--ptp-link);font-size:20px;font-weight:400}
+.foundation-next-toggle:hover{background:#eef6f2}
+.foundation-next-toggle:focus-visible{outline:3px solid var(--ptp-link);outline-offset:-3px}
+.foundation-next-words .foundation-starter-options{padding:0 12px 12px;grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(max-width:560px){.foundation-next-words .foundation-starter-options{grid-template-columns:1fr}}
