@@ -113,6 +113,7 @@ test('T05 grocery story uses original listening and reading, with independent sh
   await expect(page.getByText('Dzień dobry.',{exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'Play audio'})).toBeEnabled();
   await nav.getByRole('button',{name:'Library'}).click();
-  await page.getByRole('button',{name:/Shopping and Payment/}).click();
+  await page.getByRole('searchbox',{name:'Search lessons'}).fill('Conversation_-_shopping');
+  await page.getByRole('button',{name:/Shopping: Useful Questions/}).click();
   await expect(page.locator('.unit-practice-head')).toHaveCount(0);
 });
