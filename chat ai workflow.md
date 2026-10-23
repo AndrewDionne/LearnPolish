@@ -1,3 +1,13 @@
+## UX-01 certified; next priority UX-02 — 2026-10-23
+
+**Latest certified integrated V2 main:** [PR #111](https://github.com/AndrewDionne/LearnPolish/pull/111) **MERGED** at `874d711c53e277fe4508eb7907c5e7dc8248d86e` after [GitHub Actions #39924534279](https://github.com/AndrewDionne/LearnPolish/actions/runs/39924534279) **FOUR of FOUR PASS** at final PR head `c344ae4902fffc651b138d362ae0ef2b123ed7c2`. Earlier UX-01 status below saying not certified is historical and now superseded. LRN-02 was merged earlier via PR #110 at `445f10312bae3b378d84f330d74c0e1032aee142`, also four CI checks green.
+
+**Certified synthetic-only work:** cohesive SVG navigation and learning icons, restrained Polish specimen artwork, actual lesson names instead of instructional headings, fewer repeated notes and fake preview chrome. Speak now shows a single experimental aggregate 0–100 estimate and exact-match word-text colour hints; optional English pronunciation guide is learner-controlled. No per-syllable numbers/boxes, Azure fluency/completeness drilldown or timing diagnostic copy. The explicit per-take provider consent and error/ref-review honesty remain. Desktop/mobile/accessibility, private family and mocked provider browser regression lanes all green. No real iPhone/Safari/audio/human linguistic or aesthetic sign-off, no public deployment.
+
+**Owner-approved next independent user-facing slices:** UX-02 simplify Library and Practice dense management/repeat-use copy; UX-03 improve Profile, private group scoreboard and Expedition hierarchy; UX-04 streamline action cadence; UX-05 owner reviews final graphic identity. Do not expand unsupported language advice or scoring logic. [Durable UX standard](v2/LEARNER_UX_UI_STANDARD.md); [umbrella issue #2](https://github.com/AndrewDionne/LearnPolish/issues/2) has merge and CI evidence.
+
+---
+
 ## UX-01: minimal learner-first surface and consistent graphics — 2026-10-23
 
 **Current certified main before this tranche:** LRN-01 [PR #109](https://github.com/AndrewDionne/LearnPolish/pull/109) merged `311c358e5251f0a42f00e11aa2d7d86036af7012`; LRN-02 [PR #110](https://github.com/AndrewDionne/LearnPolish/pull/110) merged `445f10312bae3b378d84f330d74c0e1032aee142` after [CI #39922469301](https://github.com/AndrewDionne/LearnPolish/actions/runs/39922469301) **four of four PASS**. Home Continue resumes next unseen Learn item; optional next authored lesson after completion, with 1–10 → 11–20 taking precedence. Older status entries below are historical.
