@@ -8,7 +8,7 @@ export default function TouristUnitCards({units,onStart}:{
   onStart:(unitId:string,stepIndex:number)=>void;
 }){
   if(!units.length)return null;
-  return <div className="tourist-unit-grid" aria-label="Conversation practice">
+  return <div className="tourist-unit-grid" role="group" aria-label="Conversation practice">
     {units.map(unit=><section className="tourist-unit-card" key={unit.id}>
       <strong>{unit.title}</strong>
       <div className="tourist-unit-actions">
