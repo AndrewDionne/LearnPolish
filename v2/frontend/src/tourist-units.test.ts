@@ -76,6 +76,31 @@ describe('Source-only T01–T05 conversational path',()=>{
     expect(availableTouristUnits(unsafeRestaurant).map(x=>x.id)).toEqual(['T01','T02','T03','T05']);
   });
 
+
+  it('pins the new situations to their original Polish rather than newly generated target text',()=>{
+    const expected=[
+      ['Food_and_Dinning:0','Poproszę stolik dla jednej osoby','A table for one, please'],
+      ['Food_and_Dinning:5','Poproszę zupę dnia','I’ll have the soup of the day'],
+      ['Food_and_Dinning:17','Rachunek, proszę','The bill, please'],
+      ['Conversation_-_restaurant:0','Poproszę menu','May I have the menu, please?'],
+      ['Conversation_-_restaurant:7','Poproszę rachunek','The bill, please'],
+      ['Conversation_-_restaurant:24','Czy mogę zapłacić kartą?','Can I pay by card?'],
+      ['Grocery_store_very_basic_shopping:1','Dzień dobry, poproszę kilogram jabłek.','Good morning, I’d like a kilo of apples, please.'],
+      ['Grocery_store_very_basic_shopping:2','Jakie jabłka pan lubi? Czerwone czy zielone?','Which apples do you like? Red or green?'],
+      ['Grocery_store_very_basic_shopping:5','Nie, dziękuję. To wszystko.','No, thank you. That’s all.'],
+      ['Conversation_-_shopping:5','Gdzie jest kasa?','Where is the checkout?'],
+      ['Conversation_-_shopping:8','Poproszę paragon','Receipt, please'],
+      ['Conversation_-_shopping:24','Wezmę to','I’ll take it'],
+    ] as const;
+    for(const [id,polish,english] of expected){
+      const lesson=all.find(x=>id.startsWith(x.id+':'));
+      const item=lesson?.items.find(x=>x.id===id);
+      expect(item?.polish).toBe(polish);
+      expect(item?.english).toBe(english);
+      expect(TOURIST_UNITS.slice(3).some(u=>u.steps.some(s=>s.itemIds.includes(id)))).toBe(true);
+    }
+  });
+
   it('rejects malformed order, duplicate IDs, unrelated/read-mode sources and fabricated gap data',()=>{
     const bad=[
       {...source,schemaVersion:2},
