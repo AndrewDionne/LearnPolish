@@ -17,7 +17,7 @@ test('completing a built-in lesson offers the next authored step without forcing
   await page.getByRole('button',{name:/Reveal meaning/}).click();
   await page.getByRole('button',{name:/Got it/}).click();
   await expect(page.getByRole('heading',{name:'Nicely done!'})).toBeVisible();
-  const next=page.getByRole('button',{name:'Continue to Shopping: Useful Questions'});
+  const next=page.getByRole('button',{name:'Continue to Everyday Conversations: Greetings'});
   await expect(next).toBeVisible();
   await expect(page.getByRole('button',{name:'Back to library →'})).toBeVisible();
   await next.click();
