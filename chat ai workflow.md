@@ -1,3 +1,11 @@
+## UX-05B geometric P: design assets certified & merged, visual choice pending (2026-10-23)
+
+**GitHub main merged design-only:** [PR #116](https://github.com/AndrewDionne/LearnPolish/pull/116) squash `ad812a48cd659ae36f0fc390b7f42c0480bb233d`, final PR head `8528623bcb6595e64dc5db71826b3b254cc0f784`, [four CI lanes PASS #39943701932](https://github.com/AndrewDionne/LearnPolish/actions/runs/39943701932). The design-only source in `v2/brand-review/geometric-p/` includes primary transparent navy geometric P + baseline + dot, separately hand-adjusted square navy/white/mint icon and responsive HTML comparison showing small sizes. User's original geometric P reference rather than the rejected UX-05A p/wavy route is authoritative. [Issue #2](https://github.com/AndrewDionne/LearnPolish/issues/2) contains the final SHA and review evidence.
+
+**Status not to misread:** This PR integrated **review artifacts, not a new production brand**. The current app still uses the earlier UX-05A mark in `v2/frontend/src/BrandMark.tsx` and `v2/frontend/public/brand-mark.svg`. No runtime frontend asset was touched, and no logo aesthetic approval is claimed. **Next:** owner reviews both 2D variants, identifies needed refinements to P bowl, left crossbar (also potentially reads like ₽), underline and terminal gap/dot. Once the owner accepts geometry, open a separately certified UX-05C *production integration* PR, with desktop/mobile/favicon/32px/16px checks and 4 final-head CI checks. All native audio/physical/Safari tests remain deferred.
+
+---
+
 ## UX-05B · Geometric P identity review; NOT yet the live app mark (2026-10-23)
 
 **Authoritative owner correction:** The earlier lower-case p/curving-mint-route branding from UX-05A was rejected as aesthetically unsuitable, despite passing technical CI. The owner supplied a sketch of a strong architectural capital P with an offset crossbar, long geometric baseline suggesting a path, and a detached circular terminal. The owner authorized refinement and coordinated horizontal/signature and compact/square variations for visual approval **before** replacing the app logo.
