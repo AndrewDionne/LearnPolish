@@ -178,7 +178,7 @@ test('empty Library, no-due Practice and navigation focus remain accessible',asy
   await page.getByRole('searchbox',{name:'Search lessons'}).fill('no-matching-polish-set-xyz');
   await expect(page.getByRole('heading',{name:'No matching lessons'})).toBeVisible();
   await audit(page,'library-no-results');
-  await page.getByRole('button',{name:'Show all stages'}).click();
+  await page.getByRole('button',{name:'Show all lessons'}).click();
   await expect(page.getByRole('heading',{name:'No matching lessons'})).toHaveCount(0);
 
   await nav.getByRole('button',{name:'Practice',exact:true}).focus();
