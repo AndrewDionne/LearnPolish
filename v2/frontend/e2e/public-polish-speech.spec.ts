@@ -60,9 +60,9 @@ test('two actual public-domain Polish voices pass Learn/Speak capture and next-p
     await page.getByRole('button',{name:/Start recording/}).click();
     await expect(page.getByRole('button',{name:'Stop recording'})).toBeVisible();
     await page.getByRole('button',{name:'Stop recording'}).click();
-    await expect(page.getByText(/Recording captured/)).toBeVisible();
+    await expect(page.getByText(/Recording ready/)).toBeVisible();
     await expect(page.locator('#personal-speech-replay')).toHaveAttribute('src',/blob:/);
-    await expect(page.getByText(/Recording captured/)).toBeVisible();
+    await expect(page.getByText(/Recording ready/)).toBeVisible();
     await expect(page.locator('.speak-scores')).toHaveCount(0);
     if(index===0){
       await page.getByRole('button',{name:'Next',exact:true}).click();
