@@ -3,6 +3,7 @@ import {makeBackup,parseBackup} from './backup';
 import {persistRestoredBackup} from './restore-storage';
 import {makePersonalLesson} from './personal';
 import {awardXp,emptyExpedition} from './expedition/expedition';
+import {TOURIST_ACTIVITY_KEY,emptyTouristActivities} from './tourist-activity';
 
 const lesson=makePersonalLesson({title:'Polish practice',kind:'vocabulary',
   items:[{polish:'Cześć',english:'Hello'}]},undefined,()=>'restore-stable');
@@ -82,4 +83,29 @@ describe('all-or-nothing local restore',()=>{
     persistRestoredBackup(withoutRecent,store);
     expect(data.has('ptp-v2-last-lesson')).toBe(false);
   });
+});
+
+test('restores unit participation atomically, and older backups clear obsolete device cursor',()=>{
+  const activity={version:1 as const,units:{T02:{
+    tried:{listen:['Basic_01R:2']},cursor:{mode:'listen' as const,itemId:'Basic_01R:3'}
+  }}};
+  const withActivity=parseBackup({...backup,touristActivity:activity});
+  const {store,data}=storage({[TOURIST_ACTIVITY_KEY]:'outdated'});
+  persistRestoredBackup(withActivity,store);
+  expect(JSON.parse(data.get(TOURIST_ACTIVITY_KEY)!)).toEqual(activity);
+  persistRestoredBackup(backup,store);
+  expect(JSON.parse(data.get(TOURIST_ACTIVITY_KEY)!)).toEqual(emptyTouristActivities());
+});
+
+test('rollback covers tourist participation when a later restore write fails',()=>{
+  const activity={version:1 as const,units:{T02:{
+    tried:{listen:['Basic_01R:2']},cursor:{mode:'listen' as const,itemId:'Basic_01R:3'}
+  }}};
+  const withActivity=parseBackup({...backup,touristActivity:activity});
+  const previous={'ptp-v2-progress':'old','ptp-v2-core-continue':'Basic_01R',
+    [TOURIST_ACTIVITY_KEY]:JSON.stringify(emptyTouristActivities())};
+  const {store,data,failOnceOn}=storage(previous);
+  failOnceOn(TOURIST_ACTIVITY_KEY);
+  expect(()=>persistRestoredBackup(withActivity,store)).toThrow(/previous saved data was preserved/);
+  expect(Object.fromEntries(data)).toEqual(previous);
 });
