@@ -1,3 +1,23 @@
+## C-03 F0/F1 native-review intake + blocked recording work orders CERTIFIED + MERGED (2026-10-24)
+
+**Integrated:** [PR #143](https://github.com/AndrewDionne/LearnPolish/pull/143), squash `d0a01f94803e7d6c38b1c804bab4ee095f02f448`, exact final certified PR head `c839bc31d0a4b779792a65a7c778163982c8ccd8`, [Actions #40038546480](https://github.com/AndrewDionne/LearnPolish/actions/runs/40038546480) **FOUR/FOUR FINAL-HEAD CI PASS**: frontend mandatory migration including 9 C-03 tests/type/unit/build/desktop+mobile browser/offline/audio/accessibility; connected family; private backend; benchmark. Mergeable/clean at certification.
+
+**Practical progression beyond C-02 author-only sheet:** [C-03 native-review and recording workflow](v2/JOURNEY1_F0_F1_REVIEW_INTAKE.md) and [offline source-anchored intake script](v2/frontend/scripts/foundation-review-intake.mjs) reproducibly derive **136** separate reviewer targets: 32 letter **names** (names absent, not symbol/whole word) + 32 whole example words, 20 pronunciation/spelling *concepts* (not utterances), 42 first vocabulary entries (8 exact inherited source full utterances), 10 F2 candidate fixed sentences. Tool produces whole/section CSV editorial worksheets, 136-row JSON feedback template with content source SHA-256 fingerprints, JSON reviewer feedback validation and **116 prospective recording targets all BLOCKED**. Human review submission reports **unverified feedback only** with approvedText=0, approvedAudio=0, learnerImportAllowed=false even when filled; no verified identities, consent, native/acoustic QA or voice rights from typed assertions. Immutable C-02 source, retired bundled letters and old Speak blockers remain untouched.
+
+**Commands** (repository root):
+```bash
+cd v2/frontend
+npm run test:migration
+node scripts/foundation-review-intake.mjs --review-csv > ../../foundation-review-worksheet.csv
+node scripts/foundation-review-intake.mjs --template-json > ../../foundation-review-feedback.json
+node scripts/foundation-review-intake.mjs --recording-csv > ../../foundation-recording-work-order.csv
+node scripts/foundation-review-intake.mjs --validate-feedback=../../foundation-review-feedback.json
+```
+
+**Hard blocker remains OPEN [#140](https://github.com/AndrewDionne/LearnPolish/issues/140):** obtain actual independent native line corrections + letter names, verify 20 contextual spellings/42 first words/10 grammar bridges, then owner-controlled licensing/provenance, matching real exact-utterance voice assets and independent acoustic signoff **before** separate C-04 learner-source integration. No new alphabet/vocabulary lessons, audio, scores or explicit tier labels; original 26 sets/482 rows/455 MP3, 14 protected Speak, Numbers 1–20 whole optional 10+10, T01–T08, 16 foundation+4 application *slot* proxy, XP/family/consent/privacy/offline/backup remain. Target **80% actual guided fundamentals/basic teaching time still requires calibration**, not proven by C-01's 16/4 session plan. No physical iPhone/Safari/paid-provider/native-voice approval or launch.
+
+---
+
 ## C-02 F0/F1 foundation native-review production packet CERTIFIED + MERGED (2026-10-24)
 
 **Integrated:** [PR #142](https://github.com/AndrewDionne/LearnPolish/pull/142), squash `5239dfddf44e61a8ce9efb6e8e619d82964c56eb`; exact certified final PR head `33ec60841887e5fabb4496934859041c08565e67`, [GitHub Actions #40037459097](https://github.com/AndrewDionne/LearnPolish/actions/runs/40037459097) **ALL FOUR CI PASS**: frontend migration/foundation negative gates/TypeScript/Vitest/build/full desktop/mobile/offline/audio/a11y, connected-family browser, private backend, and benchmark. Initial failing assertion on a draft-only missing-sentence negative test fixed at final head; none of the production tests removed.
