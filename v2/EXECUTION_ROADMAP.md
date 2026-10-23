@@ -1,3 +1,11 @@
+## CERTIFIED AUDIT CHECKPOINT — 2026-10-23
+
+**A-00 / B-00 audit complete and merged:** [PR #121](https://github.com/AndrewDionne/LearnPolish/pull/121), squash `7fc24c7307505a7978b305d9db68f8de8ac3882e`, final branch head `871f92910cda8b15055cc5ad12a8487c905f8c19`, [CI #39965906168](https://github.com/AndrewDionne/LearnPolish/actions/runs/39965906168) **four of four PASS**. [Phase A learning improvement register](PHASE_A_LEARNING_AUDIT.md) gives 24 P0/P1/P2 issues and implementation slices A-01–A-06; [full core curriculum mapping and gap-fill blueprint](CORE_CURRICULUM_GAP_PLAN.md) covers 26 existing lessons, the conversational tourist/extended/resident proposal and B-01–B-07 editorial work. [Issue #2](https://github.com/AndrewDionne/LearnPolish/issues/2) carries exact evidence.
+
+**Review gate:** Source code, XP, 455 preserved original MP3 assets, per-item progress, current Library order, approved Numbers batching, opt-in Speak and personal lesson behaviour are **unchanged**. These reports are researched *planning* artifacts, not native-reviewed new Polish curriculum. Review course outcome/order with owner before A-01/B-01 manifest integration. No physical testing/provider payment/deployment.
+
+---
+
 # Path to Polish V2 — execution roadmap and learning programme decisions
 
 **Owner decision: 2026-10-23.** This document is the current priority authority alongside the root `chat ai workflow.md`, `V2_REBUILD_PLAN.md`, `v2/DEFERRED_PHYSICAL_TEST_ROADMAP.md`, and GitHub issue #2. Later checkpoints override old historical TODO text. GitHub—not chat—is the source of execution continuity.
