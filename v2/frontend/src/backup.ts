@@ -11,6 +11,8 @@ import type { ReviewSchedule } from './review';
 import { parseReviewSchedule } from './review';
 import type { ReadingPositions } from './reading-position';
 import { parseReadingPositions } from './reading-position';
+import {validateTouristActivities} from './tourist-activity';
+import type {TouristActivities} from './tourist-activity';
 
 export const BACKUP_FORMAT = 'path-to-polish-v2-local-backup';
 export const MAX_BACKUP_BYTES = 2_000_000;
@@ -25,6 +27,8 @@ export type LocalBackup = {
   lastLessonId: string | null;
   /** Optional for pre-A-02 exports: the separate core-course location. */
   lastCoreLessonId?: string | null;
+  /** Optional local source-item attempt/cursor evidence (not proficiency). */
+  touristActivity?:TouristActivities;
   gold?: GoldState; // Optional for pre-XP exports
   expedition?: ExpeditionState;
 };
@@ -36,6 +40,7 @@ export function makeBackup(data: Omit<LocalBackup, 'format' | 'version' | 'expor
     progress: data.progress, reviews: data.reviews, readingPositions: data.readingPositions,
     lastLessonId: data.lastLessonId,
     ...(data.lastCoreLessonId===undefined ? {} : {lastCoreLessonId:data.lastCoreLessonId}),
+    ...(data.touristActivity===undefined?{}:{touristActivity:data.touristActivity}),
     ...(data.gold ? {gold:data.gold} : {}),
     ...(data.expedition ? {expedition:data.expedition} : {}),
   };
@@ -98,6 +103,7 @@ export function parseBackup(value: unknown): LocalBackup {
     readingPositions: checkedMap(raw.readingPositions, parseReadingPositions, 'reading position'),
     lastLessonId: raw.lastLessonId,
     ...(raw.lastCoreLessonId===undefined ? {} : {lastCoreLessonId:raw.lastCoreLessonId}),
+    ...(raw.touristActivity===undefined?{}:{touristActivity:validateTouristActivities(raw.touristActivity)}),
     ...(raw.gold === undefined ? {} : {gold}),
     ...(raw.expedition === undefined ? {} : {expedition:raw.expedition}),
   };
