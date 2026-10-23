@@ -17,11 +17,11 @@ test('completing a built-in lesson offers the next authored step without forcing
   await page.getByRole('button',{name:/Reveal meaning/}).click();
   await page.getByRole('button',{name:/Got it/}).click();
   await expect(page.getByRole('heading',{name:'Nicely done!'})).toBeVisible();
-  const next=page.getByRole('button',{name:'Continue to Shopping: Useful Questions'});
+  const next=page.getByRole('button',{name:'Continue to Everyday Conversations: Greetings'});
   await expect(next).toBeVisible();
   await expect(page.getByRole('button',{name:'Back to library →'})).toBeVisible();
   await next.click();
-  await expect(page.locator('.crumb')).toContainText('Shopping: Useful Questions');
+  await expect(page.locator('.crumb')).toContainText('Everyday Conversations: Greetings');
   await expect(page.locator('.item-count')).toContainText('1');
   // Return to Library remains an ordinary path; no hard locks.
   const nav=page.getByRole('navigation',{name:isMobile?'Mobile navigation':'Main navigation'});

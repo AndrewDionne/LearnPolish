@@ -782,3 +782,17 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   background:var(--ptp-primary-hover);
 }
 /* High-contrast readonly account email remains visibly distinct. */
+
+
+/* A-01: purely decorative internal journey location. No tooltips/labels/legend.
+   Meaningful lesson title, progress, buttons remain readable without colour. */
+.lesson-art{position:relative}
+.journey-marker{
+  position:absolute;right:4px;bottom:4px;
+  width:27px;height:27px;border-radius:9px;display:grid;place-items:center;
+  background:#fff;border:1px solid currentColor;pointer-events:none;
+}
+.journey-marker.journey-1{color:#247268}
+.journey-marker.journey-2{color:#4b639e}
+.journey-marker.journey-3{color:#91653e}
+.journey-marker svg{display:block}

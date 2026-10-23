@@ -1,3 +1,9 @@
+## A-01/B-01 QUIET JOURNEY PILOT (2026-10-23)
+
+Owner explicitly approved implementing the 3×3 internal Beginning/Middle/End × Journey 1/2/3 model as **decorative icon+colour only**, without visible or spoken tier descriptions, tooltip or hover info. Independent branch `feat/v2-a01-core-journey-markers` builds the versioned `v2/content/core-journey-v1.json` and React decorator with no nine-stage UI. Source-backed programme currently has 20 existing original mapped lessons (17 Journey 1, 3 Journey 2), **none in Journey 3 until real curriculum content is created**; six source sets remain available under Explore more. Library headings become `Your path / Explore more / Your lessons`; old Fundamentals/Basic/Learning browsing categories are historical metadata, not learner-visible tiers. Next suggestions follow this pilot source-backed order; Home core-vs-last-activity resume remains future A-02. No source items/audio/XP/consent/personal data changed. See `v2/CORE_JOURNEY_IMPLEMENTATION.md` and `v2/EXECUTION_ROADMAP.md`; certify all four final PR head CI jobs before merging; real device/audio tests remain deferred.
+
+---
+
 ## UX-05E EDITOR/ACCOUNT/FAMILY FORMS CERTIFIED + MERGED (2026-10-23)
 
 **Latest merged GitHub main:** [PR #120](https://github.com/AndrewDionne/LearnPolish/pull/120), squash `f36b46a40df0691414f1fc0ad33fa2b6bc31139f`, final PR head `1fb7bb72bc3b8b30c1d45adce03f24e1c79d25b9`, [Actions #39960461495](https://github.com/AndrewDionne/LearnPolish/actions/runs/39960461495) **FOUR of FOUR PASS** (frontend TypeScript/Vitest/build/desktop+mobile/Axe/offline/audio, private-family connected browser with two-user signup and mock Speak, private backend, benchmark). [Issue #2](https://github.com/AndrewDionne/LearnPolish/issues/2) holds integration evidence. Supersedes any below-the-fold UX-05E-in-development status.

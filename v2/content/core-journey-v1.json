@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "editorialStatus": "source-mapped-pilot_not_native-audio-certified",
+  "notes": "Course metadata independent of historical Library categories. Unmapped sources stay available under Explore more. No unbuilt Journey 3 content or manufactured units. Personal lessons must never be in this manifest.",
+  "placements": [
+    {
+      "lessonId": "Conversation_1",
+      "journey": 1,
+      "position": "beginning",
+      "order": 1
+    },
+    {
+      "lessonId": "Basic_01R",
+      "journey": 1,
+      "position": "beginning",
+      "order": 2
+    },
+    {
+      "lessonId": "contrast_l_lstroked",
+      "journey": 1,
+      "position": "beginning",
+      "order": 3
+    },
+    {
+      "lessonId": "contrast_c_cz_cie",
+      "journey": 1,
+      "position": "beginning",
+      "order": 4
+    },
+    {
+      "lessonId": "contrast_s_sz_sie",
+      "journey": 1,
+      "position": "beginning",
+      "order": 5
+    },
+    {
+      "lessonId": "contrast_z_zh_zi",
+      "journey": 1,
+      "position": "beginning",
+      "order": 6
+    },
+    {
+      "lessonId": "numbers_1-20",
+      "journey": 1,
+      "position": "beginning",
+      "order": 7
+    },
+    {
+      "lessonId": "Conversation_-_shopping",
+      "journey": 1,
+      "position": "middle",
+      "order": 1
+    },
+    {
+      "lessonId": "Conversation_-_restaurant",
+      "journey": 1,
+      "position": "middle",
+      "order": 2
+    },
+    {
+      "lessonId": "Food_and_Dinning",
+      "journey": 1,
+      "position": "middle",
+      "order": 3
+    },
+    {
+      "lessonId": "Numbers_20-100",
+      "journey": 1,
+      "position": "middle",
+      "order": 4
+    },
+    {
+      "lessonId": "Getting_Around_1",
+      "journey": 1,
+      "position": "middle",
+      "order": 5
+    },
+    {
+      "lessonId": "Transit_1",
+      "journey": 1,
+      "position": "middle",
+      "order": 6
+    },
+    {
+      "lessonId": "On_the_tram_talking_to_another_passenger",
+      "journey": 1,
+      "position": "end",
+      "order": 1
+    },
+    {
+      "lessonId": "Asking_the_tram_driver_for_directions",
+      "journey": 1,
+      "position": "end",
+      "order": 2
+    },
+    {
+      "lessonId": "Museum_buying_tickets_and_basic_info",
+      "journey": 1,
+      "position": "end",
+      "order": 3
+    },
+    {
+      "lessonId": "Emergencies_and_Health",
+      "journey": 1,
+      "position": "end",
+      "order": 4
+    },
+    {
+      "lessonId": "contrast_krzy_przy",
+      "journey": 2,
+      "position": "beginning",
+      "order": 1
+    },
+    {
+      "lessonId": "Grocery_store_very_basic_shopping",
+      "journey": 2,
+      "position": "middle",
+      "order": 1
+    },
+    {
+      "lessonId": "H_M_clothes_shop_trying_on_a_T-shirt",
+      "journey": 2,
+      "position": "middle",
+      "order": 2
+    }
+  ]
+}
