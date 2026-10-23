@@ -5,10 +5,10 @@ test('first tourist unit connects real recorded Listen, Speak and Read material'
   await page.getByRole('button',{name:'Explore lessons'}).click();
   const units=page.getByRole('group',{name:'Conversation practice'});
   await expect(units).toBeVisible();
-  await expect(units.locator('.tourist-unit-card')).toHaveCount(6);
+  await expect(units.locator('.tourist-unit-card')).toHaveCount(7);
   await expect(page.locator('.lesson-tile')).toHaveCount(26);
   const buttons=units.getByRole('button');
-  await expect(buttons).toHaveCount(16);
+  await expect(buttons).toHaveCount(19);
   await units.getByRole('button',{name:'Greetings and polite replies: Listen'}).click();
   await expect(page.locator('.unit-practice-head')).toContainText('Greetings and polite replies');
   await expect(page.locator('.unit-practice-head')).toContainText('Listen · 1/3');
@@ -174,6 +174,49 @@ test('T06 remains optional and its route source never repositions an already cho
   await nav.getByRole('button',{name:'Library'}).click();
   const card=page.locator('.tourist-unit-card').filter({hasText:'Finding your way to the centre'});
   await card.getByRole('button',{name:'Finding your way to the centre: Read'}).click();
+  await nav.getByRole('button',{name:'Home'}).click();
+  await expect(page.locator('.core-resume-card')).toContainText('Greetings and Introductions');
+  expect(await page.evaluate(()=>localStorage.getItem('ptp-v2-core-continue'))).toBe('Conversation_1');
+});
+
+test('T07 recorded transport scene connects Listen and Read to ticket-machine response and original spoken ticket requests',async({page,isMobile})=>{
+  await page.goto('/');
+  await page.getByRole('button',{name:'Explore lessons'}).click();
+  const card=page.locator('.tourist-unit-card').filter({hasText:'Taking a tram and buying a ticket'});
+  await expect(card).toBeVisible();
+  await card.getByRole('button',{name:'Taking a tram and buying a ticket: Listen'}).click();
+  await expect(page.locator('.unit-practice-head')).toContainText('Listen · 1/3');
+  await expect(page.locator('.item-count')).toContainText('/ 8');
+  await expect(page.getByRole('button',{name:'Play audio'})).toBeEnabled();
+  // A real source-backed question about onboard ticket purchases is the sixth
+  // original turn, not a newly generated cashier or ticket-price reply.
+  for(let i=0;i<5;i++)await page.getByRole('button',{name:'Skip to next →'}).click();
+  await page.getByRole('button',{name:'Reveal transcript & translation'}).click();
+  await expect(page.getByText('Czy mogę kupić bilet w tramwaju?',{exact:true})).toBeVisible();
+  const nav=page.getByRole('navigation',{name:isMobile?'Mobile navigation':'Main navigation'});
+  await nav.getByRole('button',{name:'Library'}).click();
+  await card.getByRole('button',{name:'Taking a tram and buying a ticket: Speak'}).click();
+  await expect(page.locator('.unit-practice-head')).toContainText('Speak · 2/3');
+  await expect(page.locator('.item-count')).toContainText('/ 8');
+  await expect(page.getByText('Na którą linię?',{exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'▶ Hear example'})).toBeVisible();
+  await nav.getByRole('button',{name:'Library'}).click();
+  await card.getByRole('button',{name:'Taking a tram and buying a ticket: Read'}).click();
+  await expect(page.locator('.unit-practice-head')).toContainText('Read · 3/3');
+  await expect(page.locator('.item-count')).toContainText('/ 8');
+  await expect(page.getByText('Przepraszam, czy mogę zadać pytanie?',{exact:true})).toBeVisible();
+  await nav.getByRole('button',{name:'Library'}).click();
+  await expect(card.locator('.tourist-unit-activity')).toHaveText('0 / 24 tried');
+  await expect(card.getByRole('button',{name:'Resume Taking a tram and buying a ticket'})).toBeVisible();
+});
+
+test('T07 source-mode practice never shifts explicitly selected Home course cursor',async({page,isMobile})=>{
+  await page.goto('/');
+  await page.evaluate(()=>localStorage.setItem('ptp-v2-core-continue','Conversation_1'));
+  await page.reload();
+  const nav=page.getByRole('navigation',{name:isMobile?'Mobile navigation':'Main navigation'});
+  await nav.getByRole('button',{name:'Library'}).click();
+  await page.getByRole('button',{name:'Taking a tram and buying a ticket: Read'}).click();
   await nav.getByRole('button',{name:'Home'}).click();
   await expect(page.locator('.core-resume-card')).toContainText('Greetings and Introductions');
   expect(await page.evaluate(()=>localStorage.getItem('ptp-v2-core-continue'))).toBe('Conversation_1');
