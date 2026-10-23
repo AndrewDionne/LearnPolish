@@ -1,3 +1,9 @@
+## B-03 editorial source-gate certified (2026-10-23)
+
+[PR #125](https://github.com/AndrewDionne/LearnPolish/pull/125) merged to `main` as `6a4b5b19b77d2487dc7dd3fd0d2f5170c9f408c8`, final PR head `3463c5cdc4461a688326505d68a33bdd9a32a3de`, [GitHub CI #39989479190](https://github.com/AndrewDionne/LearnPolish/actions/runs/39989479190) **four jobs PASS**. A non-runtime review packet, exact original Polish/English/protected-reference drift tests, and native audio/translation reviewer handoff now exist for T02/T03. No learner-facing content or scoring changed, and CI is NOT native speaker/acoustic approval. **Next content work remains [issue #126](https://github.com/AndrewDionne/LearnPolish/issues/126)**: verified complete name reply and concrete price/quantity/payment clerk dialogue plus real Read, followed by source-grounded T04/T05 scenarios. Keep original IDs/audio, user-made lessons, 14 blocked references and all privacy/consent gates intact.
+
+---
+
 ## B-03 source-reviewed T02/T03 preparation (2026-10-23; under certification)
 
 Next tranche after certified A-03/B-02: **first establish a safe native-editorial/recording QA handoff** rather than insert unsupported conversational Polish. `content/tourist-editorial-review-v1.json` references six exact original source rows across T02/T03; a dedicated Node draft guard in `npm run test:migration` rejects source-word drift, incorrect protected reference status, unapproved publication/recording fields, T02 unsafe Speak promotion and fictional T03 Read. See [T02/T03 editorial handoff](TOURIST_T02_T03_EDITORIAL_REVIEW.md). The learner app still uses the certified original T01–T03 pilot; this packet is **not live course content**. Native language/acoustic verification and real hardware/AI tests are deferred. After review, promote authored/recorded content separately with full four-lane CI; then expand natural T04/T05 dialogues.
