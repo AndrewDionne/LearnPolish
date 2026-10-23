@@ -36,6 +36,7 @@ function reply(payload:unknown,status=200,headers:Record<string,string>={}){
 
 describe('DPT-04 optional pronunciation transport — fully mocked, no external audio uploads',()=>{
   afterEach(()=>{
+    vi.useRealTimers();
     vi.unstubAllGlobals();
     vi.unstubAllEnvs();
     vi.resetModules();
@@ -64,6 +65,60 @@ describe('DPT-04 optional pronunciation transport — fully mocked, no external 
     controller.abort();
     resolve(reply(azure));
     await expect(attempt).rejects.toMatchObject({name:'AbortError'});
+  });
+
+  test('a hung provider request stops at 45s, aborts transport and never retries',async()=>{
+    const request=await ready();
+    vi.useFakeTimers();
+    let attemptedSignal:AbortSignal|undefined;
+    const spy=vi.fn((_url:string,init?:RequestInit)=>{
+      attemptedSignal=init?.signal as AbortSignal;
+      return new Promise<Response>(()=>{/* deliberately unresponsive mock */});
+    });
+    vi.stubGlobal('fetch',spy);
+    const pending=request(capture(),'synthetic-token');
+    const denied=expect(pending).rejects.toThrow(
+      'Pronunciation check timed out. You can replay or try again.');
+    await vi.advanceTimersByTimeAsync(44_999);
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(attemptedSignal?.aborted).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    await denied;
+    expect(attemptedSignal?.aborted).toBe(true);
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  test('a hung JSON body is also bounded, rather than leaving Checking forever',async()=>{
+    const request=await ready();
+    vi.useFakeTimers();
+    const parse=vi.fn(()=>new Promise<unknown>(()=>{}));
+    const spy=vi.fn(async()=>({
+      ok:true,status:200,json:parse,headers:new Headers(),
+    }));
+    vi.stubGlobal('fetch',spy);
+    const pending=request(capture(),'synthetic-token');
+    const denied=expect(pending).rejects.toThrow(/timed out/);
+    await vi.advanceTimersByTimeAsync(45_000);
+    await denied;
+    expect(parse).toHaveBeenCalledTimes(1);
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  test('cancellation of an uncooperative pending transport settles without waiting for it',async()=>{
+    const request=await ready();
+    const controller=new AbortController();
+    let passedSignal:AbortSignal|undefined;
+    const spy=vi.fn((_url:string,init?:RequestInit)=>{
+      passedSignal=init?.signal as AbortSignal;
+      return new Promise<Response>(()=>{});
+    });
+    vi.stubGlobal('fetch',spy);
+    const attempt=request(capture(),'synthetic-token',controller.signal);
+    const denied=expect(attempt).rejects.toMatchObject({name:'AbortError'});
+    controller.abort();
+    await denied;
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(passedSignal?.aborted).toBe(true);
   });
 
   test('network/proxy exceptions are sanitized and never leak a provider transcript',async()=>{
