@@ -374,7 +374,7 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
               onClick={()=>setRecognitionCategory(category.id)}>{category.label}</button>)}
           </div>
           {recognitionCategory==='improvement'
-            ? <p role="status" className="family-recognition-pending">Most-improved recognition will use verified change from each learner's previous comparable performance. This family has no validated improvement measurements yet; no ranking is assigned.</p>
+            ? <p role="status" className="family-recognition-pending">No validated improvement measurements yet. No ranking available.</p>
             : <ol aria-label={RECOGNITION_CATEGORIES.find(x=>x.id===recognitionCategory)?.label+' leaderboard'}>
                 {rankFamily(summary.members,recognitionCategory).map(({member,score,rank})=>
                   <li key={member.id} className={member.id===userId?'family-current-learner':''}>
