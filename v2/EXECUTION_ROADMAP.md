@@ -14,6 +14,19 @@
 
 **Priority rule:** Stop repeated styling micro-tranches unless there is a specific usability/accessibility defect. A & B now outrank cosmetic cleanup; B's curriculum audit can be included in A's first audit so the plan is coherent.
 
+## A-00 / B-00 source audit deliverables (2026-10-23)
+
+This audit is the **first action** under the locked execution order, not a rewrite of the learner app.
+
+- [Phase A source-backed learning audit](PHASE_A_LEARNING_AUDIT.md): 24 prioritized P0/P1/P2 improvement findings, exact React/progress/review/personal-set evidence, acceptance criteria, and independent A-01..A-06 implementation PR sequence.
+- [Comprehensive curriculum gap map](CORE_CURRICULUM_GAP_PLAN.md): all 26 active V2 lessons and 482 items dispositioned individually; existing source audio/protected references, conversational mode coverage and gaps, and provisional **Tourists T01–T12 → Extended Stay E01–E10 → Living in Poland R01–R10** functional course units.
+- Current Library's sound/first-word/vocab/sentences/reading tracks are source-kind browsing categories, **not the conversational unit order**. Home resumes the last visit; Listen/Read authoring exists; actual Speak mode on reading dialogue is absent. Existing personal sets have a correct separate Library section and lesson IDs but are included in aggregate activity counters and can replace Home's last active lesson. These are implementation facts, not assertions that production is broken.
+- Core progression design must maintain a **separate course map and evidence** from Library stage filters, local practice and personal imported lessons. No compulsory lesson unlocks, no professional Polish track, no false speech grades and no unapproved new recordings.
+
+**Next owner decision:** review course phase outcomes and priority order. Then implement `A-01/B-01` stable manifest, independent Home-core resume and source-referenced tourist pilot, each under four final-PR-head CI lanes. Physical tests, live provider calls and native audio/editorial sign-off still deferred.
+
+---
+
 ## The intended CORE language programme — owner-approved product direction
 
 The V1 library was a collection of topics, **not** an intentionally sequenced course. Do not re-label its legacy Fundamentals → Basic → Learning *content buckets* as proof of a coherent course. Design the course around useful, spoken everyday Polish and short realistic exchanges for an **English-speaking learner**, **not Polish for professional communication**.
