@@ -62,6 +62,19 @@ This is a **design contract only**, not permission to reorder lessons, add inven
 
 ---
 
+## A-01/B-01 implementation pilot (2026-10-23)
+
+The owner approved proceeding with the **quiet 3×3 visual journey**, with **no tooltip, spoken tier description, visible tier title, legend or hover explanation**. The source-backed code pilot is documented in [`CORE_JOURNEY_IMPLEMENTATION.md`](CORE_JOURNEY_IMPLEMENTATION.md).
+
+- Versioned `content/core-journey-v1.json` contains **20** original V2 lesson placements (17 tourist, 3 extended-stay) and a deliberate **zero** resident placements until appropriate native-reviewed resident dialogue content exists; six other built-ins remain open in `Explore more`.
+- The core source order starts with real Greetings and Greetings Reading, then practical situations; this is a **temporary original-source pathway**, not yet the T01–T12/E01–E10/R01–R10 fully authored conversational course.
+- Library displays **Your path / Explore more / Your lessons** instead of outdated source-kind stage headings/filters. Core-marked cards have **three colour families × three tiny shapes**, purely decorative and non-focusable. Regular lesson titles, progress feedback and control accessibility stay unaffected.
+- Built-in core Next uses the source map; custom and diagnostic have no core Next. Local progress, Home Last Lesson behaviour, XP, Speak and source audio remain unchanged. The separated Home Core Continue, situational units and actual resident-course material are explicitly **subsequent A-02/B-02 deliverables**.
+
+The pilot requires the same four final-head certification jobs before integration. Native/physical acceptance and public deployment stay deferred.
+
+---
+
 ## The intended CORE language programme — owner-approved product direction
 
 The V1 library was a collection of topics, **not** an intentionally sequenced course. Do not re-label its legacy Fundamentals → Basic → Learning *content buckets* as proof of a coherent course. Design the course around useful, spoken everyday Polish and short realistic exchanges for an **English-speaking learner**, **not Polish for professional communication**.
