@@ -551,10 +551,10 @@ export default function App() {
             : finished ? <section className="flashcard complete-card" aria-live="polite">
             <span className="card-label">{reviewOnly ? 'REVIEW COMPLETE' : 'SESSION COMPLETE'}</span>
             <h2>Nicely done!</h2>
-            <p>You made it through {sessionItems.length} {sessionItems.length === 1 ? 'item' : 'items'} in {mode === 'listen' ? 'listening practice' : mode === 'read' ? 'reading practice' : mode === 'speak' ? 'speaking practice (unscored)' : 'learning practice'}.</p>
-            <p className="reward-note" aria-live="polite">{sessionXp ? '+' + sessionXp + ' XP earned in this session.' : 'No new XP this session — skips and repeats are not rewarded.'} Your total: {xpStats.total} XP.</p>
+            <p>You made it through {sessionItems.length} {sessionItems.length === 1 ? 'item' : 'items'}.</p>
+            <p className="reward-note" aria-live="polite">{sessionXp ? '+' + sessionXp + ' XP earned' : 'No XP earned this session'}</p>
             {availableModes(active).some(candidate => candidate !== mode) && <div className="mode-handoff" role="group" aria-label="Continue learning in another mode">
-              <strong>Keep going with another mode</strong><div>
+              <div>
               {availableModes(active).filter(candidate => candidate !== mode).map(candidate => <button type="button" key={candidate} className="handoff-button" onClick={() => switchMode(candidate)}>
                 {candidate === 'learn' ? 'Learn' : candidate === 'read' ? 'Read' : candidate === 'speak' ? 'Speak' : 'Listen'} →
               </button>)}</div>
@@ -586,7 +586,7 @@ export default function App() {
             else { stopAudio(); setFinished(true); }
           }} /> : mode === 'listen' ? <section className="flashcard listening-card" aria-live="polite">
             
-            <div className="listening-symbol" aria-hidden="true">♫</div>
+            <div className="listening-symbol" aria-hidden="true"><UIIcon name="sounds" size={42}/></div>
             <h2>{current.comprehension ? 'Listen for a detail' : 'What did you hear?'}</h2>
             <AudioButton item={current} playing={audio.playing} onPlay={play}/>
             <fieldset className="speed-picker"><legend>Playback speed</legend>
@@ -598,13 +598,12 @@ export default function App() {
               {listeningChoices.map(choice => <button type="button" key={choice} onClick={() => { stopAudio(); setListenGuess(choice); }}>{choice}</button>)}
             </div> : <button type="button" className="reveal" onClick={() => setListenRevealed(true)}>Reveal transcript &amp; translation</button>)}
             {(listenGuess !== null || listenRevealed) && <div className="listening-answer">
-              {listenGuess !== null && <p className={listenAnsweredCorrectly ? 'answer-good' : 'answer-review'}>{listenAnsweredCorrectly ? 'Correct!' : 'Not quite. Review the expression below.'}</p>}
-              {listenGuess !== null && current.comprehension && <p className="comprehension-feedback">{current.comprehension.feedback}</p>}
-              <span className="card-label">POLISH TRANSCRIPT</span><p lang="pl" className="listen-transcript">{current.polish}</p>
-              <span className="card-label">ENGLISH TRANSLATION</span><p>{current.english}</p>
+              {listenGuess !== null && <p role="status" className={listenAnsweredCorrectly ? 'answer-good' : 'answer-review'}>{listenAnsweredCorrectly ? 'Correct!' : 'Not quite'}</p>}
+              <p lang="pl" className="listen-transcript">{current.polish}</p>
+              <p className="listen-english">{current.english}</p>
               {listenGuess !== null ? <button type="button" className="primary-action" onClick={() => record(listenAnsweredCorrectly)}>Continue →</button> : <div className="answer-actions">
                 <button type="button" className="secondary-action" onClick={() => record(false)}>Needs practice</button>
-                <button type="button" className="primary-action" onClick={() => record(true)}>Understood it →</button>
+                <button type="button" className="primary-action" onClick={() => record(true)}>Got it →</button>
               </div>}
             </div>}
           </section> : <section className="flashcard" aria-live="polite">
@@ -622,20 +621,18 @@ export default function App() {
               )}</div>
             </fieldset>}
             {readGuess !== null && current.comprehension && <div className="reading-check-result" role="status">
-              <p className={readGuess === correctAnswer ? 'answer-good' : 'answer-review'}>{readGuess === correctAnswer ? 'Correct!' : 'Not quite — review the passage.'}</p>
-              <p>{current.comprehension.feedback}</p>
+              <p className={readGuess === correctAnswer ? 'answer-good' : 'answer-review'}>{readGuess === correctAnswer ? 'Correct!' : 'Not quite'}</p>
             </div>}
-            {(revealed || translationOpen) && <div className="translation"><span className="card-label">IN ENGLISH</span><p>{current.english}</p></div>}
+            {(revealed || translationOpen) && <div className="translation"><p>{current.english}</p></div>}
             {!revealed && !translationOpen && (mode !== 'read' || !current.comprehension) && <button type="button" className="reveal" onClick={() => mode === 'read' ? setTranslationOpen(true) : setRevealed(true)}>Reveal meaning <span>↗</span></button>}
             {mode === 'read' && current.comprehension && !translationOpen && <button type="button" className="reveal" onClick={() => setTranslationOpen(true)}>Reveal translation without answering</button>}
             {(revealed || translationOpen) && (mode === 'read' && readGuess !== null ? <button type="button" className="primary-action reading-continue" onClick={() => record(readGuess === correctAnswer)}>Continue →</button> : <div className="answer-actions">
-              <button type="button" className="secondary-action" onClick={() => record(false)}>{mode === 'read' ? 'Review again' : 'Needs practice'}</button>
-              <button type="button" className="primary-action" onClick={() => record(true)}>{mode === 'read' ? 'Finished reading →' : 'Got it →'}</button>
+              <button type="button" className="secondary-action" onClick={() => record(false)}>Needs practice</button>
+              <button type="button" className="primary-action" onClick={() => record(true)}>Got it →</button>
             </div>)}
           </section>}
           {mode !== 'speak' && !(activeMicroDialogue && mode === 'read') && <div className="lesson-footer">
             <button type="button" onClick={() => jump(index - 1)} disabled={index === 0}>← Previous</button>
-            <span>{completedIn(active)} of {active.items.length} explored</span>
             <button type="button" onClick={() => jump(index + 1)} disabled={index === sessionItems.length - 1}>Skip to next →</button>
           </div>}
         </div>}

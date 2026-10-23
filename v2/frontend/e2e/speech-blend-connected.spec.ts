@@ -58,7 +58,7 @@ async function connect(page:import('@playwright/test').Page){
 async function record(page:import('@playwright/test').Page){
   await page.getByRole('button',{name:/Start recording|Record another take/}).click();
   await page.getByRole('button',{name:'Stop recording'}).click();
-  await expect(page.getByText(/Recording captured/)).toBeVisible();
+  await expect(page.getByText(/Recording ready/)).toBeVisible();
 }
 
 test('normal Speak shows coloured source syllables with gaps and only 67 combined, consented twice',async({page})=>{

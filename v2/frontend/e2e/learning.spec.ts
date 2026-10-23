@@ -252,7 +252,7 @@ test('E2 short dialogues stay inside reading lessons and allow read/listen witho
   await dialogue.getByRole('button',{name:'Back to reading'}).click();
   await expect(dialogue).toHaveCount(0);
   await expect(page.getByText('Cześć! Jak się masz?',{exact:true})).toBeVisible();
-  await expect(page.getByText('0 of 6 explored')).toBeVisible();
+  await expect(page.locator('.item-count')).toContainText('/ 6');
   await selector.getByRole('button',{name:/What's your name/}).click();
   const names=page.getByRole('region',{name:"Short dialogue: What's your name?"});
   await expect(names.locator('.micro-dialogue-polish')).toHaveText([
@@ -285,7 +285,7 @@ test('E2 short dialogues stay inside reading lessons and allow read/listen witho
   await expect(grocery.getByRole('status')).toContainText('Correct!');
   await expect(grocery.locator('.micro-dialogue-polish')).toHaveCount(0);
   await grocery.getByRole('button',{name:'Back to reading'}).click();
-  await expect(page.getByText('0 of 9 explored')).toBeVisible();
+  await expect(page.locator('.item-count')).toContainText('/ 9');
   expect(errors).toEqual([]);
 });
 
@@ -318,7 +318,7 @@ test('E2 turn-taking chooses authentic Polish replies without awarding XP or sto
   await how.getByRole('button',{name:'Take a turn'}).click();
   await expect(how.getByRole('group',{name:'Choose your Polish reply'}).getByRole('button')).toHaveCount(3);
   await how.getByRole('button',{name:'Back to reading'}).click();
-  await expect(page.getByText('0 of 6 explored')).toBeVisible();
+  await expect(page.locator('.item-count')).toContainText('/ 6');
   await selector.getByRole('button',{name:/What's your name/}).click();
   const names=page.getByRole('region',{name:"Short dialogue: What's your name?"});
   await names.getByRole('button',{name:'Take a turn'}).click();
@@ -336,7 +336,7 @@ test('E2 turn-taking chooses authentic Polish replies without awarding XP or sto
     .getByRole('button',{name:'Poproszę czerwone jabłka.'}).click();
   await expect(apples.getByRole('status')).toContainText('That fits!');
   await apples.getByRole('button',{name:'Back to reading'}).click();
-  await expect(page.getByText('0 of 9 explored')).toBeVisible();
+  await expect(page.locator('.item-count')).toContainText('/ 9');
   expect(errors).toEqual([]);
 });
 
@@ -422,7 +422,7 @@ test('Read resumes a saved passage and Listen reveals content only after answeri
   await page.getByRole('button', { name: '0.75×' }).click();
   await expect(page.getByRole('button', { name: '0.75×' })).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('group', { name: /Choose the meaning|Answer the listening question/ }).getByRole('button').first().click();
-  await expect(page.getByText('POLISH TRANSCRIPT', { exact: true })).toBeVisible();
+  await expect(page.locator('.listen-transcript')).toBeVisible();
   await expect(page.getByText('Cześć! Jak się masz?', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: /Continue/ }).click();
   await expect(page.getByText('What did you hear?')).toBeVisible();
@@ -603,9 +603,9 @@ test('Speak records, checks acoustic quality, replays locally, and clears on nex
   await page.getByRole('button', {name: /Start recording/}).click();
   await expect(page.getByRole('button', {name: 'Stop recording'})).toBeVisible();
   await page.getByRole('button', {name: 'Stop recording'}).click();
-  await expect(page.getByText(/Recording captured/)).toBeVisible();
+  await expect(page.getByText(/Recording ready/)).toBeVisible();
   await expect(page.locator('#personal-speech-replay')).toHaveAttribute('src', /blob:/);
-  await expect(page.getByText(/Recording captured/)).toBeVisible();
+  await expect(page.getByText(/Recording ready/)).toBeVisible();
   await page.getByRole('button', {name:'Next', exact:true}).click();
   await expect(page.getByText('Dobry wieczór', {exact: true})).toBeVisible();
   await expect(guide).toHaveAttribute('aria-pressed','true');
@@ -807,7 +807,7 @@ test('completed Read lesson hands off to Listen without leaving the lesson', asy
   await page.getByRole('button',{name:/Everyday Conversations: Greetings/}).click();
   for(let i=0;i<5;i++) await page.getByRole('button',{name:/Skip to next/}).click();
   await page.getByRole('button',{name:/Reveal translation without answering/}).click();
-  await page.getByRole('button',{name:/Finished reading/}).click();
+  await page.getByRole('button',{name:/Got it/}).click();
   await expect(page.getByText('SESSION COMPLETE',{exact:true})).toBeVisible();
   const next=page.getByRole('group',{name:'Continue learning in another mode'});
   await expect(next.getByRole('button',{name:'Listen →'})).toBeVisible();

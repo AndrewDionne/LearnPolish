@@ -682,3 +682,29 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   .expedition-detail h3{font-size:23px}
   .learner-profile-heading .secondary-action{width:100%}
 }
+
+/* UX-04: immediate answer feedback lives in the exercise, not a coaching panel. */
+.listening-card .listening-symbol{width:74px;height:74px;margin:16px 0 12px}
+.listening-answer{margin-top:20px;padding-top:18px}
+.listening-answer .listen-transcript{margin:16px 0 5px}
+.listening-answer .listen-english{font-size:17px;line-height:1.5;color:#42646a;margin:5px 0 20px}
+.listening-answer>p.answer-good,.listening-answer>p.answer-review,
+.reading-check-result .answer-good,.reading-check-result .answer-review{
+  background:transparent;padding:0;border-radius:0;font-weight:750;
+}
+.listening-answer>p.answer-good,.listening-answer>p.answer-review{margin:0 0 12px}
+.reading-check-result{margin-top:10px}
+.reading-check-result p{margin:0}
+.lesson-footer{margin-top:18px}
+.lesson-footer button:disabled{opacity:.4;cursor:not-allowed}
+.mode-handoff{padding:10px 0;margin:16px auto 8px;background:transparent;border:0}
+.mode-handoff>div{margin-top:0}
+.complete-card .reward-note{margin:8px 0}
+.speak-replay{margin:3px auto;gap:0}
+.speak-record-actions .capture-valid{padding:4px 0;border-radius:0;background:transparent;
+  color:#1d6651;font-size:13px;font-weight:700}
+@media(max-width:760px){
+ .listening-card .listening-symbol{width:64px;height:64px;margin-top:12px}
+ .listening-card .listening-symbol svg{width:34px;height:34px}
+ .lesson-footer{gap:8px}
+}
