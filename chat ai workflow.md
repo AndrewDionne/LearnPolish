@@ -1,3 +1,13 @@
+## UX-05E — editor, private-account and family form design consistency (2026-10-23)
+
+**Starting certified main:** UX-05D [PR #119](https://github.com/AndrewDionne/LearnPolish/pull/119) squash `826c51dc078e0af7e2b743697f6c5d7c9db4179f`, [Actions #39957105168 4/4 PASS](https://github.com/AndrewDionne/LearnPolish/actions/runs/39957105168), followed by root workflow head `5117597626fc2c52cb289c7a6c7686355ccf673d`. Preserve owner-approved geometric P and the frozen lesson/audio XP/privacy/assessment contracts.
+
+**Independent implementation branch:** `feat/v2-ux05e-editor-account-form-consistency`. Audit found lesson author input at 14px vs signed-in Profile and private family email/password at 13px, field border/radii and label gaps inconsistent, and account/private-family submit actions off the primary 13px/11px scale. Extend already certified `--ptp-` form tokens (12px labels, 14px inputs, 8px label gap, 12px row spacing, 9px input radius, #bcd6d1 field border, #fbfcfc field surface). Use these for **only** lesson authoring, Profile account editing, private-family auth/group actions and 44px targets; retain distinctive readonly account email, all security verification/recovery/codes, opt-in checkbox/disclosures, danger actions, leaderboard categories and speech. Do not add lesson advice or explanations.
+
+**Evidence:** `v2/DESIGN_SYSTEM_TOKENS.md` has the expanded contract; new desktop/mobile authoring and focus/320px E2E. Existing connected two-user family/signup/invite/XP/permission journey now also checks computed font/radius/height at private email and Profile Save, without changing secure service workflows. Four final-head CI jobs must PASS before merging. No physical Safari/mic, native-speaker testing, paid-provider calls, public deployment or owner physical aesthetic approval claimed.
+
+---
+
 ## UX-05D SHARED DESIGN SYSTEM CERTIFIED + MERGED (2026-10-23)
 
 **Latest integrated GitHub main:** [UX-05D PR #119](https://github.com/AndrewDionne/LearnPolish/pull/119) squash `826c51dc078e0af7e2b743697f6c5d7c9db4179f`, final PR head `6488f99749efe72efb960af1293d7d3358df1f8d`, [Actions #39957105168](https://github.com/AndrewDionne/LearnPolish/actions/runs/39957105168) **FOUR of FOUR PASS** (frontend TypeScript/Vitest/build/desktop+mobile/axe/audio/offline, family connected browser/Speak mocks, private family backend, benchmark). [Issue #2](https://github.com/AndrewDionne/LearnPolish/issues/2) records immutable checks. Earlier UX-05D-in-development notes below are superseded by this completion.

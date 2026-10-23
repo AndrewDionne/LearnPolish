@@ -31,6 +31,15 @@ test('two real private sessions join a family, choose different regions and shar
     await parent.getByRole('button',{name:'Expedition'}).first().click();
     const panel=parent.getByRole('region',{name:'Family expedition'});
     await expect(panel.getByRole('button',{name:'Create account'})).toBeVisible();
+    // UX-05E: signed-in/private forms share visible field type, radius and 44px action scale.
+    const privateStyle=await panel.getByLabel('Email').evaluate(el=>{
+      const css=getComputedStyle(el),rect=el.getBoundingClientRect();
+      return {font:css.fontSize,radius:css.borderTopLeftRadius,height:rect.height};
+    });
+    expect(privateStyle).toEqual({font:'14px',radius:'9px',height:44});
+    const authAction=await panel.getByRole('button',{name:'Create account'}).last()
+      .evaluate(el=>({font:getComputedStyle(el).fontSize,radius:getComputedStyle(el).borderTopLeftRadius}));
+    expect(authAction).toEqual({font:'13px',radius:'11px'});
     await panel.getByLabel('Display name').fill('Explorer A');
     await panel.getByLabel('Email').fill('explorera+'+projectTag+'@example.test');
     await panel.getByLabel('Password').fill('Secure-family-passphrase-2026');
@@ -111,6 +120,14 @@ test('two real private sessions join a family, choose different regions and shar
     await learner.getByRole('button',{name:'Profile'}).first().click();
     const myProfile=learner.getByRole('region',{name:'Learner account'});
     await expect(myProfile.getByLabel('Display name')).toHaveValue('Explorer B');
+    const privateNameStyle=await myProfile.getByLabel('Display name').evaluate(el=>{
+      const css=getComputedStyle(el),rect=el.getBoundingClientRect();
+      return {font:css.fontSize,radius:css.borderTopLeftRadius,height:rect.height};
+    });
+    expect(privateNameStyle).toEqual({font:'14px',radius:'9px',height:44});
+    const saveStyle=await myProfile.getByRole('button',{name:'Save display name'})
+      .evaluate(el=>({font:getComputedStyle(el).fontSize,radius:getComputedStyle(el).borderTopLeftRadius}));
+    expect(saveStyle).toEqual({font:'13px',radius:'11px'});
     await myProfile.getByLabel('Display name').fill('Explorer B updated');
     await myProfile.getByRole('button',{name:'Save display name'}).click();
     await expect(myProfile.getByText('Display name updated for your learning groups.')).toBeVisible();
