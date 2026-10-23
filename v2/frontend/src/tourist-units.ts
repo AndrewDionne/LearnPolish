@@ -5,7 +5,7 @@ import {availableModes} from './modes';
 
 export type TouristUnitStep={mode:'listen'|'speak'|'read';lessonId:string;itemIds:string[]};
 export type TouristUnit={
-  id:string;title:string;journey:1;position:'beginning';order:number;
+  id:string;title:string;journey:1;position:'beginning'|'middle';order:number;
   outcome:string;steps:TouristUnitStep[];gaps?:string[];
 };
 
@@ -15,12 +15,12 @@ export function validateTouristUnits(input:unknown):TouristUnit[]{
   if(!input||typeof input!=='object')throw new Error('Missing tourist unit manifest');
   const data=input as Record<string,unknown>;
   if(data.schemaVersion!==1||data.editorialStatus!=='source_refs_only_native_review_pending'
-    ||!Array.isArray(data.units)||data.units.length!==3)throw new Error('Invalid tourist unit schema');
+    ||!Array.isArray(data.units)||data.units.length!==5)throw new Error('Invalid tourist unit schema');
   const out:TouristUnit[]=[];
   for(let i=0;i<data.units.length;i++){
     const unit=data.units[i] as Partial<TouristUnit>|null;
     if(!unit||unit.id!==`T0${i+1}`||unit.journey!==1||
-      unit.position!=='beginning'||unit.order!==i+1||
+      unit.position!==(i<3?'beginning':'middle')||unit.order!==i+1||
       typeof unit.title!=='string'||unit.title.trim().length<5||
       typeof unit.outcome!=='string'||unit.outcome.trim().length<12||
       !Array.isArray(unit.steps)||unit.steps.length<2||unit.steps.length>3||
