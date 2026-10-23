@@ -1,0 +1,119 @@
+{
+  "schemaVersion": 1,
+  "editorialStatus": "source_refs_only_native_review_pending",
+  "units": [
+    {
+      "id": "T01",
+      "title": "Greetings and polite replies",
+      "journey": 1,
+      "position": "beginning",
+      "order": 1,
+      "outcome": "Greet someone, reply politely and say when you don't understand.",
+      "steps": [
+        {
+          "mode": "listen",
+          "lessonId": "Basic_01R",
+          "itemIds": [
+            "Basic_01R:0",
+            "Basic_01R:1"
+          ]
+        },
+        {
+          "mode": "speak",
+          "lessonId": "Conversation_1",
+          "itemIds": [
+            "Conversation_1:0",
+            "Conversation_1:2",
+            "Conversation_1:8",
+            "Conversation_1:12",
+            "Conversation_1:20"
+          ]
+        },
+        {
+          "mode": "read",
+          "lessonId": "Basic_01R",
+          "itemIds": [
+            "Basic_01R:0",
+            "Basic_01R:1",
+            "Basic_01R:4",
+            "Basic_01R:5"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "T02",
+      "title": "Introductions and names",
+      "journey": 1,
+      "position": "beginning",
+      "order": 2,
+      "outcome": "Recognize a name question and make a simple introduction.",
+      "steps": [
+        {
+          "mode": "listen",
+          "lessonId": "Basic_01R",
+          "itemIds": [
+            "Basic_01R:2",
+            "Basic_01R:3"
+          ]
+        },
+        {
+          "mode": "speak",
+          "lessonId": "Conversation_1",
+          "itemIds": [
+            "Conversation_1:23"
+          ]
+        },
+        {
+          "mode": "read",
+          "lessonId": "Basic_01R",
+          "itemIds": [
+            "Basic_01R:2",
+            "Basic_01R:3"
+          ]
+        }
+      ],
+      "gaps": [
+        "First-person spoken name reply in original phrase set has unfinished reference and remains excluded from scored Speak."
+      ]
+    },
+    {
+      "id": "T03",
+      "title": "Numbers, prices and payment",
+      "journey": 1,
+      "position": "beginning",
+      "order": 3,
+      "outcome": "Understand a few numbers, ask a price and pay by card.",
+      "steps": [
+        {
+          "mode": "listen",
+          "lessonId": "numbers_1-20",
+          "itemIds": [
+            "numbers_1-20:0",
+            "numbers_1-20:1",
+            "numbers_1-20:2",
+            "numbers_1-20:3",
+            "numbers_1-20:4",
+            "numbers_1-20:5",
+            "numbers_1-20:6",
+            "numbers_1-20:7",
+            "numbers_1-20:8",
+            "numbers_1-20:9"
+          ]
+        },
+        {
+          "mode": "speak",
+          "lessonId": "Conversation_-_shopping",
+          "itemIds": [
+            "Conversation_-_shopping:0",
+            "Conversation_-_shopping:1",
+            "Conversation_-_shopping:2"
+          ]
+        }
+      ],
+      "gaps": [
+        "No verified conversational reading passage combining quantities, prices and payment exists yet; no Read step is presented."
+      ]
+    }
+  ]
+}
