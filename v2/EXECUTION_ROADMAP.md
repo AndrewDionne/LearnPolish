@@ -1,3 +1,9 @@
+## A-04 optional course review integration candidate (2026-10-23; final CI pending)
+
+After B-03 certified merge, roadmap A-04 review slice advances without new native audio. `v2/CORE_REVIEW_JOURNEY.md` documents one-tap scheduled **On your path** review, user-authored **Your lessons** and supplementary **Explore more** review, deterministic immutable per-run source item/lesson queue and unchanged spaced schedule. Review does not alter the explicitly chosen Home course continuation. Real missed recall remains due but does not repeat endlessly in one run. Desktop/mobile tests include 320px and private activity separation. No modified 26/482/455 assets, 14 reference exclusions, XP, consent, backups or semantic nine-tier labels. Require four final-head GitHub Actions before merge. T02/T03 native/audio content issue #126 stays unresolved.
+
+---
+
 ## B-03 editorial source-gate certified (2026-10-23)
 
 [PR #125](https://github.com/AndrewDionne/LearnPolish/pull/125) merged to `main` as `6a4b5b19b77d2487dc7dd3fd0d2f5170c9f408c8`, final PR head `3463c5cdc4461a688326505d68a33bdd9a32a3de`, [GitHub CI #39989479190](https://github.com/AndrewDionne/LearnPolish/actions/runs/39989479190) **four jobs PASS**. A non-runtime review packet, exact original Polish/English/protected-reference drift tests, and native audio/translation reviewer handoff now exist for T02/T03. No learner-facing content or scoring changed, and CI is NOT native speaker/acoustic approval. **Next content work remains [issue #126](https://github.com/AndrewDionne/LearnPolish/issues/126)**: verified complete name reply and concrete price/quantity/payment clerk dialogue plus real Read, followed by source-grounded T04/T05 scenarios. Keep original IDs/audio, user-made lessons, 14 blocked references and all privacy/consent gates intact.

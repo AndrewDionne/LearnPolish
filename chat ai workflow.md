@@ -1,3 +1,11 @@
+## A-04 optional core due review: implementation / final-head certification pending (2026-10-23)
+
+**GitHub base:** B-03 certified main `e176d305415aead590c8f0ad3fd1fe1a9adb6d38`. Branch `feat/v2-a04-core-review-continuation` implements audit-backed **one-tap core scheduled review** and **separate own-lesson/supplementary review lanes** (not a new SRS algorithm). Pure `v2/frontend/src/core-review.ts` derives only genuine existing Learn due entries, snapshots core due source item IDs in canonical mapped course order, and lets a user advance across due source lessons without looping failed recalls in the same voluntary run. Existing missed items remain due under the unchanged scheduler. Home selected course cursor never moves during review; noncore lessons remain independent. `v2/CORE_REVIEW_JOURNEY.md` documents contract, tests and preserved invariants.
+
+**Integration gate:** four final PR head CI lanes PASS, including new synthetic desktop/mobile seeded due/personal and 320px browser tests, unchanged connected family/privacy/offline/AI mock checks. No user-facing 3×3 tier text, new learning scores/XP/backup keys, altered lesson texts/audio or pronunciation approvals. Separate human content [issue #126](https://github.com/AndrewDionne/LearnPolish/issues/126) remains open; full course competency-evidence project is not magically completed by this review UX.
+
+---
+
 ## B-03 T02/T03 editorial source gate CERTIFIED + MERGED (2026-10-23)
 
 **Integrated:** [PR #125](https://github.com/AndrewDionne/LearnPolish/pull/125) squash `6a4b5b19b77d2487dc7dd3fd0d2f5170c9f408c8`, final certified head `3463c5cdc4461a688326505d68a33bdd9a32a3de`, [Actions run #39989479190](https://github.com/AndrewDionne/LearnPolish/actions/runs/39989479190) **4/4 PASS** (frontend/migration+draft identity gate/desktop-mobile, connected family, private backend, benchmark). Full B-03 source-lock and review handoff: `v2/content/tourist-editorial-review-v1.json`, `v2/TOURIST_T02_T03_EDITORIAL_REVIEW.md`, and Node test gate integrated into migration CI. This is deliberately **editorial preparation only**: original T02/T03 learner units/audio/text remain unchanged; no new recorded Polish, grades, XP, provider calls or native certification.
