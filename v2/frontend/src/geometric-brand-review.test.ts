@@ -1,14 +1,13 @@
-import {readFileSync} from 'node:fs';
-import {fileURLToPath} from 'node:url';
 import {describe,expect,it} from 'vitest';
+import signatureSvg from '../../brand-review/geometric-p/path-to-polish-signature.svg?raw';
+import squareSvg from '../../brand-review/geometric-p/path-to-polish-square.svg?raw';
+import reviewHtml from '../../brand-review/geometric-p/index.html?raw';
 
-// Review-only SVG assets live outside the shipped frontend.
-const review=(name:string)=>readFileSync(
-  fileURLToPath(new URL('../../brand-review/geometric-p/'+name,import.meta.url)),'utf8');
+// Read-only source imports: the review vectors are never loaded by the production app.
 
 describe('UX-05B editable geometric brand candidates',()=>{
   it('keeps the primary wordmark immediately beside the P bowl',()=>{
-    const svg=review('path-to-polish-signature.svg');
+    const svg=signatureSvg;
     const wordX=Number(svg.match(/<text x="(\d+)"/)?.[1]);
     const bodyMaxX=507*.63+15;
     expect(wordX-bodyMaxX).toBeGreaterThan(10);
@@ -19,7 +18,7 @@ describe('UX-05B editable geometric brand candidates',()=>{
   });
 
   it('balances all four square-icon optical margins to 35/256',()=>{
-    const svg=review('path-to-polish-square.svg');
+    const svg=squareSvg;
     const edge=256;
     // Verified extrema of the filled custom P (incl. crossbar and baseline).
     const whiteP={minX:35,maxX:218,minY:35,maxY:221};
@@ -37,7 +36,7 @@ describe('UX-05B editable geometric brand candidates',()=>{
   });
 
   it('exposes real review SVGs at both sizes without changing runtime branding',()=>{
-    const html=review('index.html');
+    const html=reviewHtml;
     expect(html).toContain('src="./path-to-polish-signature.svg"');
     expect(html).toContain('src="./path-to-polish-square.svg"');
     for(const size of [16,24,32,48,72]){
