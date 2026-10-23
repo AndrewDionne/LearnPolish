@@ -120,3 +120,19 @@ test('T05 grocery story uses original listening and reading, with independent sh
   await page.getByRole('button',{name:/Shopping: Useful Questions/}).click();
   await expect(page.locator('.unit-practice-head')).toHaveCount(0);
 });
+
+test('opening cross-journey T05 source excerpt preserves explicit Home course position',async({page,isMobile})=>{
+  await page.goto('/');
+  await page.evaluate(()=>localStorage.setItem('ptp-v2-core-continue','Conversation_1'));
+  await page.reload();
+  await page.getByRole('button',{name:'Continue course'}).isVisible();
+  const nav=page.getByRole('navigation',{name:isMobile?'Mobile navigation':'Main navigation'});
+  await nav.getByRole('button',{name:'Library'}).click();
+  await page.getByRole('button',{name:'Shopping for groceries: Read'}).click();
+  await expect(page.locator('.unit-practice-head')).toContainText('Read · 3/3');
+  await nav.getByRole('button',{name:'Home'}).click();
+  await expect(page.locator('.core-resume-card')).toContainText('Greetings and Introductions');
+  expect(await page.evaluate(()=>localStorage.getItem('ptp-v2-core-continue'))).toBe('Conversation_1');
+  // The source file may still be independently opened as recent practice.
+  await expect(page.locator('.recent-resume-card')).toContainText('Shopping at the Grocery Store');
+});
