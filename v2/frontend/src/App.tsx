@@ -668,7 +668,7 @@ export default function App() {
 
         {!loading && !loadError && !active && !editorOpen && page === 'home' && <>
           <section className="welcome">
-            <div className="welcome-copy"><h1>Small steps.<br/><em>Real progress.</em></h1><button type="button" className="hero-button" onClick={() => coreLesson ? openLesson(coreLesson,true) : goTo('library')}>{courseContinue.origin==='start' || !coreLesson ? 'Explore lessons' : 'Continue course'} <span aria-hidden="true">→</span></button></div>
+            <div className="welcome-copy"><h1>Small steps.<br/><em>Real progress.</em></h1><button type="button" className="hero-button" onClick={() => courseContinue.origin==='start' || !coreLesson ? goTo('library') : openLesson(coreLesson,true)}>{courseContinue.origin==='start' || !coreLesson ? 'Explore lessons' : 'Continue course'} <span aria-hidden="true">→</span></button></div>
             <div className="welcome-art" aria-hidden="true"><div className="type-card type-card-back">ł</div><div className="type-card type-card-front"><span className="type-card-caption">POLSKI</span><span className="type-card-glyph">ą</span><span className="type-card-rule"/></div><div className="type-card type-card-small">ś</div></div>
           </section>
           <div className="xp-ribbon" role="region" aria-label="Weekly XP progress">
