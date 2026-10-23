@@ -86,6 +86,26 @@ describe('truthful independent unit activity / resume',()=>{
     expect(parseTouristActivities(JSON.stringify(forged))).toEqual(emptyTouristActivities());
   });
 
+  it('adds T07 without changing prior saved unit attempts even when T06 and T07 repeat a source scene',()=>{
+    const t06=TOURIST_UNITS[5],t07=TOURIST_UNITS[6];
+    expect(t07.id).toBe('T07');
+    expect(unitActivityCounts(emptyTouristActivities(),t07)).toEqual({tried:0,total:24});
+    const repeated='Asking_the_tram_driver_for_directions:1';
+    const before=triedTouristItem(emptyTouristActivities(),t06,0,repeated);
+    const after=triedTouristItem(before,t07,0,repeated);
+    expect(after.units.T06.tried.listen).toEqual([repeated]);
+    expect(after.units.T07.tried.listen).toEqual([repeated]);
+    expect(after.units.T07.tried.read).toBeUndefined();
+    expect(unitActivityCounts(after,t06).tried).toBe(1);
+    expect(unitActivityCounts(after,t07).tried).toBe(1);
+    expect(parseTouristActivities(JSON.stringify(after))).toEqual(after);
+    const old=validateTouristActivities(before);
+    expect(old.units.T07).toBeUndefined();
+    expect(resumeTouristUnit(old,t07)).toBeNull();
+    const forged={...after,units:{...after.units,T07:{tried:{speak:['Transit_1:4']}}}};
+    expect(()=>validateTouristActivities(forged)).toThrow(/source item evidence/);
+  });
+
   it('accepts a valid older empty state and refuses to mutate by bad IDs',()=>{
     const original=emptyTouristActivities();
     expect(triedTouristItem(original,unit,2,'made-up:25')).toBe(original);
