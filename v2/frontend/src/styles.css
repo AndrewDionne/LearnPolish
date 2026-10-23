@@ -593,7 +593,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .type-card-front{height:204px;width:167px;z-index:2;transform:translate(-16px,8px) rotate(-7deg);
   background:#fff;box-shadow:0 15px 37px #1d554d19;border:1px solid #d1e4dc;border-radius:16px;
   color:#245e58;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:3px}
-.type-card-caption{font:800 10px/1.4 "DM Sans",sans-serif;letter-spacing:2px;color:#6fa69a}
+.type-card-caption{font:800 10px/1.4 "DM Sans",sans-serif;letter-spacing:2px;color:#2c6558}
 .type-card-glyph{font:650 116px/1 Outfit,sans-serif;letter-spacing:-7px}
 .type-card-rule{height:3px;width:33px;background:#9acdbb;border-radius:10px}
 .type-card-small{width:69px;height:77px;z-index:3;transform:translate(116px,81px) rotate(10deg);
