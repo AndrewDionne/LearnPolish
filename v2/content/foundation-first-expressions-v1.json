@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "status": "source_only_existing_recordings_not_independently_native_certified",
+  "sourceLessonId": "Conversation_1",
+  "sourcePolicy": "use_full_original_recorded_utterances_exact_item_ids_no_new_audio_or_review_claims",
+  "groups": [
+    {
+      "id": "greetings",
+      "title": "Hello and goodbye",
+      "itemRefs": [
+        {
+          "id": "Conversation_1:0",
+          "expectedPolish": "Dzień dobry"
+        },
+        {
+          "id": "Conversation_1:2",
+          "expectedPolish": "Cześć"
+        },
+        {
+          "id": "Conversation_1:4",
+          "expectedPolish": "Do widzenia"
+        }
+      ]
+    },
+    {
+      "id": "politeness",
+      "title": "Polite essentials",
+      "itemRefs": [
+        {
+          "id": "Conversation_1:10",
+          "expectedPolish": "Proszę"
+        },
+        {
+          "id": "Conversation_1:8",
+          "expectedPolish": "Dziękuję"
+        },
+        {
+          "id": "Conversation_1:12",
+          "expectedPolish": "Przepraszam"
+        }
+      ]
+    },
+    {
+      "id": "simple-replies",
+      "title": "Yes and no",
+      "itemRefs": [
+        {
+          "id": "Conversation_1:14",
+          "expectedPolish": "Tak"
+        },
+        {
+          "id": "Conversation_1:15",
+          "expectedPolish": "Nie"
+        }
+      ]
+    }
+  ]
+}

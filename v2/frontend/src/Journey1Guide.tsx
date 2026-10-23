@@ -1,10 +1,13 @@
 import {useState} from 'react';
 import type {Journey1GuideStep} from './journey1-guide';
+import type {StarterGroup} from './foundation-first-expressions';
 
 /** A quiet source-backed guide, not another proficiency or stage label.
  * Only actual existing source lesson and tourist-unit launch actions are shown. */
-export default function Journey1Guide({steps,onLesson,onUnit}:{
+export default function Journey1Guide({steps,starterGroups,onStarter,onLesson,onUnit}:{
   steps:Journey1GuideStep[];
+  starterGroups:StarterGroup[];
+  onStarter:(groupId:string)=>void;
   onLesson:(lessonId:string)=>void;
   onUnit:(unitId:string)=>void;
 }){
@@ -19,6 +22,15 @@ export default function Journey1Guide({steps,onLesson,onUnit}:{
         {expanded?'Show less':'See all 20 steps'} →
       </button>
     </div>
+    {starterGroups.length>0 && <div className="foundation-starter" role="group" aria-label="First expressions practice">
+      <div className="foundation-starter-heading">Practice eight everyday expressions</div>
+      <div className="foundation-starter-options">
+        {starterGroups.map(group=><button type="button" key={group.id}
+          className="foundation-starter-button" onClick={()=>onStarter(group.id)}>
+          <strong>{group.title}</strong><span>{group.itemIds.length} phrases →</span>
+        </button>)}
+      </div>
+    </div>}
     <div className="foundation-guide-list">
       {visible.map((step,index)=><button type="button" key={step.id}
         className="foundation-guide-step"
