@@ -1,3 +1,13 @@
+## UX-05E EDITOR/ACCOUNT/FAMILY FORMS CERTIFIED + MERGED (2026-10-23)
+
+**Latest merged GitHub main:** [PR #120](https://github.com/AndrewDionne/LearnPolish/pull/120), squash `f36b46a40df0691414f1fc0ad33fa2b6bc31139f`, final PR head `1fb7bb72bc3b8b30c1d45adce03f24e1c79d25b9`, [Actions #39960461495](https://github.com/AndrewDionne/LearnPolish/actions/runs/39960461495) **FOUR of FOUR PASS** (frontend TypeScript/Vitest/build/desktop+mobile/Axe/offline/audio, private-family connected browser with two-user signup and mock Speak, private backend, benchmark). [Issue #2](https://github.com/AndrewDionne/LearnPolish/issues/2) holds integration evidence. Supersedes any below-the-fold UX-05E-in-development status.
+
+**Integrated UX-05E:** existing semantic `--ptp-` design-system tokens now also control lesson editor, account/profile edit and private family login, signup/verification and group management form surfaces. Uniform 12px field labels, 14px typed content, 8px label/field spacing, 12px form row gap, 9px input radius, #bcd6d1 field border, #fbfcfc field background, and 44px minimum targets. Focused form submissions use 13px/11px approved action styles, while Back to sign in/recovery navigation remains secondary, readonly email muted, destructive/privacy/consent and leaderboard controls untouched. New `e2e/ux05e-forms.spec.ts` confirms editor save, keyboard outline and 320px size/overflow, and `e2e/family-connected.spec.ts` verifies actual input/button computed styles during secure isolated account creation and Profile Save while exercising two-user consent, invite and team XP unchanged. Durable details in `v2/DESIGN_SYSTEM_TOKENS.md`.
+
+**Next scope:** UX-05F may audit only remaining real special-case controls or component-level CSS duplication *if evidence warrants* (e.g. backup/editor input alignment); otherwise prioritize broader product roadmap instead of endless speculative visual tranches. Preserve owner-approved geometric P, 26 original sets/482 items, original MP3s and voice/provider gate, review/XP, offline and family security. No physical iPhone/Safari, native audio, linguistic or public deployment certification claimed.
+
+---
+
 ## UX-05E — editor, private-account and family form design consistency (2026-10-23)
 
 **Starting certified main:** UX-05D [PR #119](https://github.com/AndrewDionne/LearnPolish/pull/119) squash `826c51dc078e0af7e2b743697f6c5d7c9db4179f`, [Actions #39957105168 4/4 PASS](https://github.com/AndrewDionne/LearnPolish/actions/runs/39957105168), followed by root workflow head `5117597626fc2c52cb289c7a6c7686355ccf673d`. Preserve owner-approved geometric P and the frozen lesson/audio XP/privacy/assessment contracts.
