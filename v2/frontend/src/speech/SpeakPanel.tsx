@@ -48,8 +48,10 @@ export default function SpeakPanel({item, playing, onPlayReference, onStopRefere
     : null;
 
   const assessTake = async () => {
-    if(!onAssess || !prepared || assessmentBusy)return;
-    abortAssessment();
+    // A React state update is not synchronous. Claim the request via the
+    // ref before any await, so two clicks in the same event loop cannot
+    // abort/restart a provider-bound upload and consume a second allowance.
+    if(!onAssess || !prepared || assessmentBusy || activeRequest.current)return;
     const controller = new AbortController();
     activeRequest.current = controller;
     setFeedback(null);
