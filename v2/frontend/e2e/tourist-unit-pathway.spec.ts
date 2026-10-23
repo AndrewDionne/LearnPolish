@@ -84,8 +84,9 @@ test('T04 source-only restaurant practice offers Listen and Speak without fabric
   await unit.getByRole('button',{name:'Ordering food and drinks: Listen'}).click();
   await expect(page.locator('.unit-practice-head')).toContainText('Listen · 1/2');
   await expect(page.locator('.item-count')).toContainText('/ 9');
-  await expect(page.getByText('Poproszę stolik dla jednej osoby',{exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'Play audio'})).toBeEnabled();
+  await page.getByRole('group',{name:'Choose the meaning'}).getByRole('button',{name:'A table for one, please'}).click();
+  await expect(page.getByText('Poproszę stolik dla jednej osoby',{exact:true})).toBeVisible();
   await page.getByRole('navigation',{name:isMobile?'Mobile navigation':'Main navigation'}).getByRole('button',{name:'Library'}).click();
   await unit.getByRole('button',{name:'Ordering food and drinks: Speak'}).click();
   await expect(page.locator('.unit-practice-head')).toContainText('Speak · 2/2');
@@ -100,6 +101,8 @@ test('T05 grocery story uses original listening and reading, with independent sh
   await unit.getByRole('button',{name:'Shopping for groceries: Listen'}).click();
   await expect(page.locator('.unit-practice-head')).toContainText('Listen · 1/3');
   await expect(page.locator('.item-count')).toContainText('/ 6');
+  await expect(page.getByRole('button',{name:'Play audio'})).toBeEnabled();
+  await page.getByRole('button',{name:'Reveal transcript & translation'}).click();
   await expect(page.getByText('Dzień dobry.',{exact:true})).toBeVisible();
   const nav=page.getByRole('navigation',{name:isMobile?'Mobile navigation':'Main navigation'});
   await nav.getByRole('button',{name:'Library'}).click();
