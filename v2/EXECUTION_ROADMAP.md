@@ -1,3 +1,9 @@
+## B-04 T04/T05 source-only extension candidate (2026-10-23, CI pending)
+
+Continue the curriculum-first roadmap without unapproved generation or purchase: two additional **source-referenced practice units** in existing `tourist-units-v1.json`. T04 restaurant Listen/Speak uses inherited phrase MP3s only; no verified waiter conversation or Read. T05 grocery Listen/Read uses existing first six shop passages (stops before price/payment) plus separate original buyer Speak lines; a complete verified price/checkout conversation is **not** claimed. T02/T03 remain identical with issue #126 still open. All original lessons/audio, 14 blocked references, optional Numbers batching, silent 3×3 taxonomy and family/privacy/XP remain intact. See [T04/T05 pilot and source matrix](TOURIST_T04_T05_SOURCE_PILOT.md). Merge only after four GitHub final-head CI lanes; native speaker and physical audio evidence remain deferred.
+
+---
+
 ## A-04 core review certified and integrated (2026-10-23)
 
 [PR #127](https://github.com/AndrewDionne/LearnPolish/pull/127) **MERGED** squash `a51d778585b22b6ce1b4f36860aecc42c8d5d39e`; head `83f3ea92b2c2cf58e0879c060822273d419f020e`; [Actions #40003335331](https://github.com/AndrewDionne/LearnPolish/actions/runs/40003335331) **4/4 PASS**. Implemented optional Home one-tap **On your path** scheduled Learn review, separate personal/extra Practice due lanes, finite snapshot of real due source IDs across core lessons and return to Practice on completion. Missed recall remains due under existing schedule without looping within one run. Review never shifts chosen Home course cursor, changes XP or introduces course mastery. Desktop/mobile 320px, normal offline/privacy/connected-family regressions and original review wording/return-path tests passed. See [A-04 review contract](CORE_REVIEW_JOURNEY.md). T02/T03 editorial source/audio issue #126 still awaits real native QA; no new content or real-device/AI validation.

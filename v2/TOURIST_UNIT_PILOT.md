@@ -1,3 +1,5 @@
+> **Later extension (2026-10-23):** This page describes the **original T01–T03 pilot**. T04 and T05 have been added in a separate source-only tranche; consult [T04/T05 source audit and remaining gaps](TOURIST_T04_T05_SOURCE_PILOT.md). Original T01–T03 source references and missing content gates are unchanged. The section below retains original pilot evidence.
+
 # A-03 / B-02 — First tourist conversation-unit pilot
 
 **Owner-facing goal:** build a coherent learning path from recorded original material before commissioning new native-reviewed dialogue. This tranche is intentionally a **small, source-referenced, partial** slice. The complete [curriculum gap plan](CORE_CURRICULUM_GAP_PLAN.md) remains editorial authority for missing units. No professional language, no nine-tier labels, and no invented native voice.

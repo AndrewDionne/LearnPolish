@@ -310,7 +310,9 @@ export default function App() {
     const step=unit?.steps[stepIndex];
     const destination=step&&unitStepSource(builtIn,step);
     if(!unit||!step||!destination)return;
-    openLesson(destination);
+    // A source excerpt may originate in a later journey (e.g. T05 grocery
+    // reading). Do not overwrite an explicitly chosen core course position.
+    openLesson(destination,false,false);
     setUnitSession({unitId,stepIndex});
     setMode(step.mode);
     setIndex(0);

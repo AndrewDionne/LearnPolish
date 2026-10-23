@@ -1,3 +1,11 @@
+## B-04 Tourist T04/T05 source-only activity expansion — certification pending (2026-10-23)
+
+**Authority:** current main after certified A-04 [PR #127](https://github.com/AndrewDionne/LearnPolish/pull/127), `b411262120052e2aef2f5499b7069c4fa5257c9f`. Branch `feat/v2-b04-tourist-units-t04-t05-source-only` extends the existing T01–T03 `tourist-units-v1.json` with T04 **Ordering food and drinks** (original Food and Dinning Listen + Restaurant Speak, no Read) and T05 **Shopping for groceries** (first six original Grocery Store reading/listening turns + original Shopping Speak). All original 26/482/455 assets and 14 forbidden Speak references remain untouched; T04/T05 are **practice excerpts only, not new native-approved dialogue or recorded waiter/cashier replies**. T02/T03 original text/modes and human-review issue #126 are unchanged. User-facing 3×3 taxonomy still absent.
+
+**Source QA:** `v2/TOURIST_T04_T05_SOURCE_PILOT.md` captures exact item IDs, available modes, unsafe references, missing conversational replies, consent/XP/number batching constraints and final-head four-lane CI requirements. Expanded Vitest source-lock and desktop/mobile Playwright validate 5 original-source units, 13 actions and safe navigation. **Do not merge before final-head 4/4 CI.** No physical/native/audio/proprietary-service certification.
+
+---
+
 ## A-04 optional core due review CERTIFIED + MERGED (2026-10-23)
 
 **GitHub authority:** [PR #127](https://github.com/AndrewDionne/LearnPolish/pull/127) squash merge `a51d778585b22b6ce1b4f36860aecc42c8d5d39e`, final certified PR head `83f3ea92b2c2cf58e0879c060822273d419f020e`, [GitHub Actions #40003335331](https://github.com/AndrewDionne/LearnPolish/actions/runs/40003335331) **4/4 PASS** (frontend desktop/mobile/TS/Vitest/build/offline/a11y, family-connected, private backend, benchmark). Supersedes the pending A-04 note below. Earlier failed runs #40001421895 (legacy due text and no-due assertions) and #40002557453 (old Back to library review path) were explicitly repaired preserving assertions; final-head certification required and received.

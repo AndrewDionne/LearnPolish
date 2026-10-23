@@ -114,6 +114,97 @@
       "gaps": [
         "No verified conversational reading passage combining quantities, prices and payment exists yet; no Read step is presented."
       ]
+    },
+    {
+      "id": "T04",
+      "title": "Ordering food and drinks",
+      "journey": 1,
+      "position": "middle",
+      "order": 4,
+      "outcome": "Recognize common food orders, request food or drinks and ask for the bill.",
+      "steps": [
+        {
+          "mode": "listen",
+          "lessonId": "Food_and_Dinning",
+          "itemIds": [
+            "Food_and_Dinning:0",
+            "Food_and_Dinning:1",
+            "Food_and_Dinning:3",
+            "Food_and_Dinning:5",
+            "Food_and_Dinning:6",
+            "Food_and_Dinning:9",
+            "Food_and_Dinning:10",
+            "Food_and_Dinning:17",
+            "Food_and_Dinning:18"
+          ]
+        },
+        {
+          "mode": "speak",
+          "lessonId": "Conversation_-_restaurant",
+          "itemIds": [
+            "Conversation_-_restaurant:0",
+            "Conversation_-_restaurant:2",
+            "Conversation_-_restaurant:3",
+            "Conversation_-_restaurant:4",
+            "Conversation_-_restaurant:7",
+            "Conversation_-_restaurant:20",
+            "Conversation_-_restaurant:21",
+            "Conversation_-_restaurant:24"
+          ]
+        }
+      ],
+      "gaps": [
+        "Only individual recorded restaurant expressions are available; no approved natural waiter reply, two-way ordering exchange or restaurant reading exercise."
+      ]
+    },
+    {
+      "id": "T05",
+      "title": "Shopping for groceries",
+      "journey": 1,
+      "position": "middle",
+      "order": 5,
+      "outcome": "Follow a short grocery-store exchange and practise everyday shopping requests.",
+      "steps": [
+        {
+          "mode": "listen",
+          "lessonId": "Grocery_store_very_basic_shopping",
+          "itemIds": [
+            "Grocery_store_very_basic_shopping:0",
+            "Grocery_store_very_basic_shopping:1",
+            "Grocery_store_very_basic_shopping:2",
+            "Grocery_store_very_basic_shopping:3",
+            "Grocery_store_very_basic_shopping:4",
+            "Grocery_store_very_basic_shopping:5"
+          ]
+        },
+        {
+          "mode": "speak",
+          "lessonId": "Conversation_-_shopping",
+          "itemIds": [
+            "Conversation_-_shopping:0",
+            "Conversation_-_shopping:5",
+            "Conversation_-_shopping:8",
+            "Conversation_-_shopping:20",
+            "Conversation_-_shopping:23",
+            "Conversation_-_shopping:24"
+          ]
+        },
+        {
+          "mode": "read",
+          "lessonId": "Grocery_store_very_basic_shopping",
+          "itemIds": [
+            "Grocery_store_very_basic_shopping:0",
+            "Grocery_store_very_basic_shopping:1",
+            "Grocery_store_very_basic_shopping:2",
+            "Grocery_store_very_basic_shopping:3",
+            "Grocery_store_very_basic_shopping:4",
+            "Grocery_store_very_basic_shopping:5"
+          ]
+        }
+      ],
+      "gaps": [
+        "The original grocery reading/audio is a source-only scenario, not native-certified; verified seller price and payment replies remain outstanding under T03."
+      ]
     }
   ]
 }

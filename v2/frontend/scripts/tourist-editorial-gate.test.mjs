@@ -52,6 +52,21 @@ test('transcript mismatch, missing source or protected-status laundering fails c
   }
 });
 
+test('source-only T04/T05 extension cannot re-scope original B-03 review',()=>{
+  assert.equal(units.units.length,5);
+  assert.deepEqual(units.units.slice(0,3).map(x=>x.id),['T01','T02','T03']);
+  assert.deepEqual(validate().approvedItems,0);
+  const reordered=clone(units);
+  [reordered.units[0],reordered.units[1]]=[reordered.units[1],reordered.units[0]];
+  assert.throws(()=>validate(packet,reordered),/Tourist pilot baseline changed/);
+  const wrongPosition=clone(units);
+  wrongPosition.units[2].position='middle';
+  assert.throws(()=>validate(packet,wrongPosition),/Tourist pilot baseline changed/);
+  const differentStatus=clone(units);
+  differentStatus.editorialStatus='native_approved';
+  assert.throws(()=>validate(packet,differentStatus),/Tourist pilot baseline changed/);
+});
+
 test('current user-facing pilot cannot quietly add T03 reading or blocked T02 Speak',()=>{
   const bogusRead=clone(units);
   bogusRead.units[2].steps.push({mode:'read',lessonId:'Basic_01R',itemIds:['Basic_01R:3']});
