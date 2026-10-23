@@ -1,3 +1,13 @@
+## UX-05D SHARED DESIGN SYSTEM CERTIFIED + MERGED (2026-10-23)
+
+**Latest integrated GitHub main:** [UX-05D PR #119](https://github.com/AndrewDionne/LearnPolish/pull/119) squash `826c51dc078e0af7e2b743697f6c5d7c9db4179f`, final PR head `6488f99749efe72efb960af1293d7d3358df1f8d`, [Actions #39957105168](https://github.com/AndrewDionne/LearnPolish/actions/runs/39957105168) **FOUR of FOUR PASS** (frontend TypeScript/Vitest/build/desktop+mobile/axe/audio/offline, family connected browser/Speak mocks, private family backend, benchmark). [Issue #2](https://github.com/AndrewDionne/LearnPolish/issues/2) records immutable checks. Earlier UX-05D-in-development notes below are superseded by this completion.
+
+**Shipped:** focused audit of ~70KB CSS; shared `--ptp-` semantic display/body fonts, palette, surface/border/outline, radius, minimum control target and page/section/panel type tokens in `v2/frontend/src/styles.css`. Primary, secondary and file-import controls now use consistent 13px text, minimum 44px touch height, 11px radius, and coherent (contrast-preserving) hover/focus styling; repeat-use page title, section title and Profile/Groups/Expedition card surfaces reference shared tokens. No broader redesign; specialised microphone, answer status, destructive privacy, family permissions and map actions are explicitly untouched. New desktop/mobile `e2e/ux05d-design-system.spec.ts` verifies actual computed control size/fonts, section hierarchy, family/Map panels and 320px no-overflow, with unchanged approved P identity. Reference authority: [`v2/DESIGN_SYSTEM_TOKENS.md`](v2/DESIGN_SYSTEM_TOKENS.md).
+
+**Next increment, not yet opened:** UX-05E should target isolated remaining authoring/account/form hierarchy inconsistencies only if clearly supported by source audit; maintain the same tokens rather than creating repeated CSS overrides. Preserve all approved geometric P SVGs and UI nav, frozen lessons/MP3s, local and shared XP, read/learn/Speak assessment/consent and offline mode. Physical phone/Safari, native audio/linguistic validation and any public deployment remain deferred. No provider calls or native visual aesthetic approval has been performed.
+
+---
+
 ## UX-05D — Consolidate semantic typography, surfaces and action controls (2026-10-23)
 
 **Confirmed merged GitHub main base:** [owner-approved geometric P UX-05C PR #118](https://github.com/AndrewDionne/LearnPolish/pull/118), squash `c5d5680d8ec3418d219117a71d45522a7b3b6b9d`, [four final-head CI lanes PASS #39953779213](https://github.com/AndrewDionne/LearnPolish/actions/runs/39953779213), docs head `cf5211fca07b6996fd7e23f12628a03c80778652`. Preserve the approved geometric P, primary signature/master geometry, and 35-unit optical insets.
