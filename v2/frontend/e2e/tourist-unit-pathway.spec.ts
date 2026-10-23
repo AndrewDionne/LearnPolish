@@ -231,9 +231,11 @@ test('T08 museum source visit has recorded ticket, hours and cloakroom Listen/Re
   await expect(page.locator('.unit-practice-head')).toContainText('Listen · 1/3');
   await expect(page.locator('.item-count')).toContainText('/ 9');
   await expect(page.getByRole('button',{name:'Play audio'})).toBeEnabled();
-  for(let i=0;i<3;i++)await page.getByRole('button',{name:'Skip to next →'}).click();
+  // The first source turn offers transcript reveal. After jumping ahead,
+  // authored listening checkpoints may show answer choices instead, so
+  // do not assume the same reveal control is present at every index.
   await page.getByRole('button',{name:'Reveal transcript & translation'}).click();
-  await expect(page.getByText('Do której godziny muzeum jest otwarte?',{exact:true})).toBeVisible();
+  await expect(page.getByText('Dzień dobry, poproszę dwa bilety do muzeum.',{exact:true})).toBeVisible();
   const nav=page.getByRole('navigation',{name:isMobile?'Mobile navigation':'Main navigation'});
   await nav.getByRole('button',{name:'Library'}).click();
   await card.getByRole('button',{name:'Museum tickets and visitor information: Speak'}).click();
