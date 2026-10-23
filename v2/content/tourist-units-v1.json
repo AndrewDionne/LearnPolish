@@ -253,6 +253,62 @@
         "Original tram-driver dialogue supports route and stop questions; it is not a pedestrian walk-through with left, right or straight-ahead instructions.",
         "No native-reviewed pedestrian directions reply, repeat/clarify role-play, or verified wayfinding sign is available for a complete directions lesson."
       ]
+    },
+    {
+      "id": "T07",
+      "title": "Taking a tram and buying a ticket",
+      "journey": 1,
+      "position": "middle",
+      "order": 7,
+      "outcome": "Ask about a tram or train platform and ticket, and understand a recorded tram-driver reply.",
+      "steps": [
+        {
+          "mode": "listen",
+          "lessonId": "Asking_the_tram_driver_for_directions",
+          "itemIds": [
+            "Asking_the_tram_driver_for_directions:0",
+            "Asking_the_tram_driver_for_directions:1",
+            "Asking_the_tram_driver_for_directions:2",
+            "Asking_the_tram_driver_for_directions:3",
+            "Asking_the_tram_driver_for_directions:4",
+            "Asking_the_tram_driver_for_directions:5",
+            "Asking_the_tram_driver_for_directions:6",
+            "Asking_the_tram_driver_for_directions:7"
+          ]
+        },
+        {
+          "mode": "speak",
+          "lessonId": "Getting_Around_1",
+          "itemIds": [
+            "Getting_Around_1:3",
+            "Getting_Around_1:4",
+            "Getting_Around_1:6",
+            "Getting_Around_1:7",
+            "Getting_Around_1:8",
+            "Getting_Around_1:9",
+            "Getting_Around_1:14",
+            "Getting_Around_1:17"
+          ]
+        },
+        {
+          "mode": "read",
+          "lessonId": "Asking_the_tram_driver_for_directions",
+          "itemIds": [
+            "Asking_the_tram_driver_for_directions:0",
+            "Asking_the_tram_driver_for_directions:1",
+            "Asking_the_tram_driver_for_directions:2",
+            "Asking_the_tram_driver_for_directions:3",
+            "Asking_the_tram_driver_for_directions:4",
+            "Asking_the_tram_driver_for_directions:5",
+            "Asking_the_tram_driver_for_directions:6",
+            "Asking_the_tram_driver_for_directions:7"
+          ]
+        }
+      ],
+      "gaps": [
+        "This tram-driver scene reuses T06's route-and-stop dialogue before extending it with the original ticket-machine question and answer; it is not an independent new recording.",
+        "No verified route number, platform-selection reply, transfer instructions, timetable, current ticket-sales policy or service-disruption exchange is in these source turns."
+      ]
     }
   ]
 }
