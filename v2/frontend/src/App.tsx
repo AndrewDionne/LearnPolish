@@ -26,6 +26,8 @@ import { READING_POSITION_KEY, parseReadingPositions, safeReadingPosition } from
 import { firstUnvisitedBatch, practiceBatchCount, practiceBatchItems, practiceBatchLabel, usesPracticeBatches } from './practice-batches';
 import {nextLessonResume} from './lesson-resume';
 import { REVIEW_STORAGE_KEY, countDue, dueItems, nextDue, parseReviewSchedule, recordReview } from './review';
+import {partitionDueReviews,dueLaneCount,startCoreReviewRun,nextCoreReviewRunStep} from './core-review';
+import type {CoreReviewRun} from './core-review';
 import type { ReviewSchedule } from './review';
 import { MAX_BACKUP_BYTES, makeBackup, parseBackup } from './backup';
 import { persistRestoredBackup } from './restore-storage';
@@ -132,6 +134,7 @@ export default function App() {
   const [guideVisible,setGuideVisible] = useState(false);
   const [soundReturn,setSoundReturn] = useState<SoundPracticeReturn|null>(null);
   const [reviewOnly, setReviewOnly] = useState<string[] | null>(null);
+  const [coreReviewRun,setCoreReviewRun]=useState<CoreReviewRun|null>(null);
   const [listenGuess, setListenGuess] = useState<string | null>(null);
   const [readGuess, setReadGuess] = useState<string | null>(null);
   const [listenRevealed, setListenRevealed] = useState(false);
@@ -268,7 +271,10 @@ export default function App() {
   const selectedTarget = expedition.regionGoals[expedition.selectedRegion] ?? nextRegionCost(expedition);
   const totalDue = countDue(lessons, reviews, nowIso);
   const scheduledNext = nextDue(lessons, reviews, nowIso);
-  const dueLessons = lessons.filter(lesson => dueItems(lesson, reviews, nowIso).length > 0);
+  const dueLanes=partitionDueReviews(lessons,reviews,nowIso);
+  const coreReviewDue=dueLaneCount(dueLanes.core);
+  const otherReviewDue=dueLaneCount(dueLanes.personal)+dueLaneCount(dueLanes.explore);
+  const nextCoreReview=coreReviewRun?nextCoreReviewRunStep(coreReviewRun):null;
 
   const filtered = useMemo(() => lessons.filter(x =>
     (filter === 'all' || x.kind === filter) && libraryMatches(x,query)
@@ -279,10 +285,10 @@ export default function App() {
 
   const stopAudio = () => { audio.stop(); };
   const goTo = (destination: Page) => {
-    stopAudio(); setUnitSession(null); setLessonId(null); setGuideVisible(false); setSoundReturn(null); setEditorOpen(false); setReviewOnly(null); setBatchIndex(0); setMicroDialogueId(null); setPage(destination); setRevealed(false); setFinished(false);
+    stopAudio(); setUnitSession(null); setCoreReviewRun(null); setLessonId(null); setGuideVisible(false); setSoundReturn(null); setEditorOpen(false); setReviewOnly(null); setBatchIndex(0); setMicroDialogueId(null); setPage(destination); setRevealed(false); setFinished(false);
   };
-  const openLesson = (lesson: Lesson, resume=false) => {
-    stopAudio();setUnitSession(null);
+  const openLesson = (lesson: Lesson, resume=false, updateCourseCursor=true) => {
+    stopAudio();setUnitSession(null);setCoreReviewRun(null);
     const resumeAt=resume ? nextLessonResume(lesson,progress,readingPositions) : null;
     setSoundReturn(null);
     setReviewOnly(null);
@@ -294,7 +300,7 @@ export default function App() {
     setRevealed(false); setTranslationOpen(false); setListenGuess(null); setReadGuess(null); setListenRevealed(false); setFinished(false);
     setLastLesson(lesson.id); saveLastLesson(lesson.id);
     // The user's personal/optional recent lesson never redirects the core path.
-    if(journeyPlacement(lesson)){
+    if(updateCourseCursor && journeyPlacement(lesson)){
       setCoreLessonId(lesson.id);
       try{localStorage.setItem(CORE_CONTINUE_KEY,lesson.id);}catch{/* best effort */}
     }
@@ -350,11 +356,28 @@ export default function App() {
     setReadGuess(null); setListenRevealed(false); setFinished(false);
     setSoundReturn(null);
   };
-  const openDueReview = (lesson: Lesson) => {
-    const due = dueItems(lesson, reviews, new Date().toISOString()).map(item => item.id);
-    if (!due.length || lesson.kind === 'reading') return;
-    openLesson(lesson);
-    setReviewOnly(due); setMode('learn'); setIndex(0); setBatchIndex(0);
+  const openDueReview = (lesson: Lesson, snapshotIds?: string[], run:CoreReviewRun|null=null) => {
+    const due = snapshotIds ?? dueItems(lesson, reviews, new Date().toISOString()).map(item => item.id);
+    if (!due.length || lesson.kind === 'reading' ||
+      due.some(id=>!lesson.items.some(item=>item.id===id))) return;
+    // Reviewing an earlier source must not silently move the user's Home course cursor.
+    openLesson(lesson,false,false);
+    setReviewOnly([...due]); setCoreReviewRun(run);
+    setMode('learn'); setIndex(0); setBatchIndex(0);
+  };
+  const startCoreReview=()=>{
+    const run=startCoreReviewRun(dueLanes.core);
+    const first=run?.steps[0];
+    const lesson=first&&lessons.find(item=>item.id===first.lessonId);
+    if(!run||!first||!lesson)return;
+    openDueReview(lesson,first.itemIds,run);
+  };
+  const continueCoreReview=()=>{
+    if(!nextCoreReview)return;
+    const step=nextCoreReview.steps[nextCoreReview.position];
+    const lesson=lessons.find(item=>item.id===step.lessonId);
+    if(!lesson){goTo('practice');return;}
+    openDueReview(lesson,step.itemIds,nextCoreReview);
   };
   const jump = (target: number) => {
     if (!active) return;
@@ -372,7 +395,7 @@ export default function App() {
   };
   const switchMode = (next: LearningMode) => {
     if (!active || !availableModes(active).includes(next)) return;
-    stopAudio();setUnitSession(null);
+    stopAudio();setUnitSession(null);setCoreReviewRun(null);
     setMicroDialogueId(null);
     setMode(next);
     setSessionStartXp(expedition.events.length);
@@ -587,7 +610,7 @@ export default function App() {
             <h2>Nicely done!</h2>
             <p>You made it through {sessionItems.length} {sessionItems.length === 1 ? 'item' : 'items'}.</p>
             <p className="reward-note" aria-live="polite">{sessionXp ? '+' + sessionXp + ' XP earned' : 'No XP earned this session'}</p>
-            {availableModes(active).some(candidate => candidate !== mode) && <div className="mode-handoff" role="group" aria-label="Continue learning in another mode">
+            {!reviewOnly && availableModes(active).some(candidate => candidate !== mode) && <div className="mode-handoff" role="group" aria-label="Continue learning in another mode">
               <div>
               {availableModes(active).filter(candidate => candidate !== mode).map(candidate => <button type="button" key={candidate} className="handoff-button" onClick={() => switchMode(candidate)}>
                 {candidate === 'learn' ? 'Learn' : candidate === 'read' ? 'Read' : candidate === 'speak' ? 'Speak' : 'Listen'} →
@@ -601,6 +624,8 @@ export default function App() {
               {batched && batchIndex < totalBatches - 1
                 ? <button type="button" className="primary-action" onClick={() => changeBatch(batchIndex + 1)}>Continue to {practiceBatchLabel(active, batchIndex + 1)} →</button>
                 : soundReturn && active.id === soundReturn.practiceLessonId ? <button type="button" className="primary-action" onClick={returnFromSoundPractice}>Return to {soundReturn.sourceWord} →</button>
+                : coreReviewRun ? <button type="button" className="primary-action" onClick={()=>nextCoreReview?continueCoreReview():goTo('practice')}>{nextCoreReview?'Continue scheduled review →':'Back to practice →'}</button>
+                : reviewOnly ? <button type="button" className="primary-action" onClick={()=>goTo('practice')}>Back to practice →</button>
                 : <>
                   {upcomingLesson && <button type="button" className="primary-action"
                     aria-label={'Continue to '+upcomingLesson.title}
@@ -711,8 +736,12 @@ export default function App() {
               Explore Poland → {explored.length} / 16 regions unlocked · {Math.min(selectedXp,selectedTarget)} / {selectedTarget} XP to current destination
             </button>
           </div>
-          {totalDue > 0 && <button type="button" className="review-home" onClick={() => goTo('practice')}>
-            <span className="review-home-number">{totalDue}</span><span><strong>Ready to review</strong><small>Your scheduled Polish expressions are ready.</small></span><span aria-hidden="true">Review →</span>
+          {totalDue > 0 && <button type="button" className="review-home"
+            onClick={() => coreReviewDue ? startCoreReview() : goTo('practice')}>
+            <span className="review-home-number">{totalDue}</span>
+            <span><strong>{coreReviewDue?'Review your path':'Ready to review'}</strong>
+              <small>{coreReviewDue} due on your path{otherReviewDue? ' · '+otherReviewDue+' in other lessons':''}</small></span>
+            <span aria-hidden="true">{coreReviewDue?'Start →':'Practice →'}</span>
           </button>}
           <div className="section-heading"><div><span className="eyebrow">TODAY'S PATH</span><h2>Pick up where you left off</h2></div><button className="text-link" type="button" onClick={() => goTo('library')}>Browse library →</button></div>
           {coreLesson && <button type="button" className="resume-card core-resume-card" onClick={() => openLesson(coreLesson,true)}>
@@ -749,16 +778,33 @@ export default function App() {
 
         {!loading && !loadError && !active && !editorOpen && page === 'practice' && <>
           <section className="page-title"><h1>Practice<span className="title-dot">.</span></h1></section>
-          <section className="due-panel">
-            <div className="due-heading"><h2>Scheduled review</h2><span>{totalDue} due now</span></div>
-            {dueLessons.length ? <div className="due-list">{dueLessons.filter(lesson => lesson.kind !== 'reading').map(lesson => {
-              const count = dueItems(lesson, reviews, nowIso).length;
-              return <button type="button" className="due-row" key={lesson.id} onClick={() => openDueReview(lesson)}>
-                <strong>{lesson.title}</strong><span>{count} {count === 1 ? 'expression' : 'expressions'} due</span><span>Review →</span>
-              </button>;
-            })}</div> : <p>No expressions are due right now. Keep learning and they will appear here automatically.{scheduledNext ? ' Your next review is scheduled for ' + new Date(scheduledNext).toLocaleDateString() + '.' : ''}</p>}
-            
+          <section className="due-panel" aria-label="Core course scheduled review">
+            <div className="due-heading"><h2>On your path</h2><span>{coreReviewDue} due now</span></div>
+            {coreReviewDue ? <>
+              <button type="button" className="primary-action" onClick={startCoreReview}>
+                Review {coreReviewDue} {coreReviewDue===1?'expression':'expressions'} →
+              </button>
+              <div className="due-list">{dueLanes.core.map(({lesson,itemIds})=>
+                <button type="button" className="due-row" key={lesson.id} onClick={()=>openDueReview(lesson)}>
+                  <strong>{lesson.title}</strong><span>{itemIds.length} due</span><span>Review →</span>
+                </button>)}</div>
+            </> : <p>No course expressions are due right now.</p>}
           </section>
+          {dueLanes.personal.length>0 && <section className="due-panel" aria-label="Personal lesson scheduled review">
+            <div className="due-heading"><h2>Your lessons</h2><span>{dueLaneCount(dueLanes.personal)} due now</span></div>
+            <div className="due-list">{dueLanes.personal.map(({lesson,itemIds})=>
+              <button type="button" className="due-row" key={lesson.id} onClick={()=>openDueReview(lesson)}>
+                <strong>{lesson.title}</strong><span>{itemIds.length} due</span><span>Review →</span>
+              </button>)}</div>
+          </section>}
+          {dueLanes.explore.length>0 && <section className="due-panel" aria-label="Other lesson scheduled review">
+            <div className="due-heading"><h2>Explore more</h2><span>{dueLaneCount(dueLanes.explore)} due now</span></div>
+            <div className="due-list">{dueLanes.explore.map(({lesson,itemIds})=>
+              <button type="button" className="due-row" key={lesson.id} onClick={()=>openDueReview(lesson)}>
+                <strong>{lesson.title}</strong><span>{itemIds.length} due</span><span>Review →</span>
+              </button>)}</div>
+          </section>}
+          {totalDue===0 && scheduledNext && <p>Next scheduled review: {new Date(scheduledNext).toLocaleDateString()}.</p>}
                     {practisedCount > 0 && <><div className="section-heading lower"><div><h2>Continue learning</h2></div><button className="text-link" type="button" onClick={() => goTo('library')}>All lessons →</button></div>
           <div className="lesson-grid">{lessons.filter(x => completedIn(x) > 0).sort((a,b)=>completedIn(b)-completedIn(a)).slice(0,4).map(x => <LessonTile key={x.id} lesson={x} completed={completedIn(x)} onOpen={() => openLesson(x)}/>)}</div></>}
           {practisedCount === 0 && <div className="start-card"><p>Practice progress will appear here after your first lesson.</p><button className="primary-action" type="button" onClick={() => goTo('library')}>Choose a lesson →</button></div>}
