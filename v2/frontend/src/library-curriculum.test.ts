@@ -1,5 +1,5 @@
 import {describe,expect,test} from 'vitest';
-import {groupLibraryLessons,libraryMatches,LIBRARY_STAGES,inLibraryView,libraryViewCount} from './library-curriculum';
+import {groupLibraryLessons,libraryMatches,LIBRARY_STAGES,inLibraryView,libraryViewCount,nextCurriculumLesson} from './library-curriculum';
 import type {Lesson} from './model';
 
 const make = (id:string,title:string,stage:NonNullable<Lesson['curriculum']>['stage'],
@@ -57,6 +57,27 @@ describe('grouped curriculum library',()=>{
     expect(items.filter(item=>inLibraryView(item,'personal')).map(item=>item.id)).toEqual(['personal']);
     expect(items.filter(item=>inLibraryView(item,'all'))).toEqual(items);
     expect(items[5].curriculum).toBeUndefined();
+  });
+  test('suggests next authored course step regardless of source file order or past progress',()=>{
+    const sound2=make('s2','Second sound','fundamentals','sounds',2);
+    const sound1=make('s1','First sound','fundamentals','sounds',1);
+    const numbers=make('nums','Numbers','fundamentals','first-words',1);
+    const expanded=make('more','More words','fundamentals','expanded-words',1);
+    const phrases=make('phrases','Expressions','basic','first-phrases',1);
+    const sentences=make('sentences','Sentences','basic','sentences',1);
+    const read=make('reading','Read','learning','conversations-reading',1);
+    const lab=make('lab','Pronunciation lab','practice','lab',1);
+    const personal:Lesson={...sentences,id:'mine',source:'personal',curriculum:undefined};
+    const shuffled=[read,lab,expanded,sentences,personal,phrases,sound2,numbers,sound1];
+    const expected:Record<string,string>={s1:'s2',s2:'nums',nums:'more',
+      more:'phrases',phrases:'sentences',sentences:'reading'};
+    for(const [from,to] of Object.entries(expected)){
+      expect(nextCurriculumLesson(shuffled,from)?.id).toBe(to);
+    }
+    expect(nextCurriculumLesson(shuffled,'reading')).toBeNull();
+    expect(nextCurriculumLesson(shuffled,'lab')).toBeNull();
+    expect(nextCurriculumLesson(shuffled,'mine')).toBeNull();
+    expect(nextCurriculumLesson(shuffled,'missing')).toBeNull();
   });
   test('search matches new titles, descriptions, historical file IDs and Polish source',()=>{
     const lesson=make('Conversation_1','Greetings and Introductions','basic','first-phrases',1);
