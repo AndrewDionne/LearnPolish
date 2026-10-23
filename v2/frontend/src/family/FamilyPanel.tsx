@@ -276,7 +276,7 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
     <p className="family-note">No pretend family accounts or rankings are shown.</p>
   </section>;
   return <section className="family-panel" aria-label="Family expedition">
-    <div className="family-heading"><div><span className="eyebrow">PRIVATE LEARNING GROUPS</span><h2>Learn together</h2></div>
+    <div className="family-heading"><div><h2>Family account</h2></div>
       {token&&<button type="button" onClick={()=>void run(logout)} disabled={busy}>Sign out</button>}</div>
     {!token ? <div className="family-auth">
       {pendingVerification?<div className="family-verification">
@@ -371,13 +371,12 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
         <div className="family-totals"><span>{summary.totals.weekly_xp} weekly family XP</span>
           <span>{summary.totals.regions_unlocked}/16 regions opened</span></div>
         <div className="family-recognition" aria-label="Family weekly recognition">
-          <h4>Group scoreboards · this week</h4>
+          <h4>Weekly leaderboard</h4>
           <div className="family-board-filters" role="group" aria-label="Weekly recognition category">
             {RECOGNITION_CATEGORIES.map(category=><button key={category.id} type="button"
               aria-pressed={recognitionCategory===category.id}
               onClick={()=>setRecognitionCategory(category.id)}>{category.label}</button>)}
           </div>
-          <p className="family-note">{RECOGNITION_CATEGORIES.find(x=>x.id===recognitionCategory)?.description}</p>
           {recognitionCategory==='improvement'
             ? <p role="status" className="family-recognition-pending">Most-improved recognition will use verified change from each learner's previous comparable performance. This family has no validated improvement measurements yet; no ranking is assigned.</p>
             : <ol aria-label={RECOGNITION_CATEGORIES.find(x=>x.id===recognitionCategory)?.label+' leaderboard'}>
@@ -385,7 +384,6 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
                   <li key={member.id} className={member.id===userId?'family-current-learner':''}>
                     <strong>{rank===null?'—':rank+'.'} {member.name}{member.id===userId?' (you)':''}</strong>
                     <span>{recognitionLabel(recognitionCategory,score)}</span>
-                    <small>{member.active_days} practice days · tier {member.highest_tier||'—'} attempted · {member.team_xp} map XP</small>
                   </li>)}
               </ol>}
           <p className="family-note">Friendly comparisons, based on member-declared completed practice validated against the built-in catalog. Difficulty indicates material attempted, not demonstrated mastery.</p>
