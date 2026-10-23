@@ -2,7 +2,7 @@ import {expect,test} from '@playwright/test';
 
 const routes=[
   {name:'Library',heading:/Lesson library/},
-  {name:'Practice',heading:/Keep it fresh/},
+  {name:'Practice',heading:/Practice/},
   {name:'Expedition',heading:/Your Poland expedition/},
   {name:'Profile',heading:/Your profile/},
   {name:'Home',heading:/Small steps/},

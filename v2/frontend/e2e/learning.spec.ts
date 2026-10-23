@@ -739,7 +739,7 @@ test('full browser-local backup safely restores personal lessons, recall and rev
   // happens to contain the word "practice".
   const nav = page.getByRole('navigation',{name:isMobile?'Mobile navigation':'Main navigation'});
   await nav.getByRole('button',{name:'Practice',exact:true}).click();
-  await expect(page.getByRole('heading',{name:'Keep it fresh.'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Practice.'})).toBeVisible();
   await expect(page.getByText('0 due now')).toBeVisible();
 });
 
