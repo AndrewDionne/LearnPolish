@@ -82,7 +82,7 @@ async function connectPrivateAdult(page:import('@playwright/test').Page){
 async function recordValidTake(page:import('@playwright/test').Page){
   await page.getByRole('button',{name:/Start recording|Record another take/}).click();
   await page.getByRole('button',{name:'Stop recording'}).click();
-  await expect(page.getByText(/Recording captured/)).toBeVisible();
+  await expect(page.getByText(/Recording ready/)).toBeVisible();
 }
 
 test('explicit consent -> native Azure numbers -> replay/next without fabricated grade or hidden second request',async({page})=>{
@@ -148,7 +148,7 @@ test('inconclusive and quota outcomes stay ungraded; new take clears old feedbac
   await page.getByRole('button',{name:/Record another take/}).click();
   await expect(page.getByText(/This is not a score of zero/)).toHaveCount(0);
   await page.getByRole('button',{name:'Stop recording'}).click();
-  await expect(page.getByText(/Recording captured/)).toBeVisible();
+  await expect(page.getByText(/Recording ready/)).toBeVisible();
   await page.getByRole('button',{name:'Check my pronunciation'}).click();
   await expect(page.getByText(/Daily free pronunciation assessment limit reached/)).toBeVisible();
   expect(calls).toBe(2);
