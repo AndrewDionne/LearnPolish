@@ -603,7 +603,7 @@ export default function App() {
               <p className="listen-english">{current.english}</p>
               {listenGuess !== null ? <button type="button" className="primary-action" onClick={() => record(listenAnsweredCorrectly)}>Continue →</button> : <div className="answer-actions">
                 <button type="button" className="secondary-action" onClick={() => record(false)}>Needs practice</button>
-                <button type="button" className="primary-action" onClick={() => record(true)}>Understood it →</button>
+                <button type="button" className="primary-action" onClick={() => record(true)}>Got it →</button>
               </div>}
             </div>}
           </section> : <section className="flashcard" aria-live="polite">
@@ -627,13 +627,13 @@ export default function App() {
             {!revealed && !translationOpen && (mode !== 'read' || !current.comprehension) && <button type="button" className="reveal" onClick={() => mode === 'read' ? setTranslationOpen(true) : setRevealed(true)}>Reveal meaning <span>↗</span></button>}
             {mode === 'read' && current.comprehension && !translationOpen && <button type="button" className="reveal" onClick={() => setTranslationOpen(true)}>Reveal translation without answering</button>}
             {(revealed || translationOpen) && (mode === 'read' && readGuess !== null ? <button type="button" className="primary-action reading-continue" onClick={() => record(readGuess === correctAnswer)}>Continue →</button> : <div className="answer-actions">
-              <button type="button" className="secondary-action" onClick={() => record(false)}>{mode === 'read' ? 'Review again' : 'Needs practice'}</button>
-              <button type="button" className="primary-action" onClick={() => record(true)}>{mode === 'read' ? 'Finished reading →' : 'Got it →'}</button>
+              <button type="button" className="secondary-action" onClick={() => record(false)}>Needs practice</button>
+              <button type="button" className="primary-action" onClick={() => record(true)}>Got it →</button>
             </div>)}
           </section>}
           {mode !== 'speak' && !(activeMicroDialogue && mode === 'read') && <div className="lesson-footer">
             <button type="button" onClick={() => jump(index - 1)} disabled={index === 0}>← Previous</button>
-                        <button type="button" onClick={() => jump(index + 1)} disabled={index === sessionItems.length - 1}>Skip to next →</button>
+            <button type="button" onClick={() => jump(index + 1)} disabled={index === sessionItems.length - 1}>Skip to next →</button>
           </div>}
         </div>}
 
