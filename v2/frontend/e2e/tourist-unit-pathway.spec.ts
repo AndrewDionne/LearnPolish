@@ -37,9 +37,9 @@ test('unit progression offers the next source-backed step without a completion g
   await expect(page.locator('.item-count')).toContainText('/ 2');
   // Skip advances navigation only. The final item needs deliberate response.
   await page.getByRole('button',{name:'Skip to next →'}).click();
-  await page.getByRole('button',{name:/Reveal answer|Reveal meaning/}).click();
-  const action=page.getByRole('button',{name:/Got it/});
-  await action.click();
+  await page.getByRole('group',{name:'Answer the listening question'})
+    .getByRole('button',{name:'Their name'}).click();
+  await page.getByRole('button',{name:'Continue →'}).click();
   await expect(page.getByRole('heading',{name:'Nicely done!'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Continue with Speak →'})).toBeVisible();
   await page.getByRole('button',{name:'Continue with Speak →'}).click();
