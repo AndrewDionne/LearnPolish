@@ -126,7 +126,8 @@ test('private profile edits display name and shows only joined learning groups',
   await expect(panel.getByRole('heading',{name:'Polish study team'})).toBeVisible();
   await expect(panel.getByRole('list',{name:'Effort leaderboard'}))
     .toContainText('Confident beginner (you)');
-  await expect(panel.getByText('Group scoreboards · 1 learner · current group only')).toBeVisible();
+  await expect(panel.getByRole('heading',{name:'Weekly leaderboard'})).toBeVisible();
+  await expect(panel.getByRole('list',{name:'Effort leaderboard'}).getByRole('listitem')).toHaveCount(1);
   await page.getByRole('button',{name:'Back to Poland map'}).click();
   await expect(page.getByRole('heading',{name:/Your Poland expedition/})).toBeVisible();
   await page.getByRole('button',{name:/Learning groups & scoreboards/}).first().click();
