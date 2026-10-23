@@ -23,6 +23,8 @@ export type LocalBackup = {
   reviews: ReviewSchedule;
   readingPositions: ReadingPositions;
   lastLessonId: string | null;
+  /** Optional for pre-A-02 exports: the separate core-course location. */
+  lastCoreLessonId?: string | null;
   gold?: GoldState; // Optional for pre-XP exports
   expedition?: ExpeditionState;
 };
@@ -33,6 +35,7 @@ export function makeBackup(data: Omit<LocalBackup, 'format' | 'version' | 'expor
     personalLessons: data.personalLessons.map(toPortableLesson),
     progress: data.progress, reviews: data.reviews, readingPositions: data.readingPositions,
     lastLessonId: data.lastLessonId,
+    ...(data.lastCoreLessonId===undefined ? {} : {lastCoreLessonId:data.lastCoreLessonId}),
     ...(data.gold ? {gold:data.gold} : {}),
     ...(data.expedition ? {expedition:data.expedition} : {}),
   };
@@ -73,6 +76,12 @@ export function parseBackup(value: unknown): LocalBackup {
   if (raw.lastLessonId !== null &&
       (typeof raw.lastLessonId !== 'string' || !/^[a-zA-Z0-9_-]{1,140}$/.test(raw.lastLessonId)))
     throw new Error('Invalid recent-lesson reference in backup');
+  if(raw.lastCoreLessonId!==undefined && raw.lastCoreLessonId!==null &&
+    (typeof raw.lastCoreLessonId!=='string' ||
+      !/^[a-zA-Z0-9_-]{1,140}$/.test(raw.lastCoreLessonId) ||
+      raw.lastCoreLessonId.startsWith('personal_') ||
+      raw.lastCoreLessonId==='speak_swietokrzyska'))
+    throw new Error('Invalid core-course reference in backup');
   const gold = raw.gold === undefined ? DEFAULT_GOLD : parseGold(JSON.stringify(raw.gold));
   if (raw.gold !== undefined && (
     !raw.gold || typeof raw.gold !== 'object' ||
@@ -88,6 +97,7 @@ export function parseBackup(value: unknown): LocalBackup {
     reviews: checkedMap(raw.reviews, parseReviewSchedule, 'scheduled review'),
     readingPositions: checkedMap(raw.readingPositions, parseReadingPositions, 'reading position'),
     lastLessonId: raw.lastLessonId,
+    ...(raw.lastCoreLessonId===undefined ? {} : {lastCoreLessonId:raw.lastCoreLessonId}),
     ...(raw.gold === undefined ? {} : {gold}),
     ...(raw.expedition === undefined ? {} : {expedition:raw.expedition}),
   };
