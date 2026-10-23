@@ -16,6 +16,8 @@ import {CORE_CONTINUE_KEY,parseCoreContinueId,resolveCourseContinuation} from '.
 import JourneyMarker from './JourneyMarker';
 import TouristUnitCards from './TouristUnitCards';
 import {availableTouristUnits,unitStepSource,unitStepItems} from './tourist-units';
+import {TOURIST_ACTIVITY_KEY,emptyTouristActivities,parseTouristActivities,
+  positionTouristUnit,triedTouristItem} from './tourist-activity';
 import { parseProgress, recallRate, recordAttempt, STORAGE_KEY } from './progress';
 import type { Progress } from './progress';
 import { PERSONAL_STORAGE_KEY, importPersonalLesson, makePersonalLesson, parsePersonalLessons, toPortableLesson, upsertPersonalLesson } from './personal';
@@ -129,6 +131,10 @@ export default function App() {
   const [sessionStartXp, setSessionStartXp] = useState(0);
   const [mode, setMode] = useState<LearningMode>('learn');
   const [unitSession,setUnitSession]=useState<{unitId:string;stepIndex:number}|null>(null);
+  const [touristActivity,setTouristActivity]=useState(()=>{
+    try{return parseTouristActivities(localStorage.getItem(TOURIST_ACTIVITY_KEY));}
+    catch{return emptyTouristActivities();}
+  });
   // One deliberate choice for the current Speak session, OFF at lesson start.
   // Keeps the guide open if the learner advances, without a persistent gate.
   const [guideVisible,setGuideVisible] = useState(false);
@@ -209,6 +215,10 @@ export default function App() {
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); } catch { /* local progress is best effort */ }
   }, [progress]);
+  useEffect(()=>{
+    try{localStorage.setItem(TOURIST_ACTIVITY_KEY,JSON.stringify(touristActivity));}
+    catch{/* local-only activity, never account mastery */}
+  },[touristActivity]);
   useEffect(() => {
     try { localStorage.setItem(PERSONAL_STORAGE_KEY, JSON.stringify(personal)); } catch { /* local sets are best effort */ }
   }, [personal]);
@@ -305,7 +315,7 @@ export default function App() {
       try{localStorage.setItem(CORE_CONTINUE_KEY,lesson.id);}catch{/* best effort */}
     }
   };
-  const openTouristUnitStep=(unitId:string,stepIndex:number)=>{
+  const openTouristUnitStep=(unitId:string,stepIndex:number,resumeItemId?:string)=>{
     const unit=touristUnits.find(x=>x.id===unitId);
     const step=unit?.steps[stepIndex];
     const destination=step&&unitStepSource(builtIn,step);
@@ -315,7 +325,10 @@ export default function App() {
     openLesson(destination,false,false);
     setUnitSession({unitId,stepIndex});
     setMode(step.mode);
-    setIndex(0);
+    const itemIndex=resumeItemId?step.itemIds.indexOf(resumeItemId):-1;
+    const startIndex=itemIndex>=0?itemIndex:0;
+    setIndex(startIndex);
+    setTouristActivity(previous=>positionTouristUnit(previous,unit,stepIndex,step.itemIds[startIndex]));
     setBatchIndex(0);
     setRevealed(false);setTranslationOpen(false);
     setReadGuess(null);setListenGuess(null);setListenRevealed(false);
@@ -381,11 +394,13 @@ export default function App() {
     if(!lesson){goTo('practice');return;}
     openDueReview(lesson,step.itemIds,nextCoreReview);
   };
-  const jump = (target: number) => {
+  const jump = (target: number,trackUnitPosition=true) => {
     if (!active) return;
     stopAudio();
     const next = Math.max(0, Math.min(sessionItems.length - 1, target));
     setIndex(next);
+    if(trackUnitPosition && unitSession && currentUnit && unitStep && sessionItems[next])
+      setTouristActivity(previous=>positionTouristUnit(previous,currentUnit,unitSession.stepIndex,sessionItems[next].id));
     if (mode === 'read' && !unitSession) setReadingPositions(previous => ({ ...previous, [active.id]: next }));
     setRevealed(false); setTranslationOpen(false); setListenGuess(null); setReadGuess(null); setListenRevealed(false); setFinished(false);
   };
@@ -433,8 +448,10 @@ export default function App() {
         : undefined;
       earn(current.id, mode, measured);
     }
+    if(unitSession && currentUnit && unitStep)
+      setTouristActivity(previous=>triedTouristItem(previous,currentUnit,unitSession.stepIndex,current.id));
     if (mode === 'learn') setReviews(previous => recordReview(previous, current.id, remembered, at));
-    if (index < sessionItems.length - 1) jump(index + 1);
+    if (index < sessionItems.length - 1) jump(index + 1,false);
     else { stopAudio(); setFinished(true); }
   };
   const beginNew = () => {
@@ -485,7 +502,7 @@ export default function App() {
       const data = makeBackup({
         personalLessons: personal, progress, reviews, readingPositions, lastLessonId: lastLesson,
         lastCoreLessonId:courseContinue.origin==='start' || !coreLesson ? null : coreLesson.id,
-        expedition,
+        touristActivity,expedition,
       }, new Date().toISOString());
       const blob = new Blob([JSON.stringify(data, null, 2) + '\n'], {type:'application/json'});
       const link = document.createElement('a');
@@ -506,7 +523,7 @@ export default function App() {
       const data = parseBackup(JSON.parse(await file.text()));
       const confirmed = window.confirm(
         'Restore backup from ' + new Date(data.exportedAt).toLocaleDateString() + '?\n\n' +
-        'This will replace ALL personal lessons, practice history, scheduled reviews and reading positions saved in this browser. The current local data will be lost. Export a backup first if you need it.'
+        'This will replace ALL personal lessons, unit activity, practice history, scheduled reviews and reading positions saved in this browser. The current local data will be lost. Export a backup first if you need it.'
       );
       if (!confirmed) {setBackupStatus('Restore cancelled. Your existing data was not changed.');return;}
       // Commit all validated records to storage FIRST. On quota/permission errors,
@@ -516,12 +533,13 @@ export default function App() {
       setPersonal(data.personalLessons);
       setProgress(data.progress);
       setReviews(data.reviews);
+      setTouristActivity(data.touristActivity??emptyTouristActivities());
       setExpedition(restoredExpedition);
       setReadingPositions(data.readingPositions);
       setLastLesson(data.lastLessonId);
       // Missing in old exports: infer from restored practice only, never stale device data.
       setCoreLessonId(data.lastCoreLessonId??null);
-      setLessonId(null); setEditorOpen(false); setReviewOnly(null); setPage('profile');
+      setLessonId(null); setUnitSession(null); setCoreReviewRun(null); setEditorOpen(false); setReviewOnly(null); setPage('profile');
       setBackupStatus('Backup restored: ' + data.personalLessons.length + ' personal lessons and their saved practice records.');
     } catch (error) {
       setBackupError(error instanceof Error ? error.message : 'Could not restore the backup.');
@@ -646,8 +664,14 @@ export default function App() {
               : undefined}
             onNext={(completedTake) => {
             if (!claimCurrentCompletion()) return;
-            if (completedTake) earn(current.id, 'speak');
-            if (index < sessionItems.length - 1) jump(index + 1);
+            if (completedTake){
+              earn(current.id, 'speak');
+              if(unitSession && currentUnit && unitStep)
+                setTouristActivity(previous=>triedTouristItem(previous,currentUnit,unitSession.stepIndex,current.id));
+            }
+            // An unrecorded Speak Next is navigation only: preserve the
+            // resume cursor without crediting a pronunciation attempt.
+            if (index < sessionItems.length - 1) jump(index + 1,!completedTake);
             else { stopAudio(); setFinished(true); }
           }} /> : mode === 'listen' ? <section className="flashcard listening-card" aria-live="polite">
             
@@ -769,7 +793,7 @@ export default function App() {
             <section className="curriculum-section" aria-label={section.heading} key={section.id}>
               <div className="curriculum-stage-heading"><h2>{section.heading}</h2></div>
               {section.id==='core' && filter==='all' && !query.trim() &&
-                <TouristUnitCards units={touristUnits} onStart={openTouristUnitStep}/>}
+                <TouristUnitCards units={touristUnits} activity={touristActivity} onStart={openTouristUnitStep}/>}
               <div className="lesson-grid">{section.lessons.map(lesson=>
                 <LessonTile key={lesson.id} lesson={lesson} completed={completedIn(lesson)}
                   onOpen={() => openLesson(lesson)}/>)}</div>
@@ -852,7 +876,7 @@ export default function App() {
                 <button type="button" onClick={() => setExpedition(old=>setXpGoal(old,'self',Number(selfGoalDraft)))}>Save goal</button>
               </label>}</fieldset>
           </section>
-          <section className="preferences"><h2>Your local learning data</h2><p>Lessons, progress, and review schedules are stored only in this browser. Export a full backup before clearing browser data or changing devices.</p>
+          <section className="preferences"><h2>Your local learning data</h2><p>Lessons, unit activity, progress, and review schedules are stored only in this browser. Export a full backup before clearing browser data or changing devices.</p>
             <div className="backup-actions"><button type="button" className="primary-action" onClick={downloadBackup}>Export full backup</button>
               <label className="import-button">Restore from backup<input type="file" aria-label="Restore from backup" accept=".json,application/json" onChange={e => {
                 const file = e.currentTarget.files?.[0]; void restoreBackup(file); e.currentTarget.value='';
@@ -860,9 +884,9 @@ export default function App() {
             </div>
             {backupStatus && <p className="backup-success" role="status">{backupStatus}</p>}
             {backupError && <p className="author-error" role="alert">{backupError}</p>}
-            <p className="backup-hint">A restore replaces the local lessons, all practice history, scheduled reviews and reading positions. Built-in lessons and downloadable audio are part of the app, not this backup. No recordings are included.</p>
+            <p className="backup-hint">A restore replaces the local lessons, unit activity, all practice history, scheduled reviews and reading positions. Built-in lessons and downloadable audio are part of the app, not this backup. No recordings are included.</p>
             <button type="button" className="danger-action" onClick={() => { if (window.confirm('Erase local practice history, review dates AND earned XP? Personal lessons will be kept. This cannot be undone.')) {
-              setProgress({}); setReviews({}); setExpedition(emptyExpedition()); setBackupStatus('Practice, review schedules and earned XP cleared. Personal lessons are unchanged.');
+              setProgress({}); setReviews({}); setTouristActivity(emptyTouristActivities()); setExpedition(emptyExpedition()); setBackupStatus('Practice, review schedules and earned XP cleared. Personal lessons are unchanged.');
             } }}>Clear practice and reviews</button></section>
         </>}
       </main>

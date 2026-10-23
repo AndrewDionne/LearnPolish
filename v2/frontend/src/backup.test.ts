@@ -66,3 +66,21 @@ test('optional core cursor round-trips without breaking pre-A-02 backups',()=>{
     expect(()=>parseBackup({...backup,lastCoreLessonId:bad})).toThrow(/core-course reference/);
   }
 });
+
+test('tourist activity backup retains mode-attempt evidence, not source-wide grades',()=>{
+  const activity={version:1 as const,units:{
+    T02:{tried:{listen:['Basic_01R:2']},cursor:{mode:'listen' as const,itemId:'Basic_01R:3'}}
+  }};
+  const sample=makeBackup({...backup,touristActivity:activity},backup.exportedAt);
+  expect(parseBackup(JSON.parse(JSON.stringify(sample))).touristActivity).toEqual(activity);
+  // Older exports do not fabricate tourist-unit participation from source progress.
+  expect(parseBackup(backup).touristActivity).toBeUndefined();
+  const tampered={...activity,units:{T02:{
+    tried:{listen:['Basic_01R:2'],speak:['Conversation_1:25']},
+    cursor:{mode:'listen',itemId:'Basic_01R:3'}
+  }}};
+  expect(()=>parseBackup({...sample,touristActivity:tampered})).toThrow(/tourist source item evidence/i);
+  expect(()=>parseBackup({...sample,touristActivity:{
+    version:1,units:{personal_lesson:{tried:{listen:['Basic_01R:2']}}}
+  }})).toThrow(/tourist unit activity/i);
+});

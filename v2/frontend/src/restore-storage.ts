@@ -5,6 +5,7 @@ import {READING_POSITION_KEY} from './reading-position';
 import {EXPEDITION_STORAGE_KEY,parseExpedition} from './expedition/expedition';
 import type {LocalBackup} from './backup';
 import {CORE_CONTINUE_KEY} from './core-continuation';
+import {TOURIST_ACTIVITY_KEY,emptyTouristActivities} from './tourist-activity';
 
 const LAST_LESSON_KEY='ptp-v2-last-lesson';
 type BrowserStore=Pick<Storage,'getItem'|'setItem'|'removeItem'>;
@@ -27,6 +28,8 @@ export function persistRestoredBackup(
     [LAST_LESSON_KEY,backup.lastLessonId],
     // Old exports have no core cursor: remove stale device data, infer from restored history.
     [CORE_CONTINUE_KEY,backup.lastCoreLessonId??null],
+    // Pre-feature backups intentionally clear stale device unit activity.
+    [TOURIST_ACTIVITY_KEY,JSON.stringify(backup.touristActivity??emptyTouristActivities())],
   ];
   const previous=new Map<string,string|null>();
   const changed:string[]=[];
