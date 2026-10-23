@@ -270,7 +270,7 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
   };
 
   if(!FAMILY_API)return <section className="family-panel" aria-label="Family expedition">
-    <h2>Learning groups</h2>
+    <h2>Private groups unavailable</h2>
     <p>Private groups are unavailable. Your own map and XP remain on this device.</p>
   </section>;
   return <section className="family-panel" aria-label="Family expedition">
