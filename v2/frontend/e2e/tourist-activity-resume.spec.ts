@@ -19,6 +19,7 @@ test('tourist Resume returns to the first untried source item after skipping, na
   expect(evidence.units.T02.tried).toEqual({listen:['Basic_01R:3']});
   expect(evidence.units.T02.cursor).toEqual({mode:'listen',itemId:'Basic_01R:2'});
   await page.reload();
+  await nav.getByRole('button',{name:'Library'}).click();
   await card.getByRole('button',{name:'Resume Introductions and names'}).click();
   await expect(page.locator('.unit-practice-head')).toContainText('Listen · 1/3');
   await expect(page.locator('.item-count')).toContainText('1');
@@ -41,6 +42,7 @@ test('Speak Next without a real microphone take is navigation, not unit practice
   await nav.getByRole('button',{name:'Library'}).click();
   await expect(card.locator('.tourist-unit-activity')).toHaveText('0 / 13 tried');
   await page.reload();
+  await nav.getByRole('button',{name:'Library'}).click();
   await card.getByRole('button',{name:'Resume Numbers, prices and payment'}).click();
   await expect(page.getByText('Ile to razem?',{exact:true})).toBeVisible();
   await expect(page.locator('.item-count')).toContainText('2');
@@ -59,7 +61,9 @@ test('source-wide Library history does not fabricate tourist participation, even
     }));
   });
   await page.reload();
-  const nav=page.getByRole('navigation',{name:isMobile?'Mobile navigation':'Main navigation'});
+  // This test deliberately sets a phone-size viewport for both Playwright
+  // projects; navigation visibility follows actual CSS width, not isMobile.
+  const nav=page.getByRole('navigation',{name:'Mobile navigation'});
   await nav.getByRole('button',{name:'Library'}).click();
   const card=page.locator('.tourist-unit-card').filter({hasText:'Introductions and names'});
   await expect(card.locator('.tourist-unit-activity')).toHaveCount(0);
