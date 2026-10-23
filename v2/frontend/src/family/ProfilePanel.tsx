@@ -48,12 +48,10 @@ export default function ProfilePanel({onOpenGroups}:{onOpenGroups:()=>void}){
 
   return <section className="learner-profile" aria-label="Learner account">
     <div className="learner-profile-heading"><div>
-      <span className="eyebrow">YOUR ACCOUNT</span><h2>Learning profile</h2>
+      <h2>Account</h2>
     </div><button type="button" className="secondary-action" onClick={onOpenGroups}>Learning groups & scoreboards →</button></div>
-    {!FAMILY_API?<p>You're learning locally. Your lessons and XP stay in this browser.
-      Private profiles, groups and scoreboards will be available once the family service is configured.</p>
-      : !token?<p>No private account is signed in. Your local progress is still available below.
-        Sign in or create an account to join learning groups.</p>
+    {!FAMILY_API?<p>Private groups are unavailable. Your local learning remains available.</p>
+      : !token?<p>Not signed in. Open Learning groups to join or create a group.</p>
       : loading?<p role="status">Loading private account…</p>
       : data?<div className="learner-account-details">
         <div className="learner-account-mark" aria-hidden="true">{data.user.name.slice(0,1).toLocaleUpperCase()}</div>
@@ -76,7 +74,6 @@ export default function ProfilePanel({onOpenGroups}:{onOpenGroups:()=>void}){
       :<p>No verified private account is available in this session.</p>}
     {error&&<p role="alert" className="family-error">{error}</p>}
     {message&&<p role="status">{message}</p>}
-    <p className="learner-profile-footnote">Group names and shared weekly XP use your private account.
-      The learning statistics below are local to this browser and are not automatically synced.</p>
+    <p className="learner-profile-footnote">Learning progress on this page stays in this browser. Shared family XP is separate.</p>
   </section>;
 }
