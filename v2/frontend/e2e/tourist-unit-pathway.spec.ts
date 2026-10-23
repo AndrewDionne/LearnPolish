@@ -48,7 +48,7 @@ test('unit progression offers the next source-backed step without a completion g
   await expect(page.getByText('Jak masz na imię?',{exact:true})).toBeVisible();
 });
 
-test('numbers-and-prices pilot is source-only and does not invent a reading scene',async({page})=>{
+test('numbers-and-prices pilot is source-only and does not invent a reading scene',async({page,isMobile})=>{
   await page.goto('/');
   await page.getByRole('button',{name:'Explore lessons'}).click();
   const unit=page.locator('.tourist-unit-card').filter({hasText:'Numbers, prices and payment'});
@@ -58,7 +58,7 @@ test('numbers-and-prices pilot is source-only and does not invent a reading scen
   await expect(page.locator('.item-count')).toContainText('/ 3');
   await expect(page.getByText('Ile to kosztuje?',{exact:true})).toBeVisible();
   await expect(page.locator('.lesson-meter')).toBeVisible();
-  await page.getByRole('navigation',{name:'Main navigation'}).getByRole('button',{name:'Library'}).click();
+  await page.getByRole('navigation',{name:isMobile?'Mobile navigation':'Main navigation'}).getByRole('button',{name:'Library'}).click();
   await page.getByRole('button',{name:/Numbers 1-20/}).click();
   await expect(page.getByRole('combobox',{name:'Practice group'})).toBeVisible();
   await expect(page.locator('.unit-practice-head')).toHaveCount(0);
