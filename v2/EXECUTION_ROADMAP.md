@@ -1,3 +1,9 @@
+## A-04 core review certified and integrated (2026-10-23)
+
+[PR #127](https://github.com/AndrewDionne/LearnPolish/pull/127) **MERGED** squash `a51d778585b22b6ce1b4f36860aecc42c8d5d39e`; head `83f3ea92b2c2cf58e0879c060822273d419f020e`; [Actions #40003335331](https://github.com/AndrewDionne/LearnPolish/actions/runs/40003335331) **4/4 PASS**. Implemented optional Home one-tap **On your path** scheduled Learn review, separate personal/extra Practice due lanes, finite snapshot of real due source IDs across core lessons and return to Practice on completion. Missed recall remains due under existing schedule without looping within one run. Review never shifts chosen Home course cursor, changes XP or introduces course mastery. Desktop/mobile 320px, normal offline/privacy/connected-family regressions and original review wording/return-path tests passed. See [A-04 review contract](CORE_REVIEW_JOURNEY.md). T02/T03 editorial source/audio issue #126 still awaits real native QA; no new content or real-device/AI validation.
+
+---
+
 ## A-04 optional course review integration candidate (2026-10-23; final CI pending)
 
 After B-03 certified merge, roadmap A-04 review slice advances without new native audio. `v2/CORE_REVIEW_JOURNEY.md` documents one-tap scheduled **On your path** review, user-authored **Your lessons** and supplementary **Explore more** review, deterministic immutable per-run source item/lesson queue and unchanged spaced schedule. Review does not alter the explicitly chosen Home course continuation. Real missed recall remains due but does not repeat endlessly in one run. Desktop/mobile tests include 320px and private activity separation. No modified 26/482/455 assets, 14 reference exclusions, XP, consent, backups or semantic nine-tier labels. Require four final-head GitHub Actions before merge. T02/T03 native/audio content issue #126 stays unresolved.
