@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "reviewStatus": "editorial_draft_not_for_runtime",
+  "published": false,
+  "scope": ["T02", "T03"],
+  "workItems": [
+    {
+      "unitId": "T02",
+      "gap": "Complete first-person reply to a name question",
+      "reviewStatus": "pending_native_polish_and_audio_review",
+      "sourceAnchors": [
+        {
+          "itemId": "Basic_01R:2",
+          "polish": "Cześć, jak masz na imię?",
+          "english": "Hi, what is your name?",
+          "expectedUse": "source_context"
+        },
+        {
+          "itemId": "Basic_01R:3",
+          "polish": "Mam na imię Andrew.",
+          "english": "My name is Andrew.",
+          "expectedUse": "source_context"
+        },
+        {
+          "itemId": "Conversation_1:25",
+          "polish": "Mam na imię…",
+          "english": "My name is…",
+          "expectedUse": "protected_source_reference"
+        }
+      ],
+      "requiredOutputs": [
+        "Native-reviewed complete question and first-person answer, with clear informal/formal register and learner-name handling",
+        "Final Polish and English transcript with one unambiguous fixed utterance per reference recording",
+        "Licensed speaker/audio provenance, exact matched recording, human listening and pronunciation QA",
+        "Comprehension and ungraded spoken-response acceptance cases, including correct treatment of the protected legacy source ID"
+      ]
+    },
+    {
+      "unitId": "T03",
+      "gap": "Natural prices, quantities, clerk replies and contextual reading",
+      "reviewStatus": "pending_native_polish_and_audio_review",
+      "sourceAnchors": [
+        {
+          "itemId": "Conversation_-_shopping:0",
+          "polish": "Ile to kosztuje?",
+          "english": "How much does this cost?",
+          "expectedUse": "source_context"
+        },
+        {
+          "itemId": "Conversation_-_shopping:1",
+          "polish": "Ile to razem?",
+          "english": "How much is it altogether?",
+          "expectedUse": "source_context"
+        },
+        {
+          "itemId": "Conversation_-_shopping:2",
+          "polish": "Czy mogę zapłacić kartą?",
+          "english": "Can I pay by card?",
+          "expectedUse": "source_context"
+        }
+      ],
+      "requiredOutputs": [
+        "Native-reviewed short two-way shop transaction including an actual quantity, price in złoty and payment response",
+        "Recorded natural clerk replies with written prices reconciled against exactly spoken Polish amounts",
+        "Short practical sign, receipt or price-list reading source with independently verified translation and a comprehension check",
+        "Exact Polish/translations, permitted recording licence, provenance and human acoustic/text match QA before enabling contextual Listen or Read"
+      ]
+    }
+  ]
+}
