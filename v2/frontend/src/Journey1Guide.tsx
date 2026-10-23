@@ -4,14 +4,16 @@ import type {StarterGroup} from './foundation-first-expressions';
 
 /** A quiet source-backed guide, not another proficiency or stage label.
  * Only actual existing source lesson and tourist-unit launch actions are shown. */
-export default function Journey1Guide({steps,starterGroups,onStarter,onLesson,onUnit}:{
+export default function Journey1Guide({steps,starterGroups,nextWordGroups,onStarter,onLesson,onUnit}:{
   steps:Journey1GuideStep[];
   starterGroups:StarterGroup[];
+  nextWordGroups:StarterGroup[];
   onStarter:(groupId:string)=>void;
   onLesson:(lessonId:string)=>void;
   onUnit:(unitId:string)=>void;
 }){
   const [expanded,setExpanded]=useState(false);
+  const [moreWordsVisible,setMoreWordsVisible]=useState(false);
   if(!steps.length)return null;
   const visible=expanded?steps:steps.slice(0,4);
   return <section className="foundation-guide" aria-label="Guided Polish foundations">
@@ -30,6 +32,21 @@ export default function Journey1Guide({steps,starterGroups,onStarter,onLesson,on
           <strong>{group.title}</strong><span>{group.itemIds.length} phrases →</span>
         </button>)}
       </div>
+    </div>}
+    {nextWordGroups.length>0 && <div className="foundation-starter foundation-next-words">
+      <button type="button" className="foundation-next-toggle"
+        aria-controls="foundation-next-words" aria-expanded={moreWordsVisible}
+        onClick={()=>setMoreWordsVisible(open=>!open)}>
+        <span>Keep building your everyday vocabulary</span>
+        <span aria-hidden="true">{moreWordsVisible?'−':'+'}</span>
+      </button>
+      {moreWordsVisible && <div id="foundation-next-words" className="foundation-starter-options"
+        role="group" aria-label="More recorded beginner practice">
+        {nextWordGroups.map(group=><button type="button" key={group.id}
+          className="foundation-starter-button" onClick={()=>onStarter(group.id)}>
+          <strong>{group.title}</strong><span>{group.itemIds.length} expressions →</span>
+        </button>)}
+      </div>}
     </div>}
     <div className="foundation-guide-list">
       {visible.map((step,index)=><button type="button" key={step.id}
