@@ -18,7 +18,7 @@ describe('A-01 source-backed, silent 3 by 3 course mapping',()=>{
   test('preserves the complete original catalogue and honest partial coverage',()=>{
     expect(catalog.lessons).toHaveLength(26);
     expect(CORE_JOURNEY_PLACEMENTS).toHaveLength(21);
-    expect(new Set(CORE_JOURNEY_PLACEMENTS.map(x=>x.lessonId)).size).toBe(20);
+    expect(new Set(CORE_JOURNEY_PLACEMENTS.map(x=>x.lessonId)).size).toBe(21);
     expect(CORE_JOURNEY_PLACEMENTS.every(x=>catalog.lessons.some(y=>y.id===x.lessonId))).toBe(true);
     expect(CORE_JOURNEY_PLACEMENTS.filter(x=>x.journey===3)).toHaveLength(0);
     expect(orderedCoreLessons(all)).toHaveLength(21);
