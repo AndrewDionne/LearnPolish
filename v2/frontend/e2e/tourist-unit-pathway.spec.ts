@@ -5,10 +5,10 @@ test('first tourist unit connects real recorded Listen, Speak and Read material'
   await page.getByRole('button',{name:'Explore lessons'}).click();
   const units=page.getByRole('group',{name:'Conversation practice'});
   await expect(units).toBeVisible();
-  await expect(units.locator('.tourist-unit-card')).toHaveCount(7);
+  await expect(units.locator('.tourist-unit-card')).toHaveCount(8);
   await expect(page.locator('.lesson-tile')).toHaveCount(26);
   const buttons=units.getByRole('button');
-  await expect(buttons).toHaveCount(19);
+  await expect(buttons).toHaveCount(22);
   await units.getByRole('button',{name:'Greetings and polite replies: Listen'}).click();
   await expect(page.locator('.unit-practice-head')).toContainText('Greetings and polite replies');
   await expect(page.locator('.unit-practice-head')).toContainText('Listen · 1/3');
@@ -220,4 +220,55 @@ test('T07 source-mode practice never shifts explicitly selected Home course curs
   await nav.getByRole('button',{name:'Home'}).click();
   await expect(page.locator('.core-resume-card')).toContainText('Greetings and Introductions');
   expect(await page.evaluate(()=>localStorage.getItem('ptp-v2-core-continue'))).toBe('Conversation_1');
+});
+
+test('T08 museum source visit has recorded ticket, hours and cloakroom Listen/Read, with generic source-backed Speak',async({page,isMobile})=>{
+  await page.goto('/');
+  await page.getByRole('button',{name:'Explore lessons'}).click();
+  const card=page.locator('.tourist-unit-card').filter({hasText:'Museum tickets and visitor information'});
+  await expect(card).toBeVisible();
+  await card.getByRole('button',{name:'Museum tickets and visitor information: Listen'}).click();
+  await expect(page.locator('.unit-practice-head')).toContainText('Listen · 1/3');
+  await expect(page.locator('.item-count')).toContainText('/ 9');
+  await expect(page.getByRole('button',{name:'Play audio'})).toBeEnabled();
+  for(let i=0;i<3;i++)await page.getByRole('button',{name:'Skip to next →'}).click();
+  await page.getByRole('button',{name:'Reveal transcript & translation'}).click();
+  await expect(page.getByText('Do której godziny muzeum jest otwarte?',{exact:true})).toBeVisible();
+  const nav=page.getByRole('navigation',{name:isMobile?'Mobile navigation':'Main navigation'});
+  await nav.getByRole('button',{name:'Library'}).click();
+  await card.getByRole('button',{name:'Museum tickets and visitor information: Speak'}).click();
+  await expect(page.locator('.unit-practice-head')).toContainText('Speak · 2/3');
+  await expect(page.locator('.item-count')).toContainText('/ 7');
+  await expect(page.getByText('Jeden bilet, proszę',{exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'▶ Hear example'})).toBeVisible();
+  await nav.getByRole('button',{name:'Library'}).click();
+  await card.getByRole('button',{name:'Museum tickets and visitor information: Read'}).click();
+  await expect(page.locator('.unit-practice-head')).toContainText('Read · 3/3');
+  await expect(page.locator('.item-count')).toContainText('/ 9');
+  await expect(page.getByText('Dzień dobry, poproszę dwa bilety do muzeum.',{exact:true})).toBeVisible();
+  await nav.getByRole('button',{name:'Library'}).click();
+  await expect(card.locator('.tourist-unit-activity')).toHaveText('0 / 25 tried');
+  await expect(card.getByRole('button',{name:'Resume Museum tickets and visitor information'})).toBeVisible();
+});
+
+test('T08 source activity leaves existing Home course cursor and unrelated ticket unit history untouched',async({page,isMobile})=>{
+  await page.goto('/');
+  await page.evaluate(()=>{
+    localStorage.setItem('ptp-v2-core-continue','Conversation_1');
+    localStorage.setItem('ptp-v2-tourist-activity',JSON.stringify({
+      version:1,units:{T07:{tried:{speak:['Getting_Around_1:6']},
+        cursor:{mode:'speak',itemId:'Getting_Around_1:7'}}}
+    }));
+  });
+  await page.reload();
+  const nav=page.getByRole('navigation',{name:isMobile?'Mobile navigation':'Main navigation'});
+  await nav.getByRole('button',{name:'Library'}).click();
+  const t07=page.locator('.tourist-unit-card').filter({hasText:'Taking a tram and buying a ticket'});
+  await expect(t07.locator('.tourist-unit-activity')).toHaveText('1 / 24 tried');
+  await page.getByRole('button',{name:'Museum tickets and visitor information: Speak'}).click();
+  await nav.getByRole('button',{name:'Home'}).click();
+  expect(await page.evaluate(()=>localStorage.getItem('ptp-v2-core-continue'))).toBe('Conversation_1');
+  const state=await page.evaluate(()=>JSON.parse(localStorage.getItem('ptp-v2-tourist-activity')||'{}'));
+  expect(state.units.T07.tried).toEqual({speak:['Getting_Around_1:6']});
+  expect(state.units.T08.tried).toEqual({});
 });
