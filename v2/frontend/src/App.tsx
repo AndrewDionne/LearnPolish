@@ -14,6 +14,8 @@ import {libraryMatches} from './library-curriculum';
 import {groupJourneyLibrary,journeyPlacement,nextCoreLesson} from './core-journey';
 import {CORE_CONTINUE_KEY,parseCoreContinueId,resolveCourseContinuation} from './core-continuation';
 import JourneyMarker from './JourneyMarker';
+import TouristUnitCards from './TouristUnitCards';
+import {availableTouristUnits,unitStepSource,unitStepItems} from './tourist-units';
 import { parseProgress, recallRate, recordAttempt, STORAGE_KEY } from './progress';
 import type { Progress } from './progress';
 import { PERSONAL_STORAGE_KEY, importPersonalLesson, makePersonalLesson, parsePersonalLessons, toPortableLesson, upsertPersonalLesson } from './personal';
@@ -124,6 +126,7 @@ export default function App() {
   const [microDialogueId,setMicroDialogueId] = useState<string|null>(null);
   const [sessionStartXp, setSessionStartXp] = useState(0);
   const [mode, setMode] = useState<LearningMode>('learn');
+  const [unitSession,setUnitSession]=useState<{unitId:string;stepIndex:number}|null>(null);
   // One deliberate choice for the current Speak session, OFF at lesson start.
   // Keeps the guide open if the learner advances, without a persistent gate.
   const [guideVisible,setGuideVisible] = useState(false);
@@ -216,14 +219,20 @@ export default function App() {
   }, [reviews]);
 
   const active = lessons.find(x => x.id === lessonId);
-  const upcomingLesson=active && !reviewOnly && !soundReturn
+  const touristUnits=useMemo(()=>availableTouristUnits(builtIn),[builtIn]);
+  const currentUnit=unitSession?touristUnits.find(x=>x.id===unitSession.unitId):undefined;
+  const unitStep=currentUnit?.steps[unitSession?.stepIndex??-1];
+  const nextUnitStep=currentUnit?.steps[(unitSession?.stepIndex??-1)+1];
+  const upcomingLesson=active && !reviewOnly && !soundReturn && !unitSession
     ? nextCoreLesson(lessons,active.id) : null;
   const activeMicroDialogue=active?.microDialogues?.find(dialogue=>dialogue.id===microDialogueId);
   const focusedGroup = soundReturn && soundReturn.practiceLessonId === active?.id ? soundReturn.practiceGroupId : null;
-  const batched = !!active && usesPracticeBatches(active) && !reviewOnly && !focusedGroup;
+  const batched = !!active && usesPracticeBatches(active) && !reviewOnly && !focusedGroup && !unitStep;
   const totalBatches = batched && active ? practiceBatchCount(active) : 1;
   const sessionItems = active
     ? focusedGroup ? itemsForMode(active, mode).filter(item => item.soundGroupId === focusedGroup)
+      : unitStep && unitStep.lessonId===active.id && unitStep.mode===mode
+        ? unitStepItems(active,unitStep)
       : reviewOnly && mode === 'learn' ? active.items.filter(item => reviewOnly.includes(item.id))
       : batched ? practiceBatchItems(active, mode, batchIndex)
       : itemsForMode(active, mode)
@@ -233,7 +242,7 @@ export default function App() {
   // second recall/review attempt. This lock is specific to a lesson step, NOT
   // a permanent per-item lock: intentional repeat sessions remain available.
   const completionGuard=useRef<{step:string|null}>({step:null});
-  const completionStep=[lessonId,mode,batchIndex,index,current?.id].join('|');
+  const completionStep=[lessonId,mode,batchIndex,index,current?.id,unitSession?.unitId,unitSession?.stepIndex].join('|');
   useEffect(()=>{completionGuard.current.step=null;},
     [lessonId,mode,batchIndex,index,current?.id,finished]);
   const claimCurrentCompletion=()=>!!current&&!finished&&
@@ -270,10 +279,10 @@ export default function App() {
 
   const stopAudio = () => { audio.stop(); };
   const goTo = (destination: Page) => {
-    stopAudio(); setLessonId(null); setGuideVisible(false); setSoundReturn(null); setEditorOpen(false); setReviewOnly(null); setBatchIndex(0); setMicroDialogueId(null); setPage(destination); setRevealed(false); setFinished(false);
+    stopAudio(); setUnitSession(null); setLessonId(null); setGuideVisible(false); setSoundReturn(null); setEditorOpen(false); setReviewOnly(null); setBatchIndex(0); setMicroDialogueId(null); setPage(destination); setRevealed(false); setFinished(false);
   };
   const openLesson = (lesson: Lesson, resume=false) => {
-    stopAudio();
+    stopAudio();setUnitSession(null);
     const resumeAt=resume ? nextLessonResume(lesson,progress,readingPositions) : null;
     setSoundReturn(null);
     setReviewOnly(null);
@@ -290,13 +299,26 @@ export default function App() {
       try{localStorage.setItem(CORE_CONTINUE_KEY,lesson.id);}catch{/* best effort */}
     }
   };
+  const openTouristUnitStep=(unitId:string,stepIndex:number)=>{
+    const unit=touristUnits.find(x=>x.id===unitId);
+    const step=unit?.steps[stepIndex];
+    const destination=step&&unitStepSource(builtIn,step);
+    if(!unit||!step||!destination)return;
+    openLesson(destination);
+    setUnitSession({unitId,stepIndex});
+    setMode(step.mode);
+    setIndex(0);
+    setBatchIndex(0);
+    setRevealed(false);setTranslationOpen(false);
+    setReadGuess(null);setListenGuess(null);setListenRevealed(false);
+  };
   const openSoundPractice = () => {
     if (!active || !current?.soundPractice || mode !== 'speak' || soundReturn) return;
     const focus = current.soundPractice;
     const destination = lessons.find(lesson => lesson.id === focus.lessonId && lesson.kind === 'sounds');
     const group = destination?.soundGroups?.find(g => g.id === focus.groupId);
     if (!destination || !group?.itemIds.length) return;
-    stopAudio();
+    stopAudio();setUnitSession(null);
     setSoundReturn({
       sourceLessonId:active.id,sourceItemId:current.id,sourceIndex:index,
       sourceGuideVisible:guideVisible,sourceReviewOnly:reviewOnly,
@@ -339,7 +361,7 @@ export default function App() {
     stopAudio();
     const next = Math.max(0, Math.min(sessionItems.length - 1, target));
     setIndex(next);
-    if (mode === 'read') setReadingPositions(previous => ({ ...previous, [active.id]: next }));
+    if (mode === 'read' && !unitSession) setReadingPositions(previous => ({ ...previous, [active.id]: next }));
     setRevealed(false); setTranslationOpen(false); setListenGuess(null); setReadGuess(null); setListenRevealed(false); setFinished(false);
   };
   const changeBatch = (target: number) => {
@@ -350,7 +372,7 @@ export default function App() {
   };
   const switchMode = (next: LearningMode) => {
     if (!active || !availableModes(active).includes(next)) return;
-    stopAudio();
+    stopAudio();setUnitSession(null);
     setMicroDialogueId(null);
     setMode(next);
     setSessionStartXp(expedition.events.length);
@@ -542,6 +564,10 @@ export default function App() {
                 stopAudio(); setMicroDialogueId(dialogue.id);
               }}>{dialogue.title} · {dialogue.turns.length} turns</button>)}
           </div>}
+          {currentUnit && unitStep && <div className="unit-practice-head">
+            <strong>{currentUnit.title}</strong>
+            <span>{unitStep.mode==='listen'?'Listen':unitStep.mode==='speak'?'Speak':'Read'} · {unitSession!.stepIndex+1}/{currentUnit.steps.length}</span>
+          </div>}
           {batched && <label className="practice-group-picker">Practice group
             <select aria-label="Practice group" value={batchIndex} onChange={event => changeBatch(Number(event.target.value))}>
               {Array.from({length:totalBatches},(_,part) => <option key={part} value={part}>{practiceBatchLabel(active,part)}</option>)}
@@ -568,6 +594,10 @@ export default function App() {
               </button>)}</div>
             </div>}
             <div className="answer-actions"><button type="button" className="secondary-action" onClick={() => jump(0)}>Practise again</button>
+              {nextUnitStep && currentUnit && <button type="button" className="primary-action"
+                onClick={()=>openTouristUnitStep(currentUnit.id,(unitSession?.stepIndex??0)+1)}>
+                Continue with {nextUnitStep.mode==='listen'?'Listen':nextUnitStep.mode==='speak'?'Speak':'Read'} →
+              </button>}
               {batched && batchIndex < totalBatches - 1
                 ? <button type="button" className="primary-action" onClick={() => changeBatch(batchIndex + 1)}>Continue to {practiceBatchLabel(active, batchIndex + 1)} →</button>
                 : soundReturn && active.id === soundReturn.practiceLessonId ? <button type="button" className="primary-action" onClick={returnFromSoundPractice}>Return to {soundReturn.sourceWord} →</button>
@@ -707,6 +737,8 @@ export default function App() {
           <div className="curriculum-sections">{librarySections.map(section=>
             <section className="curriculum-section" aria-label={section.heading} key={section.id}>
               <div className="curriculum-stage-heading"><h2>{section.heading}</h2></div>
+              {section.id==='core' && filter==='all' && !query.trim() &&
+                <TouristUnitCards units={touristUnits} onStart={openTouristUnitStep}/>}
               <div className="lesson-grid">{section.lessons.map(lesson=>
                 <LessonTile key={lesson.id} lesson={lesson} completed={completedIn(lesson)}
                   onOpen={() => openLesson(lesson)}/>)}</div>
