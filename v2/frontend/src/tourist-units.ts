@@ -15,7 +15,7 @@ export function validateTouristUnits(input:unknown):TouristUnit[]{
   if(!input||typeof input!=='object')throw new Error('Missing tourist unit manifest');
   const data=input as Record<string,unknown>;
   if(data.schemaVersion!==1||data.editorialStatus!=='source_refs_only_native_review_pending'
-    ||!Array.isArray(data.units)||data.units.length!==5)throw new Error('Invalid tourist unit schema');
+    ||!Array.isArray(data.units)||data.units.length!==6)throw new Error('Invalid tourist unit schema');
   const out:TouristUnit[]=[];
   for(let i=0;i<data.units.length;i++){
     const unit=data.units[i] as Partial<TouristUnit>|null;
