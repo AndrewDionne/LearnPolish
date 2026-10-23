@@ -91,7 +91,7 @@ test('normal Speak shows coloured source syllables with gaps and only 67 combine
   await page.getByRole('button',{name:'Speak',exact:true}).click();
   expect(calls).toBe(0);
   await record(page);
-  await expect(page.getByText(/Azure and Groq Whisper for estimated feedback/)).toBeVisible();
+  await expect(page.getByText(/Sends this take to Azure and Groq Whisper only when selected/)).toBeVisible();
   await page.getByRole('button',{name:'Check my pronunciation'}).click();
   await expect(page.locator('.speak-blended-part')).toHaveText(['Świę','to','krzy','ska']);
   await expect(page.locator('.speak-blended-part.review')).toHaveCount(2);
