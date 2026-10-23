@@ -35,6 +35,22 @@ This audit is the **first action** under the locked execution order, not a rewri
 
 ---
 
+## Course presentation refinement — internal 3 × 3 taxonomy, learner-facing icons and colours (2026-10-23)
+
+**Owner direction:** The phase/level labels used during curriculum planning explain our educational objectives; **they are NOT nine headings, tier names, verbose badges, labels, or explanatory text to show learners**. Design a compact **3 × 3 semantic classification** for course lessons, while keeping the real lesson titles, clear learning actions and conversational content prominent.
+
+- **Axis 1 — real-world course phase (three stages):** Visiting Poland / Extended Stay / Living in Poland. Communicate primarily through **three muted, coherent colour families**; do not assign actual colour hex values until an accessible contrast and branded palette audit.
+- **Axis 2 — pedagogical depth within each phase (three internal tiers):** foundation, practice/building, applied comprehension/conversation. Communicate primarily through **three simple recognizable, consistent icons or glyph patterns**. The meaning of `foundation` shifts with course phase: traveller = alphabet and essential letter-combination sounds; extended stay = advanced sound patterns and practical grammar; living in Poland = authentic listening/reading comprehension and sustained dialogue strategies. The second and third depth tiers apply and build each phase's foundational skills rather than introducing arbitrary content counts.
+- Nine combinations are **metadata**, not a nine-page UI navigator. The icon's colour + silhouette can classify a lesson subtly on its card, with the same treatment on lesson details/progress and optional upcoming-course view. **Do not show "Phase 2 / Tier 1 / Fundamentals" across cards, headings or main navigation.** Use ordinary lesson titles, e.g. `Ordering at a Restaurant`.
+- **Listen, Speak, Read are activity capabilities**, not the other 3×3 axis. Their own controls remain independent of the course tier icon; a lesson can teach multiple skills.
+- **Accessibility:** colour alone never carries placement; shapes visibly differ, meaningful `aria-label`/tooltip exposes human-readable course placement to screen-reader/keyboard users, and selection/disabled/progress states must not be conveyed solely by colour. Ensure contrast in light/dark/mobile; avoid dense icon-only unlabelled controls.
+- **Honesty:** pedagogical classification does not infer skill competence, unlock gates or grade accuracy. Course is *suggested linear order with free learner exploration*. Personal/custom sets remain in `Your lessons` and have **no core 3×3 mark or course-completion tier**; standalone `speak_swietokrzyska` stays a diagnostic.
+- **Implementation gate:** formalize this as optional schema/display metadata in A-01/B-01 and validate all 9 combinations plus fallback for missing/editorial-draft placements. Reuse owner-approved P and existing `--ptp-` palette. Agree final iconography and palette before a production visual change; test 320px, keyboard, screen reader, non-colour indicators and backup stability.
+
+This is a **presentation policy**, not an instruction to re-tag and shuffle existing 26 lessons without source-grounded review or generate missing Polish recordings.
+
+---
+
 ## The intended CORE language programme — owner-approved product direction
 
 The V1 library was a collection of topics, **not** an intentionally sequenced course. Do not re-label its legacy Fundamentals → Basic → Learning *content buckets* as proof of a coherent course. Design the course around useful, spoken everyday Polish and short realistic exchanges for an **English-speaking learner**, **not Polish for professional communication**.
