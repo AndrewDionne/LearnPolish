@@ -270,10 +270,8 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
   };
 
   if(!FAMILY_API)return <section className="family-panel" aria-label="Family expedition">
-    <span className="eyebrow">FAMILY EXPEDITION</span><h2>Grow your expedition together</h2>
-    <p>The private family service is not configured yet. The map and XP work offline for one learner;
-      shared progress, invitations and rankings will activate when a secured family service is deployed.</p>
-    <p className="family-note">No pretend family accounts or rankings are shown.</p>
+    <h2>Learning groups</h2>
+    <p>Private groups are unavailable. Your own map and XP remain on this device.</p>
   </section>;
   return <section className="family-panel" aria-label="Family expedition">
     <div className="family-heading"><div><h2>Family account</h2></div>
@@ -315,7 +313,6 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
           setRecoveryPassword('');setRecoveryRequested(false);setError('');setStatus('');}}>Back to sign in</button>
       </div>:<>
         <div className="family-auth-heading">
-          <p>{authMode==='create'?'A private learner account lets you join or create a family expedition.':'Sign in to continue your family expedition.'}</p>
           <div className="family-auth-switch" role="group" aria-label="Family account access">
             <button type="button" aria-pressed={authMode==='sign-in'} disabled={busy}
               onClick={()=>{setAuthMode('sign-in');setError('');setStatus('');}}>Sign in</button>
@@ -367,7 +364,6 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
       </div>}
       {summary&&<div className="family-scoreboard">
         <h3>{summary.group.name}</h3>
-        <p className="family-group-context">Group scoreboards · {summary.members.length} {summary.members.length===1?'learner':'learners'} · current group only</p>
         <div className="family-totals"><span>{summary.totals.weekly_xp} weekly family XP</span>
           <span>{summary.totals.regions_unlocked}/16 regions opened</span></div>
         <div className="family-recognition" aria-label="Family weekly recognition">
@@ -386,7 +382,6 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
                     <span>{recognitionLabel(recognitionCategory,score)}</span>
                   </li>)}
               </ol>}
-          <p className="family-note">Friendly comparisons, based on member-declared completed practice validated against the built-in catalog. Difficulty indicates material attempted, not demonstrated mastery.</p>
         </div>
         <h4>Regions funded together</h4>
         <div className="family-regions">{summary.regions.length?summary.regions.map(r=>
