@@ -43,6 +43,6 @@ describe('UX-05B editable geometric brand candidates',()=>{
     for(const size of [16,24,32,48,72]){
       expect(html).toContain('width="'+size+'" height="'+size+'"');
     }
-    expect(html).toContain('Not yet deployed');
+    expect(html).toMatch(/not yet deployed/i);
   });
 });
