@@ -804,3 +804,17 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .recent-resume-card{background:#f9fbfa;border-color:var(--ptp-border)}
 .recent-resume-card .resume-icon{background:#eef2f3;color:#57717a}
 .recent-resume-card small{color:#617980}
+
+
+/* A-03: existing-audio conversational pilot. Activity controls are real buttons;
+   journey-position icons are still decorative only. */
+.tourist-unit-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.tourist-unit-card{border:1px solid var(--ptp-border);background:var(--ptp-surface);border-radius:var(--ptp-radius-control);padding:15px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.tourist-unit-card strong{font-size:14px;line-height:1.35;color:var(--ptp-ink);font-weight:700}
+.tourist-unit-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto}
+.tourist-unit-actions button{border:1px solid var(--ptp-control-border);background:#f5faf8;color:var(--ptp-link);border-radius:8px;font:700 var(--ptp-font-action) var(--ptp-font-body);min-height:var(--ptp-target-size);padding:9px 12px}
+.tourist-unit-actions button:hover{background:#e9f4ef}
+.unit-practice-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 0 13px;padding:10px 13px;border-radius:9px;background:#f4f9f7;color:#305a61}
+.unit-practice-head strong{font-size:13px;font-weight:700}
+.unit-practice-head span{font-size:12px}
+@media(max-width:900px){.tourist-unit-grid{grid-template-columns:1fr}}
