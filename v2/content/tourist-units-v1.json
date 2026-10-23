@@ -205,6 +205,54 @@
       "gaps": [
         "The original grocery reading/audio is a source-only scenario, not native-certified; verified seller price and payment replies remain outstanding under T03."
       ]
+    },
+    {
+      "id": "T06",
+      "title": "Finding your way to the centre",
+      "journey": 1,
+      "position": "middle",
+      "order": 6,
+      "outcome": "Ask where a stop or route is and understand a short spoken reply about the city centre.",
+      "steps": [
+        {
+          "mode": "listen",
+          "lessonId": "Asking_the_tram_driver_for_directions",
+          "itemIds": [
+            "Asking_the_tram_driver_for_directions:0",
+            "Asking_the_tram_driver_for_directions:1",
+            "Asking_the_tram_driver_for_directions:2",
+            "Asking_the_tram_driver_for_directions:3",
+            "Asking_the_tram_driver_for_directions:4"
+          ]
+        },
+        {
+          "mode": "speak",
+          "lessonId": "Getting_Around_1",
+          "itemIds": [
+            "Getting_Around_1:0",
+            "Getting_Around_1:1",
+            "Getting_Around_1:2",
+            "Getting_Around_1:11",
+            "Getting_Around_1:20",
+            "Getting_Around_1:22"
+          ]
+        },
+        {
+          "mode": "read",
+          "lessonId": "Asking_the_tram_driver_for_directions",
+          "itemIds": [
+            "Asking_the_tram_driver_for_directions:0",
+            "Asking_the_tram_driver_for_directions:1",
+            "Asking_the_tram_driver_for_directions:2",
+            "Asking_the_tram_driver_for_directions:3",
+            "Asking_the_tram_driver_for_directions:4"
+          ]
+        }
+      ],
+      "gaps": [
+        "Original tram-driver dialogue supports route and stop questions; it is not a pedestrian walk-through with left, right or straight-ahead instructions.",
+        "No native-reviewed pedestrian directions reply, repeat/clarify role-play, or verified wayfinding sign is available for a complete directions lesson."
+      ]
     }
   ]
 }
