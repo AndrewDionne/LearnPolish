@@ -1,0 +1,477 @@
+{
+  "schemaVersion": 1,
+  "status": "provisional_author_drafts_require_native_review",
+  "published": false,
+  "purpose": "Native-review-ready candidate dialogue and written comprehension only. Not authentic checked audio, runtime content, an approval or an API/voice generation request.",
+  "sourceState": "original_26_legacy_lessons_unmodified;_drafts_have_no_audio",
+  "units": [
+    {
+      "unitId": "T02",
+      "issue": 126,
+      "stage": "not_native_or_audio_approved",
+      "fictionalContext": "Two learners meeting informally at a language class",
+      "sourceAnchors": [
+        {
+          "itemId": "Basic_01R:2",
+          "reviewUse": "source_context"
+        },
+        {
+          "itemId": "Basic_01R:3",
+          "reviewUse": "source_context"
+        },
+        {
+          "itemId": "Conversation_1:25",
+          "reviewUse": "protected_source_reference"
+        }
+      ],
+      "speakerRoles": [
+        "Marek",
+        "Ola"
+      ],
+      "candidateTurns": [
+        {
+          "draftId": "T02-D01",
+          "speaker": "Marek",
+          "polish": "Cześć, jak masz na imię?",
+          "english": "Hi, what's your name?",
+          "audio": null
+        },
+        {
+          "draftId": "T02-D02",
+          "speaker": "Ola",
+          "polish": "Mam na imię Ola.",
+          "english": "My name is Ola.",
+          "audio": null
+        },
+        {
+          "draftId": "T02-D03",
+          "speaker": "Marek",
+          "polish": "Miło mi. Jestem Marek.",
+          "english": "Nice to meet you. I'm Marek.",
+          "audio": null
+        },
+        {
+          "draftId": "T02-D04",
+          "speaker": "Ola",
+          "polish": "Miło mi.",
+          "english": "Nice to meet you.",
+          "audio": null
+        },
+        {
+          "draftId": "T02-D05",
+          "speaker": "Marek",
+          "polish": "Skąd jesteś?",
+          "english": "Where are you from?",
+          "audio": null
+        },
+        {
+          "draftId": "T02-D06",
+          "speaker": "Ola",
+          "polish": "Jestem z Polski. A ty?",
+          "english": "I'm from Poland. And you?",
+          "audio": null
+        },
+        {
+          "draftId": "T02-D07",
+          "speaker": "Marek",
+          "polish": "Jestem z Kanady.",
+          "english": "I'm from Canada.",
+          "audio": null
+        },
+        {
+          "draftId": "T02-D08",
+          "speaker": "Ola",
+          "polish": "Bardzo mi miło.",
+          "english": "It's very nice to meet you.",
+          "audio": null
+        }
+      ],
+      "candidateRead": {
+        "polish": "Ola i Marek poznają się na kursie. Ola jest z Polski, a Marek jest z Kanady.",
+        "english": "Ola and Marek meet at a course. Ola is from Poland, and Marek is from Canada.",
+        "question": "Skąd jest Marek?",
+        "answer": "z Kanady",
+        "source": "fictional_unapproved_author_draft",
+        "audio": null
+      },
+      "requiredLanguageReview": [
+        "Check informal ty register and separate any future formal pan/pani variant into its own fixed utterance",
+        "Review name inflection and no implication that fictional Ola is the actual learner",
+        "Keep unfinished Conversation_1:25 excluded from Speak scoring"
+      ],
+      "recordingAcceptance": [
+        "Fix one native-approved canonical Polish utterance and checked English translation per new source ID; do not reuse draft IDs as source IDs",
+        "License two distinct guest/staff or speaker voices, then capture natural full-length recordings with exact approved transcript match",
+        "Record real original audio bytes SHA-256, canonical Polish text SHA-256, permitted voice provenance and independent human listening evidence",
+        "Only after human native sign-off, integrate aligned real audio plus Read/Listen comprehension in separate four-lane certified PR"
+      ],
+      "review": {
+        "nativePolish": false,
+        "englishMeaning": false,
+        "readingComprehension": false,
+        "speakerRights": false,
+        "recordedAudio": false,
+        "acousticListening": false
+      }
+    },
+    {
+      "unitId": "T03",
+      "issue": 126,
+      "stage": "not_native_or_audio_approved",
+      "fictionalContext": "Fictional kiosk purchase of bottled water with exact amount and card reply",
+      "sourceAnchors": [
+        {
+          "itemId": "Conversation_-_shopping:0",
+          "reviewUse": "source_context"
+        },
+        {
+          "itemId": "Conversation_-_shopping:1",
+          "reviewUse": "source_context"
+        },
+        {
+          "itemId": "Conversation_-_shopping:2",
+          "reviewUse": "source_context"
+        }
+      ],
+      "speakerRoles": [
+        "customer",
+        "cashier"
+      ],
+      "candidateTurns": [
+        {
+          "draftId": "T03-D01",
+          "speaker": "customer",
+          "polish": "Dzień dobry. Ile kosztuje butelka wody?",
+          "english": "Hello. How much is a bottle of water?",
+          "audio": null
+        },
+        {
+          "draftId": "T03-D02",
+          "speaker": "cashier",
+          "polish": "Cztery złote.",
+          "english": "Four złoty.",
+          "audio": null
+        },
+        {
+          "draftId": "T03-D03",
+          "speaker": "customer",
+          "polish": "Poproszę dwie butelki.",
+          "english": "Two bottles, please.",
+          "audio": null
+        },
+        {
+          "draftId": "T03-D04",
+          "speaker": "cashier",
+          "polish": "Razem osiem złotych.",
+          "english": "Eight złoty altogether.",
+          "audio": null
+        },
+        {
+          "draftId": "T03-D05",
+          "speaker": "customer",
+          "polish": "Czy mogę zapłacić kartą?",
+          "english": "Can I pay by card?",
+          "audio": null
+        },
+        {
+          "draftId": "T03-D06",
+          "speaker": "cashier",
+          "polish": "Tak, oczywiście.",
+          "english": "Yes, of course.",
+          "audio": null
+        },
+        {
+          "draftId": "T03-D07",
+          "speaker": "customer",
+          "polish": "Dziękuję. Poproszę paragon.",
+          "english": "Thank you. A receipt, please.",
+          "audio": null
+        },
+        {
+          "draftId": "T03-D08",
+          "speaker": "cashier",
+          "polish": "Proszę bardzo. Do widzenia.",
+          "english": "Here you are. Goodbye.",
+          "audio": null
+        }
+      ],
+      "candidateRead": {
+        "polish": "Woda: 4 zł za butelkę. Dwie butelki wody: 8 zł. Płatność kartą.",
+        "english": "Water: PLN 4 per bottle. Two bottles of water: PLN 8. Card payment.",
+        "question": "Ile kosztują dwie butelki wody?",
+        "answer": "8 zł",
+        "source": "fictional_unapproved_author_draft",
+        "audio": null
+      },
+      "requiredLanguageReview": [
+        "Verify cztery złote and osiem złotych inflection against numerical amounts",
+        "Check cashier card acceptance as a scripted reply rather than real retailer policy",
+        "Reconcile the 4 zł per bottle and 8 zł for two bottles with the written receipt"
+      ],
+      "recordingAcceptance": [
+        "Fix one native-approved canonical Polish utterance and checked English translation per new source ID; do not reuse draft IDs as source IDs",
+        "License two distinct guest/staff or speaker voices, then capture natural full-length recordings with exact approved transcript match",
+        "Record real original audio bytes SHA-256, canonical Polish text SHA-256, permitted voice provenance and independent human listening evidence",
+        "Only after human native sign-off, integrate aligned real audio plus Read/Listen comprehension in separate four-lane certified PR"
+      ],
+      "review": {
+        "nativePolish": false,
+        "englishMeaning": false,
+        "readingComprehension": false,
+        "speakerRights": false,
+        "recordedAudio": false,
+        "acousticListening": false
+      }
+    },
+    {
+      "unitId": "T04",
+      "issue": 129,
+      "stage": "not_native_or_audio_approved",
+      "fictionalContext": "Fictional restaurant: table, menu, order, and bill",
+      "sourceAnchors": [
+        {
+          "itemId": "Conversation_-_restaurant:0",
+          "reviewUse": "source_context"
+        },
+        {
+          "itemId": "Conversation_-_restaurant:2",
+          "reviewUse": "source_context"
+        },
+        {
+          "itemId": "Conversation_-_restaurant:7",
+          "reviewUse": "source_context"
+        }
+      ],
+      "speakerRoles": [
+        "guest",
+        "waiter"
+      ],
+      "candidateTurns": [
+        {
+          "draftId": "T04-D01",
+          "speaker": "guest",
+          "polish": "Dzień dobry, czy jest wolny stolik?",
+          "english": "Hello, is a table available?",
+          "audio": null
+        },
+        {
+          "draftId": "T04-D02",
+          "speaker": "waiter",
+          "polish": "Tak, proszę za mną.",
+          "english": "Yes, please follow me.",
+          "audio": null
+        },
+        {
+          "draftId": "T04-D03",
+          "speaker": "guest",
+          "polish": "Poproszę menu.",
+          "english": "The menu, please.",
+          "audio": null
+        },
+        {
+          "draftId": "T04-D04",
+          "speaker": "waiter",
+          "polish": "Oczywiście, już podaję.",
+          "english": "Of course, I'll bring it right away.",
+          "audio": null
+        },
+        {
+          "draftId": "T04-D05",
+          "speaker": "guest",
+          "polish": "Poproszę zupę pomidorową i wodę.",
+          "english": "Tomato soup and water, please.",
+          "audio": null
+        },
+        {
+          "draftId": "T04-D06",
+          "speaker": "waiter",
+          "polish": "Czy coś jeszcze?",
+          "english": "Anything else?",
+          "audio": null
+        },
+        {
+          "draftId": "T04-D07",
+          "speaker": "guest",
+          "polish": "Nie, dziękuję.",
+          "english": "No, thank you.",
+          "audio": null
+        },
+        {
+          "draftId": "T04-D08",
+          "speaker": "waiter",
+          "polish": "Dobrze, zaraz podam.",
+          "english": "All right, I'll bring it shortly.",
+          "audio": null
+        },
+        {
+          "draftId": "T04-D09",
+          "speaker": "guest",
+          "polish": "Czy mogę prosić o rachunek?",
+          "english": "Could I have the bill, please?",
+          "audio": null
+        },
+        {
+          "draftId": "T04-D10",
+          "speaker": "waiter",
+          "polish": "Oczywiście, już przynoszę.",
+          "english": "Of course, I'll bring it right away.",
+          "audio": null
+        }
+      ],
+      "candidateRead": {
+        "polish": "Menu: zupa pomidorowa — 15 zł. Woda — 6 zł. Płatność kartą przy stoliku.",
+        "english": "Menu: tomato soup — PLN 15. Water — PLN 6. Card payment at the table.",
+        "question": "Jaka zupa jest w menu?",
+        "answer": "zupa pomidorowa",
+        "source": "fictional_unapproved_author_draft",
+        "audio": null
+      },
+      "requiredLanguageReview": [
+        "Check register and natural staff service phrasing without gender-slashed recording prompts",
+        "Verify order progression, natural timing before bill, and waiter/guest turn-taking",
+        "Use a fictional restaurant menu rather than a claim about any real restaurant"
+      ],
+      "recordingAcceptance": [
+        "Fix one native-approved canonical Polish utterance and checked English translation per new source ID; do not reuse draft IDs as source IDs",
+        "License two distinct guest/staff or speaker voices, then capture natural full-length recordings with exact approved transcript match",
+        "Record real original audio bytes SHA-256, canonical Polish text SHA-256, permitted voice provenance and independent human listening evidence",
+        "Only after human native sign-off, integrate aligned real audio plus Read/Listen comprehension in separate four-lane certified PR"
+      ],
+      "review": {
+        "nativePolish": false,
+        "englishMeaning": false,
+        "readingComprehension": false,
+        "speakerRights": false,
+        "recordedAudio": false,
+        "acousticListening": false
+      }
+    },
+    {
+      "unitId": "T05",
+      "issue": 129,
+      "stage": "not_native_or_audio_approved",
+      "fictionalContext": "Fictional grocery checkout for one kilogram of red apples",
+      "sourceAnchors": [
+        {
+          "itemId": "Grocery_store_very_basic_shopping:1",
+          "reviewUse": "source_context"
+        },
+        {
+          "itemId": "Grocery_store_very_basic_shopping:2",
+          "reviewUse": "source_context"
+        },
+        {
+          "itemId": "Grocery_store_very_basic_shopping:6",
+          "reviewUse": "source_context"
+        },
+        {
+          "itemId": "Grocery_store_very_basic_shopping:7",
+          "reviewUse": "source_context"
+        }
+      ],
+      "speakerRoles": [
+        "shopper",
+        "seller"
+      ],
+      "candidateTurns": [
+        {
+          "draftId": "T05-D01",
+          "speaker": "shopper",
+          "polish": "Dzień dobry, poproszę kilogram czerwonych jabłek.",
+          "english": "Hello, one kilogram of red apples, please.",
+          "audio": null
+        },
+        {
+          "draftId": "T05-D02",
+          "speaker": "seller",
+          "polish": "Oczywiście. Czy coś jeszcze?",
+          "english": "Of course. Anything else?",
+          "audio": null
+        },
+        {
+          "draftId": "T05-D03",
+          "speaker": "shopper",
+          "polish": "Nie, dziękuję. Ile płacę?",
+          "english": "No, thank you. How much do I owe?",
+          "audio": null
+        },
+        {
+          "draftId": "T05-D04",
+          "speaker": "seller",
+          "polish": "Dziesięć złotych.",
+          "english": "Ten złoty.",
+          "audio": null
+        },
+        {
+          "draftId": "T05-D05",
+          "speaker": "shopper",
+          "polish": "Czy mogę zapłacić kartą?",
+          "english": "Can I pay by card?",
+          "audio": null
+        },
+        {
+          "draftId": "T05-D06",
+          "speaker": "seller",
+          "polish": "Tak, proszę.",
+          "english": "Yes, please.",
+          "audio": null
+        },
+        {
+          "draftId": "T05-D07",
+          "speaker": "shopper",
+          "polish": "Poproszę paragon.",
+          "english": "A receipt, please.",
+          "audio": null
+        },
+        {
+          "draftId": "T05-D08",
+          "speaker": "seller",
+          "polish": "Oczywiście, proszę bardzo.",
+          "english": "Of course, here you are.",
+          "audio": null
+        },
+        {
+          "draftId": "T05-D09",
+          "speaker": "shopper",
+          "polish": "Dziękuję, do widzenia.",
+          "english": "Thank you, goodbye.",
+          "audio": null
+        },
+        {
+          "draftId": "T05-D10",
+          "speaker": "seller",
+          "polish": "Do widzenia.",
+          "english": "Goodbye.",
+          "audio": null
+        }
+      ],
+      "candidateRead": {
+        "polish": "Jabłka czerwone: 10 zł/kg. Zakup: 1 kg — 10 zł. Paragon przy kasie.",
+        "english": "Red apples: PLN 10/kg. Purchase: 1 kg — PLN 10. Receipt at the checkout.",
+        "question": "Ile kosztuje kilogram czerwonych jabłek?",
+        "answer": "10 zł/kg",
+        "source": "fictional_unapproved_author_draft",
+        "audio": null
+      },
+      "requiredLanguageReview": [
+        "Review kilogram jabłek and direct/polite seller register without recording generic pan/pani variants",
+        "Reconcile ten złoty price in the original story with the proposed written 10 zł/kg price",
+        "Validate receipt request, actual card reply, and whether proposed checkout is idiomatic"
+      ],
+      "recordingAcceptance": [
+        "Fix one native-approved canonical Polish utterance and checked English translation per new source ID; do not reuse draft IDs as source IDs",
+        "License two distinct guest/staff or speaker voices, then capture natural full-length recordings with exact approved transcript match",
+        "Record real original audio bytes SHA-256, canonical Polish text SHA-256, permitted voice provenance and independent human listening evidence",
+        "Only after human native sign-off, integrate aligned real audio plus Read/Listen comprehension in separate four-lane certified PR"
+      ],
+      "review": {
+        "nativePolish": false,
+        "englishMeaning": false,
+        "readingComprehension": false,
+        "speakerRights": false,
+        "recordedAudio": false,
+        "acousticListening": false
+      }
+    }
+  ]
+}
