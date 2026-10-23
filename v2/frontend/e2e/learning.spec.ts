@@ -173,13 +173,13 @@ test('ambiguous and unfinished greetings remain one lesson but have no scored or
     await page.getByRole('button',{name:'Next',exact:true}).click();
   }
   await expect(page.getByText('Jak ma pan/pani na imię?',{exact:true})).toBeVisible();
-  await expect(page.getByText(/An exact spoken reference is still being reviewed/)).toBeVisible();
+  await expect(page.getByText('Reference audio unavailable.')).toBeVisible();
   await expect(page.getByRole('button',{name:'Start recording'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Check my pronunciation'})).toHaveCount(0);
   await expect(page.getByRole('button',{name:/Hear example/})).toHaveCount(0);
   await page.getByRole('button',{name:'Next',exact:true}).click();
   await expect(page.getByText('Mam na imię…',{exact:true})).toBeVisible();
-  await expect(page.getByText(/An exact spoken reference is still being reviewed/)).toBeVisible();
+  await expect(page.getByText('Reference audio unavailable.')).toBeVisible();
   await expect(page.getByRole('button',{name:'Check my pronunciation'})).toHaveCount(0);
   await page.getByRole('button',{name:'Listen',exact:true}).click();
   await expect(page.locator('.item-count')).toContainText('/ 24');
@@ -206,7 +206,7 @@ test('other ambiguous lessons retain all original cards but exclude unverified L
     // The existing switch-mode action starts again at the beginning of the same lesson.
     for(let i=0;i<fixture.skip;i++)await page.getByRole('button',{name:'Next',exact:true}).click();
     await expect(page.getByText(fixture.phrase,{exact:true})).toBeVisible();
-    await expect(page.getByText(/An exact spoken reference is still being reviewed/)).toBeVisible();
+    await expect(page.getByText('Reference audio unavailable.')).toBeVisible();
     await expect(page.getByRole('button',{name:'Start recording'})).toBeVisible();
     await expect(page.getByRole('button',{name:'Check my pronunciation'})).toHaveCount(0);
     await page.getByRole('button',{name:'Listen',exact:true}).click();
@@ -659,7 +659,7 @@ test('Practice review queue targets only due cards and preserves scheduling afte
   await practiceTab.click();
   await expect(page.getByText('1 due now')).toBeVisible();
   await page.getByRole('button', {name:/Greetings and Introductions.*1 expression.*Review/}).click();
-  await expect(page.getByText('Review what matters')).toBeVisible();
+  await expect(page.locator('.learning-head h1')).toHaveText('Greetings and Introductions');
   await expect(page.getByText('Dzień dobry', {exact:true})).toBeVisible();
   await page.getByRole('button', {name:/Reveal meaning/}).click();
   await page.getByRole('button', {name:/Got it/}).click();

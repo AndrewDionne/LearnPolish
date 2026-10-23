@@ -116,10 +116,9 @@ test('explicit consent -> native Azure numbers -> replay/next without fabricated
   await expect(page.locator('.speak-word-score')).toHaveCount(0);
   await expect(page.getByText('82.0 / 100')).not.toBeVisible();
   await expect(page.getByText('90.0 / 100')).not.toBeVisible();
-  await page.locator('.speak-score-explanation summary').click();
-  await expect(page.getByText(/not a syllable rating or pass\/fail grade/)).toBeVisible();
-  await expect(page.getByText('82.0 / 100')).toBeVisible();
-  await expect(page.getByText('90.0 / 100')).toBeVisible();
+  await expect(page.locator('.speak-score-explanation')).toHaveCount(0);
+  await expect(page.getByText('82.0 / 100')).toHaveCount(0);
+  await expect(page.getByText('90.0 / 100')).toHaveCount(0);
   await expect(page.getByText('DO_NOT_DISPLAY_PRIVATE_TRANSCRIPT')).toHaveCount(0);
   expect(calls).toBe(1);
   await page.getByRole('button',{name:'Next',exact:true}).click();
@@ -213,7 +212,7 @@ test('Świętokrzyska is a real built-in Świętokrzyska Pronunciation Lab item 
   expect(calls).toBe(0);
   await page.getByRole('button',{name:'Check my pronunciation'}).click();
   await expect(page.locator('.speak-word-score-primary')).toHaveText('77/100');
-  await expect(page.getByText(/Azure SDK call 4\.0 s/)).toBeVisible();
+  await expect(page.locator('.speak-latency')).toHaveCount(0);
   await expect(page.getByText('NEVER-DISPLAY-RAW-SPEECH')).toHaveCount(0);
   expect(calls).toBe(1);
   await page.getByRole('button',{name:/Record another take/}).click();
@@ -223,7 +222,7 @@ test('Świętokrzyska is a real built-in Świętokrzyska Pronunciation Lab item 
 
 
 
-test('reserved acoustic-score UI aligns exact syllables with guide OFF/ON and clears on retry',async({page})=>{
+test('reserved acoustic fixture never exposes per-syllable grades while opt-in guide remains available',async({page})=>{
   await installSyntheticMicrophone(page);
   // Synthetic contract fixture only. Production Azure pl-PL adapter does NOT
   // return verified syllabus scores, and no real voice/provider is contacted.
@@ -249,16 +248,18 @@ test('reserved acoustic-score UI aligns exact syllables with guide OFF/ON and cl
   await expect(page.locator('.speak-word-score')).toHaveCount(0);
   await recordValidTake(page);
   await page.getByRole('button',{name:'Check my pronunciation'}).click();
-  await expect(page.locator('.speak-word-score')).toHaveText(['71%','88%','—','95%']);
-  await expect(page.locator('.speak-word-polish')).toHaveText(['Świę','to','krzy','ska']);
+  await expect(page.locator('.speak-word-score')).toHaveCount(0);
+  await expect(page.locator('.speak-word-polish')).toHaveCount(0);
   await expect(page.locator('.speak-word-english')).toHaveCount(0);
+  await expect(page.locator('.speak-word-score-primary')).toHaveText('81/100');
   await expect(page.getByText('NEVER DISPLAY THIS')).toHaveCount(0);
   await toggle.click();
+  await expect(page.locator('.speak-word-polish')).toHaveText(['Świę','to','krzy','ska']);
   await expect(page.locator('.speak-word-english')).toHaveText(['shfyehn','toh','KSHIH','skah']);
-  await expect(page.locator('.speak-word-score')).toHaveCount(4);
+  await expect(page.locator('.speak-word-score')).toHaveCount(0);
   await toggle.click();
   await expect(page.locator('.speak-word-english')).toHaveCount(0);
-  await expect(page.locator('.speak-word-score')).toHaveCount(4);
+  await expect(page.locator('.speak-word-score')).toHaveCount(0);
   await page.getByRole('button',{name:/Record another take/}).click();
   await expect(page.locator('.speak-word-score')).toHaveCount(0);
   await expect(page.locator('.speak-scores')).toHaveCount(0);

@@ -82,15 +82,8 @@ export default function SpeakPanel({item, playing, onPlayReference, onStopRefere
   const hasGuide = Boolean(item.pronunciationGuide || item.pronunciation);
   const expandedGuide = guideVisible && hasGuide;
   const guide = item.pronunciationGuide;
-  // Azure pl-PL currently returns only aggregate scores to production.
-  // Hypothetical reviewed acoustic syllables are displayed ONLY when the
-  // server result matches the exact authored orthographic segmentation.
-  const measured = feedback?.status === 'ok' && feedback.engine === 'azure-pl-PL-scripted'
-    ? feedback.syllableFeedback : undefined;
-  const syllableScores = guide && measured?.reference === item.polish &&
-    measured.segments.length === guide.syllables.length &&
-    guide.syllables.every((part,index)=>part.polish===measured.segments[index]?.polish)
-    ? measured.segments : null;
+  // The learner surface never converts experimental syllable scores into per-part grades.
+  // Exact-match blended colour hints are displayed on the word itself, without diagnostic panels.
   const hintResult = feedback?.status === 'ok' && feedback.engine === 'azure-whisper-blend-v1'
     ? feedback.colourHints : null;
   // The server groups must match exactly the SAME authored/draft V2 item.
@@ -113,7 +106,7 @@ export default function SpeakPanel({item, playing, onPlayReference, onStopRefere
       >Pronunciation guide <span aria-hidden="true">{expandedGuide ? 'On' : 'Off'}</span></button>}
     </div>
     <div id="speak-word-guide" className="speak-word-stage">
-      <h2 lang="pl" className={'speak-prompt' + ((expandedGuide || syllableScores) && guide ? ' with-guide' : '')}>
+      <h2 lang="pl" className={'speak-prompt' + (expandedGuide && guide ? ' with-guide' : '')}>
         {colourParts ? <span className="speak-blended-word" aria-label={item.polish}>
           {colourParts.map((part,i)=><span key={i}
             className={'speak-blended-segment'+(guide?.stressIndex===i?' stressed':'')}>
@@ -121,24 +114,18 @@ export default function SpeakPanel({item, playing, onPlayReference, onStopRefere
             {expandedGuide && guide?.syllables[i]?.polish===part.polish &&
               <span className="speak-word-english" lang="en">{guide.syllables[i].englishCue}</span>}
           </span>)}
-        </span> : (expandedGuide || syllableScores) && guide ? <span className="speak-guided-word" aria-label={item.polish}>
+        </span> : expandedGuide && guide ? <span className="speak-guided-word" aria-label={item.polish}>
           {guide.syllables.map((part, index) => {
-            const score=syllableScores?.[index]?.score;
             return <span className={'speak-word-segment' + (index === guide.stressIndex ? ' stressed' : '')} key={index}>
-              <span className="speak-word-polish" style={typeof score==='number' ?
-                {backgroundColor:`hsl(${Math.round(score*1.2)} 55% 88%)`,borderRadius:'6px'} : undefined}>{part.polish}</span>
-              {expandedGuide && <span className="speak-word-english" lang="en">{part.englishCue}</span>}
-              {syllableScores && <span className="speak-word-score" lang="en" aria-label={typeof score!=='number' ? part.polish+' not reliably assessed' : part.polish+' estimated '+Math.round(score)+' out of 100'}>
-                {typeof score!=='number' ? '—' : Math.round(score)+'%'}
-              </span>}
+              <span className="speak-word-polish">{part.polish}</span>
+              <span className="speak-word-english" lang="en">{part.englishCue}</span>
             </span>;
           })}
         </span> : item.polish}
       </h2>
-      {expandedGuide && !guide && item.pronunciation && <p className="speak-english-fallback">Approximate English sounds: <strong>{item.pronunciation}</strong></p>}
-      {expandedGuide && guide && !colourParts && <p className="speak-guide-caption">English approximation · Emphasis marks the stressed syllable</p>}
+      {expandedGuide && !guide && item.pronunciation && <p className="speak-english-fallback">{item.pronunciation}</p>}
     </div>
-    {item.referenceReview === 'practice_only' && <p className="speak-reference-pending">Record and replay for practice. An exact spoken reference is still being reviewed.</p>}
+    {item.referenceReview === 'practice_only' && <p className="speak-reference-pending">Reference audio unavailable.</p>}
     {item.audio && item.referenceReview !== 'practice_only' && <button type="button" className="audio-btn speak-audio-button"
       disabled={capture.phase === 'requesting' || capture.phase === 'recording' || capture.phase === 'processing'}
       onClick={onReference}>{playing === item.audio ? 'Playing example' : '▶ Hear example'}</button>}
@@ -163,15 +150,10 @@ export default function SpeakPanel({item, playing, onPlayReference, onStopRefere
         <button type="button" className="secondary-action" disabled={assessmentBusy} onClick={() => void assessTake()}>
           {assessmentBusy ? 'Checking pronunciation…' : 'Check my pronunciation'}
         </button>
-        <p className="speak-assessment-consent">Optional. Sends this recording to {blended ? 'Azure and Groq Whisper' : 'Azure'} for estimated feedback; no score history is saved.</p>
+        <p className="speak-assessment-consent">Sends this take to {blended ? 'Azure and Groq Whisper' : 'Azure'} only when selected. Audio and scores are not saved.</p>
         {assessmentBusy && <p role="status">Sending this take to {blended ? 'Azure and Groq Whisper' : 'Azure'}…</p>}
         {assessmentError && <p role="alert" className="capture-warning">{assessmentError}</p>}
         {feedback?.status === 'inconclusive' && <p role="status" className="capture-warning">{feedback.reason} This is not a score of zero.</p>}
-        {feedback?.timing && feedback.status === 'ok' && feedback.engine === 'azure-pl-PL-scripted' && <p className="speak-latency" role="status">
-          Feedback arrived in {(feedback.timing.roundTripMs / 1000).toFixed(1)} s
-          {feedback.timing.sdkMs !== undefined ? ' (Azure SDK call ' + (feedback.timing.sdkMs / 1000).toFixed(1) + ' s)' : ''}.
-          {feedback.timing.roundTripMs >= 10000 ? ' That delay is longer than our target; recording and replay still work.' : ''}
-        </p>}
         {feedback?.status === 'ok' && feedback.engine === 'azure-whisper-blend-v1' && <div className="speak-scores speak-blend-result" role="status">
           <div className="speak-word-score-primary" aria-label={'Experimental combined score: '+feedback.combined+' out of 100'}>
             <strong>{feedback.combined}</strong><span>/100</span>
@@ -182,13 +164,6 @@ export default function SpeakPanel({item, playing, onPlayReference, onStopRefere
           <div className="speak-word-score-primary" aria-label={`Azure word pronunciation accuracy estimate: ${Math.round(feedback.scores.accuracy)} out of 100`}>
             <strong>{Math.round(feedback.scores.accuracy)}</strong><span>/100</span>
           </div>
-          <details className="speak-score-explanation"><summary>About this score</summary>
-            <p>This is Azure's word-level estimate, not a syllable rating or pass/fail grade. It has not been calibrated against independent Polish speakers.</p>
-            <dl>
-              <div><dt>Fluency</dt><dd>{feedback.scores.fluency.toFixed(1)} / 100</dd></div>
-              <div><dt>Completeness</dt><dd>{feedback.scores.completeness.toFixed(1)} / 100</dd></div>
-            </dl>
-          </details>
         </div>}
       </div>}
     </div>

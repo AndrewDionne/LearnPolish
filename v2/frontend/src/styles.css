@@ -570,3 +570,54 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   color:#2c6461;font-size:12px;font-weight:700;overflow-wrap:anywhere}
 @media(max-width:760px){.expedition-quick-access{align-items:stretch;flex-direction:column}
   .expedition-quick-access .secondary-action{width:100%}}
+
+/* UX-01: deliberate visual hierarchy. Decorative marks do not substitute for lesson content. */
+.nav-icon{display:grid;place-items:center;flex:none}
+.nav-icon svg,.feature-symbol svg,.lesson-art svg{display:block}
+.mobile-nav svg{display:block;flex:none}
+.brand{padding-bottom:38px}
+.brand-name{font-size:18px;letter-spacing:-.5px}
+.sidebar{background:#173f52}
+.nav-link{border-radius:10px;padding:12px 15px;min-height:48px}
+.nav-link.selected{background:#2a6070}
+.crumb{gap:9px}
+.topbar{height:70px}
+.page-content{padding-top:32px}
+.welcome{min-height:285px;padding:35px 45px;background:#e8f2ee;border:1px solid #dceae4}
+.welcome-copy{align-self:center}
+.welcome h1{margin:0 0 28px}
+.welcome-art{height:250px;isolation:isolate}
+.type-card{position:absolute;display:grid;place-items:center;font-family:Outfit,"DM Sans",sans-serif;font-weight:650}
+.type-card-back{width:125px;height:166px;transform:translate(91px,-19px) rotate(13deg);
+  border:1px solid #9bc4b8;background:#d8e9e3;border-radius:15px;color:#4d9686;font-size:92px}
+.type-card-front{height:204px;width:167px;z-index:2;transform:translate(-16px,8px) rotate(-7deg);
+  background:#fff;box-shadow:0 15px 37px #1d554d19;border:1px solid #d1e4dc;border-radius:16px;
+  color:#245e58;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:3px}
+.type-card-caption{font:800 10px/1.4 "DM Sans",sans-serif;letter-spacing:2px;color:#2c6558}
+.type-card-glyph{font:650 116px/1 Outfit,sans-serif;letter-spacing:-7px}
+.type-card-rule{height:3px;width:33px;background:#9acdbb;border-radius:10px}
+.type-card-small{width:69px;height:77px;z-index:3;transform:translate(116px,81px) rotate(10deg);
+  border-radius:12px;background:#256f65;color:#f4fffa;font-size:52px;box-shadow:0 9px 20px #1d554d19}
+.feature-symbol{color:#236e63}
+.learning-head{align-items:center}
+.learning-head h1{font-size:clamp(24px,3.2vw,34px);letter-spacing:-.8px;margin:6px 0 0}
+.learning-head .eyebrow{font-size:10px;letter-spacing:1.25px}
+.learning-head .item-count{font-size:20px}
+.learning .lesson-meter{margin:13px 0 17px}
+.listening-symbol{margin-top:17px}
+.flashcard{border-color:#e0e9e5;box-shadow:0 9px 28px #163f5806}
+.expedition-quick-access{justify-content:flex-end;background:transparent;border:0;padding:0;margin:8px 0 20px}
+.speak-guided-word,.speak-blended-word{gap:.13em}
+.speak-word-polish{padding:0}
+.speak-panel .speak-next{font-size:14px}
+.speak-feedback{padding:9px 0}
+@media(max-width:1080px){.type-card-front{transform:translate(-14px,9px) rotate(-7deg) scale(.9)}}
+@media(max-width:760px){
+  .topbar{height:60px}
+  .page-content{padding-top:22px}
+  .welcome{min-height:250px;padding:26px 24px}
+  .welcome h1{margin-bottom:22px}
+  .learning-head{gap:11px}
+  .learning-head h1{font-size:clamp(23px,6vw,31px)}
+  .type-card{display:none}
+}

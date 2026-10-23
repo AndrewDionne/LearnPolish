@@ -129,7 +129,7 @@ test('Read, due review and Poland Expedition pass synthetic accessibility, focus
   await expect(page.getByText('1 due now')).toBeVisible();
   await audit(page,'practice-due');
   await page.getByRole('button',{name:/Greetings and Introductions.*1 expression.*Review/}).click();
-  await expect(page.getByText('Review what matters')).toBeVisible();
+  await expect(page.locator('.learning-head h1')).toHaveText('Greetings and Introductions');
   await audit(page,'practice-single-review');
   await page.getByRole('button',{name:/Reveal meaning/}).click();
   await page.getByRole('button',{name:/Got it/}).click();
