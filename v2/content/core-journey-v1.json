@@ -10,31 +10,31 @@
       "order": 1
     },
     {
-      "lessonId": "Basic_01R",
+      "lessonId": "contrast_l_lstroked",
       "journey": 1,
       "position": "beginning",
       "order": 2
     },
     {
-      "lessonId": "contrast_l_lstroked",
+      "lessonId": "contrast_c_cz_cie",
       "journey": 1,
       "position": "beginning",
       "order": 3
     },
     {
-      "lessonId": "contrast_c_cz_cie",
+      "lessonId": "contrast_s_sz_sie",
       "journey": 1,
       "position": "beginning",
       "order": 4
     },
     {
-      "lessonId": "contrast_s_sz_sie",
+      "lessonId": "contrast_z_zh_zi",
       "journey": 1,
       "position": "beginning",
       "order": 5
     },
     {
-      "lessonId": "contrast_z_zh_zi",
+      "lessonId": "contrast_krzy_przy",
       "journey": 1,
       "position": "beginning",
       "order": 6
@@ -46,40 +46,58 @@
       "order": 7
     },
     {
-      "lessonId": "Conversation_-_shopping",
+      "lessonId": "Basic_01R",
       "journey": 1,
-      "position": "middle",
-      "order": 1
-    },
-    {
-      "lessonId": "Conversation_-_restaurant",
-      "journey": 1,
-      "position": "middle",
-      "order": 2
-    },
-    {
-      "lessonId": "Food_and_Dinning",
-      "journey": 1,
-      "position": "middle",
-      "order": 3
+      "position": "beginning",
+      "order": 8
     },
     {
       "lessonId": "Numbers_20-100",
       "journey": 1,
       "position": "middle",
+      "order": 1
+    },
+    {
+      "lessonId": "Road_Terminology",
+      "journey": 1,
+      "position": "middle",
+      "order": 2
+    },
+    {
+      "lessonId": "Conversation_-_shopping",
+      "journey": 1,
+      "position": "middle",
+      "order": 3
+    },
+    {
+      "lessonId": "Conversation_-_restaurant",
+      "journey": 1,
+      "position": "middle",
       "order": 4
     },
     {
-      "lessonId": "Getting_Around_1",
+      "lessonId": "Food_and_Dinning",
       "journey": 1,
       "position": "middle",
       "order": 5
     },
     {
-      "lessonId": "Transit_1",
+      "lessonId": "Getting_Around_1",
       "journey": 1,
       "position": "middle",
       "order": 6
+    },
+    {
+      "lessonId": "Transit_1",
+      "journey": 1,
+      "position": "middle",
+      "order": 7
+    },
+    {
+      "lessonId": "Emergencies_and_Health",
+      "journey": 1,
+      "position": "middle",
+      "order": 8
     },
     {
       "lessonId": "On_the_tram_talking_to_another_passenger",
@@ -98,18 +116,6 @@
       "journey": 1,
       "position": "end",
       "order": 3
-    },
-    {
-      "lessonId": "Emergencies_and_Health",
-      "journey": 1,
-      "position": "end",
-      "order": 4
-    },
-    {
-      "lessonId": "contrast_krzy_przy",
-      "journey": 2,
-      "position": "beginning",
-      "order": 1
     },
     {
       "lessonId": "Grocery_store_very_basic_shopping",

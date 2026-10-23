@@ -11,7 +11,7 @@ test('Library prioritizes lessons while occasional author tools stay discoverabl
   await expect(page.getByRole('button',{name:/Create lesson/})).toBeVisible();
   await expect(page.locator('input[aria-label="Import lesson JSON"]')).toHaveCount(1);
   await expect(page.getByRole('heading',{name:'Your path'})).toBeVisible();
-  await expect(page.locator('.journey-marker')).toHaveCount(20);
+  await expect(page.locator('.journey-marker')).toHaveCount(21);
   await expect(page.locator('.lesson-tile')).toHaveCount(26);
   await page.getByRole('searchbox',{name:'Search lessons'}).fill('Greetings and Introductions');
   await expect(page.getByRole('button',{name:/Greetings and Introductions/})).toBeVisible();

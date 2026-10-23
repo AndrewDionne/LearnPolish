@@ -6,7 +6,7 @@ test('Library shows source-backed path without exposing any tier classification'
   await expect(page.getByRole('heading',{name:'Your path'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Explore more'})).toBeVisible();
   await expect(page.locator('.lesson-tile')).toHaveCount(26);
-  await expect(page.locator('.journey-marker')).toHaveCount(20);
+  await expect(page.locator('.journey-marker')).toHaveCount(21);
   await expect(page.getByRole('group',{name:'Browse learning stage'})).toHaveCount(0);
   for(const label of ['Fundamentals','Basic','Learning']){
     await expect(page.getByRole('heading',{name:label,exact:true})).toHaveCount(0);
@@ -39,7 +39,7 @@ test('personal content remains separate, writable and without a core marker',asy
   const personal=page.getByRole('region',{name:'Your lessons'});
   await expect(personal).toContainText('My travel notes');
   await expect(personal.locator('.journey-marker')).toHaveCount(0);
-  await expect(page.locator('.journey-marker')).toHaveCount(20);
+  await expect(page.locator('.journey-marker')).toHaveCount(21);
 });
 
 test('320px Library remains navigable without icons creating overflow',async({page})=>{
