@@ -25,8 +25,16 @@ export function validateTouristEditorialPacket(packet,sources,protectedIds,touri
       packet.published!==false||JSON.stringify(packet.scope)!=='["T02","T03"]'||
       !Array.isArray(packet.workItems)||packet.workItems.length!==2)
     throw new Error('B-03 draft packet cannot be published or re-scoped');
-  if(!touristManifest||!Array.isArray(touristManifest.units)||
-      touristManifest.units.length!==3)throw new Error('Tourist pilot baseline changed');
+  // B-03 protects the original T01–T03 editorial baseline even when more
+  // source-only tourist units are appended. Do not freeze the entire catalogue
+  // at three and accidentally block a legitimate T04/T05 source extension.
+  if(!touristManifest||touristManifest.schemaVersion!==1||
+      touristManifest.editorialStatus!=='source_refs_only_native_review_pending'||
+      !Array.isArray(touristManifest.units)||touristManifest.units.length<3||
+      touristManifest.units.slice(0,3).some((unit,index)=>
+        unit.id!==['T01','T02','T03'][index]||
+        unit.journey!==1||unit.position!=='beginning'||unit.order!==index+1))
+    throw new Error('Tourist pilot baseline changed');
 
   const seen=new Set();
   let anchorCount=0;
