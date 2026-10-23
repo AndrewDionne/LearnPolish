@@ -394,12 +394,12 @@ export default function App() {
     if(!lesson){goTo('practice');return;}
     openDueReview(lesson,step.itemIds,nextCoreReview);
   };
-  const jump = (target: number) => {
+  const jump = (target: number,trackUnitPosition=true) => {
     if (!active) return;
     stopAudio();
     const next = Math.max(0, Math.min(sessionItems.length - 1, target));
     setIndex(next);
-    if(unitSession && currentUnit && unitStep && sessionItems[next])
+    if(trackUnitPosition && unitSession && currentUnit && unitStep && sessionItems[next])
       setTouristActivity(previous=>positionTouristUnit(previous,currentUnit,unitSession.stepIndex,sessionItems[next].id));
     if (mode === 'read' && !unitSession) setReadingPositions(previous => ({ ...previous, [active.id]: next }));
     setRevealed(false); setTranslationOpen(false); setListenGuess(null); setReadGuess(null); setListenRevealed(false); setFinished(false);
@@ -451,7 +451,7 @@ export default function App() {
     if(unitSession && currentUnit && unitStep)
       setTouristActivity(previous=>triedTouristItem(previous,currentUnit,unitSession.stepIndex,current.id));
     if (mode === 'learn') setReviews(previous => recordReview(previous, current.id, remembered, at));
-    if (index < sessionItems.length - 1) jump(index + 1);
+    if (index < sessionItems.length - 1) jump(index + 1,false);
     else { stopAudio(); setFinished(true); }
   };
   const beginNew = () => {
@@ -669,7 +669,7 @@ export default function App() {
               if(unitSession && currentUnit && unitStep)
                 setTouristActivity(previous=>triedTouristItem(previous,currentUnit,unitSession.stepIndex,current.id));
             }
-            if (index < sessionItems.length - 1) jump(index + 1);
+            if (index < sessionItems.length - 1) jump(index + 1,false);
             else { stopAudio(); setFinished(true); }
           }} /> : mode === 'listen' ? <section className="flashcard listening-card" aria-live="polite">
             
