@@ -52,8 +52,8 @@ test('transcript mismatch, missing source or protected-status laundering fails c
   }
 });
 
-test('source-only T04–T06 extension cannot re-scope original B-03 review',()=>{
-  assert.equal(units.units.length,6);
+test('source-only T04–T07 extension cannot re-scope original B-03 review',()=>{
+  assert.equal(units.units.length,7);
   assert.deepEqual(units.units.slice(0,3).map(x=>x.id),['T01','T02','T03']);
   assert.deepEqual(validate().approvedItems,0);
   const reordered=clone(units);

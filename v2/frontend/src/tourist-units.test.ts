@@ -35,20 +35,20 @@ const all=[
   fixture('Asking_the_tram_driver_for_directions',tramDriver,'reading')
 ];
 
-describe('Source-only T01–T06 conversational path',()=>{
-  it('keeps six ordered source-only units and T03/T04 missing Read honest',()=>{
+describe('Source-only T01–T07 conversational path',()=>{
+  it('keeps seven ordered source-only units and T03/T04 missing Read honest',()=>{
     expect(validateTouristUnits(source)).toEqual(TOURIST_UNITS);
-    expect(TOURIST_UNITS.map(x=>x.id)).toEqual(['T01','T02','T03','T04','T05','T06']);
+    expect(TOURIST_UNITS.map(x=>x.id)).toEqual(['T01','T02','T03','T04','T05','T06','T07']);
     expect(TOURIST_UNITS.map(x=>x.steps.map(y=>y.mode)))
       .toEqual([['listen','speak','read'],['listen','speak','read'],['listen','speak'],
-        ['listen','speak'],['listen','speak','read'],['listen','speak','read']]);
+        ['listen','speak'],['listen','speak','read'],['listen','speak','read'],['listen','speak','read']]);
     expect(TOURIST_UNITS.every(x=>x.journey===1)).toBe(true);
-    expect(TOURIST_UNITS.map(x=>x.position)).toEqual(['beginning','beginning','beginning','middle','middle','middle']);
+    expect(TOURIST_UNITS.map(x=>x.position)).toEqual(['beginning','beginning','beginning','middle','middle','middle','middle']);
     expect(TOURIST_UNITS[2].gaps?.join('')).toMatch(/reading passage/i);
   });
 
   it('references exact immutable source rows with no copy, invented recording or protected target',()=>{
-    expect(availableTouristUnits(all)).toHaveLength(6);
+    expect(availableTouristUnits(all)).toHaveLength(7);
     for(const unit of TOURIST_UNITS)for(const step of unit.steps){
       const lesson=unitStepSource(all,step);
       expect(lesson?.id).toBe(step.lessonId);
@@ -61,24 +61,26 @@ describe('Source-only T01–T06 conversational path',()=>{
     expect(TOURIST_UNITS[3].gaps?.join('')).toMatch(/waiter reply/);
     expect(TOURIST_UNITS[4].gaps?.join('')).toMatch(/seller price/);
     expect(TOURIST_UNITS[5].gaps?.join('')).toMatch(/left, right or straight-ahead/);
+    expect(TOURIST_UNITS[6].gaps?.join('')).toMatch(/ticket-machine/);
+    expect(TOURIST_UNITS[6].gaps?.join('')).toMatch(/timetable/);
   });
 
   it('fails closed when a source loses audio, gains a practice-only restriction or becomes personal',()=>{
     const withoutAudio=all.map(x=>x.id==='Basic_01R'
       ?{...x,items:x.items.map(y=>y.id==='Basic_01R:1'?{...y,audio:undefined}:y)}:x);
-    expect(availableTouristUnits(withoutAudio).map(x=>x.id)).toEqual(['T02','T03','T04','T05','T06']);
+    expect(availableTouristUnits(withoutAudio).map(x=>x.id)).toEqual(['T02','T03','T04','T05','T06','T07']);
     const invalid=all.map(x=>x.id==='Conversation_1'
       ?{...x,source:'personal' as const}:x);
-    expect(availableTouristUnits(invalid).map(x=>x.id)).toEqual(['T03','T04','T05','T06']);
+    expect(availableTouristUnits(invalid).map(x=>x.id)).toEqual(['T03','T04','T05','T06','T07']);
     const protectedAudio=all.map(x=>x.id==='Conversation_-_shopping'
       ?{...x,items:x.items.map(y=>y.id.endsWith(':0')?{...y,referenceReview:'practice_only' as const}:y)}:x);
-    expect(availableTouristUnits(protectedAudio).map(x=>x.id)).toEqual(['T01','T02','T04','T06']);
+    expect(availableTouristUnits(protectedAudio).map(x=>x.id)).toEqual(['T01','T02','T04','T06','T07']);
     const removedGrocery=all.map(x=>x.id==='Grocery_store_very_basic_shopping'
       ?{...x,items:x.items.map(item=>item.id.endsWith(':4')?{...item,audio:undefined}:item)}:x);
-    expect(availableTouristUnits(removedGrocery).map(x=>x.id)).toEqual(['T01','T02','T03','T04','T06']);
+    expect(availableTouristUnits(removedGrocery).map(x=>x.id)).toEqual(['T01','T02','T03','T04','T06','T07']);
     const unsafeRestaurant=all.map(x=>x.id==='Conversation_-_restaurant'
       ?{...x,items:x.items.map(item=>item.id.endsWith(':21')?{...item,referenceReview:'practice_only' as const}:item)}:x);
-    expect(availableTouristUnits(unsafeRestaurant).map(x=>x.id)).toEqual(['T01','T02','T03','T05','T06']);
+    expect(availableTouristUnits(unsafeRestaurant).map(x=>x.id)).toEqual(['T01','T02','T03','T05','T06','T07']);
   });
 
 
@@ -147,7 +149,50 @@ describe('Source-only T01–T06 conversational path',()=>{
     const restricted=all.map(lesson=>lesson.id==='Getting_Around_1'
       ?{...lesson,items:lesson.items.map(item=>item.id.endsWith(':20')
         ?{...item,referenceReview:'practice_only' as const}:item)}:lesson);
-    expect(availableTouristUnits(restricted).map(x=>x.id)).toEqual(['T01','T02','T03','T04','T05']);
+    expect(availableTouristUnits(restricted).map(x=>x.id)).toEqual(['T01','T02','T03','T04','T05','T07']);
+  });
+
+  it('T07 is exact source-backed route+ticket listening, spoken requests and reading, with no invented line reply',()=>{
+    const unit=TOURIST_UNITS[6];
+    expect(unit.steps.map(s=>[s.lessonId,s.itemIds.length])).toEqual([
+      ['Asking_the_tram_driver_for_directions',8],
+      ['Getting_Around_1',8],
+      ['Asking_the_tram_driver_for_directions',8]
+    ]);
+    expect(unit.steps[0].itemIds).toEqual(Array.from({length:8},(_,i)=>'Asking_the_tram_driver_for_directions:'+i));
+    expect(unit.steps[1].itemIds).toEqual([3,4,6,7,8,9,14,17].map(i=>'Getting_Around_1:'+i));
+    const expected=[
+      ['Asking_the_tram_driver_for_directions:5','Czy mogę kupić bilet w tramwaju?','Can I buy a ticket on the tram?'],
+      ['Asking_the_tram_driver_for_directions:6','Tak, może pan kupić bilet w automacie.','Yes, you can buy a ticket in the machine.'],
+      ['Asking_the_tram_driver_for_directions:7','Dziękuję bardzo, do widzenia.','Thank you very much, goodbye.'],
+      ['Getting_Around_1:3','Na którą linię?','For which line?'],
+      ['Getting_Around_1:4','Który to peron?','Which platform is this?'],
+      ['Getting_Around_1:6','Jeden bilet, proszę','One ticket, please'],
+      ['Getting_Around_1:7','Dwa bilety, proszę','Two tickets, please'],
+      ['Getting_Around_1:8','Bilet normalny','Regular ticket'],
+      ['Getting_Around_1:9','Bilet ulgowy','Discounted ticket'],
+      ['Getting_Around_1:14','Ile kosztuje bilet?','How much is the ticket?'],
+      ['Getting_Around_1:17','Gdzie mogę kupić bilet?','Where can I buy a ticket?']
+    ] as const;
+    for(const [id,polish,english] of expected){
+      const lesson=all.find(x=>id.startsWith(x.id+':'));
+      const item=lesson?.items.find(x=>x.id===id);
+      expect(item?.polish).toBe(polish);
+      expect(item?.english).toBe(english);
+      expect(unit.steps.some(s=>s.itemIds.includes(id))).toBe(true);
+      expect(blocked.has(id)).toBe(false);
+    }
+    expect(unit.steps.flatMap(s=>s.itemIds)).not.toContain('Transit_1:4');
+    const missingTicket=all.map(lesson=>lesson.id==='Asking_the_tram_driver_for_directions'
+      ?{...lesson,items:lesson.items.map(item=>item.id.endsWith(':6')?{...item,audio:undefined}:item)}:lesson);
+    expect(availableTouristUnits(missingTicket).map(x=>x.id)).toEqual(['T01','T02','T03','T04','T05','T06']);
+    const restrictedTicket=all.map(lesson=>lesson.id==='Getting_Around_1'
+      ?{...lesson,items:lesson.items.map(item=>item.id.endsWith(':17')
+        ?{...item,referenceReview:'practice_only' as const}:item)}:lesson);
+    expect(availableTouristUnits(restrictedTicket).map(x=>x.id)).toEqual(['T01','T02','T03','T04','T05','T06']);
+    const replacedWithPersonal=all.map(lesson=>lesson.id==='Asking_the_tram_driver_for_directions'
+      ?{...lesson,source:'personal' as const}:lesson);
+    expect(availableTouristUnits(replacedWithPersonal).map(x=>x.id)).toEqual(['T01','T02','T03','T04','T05']);
   });
 
   it('rejects malformed order, duplicate IDs, unrelated/read-mode sources and fabricated gap data',()=>{
@@ -159,7 +204,9 @@ describe('Source-only T01–T06 conversational path',()=>{
       {...source,units:[...source.units.slice(0,3),{...source.units[3],position:'beginning'},source.units[4]]},
       {...source,units:[...source.units.slice(0,4),{...source.units[4],steps:[...source.units[4].steps,{mode:'read',lessonId:'Grocery_store_very_basic_shopping',itemIds:['Grocery_store_very_basic_shopping:0']}]}]},
       {...source,units:[...source.units.slice(0,5),{...source.units[5],position:'end'}]},
-      {...source,units:[...source.units.slice(0,5),{...source.units[5],steps:[...source.units[5].steps[0].itemIds.map(()=>source.units[5].steps[0])]}]},
+      {...source,units:[...source.units.slice(0,5),{...source.units[5],steps:[...source.units[5].steps[0].itemIds.map(()=>source.units[5].steps[0])]},source.units[6]]},
+      {...source,units:[...source.units.slice(0,6),{...source.units[6],order:8}]},
+      {...source,units:[...source.units.slice(0,6),{...source.units[6],steps:[source.units[6].steps[1],source.units[6].steps[0],source.units[6].steps[2]]}]},
     ];
     for(const data of bad)expect(()=>validateTouristUnits(data)).toThrow();
     expect(unitStepSource(all,{mode:'read',lessonId:'Conversation_1',itemIds:['Conversation_1:0']})).toBeNull();
