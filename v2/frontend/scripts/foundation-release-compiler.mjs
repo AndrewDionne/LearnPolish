@@ -19,6 +19,8 @@ const allowedRef=/^[A-Za-z0-9][A-Za-z0-9._:/#-]{7,159}$/;
 const hex=/^[0-9a-f]{64}$/;
 const clean=s=>typeof s==='string'&&s.normalize('NFC')===s&&s===s.trim()&&s.length>0;
 const safeText=s=>clean(s)&&s.length<220&&!/[<>|/\\\d…]/u.test(s)&&!/\.\.\./.test(s);
+// English glosses may contain " / " alternatives; these are not spoken Polish targets.
+const safeGloss=s=>clean(s)&&s.length<220&&!/[<>|\\]/u.test(s);
 const fail=s=>{throw Error('C-04 foundation compiler: '+s);};
 const keys=(obj,required,where)=>{
  if(!obj||typeof obj!=='object'||Array.isArray(obj)||
@@ -82,7 +84,7 @@ function validateReviewedRow(row,job){
  if(!group||row.lessonGroup!==group||row.jobId!==job.id||
     row.candidateFingerprint!==job.candidateFingerprint)
     fail('candidate/source ID mismatch '+String(row.jobId));
- if(!safeText(row.approvedPolish)||!safeText(row.approvedEnglish))
+ if(!safeText(row.approvedPolish)||!safeGloss(row.approvedEnglish))
     fail('unfit or ambiguous fixed Polish/English phrase '+job.id);
  const l=row.languageEvidence;
  keys(l,['nativeReviewReference','englishReviewReference','decisionReference','correctionReason'],'language evidence');
