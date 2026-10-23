@@ -192,7 +192,7 @@ describe('Source-only T01–T08 conversational path',()=>{
     const restrictedTicket=all.map(lesson=>lesson.id==='Getting_Around_1'
       ?{...lesson,items:lesson.items.map(item=>item.id.endsWith(':17')
         ?{...item,referenceReview:'practice_only' as const}:item)}:lesson);
-    expect(availableTouristUnits(restrictedTicket).map(x=>x.id)).toEqual(['T01','T02','T03','T04','T05','T06','T08']);
+    expect(availableTouristUnits(restrictedTicket).map(x=>x.id)).toEqual(['T01','T02','T03','T04','T05','T06']);
     const replacedWithPersonal=all.map(lesson=>lesson.id==='Asking_the_tram_driver_for_directions'
       ?{...lesson,source:'personal' as const}:lesson);
     expect(availableTouristUnits(replacedWithPersonal).map(x=>x.id)).toEqual(['T01','T02','T03','T04','T05','T08']);
