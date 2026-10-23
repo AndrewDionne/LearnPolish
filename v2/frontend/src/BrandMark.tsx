@@ -1,18 +1,14 @@
 /**
- * Path to Polish identity: a lowercase p and a restrained two-stop learning route.
- * The route replaces the old typographic dot. Shared geometry with public/brand-mark.svg.
- * Pure vector: no icon font, emoji, or network dependency.
+ * Approved UX-05B geometric P: the same viewBox, silhouette and terminal
+ * geometry as the canonical square icon in v2/brand-review/geometric-p/.
+ * The icon is decorative beside the existing, accessible wordmark.
  */
 export default function BrandMark({size=52}:{size?:number}){
-  return <svg className="brand-mark" width={size} height={size} viewBox="0 0 64 64"
-    fill="none" aria-hidden="true" focusable="false">
-    <g stroke="currentColor" strokeWidth="7.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M17 16v38"/>
-      <path d="M17 20C23 11 36 11 42 17c7 7 6 17-1 22-7 5-19 3-24-5"/>
-    </g>
-    <path d="M40 52c5-7 8 1 13-8 1.7-3.1 3.5-3.1 5-3.5"
-      stroke="var(--brand-route, #7fddc5)" strokeWidth="3.2" strokeLinecap="round"/>
-    <circle cx="40" cy="52" r="2.7" fill="var(--brand-route, #7fddc5)"/>
-    <circle cx="58" cy="40.5" r="2.7" fill="var(--brand-route, #7fddc5)"/>
+  return <svg className="brand-mark" width={size} height={size}
+    viewBox="0 0 256 256" fill="none" aria-hidden="true" focusable="false">
+    <rect width="256" height="256" rx="51" fill="#143E55"/>
+    <path fill="#FFFFFF" fillRule="evenodd"
+      d="M55 35 H129 C178 35 218 62 218 100 C218 146 179 164 127 164 H88 V197 H185 V221 H55 V164 H35 V139 H55 Z M88 62 V139 H124 C165 139 185 128 185 101 C185 75 166 62 124 62 Z"/>
+    <circle cx="209" cy="209" r="12" fill="#72D5BB"/>
   </svg>;
 }

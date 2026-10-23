@@ -1,3 +1,16 @@
+## UX-05C — approved production identity integration (2026-10-23)
+
+The owner explicitly approved the visually revised geometric-P lockup and equal-inset square mark and authorized integrating them into the application. These vectors are now **canonical, not provisional**:
+- Editable masters here remain immutable source of truth: `path-to-polish-signature.svg` and `path-to-polish-square.svg`
+- Runtime component `v2/frontend/src/BrandMark.tsx` repeats the precise square geometry in JSX and has a matching `viewBox="0 0 256 256"`; both desktop sidebar and mobile header use that one component
+- The favicon `v2/frontend/public/brand-mark.svg` is copied **byte-for-byte** from the approved square SVG. `v2/frontend/index.html` includes the cache-busting `?v=geometric-p` query so the earlier rejected mark cannot linger in browser favicon caches
+- Approved horizontal signature is also published byte-for-byte as `v2/frontend/public/path-to-polish-signature.svg` for consistent future identity uses. The current small sidebar maintains its existing accessible text wordmark rather than forcing a 4:1 horizontal signature into the 53px slot
+- Source-comparison Vitest, desktop/mobile/320px Playwright and the existing four CI jobs are production integration gates.
+
+The earlier below-the-fold notes describe the exploratory state **before** this explicit approval and do not override this decision. Native Safari/real hardware and public deployment are still separate, unperformed steps.
+
+---
+
 ## UX-05B revision 2 — owner-requested adjustments (2026-10-23)
 
 **Requested:** (1) move the “Path to Polish” wordmark toward the capital P in the primary signature; (2) increase the P height in the app icon until its vertical clearances match the left and right clearances. Keep the approved geometric architectural concept, P proportions and one mint endpoint.
