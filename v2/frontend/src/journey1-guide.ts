@@ -8,12 +8,6 @@ export type FoundationGuideStep={
 };
 export type ApplicationGuideStep={id:string;type:'application';unitId:string;title:string};
 export type Journey1GuideStep=FoundationGuideStep|ApplicationGuideStep;
-type GuideManifest={
-  schemaVersion:1;status:string;journey:1;notes:string;
-  allocation:{foundationSessions:number;applicationCheckpoints:number;
-    foundationSharePercent:number;metric:string};
-  steps:Journey1GuideStep[];
-};
 const isObject=(x:unknown):x is Record<string,unknown>=>!!x&&typeof x==='object'&&!Array.isArray(x);
 const keys=(x:Record<string,unknown>,fields:string[])=>Object.keys(x).sort().join('|')===[...fields].sort().join('|');
 const groups=['sounds','first-words','useful-words','short-sentences'];
@@ -59,7 +53,7 @@ export const JOURNEY1_GUIDE:readonly Journey1GuideStep[]=validateJourney1Guide(r
 
 /** Entire existing lessons are opened unmodified. No invented audio, no source
  * copying, no reshuffled Numbers 1–20 and no proficiency or mastery award. */
-export function availableJourney1Guide(lessons:Lesson[],units:TouristUnit[]):Journey1GuideStep[]{
+export function availableJourney1Guide(lessons:readonly Lesson[],units:readonly TouristUnit[]):Journey1GuideStep[]{
   const byLesson=new Map(lessons.filter(x=>x.source!=='personal'&&x.curriculum?.stage!=='practice')
     .map(x=>[x.id,x]));
   const byUnit=new Map(units.map(u=>[u.id,u]));
