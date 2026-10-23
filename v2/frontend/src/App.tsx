@@ -15,6 +15,8 @@ import {groupJourneyLibrary,journeyPlacement,nextCoreLesson} from './core-journe
 import {CORE_CONTINUE_KEY,parseCoreContinueId,resolveCourseContinuation} from './core-continuation';
 import JourneyMarker from './JourneyMarker';
 import TouristUnitCards from './TouristUnitCards';
+import Journey1Guide from './Journey1Guide';
+import {availableJourney1Guide} from './journey1-guide';
 import {availableTouristUnits,unitStepSource,unitStepItems} from './tourist-units';
 import {TOURIST_ACTIVITY_KEY,emptyTouristActivities,parseTouristActivities,
   positionTouristUnit,triedTouristItem} from './tourist-activity';
@@ -233,6 +235,7 @@ export default function App() {
 
   const active = lessons.find(x => x.id === lessonId);
   const touristUnits=useMemo(()=>availableTouristUnits(builtIn),[builtIn]);
+  const foundationGuide=useMemo(()=>availableJourney1Guide(builtIn,touristUnits),[builtIn,touristUnits]);
   const currentUnit=unitSession?touristUnits.find(x=>x.id===unitSession.unitId):undefined;
   const unitStep=currentUnit?.steps[unitSession?.stepIndex??-1];
   const nextUnitStep=currentUnit?.steps[(unitSession?.stepIndex??-1)+1];
@@ -792,8 +795,12 @@ export default function App() {
           <div className="curriculum-sections">{librarySections.map(section=>
             <section className="curriculum-section" aria-label={section.heading} key={section.id}>
               <div className="curriculum-stage-heading"><h2>{section.heading}</h2></div>
-              {section.id==='core' && filter==='all' && !query.trim() &&
-                <TouristUnitCards units={touristUnits} activity={touristActivity} onStart={openTouristUnitStep}/>}
+              {section.id==='core' && filter==='all' && !query.trim() && <>
+                <Journey1Guide steps={foundationGuide}
+                  onLesson={id=>{const found=builtIn.find(x=>x.id===id);if(found)openLesson(found);}}
+                  onUnit={id=>openTouristUnitStep(id,0)}/>
+                <TouristUnitCards units={touristUnits} activity={touristActivity} onStart={openTouristUnitStep}/>
+              </>}
               <div className="lesson-grid">{section.lessons.map(lesson=>
                 <LessonTile key={lesson.id} lesson={lesson} completed={completedIn(lesson)}
                   onOpen={() => openLesson(lesson)}/>)}</div>
