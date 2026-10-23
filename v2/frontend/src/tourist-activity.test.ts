@@ -67,6 +67,25 @@ describe('truthful independent unit activity / resume',()=>{
     expect(parseTouristActivities('invalid-json')).toEqual(emptyTouristActivities());
     expect(parseTouristActivities(JSON.stringify(record))).toEqual(record);
   });
+  it('retains previously saved T01–T05 attempts after T06 is appended and round-trips T06 exactly',()=>{
+    const t05=TOURIST_UNITS[4];
+    const t06=TOURIST_UNITS[5];
+    expect(t06.id).toBe('T06');
+    const old=triedTouristItem(emptyTouristActivities(),t05,0,t05.steps[0].itemIds[0]);
+    const migrated=validateTouristActivities(old);
+    expect(migrated.units.T05.tried.listen).toEqual([t05.steps[0].itemIds[0]]);
+    expect(unitActivityCounts(migrated,t06)).toEqual({tried:0,total:16});
+    const newState=triedTouristItem(migrated,t06,0,t06.steps[0].itemIds[0]);
+    expect(newState.units.T05).toEqual(migrated.units.T05);
+    expect(newState.units.T06.tried.listen).toEqual([t06.steps[0].itemIds[0]]);
+    expect(resumeTouristUnit(newState,t06)).toEqual({stepIndex:0,itemIndex:1});
+    expect(parseTouristActivities(JSON.stringify(newState))).toEqual(newState);
+    const forged={...newState,units:{...newState.units,T06:{tried:{
+      speak:['Getting_Around_1:23']}}}};
+    expect(()=>validateTouristActivities(forged)).toThrow(/source item evidence/);
+    expect(parseTouristActivities(JSON.stringify(forged))).toEqual(emptyTouristActivities());
+  });
+
   it('accepts a valid older empty state and refuses to mutate by bad IDs',()=>{
     const original=emptyTouristActivities();
     expect(triedTouristItem(original,unit,2,'made-up:25')).toBe(original);
