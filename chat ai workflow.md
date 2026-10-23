@@ -1,3 +1,15 @@
+## UX-01: minimal learner-first surface and consistent graphics — 2026-10-23
+
+**Current certified main before this tranche:** LRN-01 [PR #109](https://github.com/AndrewDionne/LearnPolish/pull/109) merged `311c358e5251f0a42f00e11aa2d7d86036af7012`; LRN-02 [PR #110](https://github.com/AndrewDionne/LearnPolish/pull/110) merged `445f10312bae3b378d84f330d74c0e1032aee142` after [CI #39922469301](https://github.com/AndrewDionne/LearnPolish/actions/runs/39922469301) **four of four PASS**. Home Continue resumes next unseen Learn item; optional next authored lesson after completion, with 1–10 → 11–20 taking precedence. Older status entries below are historical.
+
+**Owner's new priority:** defer physical testing; remove repeat-use notes and diagnostic guidance, upgrade UI graphics, keep self-directed exercise interaction clear, immediate and minimal. No language-expert advice. Durable design/acceptance authority: [v2/LEARNER_UX_UI_STANDARD.md](v2/LEARNER_UX_UI_STANDARD.md).
+
+**Active independent PR branch, NOT YET CERTIFIED:** `feat/v2-ux-minimal-learning-surface` based on LRN-02 main, no overlapping feature work. Replace generic/emoji-like symbols with inline SVG nav/reading/sound icons; refine home Polish typography art; reduce fake preview/badges/taglines and exercise instruction copy; display the actual lesson title and short mode name, not a generic “Learn the language” heading. Speak retains a single overall experimental grade and existing exact-match word-text colour hints/optional English guide, but does not show unvalidated per-syllable grades, heatmap boxes, timing diagnostics, Azure fluency/completeness panels or speculative learner advice. Keep actionable opt-in consent, record/replay/error feedback, permission and source-review truth. Existing content, local & family XP, progression, consent, authentication, backups and provider limits remain unchanged.
+
+**Gate:** update desktop/mobile Playwright snapshots/action-contract tests and connected mocked Speech tests; all four *final PR head* GitHub CI jobs green before merge, issue #2 record; synthetic/browser evidence only, not a real visual or acoustic approval. After this small review use separate UX-02 library/Practice, UX-03 group/Map/Profile and UX-04 recording cadence PRs; avoid stacked speculative redesigns.
+
+---
+
 ## LRN-02 — Optional authored next-lesson handoff (2026-10-23)
 
 **LRN-01 CERTIFIED and MERGED:** [PR #109](https://github.com/AndrewDionne/LearnPolish/pull/109), squash `311c358e5251f0a42f00e11aa2d7d86036af7012`, [CI #39921272609 all four PASS](https://github.com/AndrewDionne/LearnPolish/actions/runs/39921272609). Home Continue uses existing Learn records to resume first new word, including Numbers 1–10 / 11–20 and existing Read passage cursor; Library retains predictable fresh opening. This supersedes the historical in-development LRN-01 section below.
