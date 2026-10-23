@@ -141,11 +141,10 @@ export default function SpeakPanel({item, playing, onPlayReference, onStopRefere
       {capture.phase === 'processing' && <p role="status" className="speak-status">Checking recording…</p>}
       {capture.phase === 'error' && <p role="alert" className="capture-error">{capture.message}</p>}
       {capture.previewUrl && <div className="speak-replay">
-        <label htmlFor="personal-speech-replay">Replay your recording</label>
-        <audio id="personal-speech-replay" ref={preview} src={capture.previewUrl} controls preload="metadata"/>
+        <audio id="personal-speech-replay" aria-label="Replay your recording" ref={preview} src={capture.previewUrl} controls preload="metadata"/>
       </div>}
       {capture.phase === 'inconclusive' && <p role="status" className="capture-warning">Recording inconclusive: {capture.message || 'Try again.'}</p>}
-      {capture.phase === 'ready' && prepared && <p role="status" className="capture-valid">Recording captured ({capture.check?.seconds.toFixed(1)} s).</p>}
+      {capture.phase === 'ready' && prepared && <p role="status" className="capture-valid">Recording ready</p>}
       {onAssess && prepared && capture.phase === 'ready' && <div className="speak-feedback">
         <button type="button" className="secondary-action" disabled={assessmentBusy} onClick={() => void assessTake()}>
           {assessmentBusy ? 'Checking pronunciation…' : 'Check my pronunciation'}
