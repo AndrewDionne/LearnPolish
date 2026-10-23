@@ -27,7 +27,7 @@ export function validateTouristEditorialPacket(packet,sources,protectedIds,touri
     throw new Error('B-03 draft packet cannot be published or re-scoped');
   // B-03 protects the original T01–T03 editorial baseline even when more
   // source-only tourist units are appended. Do not freeze the entire catalogue
-  // at three and accidentally block a legitimate T04/T05 source extension.
+  // at three and accidentally block legitimate T04–T06 source extensions.
   if(!touristManifest||touristManifest.schemaVersion!==1||
       touristManifest.editorialStatus!=='source_refs_only_native_review_pending'||
       !Array.isArray(touristManifest.units)||touristManifest.units.length<3||
