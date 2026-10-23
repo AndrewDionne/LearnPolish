@@ -621,3 +621,18 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   .learning-head h1{font-size:clamp(23px,6vw,31px)}
   .type-card{display:none}
 }
+
+/* UX-02: learning and due review outrank occasional lesson management. */
+.library-author-actions{justify-content:flex-end;gap:9px;margin:-14px 0 10px}
+.library-author-actions .secondary-action,.library-author-actions .import-button{min-height:44px;
+  padding:10px 16px;color:#376f67;background:transparent;border:1px solid #d3e2dc;font-weight:650}
+.library-author-actions .secondary-action:hover,.library-author-actions .import-button:hover{background:#e8f3ef}
+.library-controls{margin-bottom:25px}
+.curriculum-stage-heading{padding-bottom:8px}
+.curriculum-stage-heading h2{margin-bottom:0}
+.page-title:has(+.library-author-actions){margin-bottom:20px}
+@media(max-width:760px){
+ .library-author-actions{flex-direction:row;justify-content:flex-start;margin:0 0 12px}
+ .library-author-actions>*{width:auto;flex:1;min-width:0}
+ .library-controls{margin-bottom:20px}
+}
