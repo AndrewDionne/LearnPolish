@@ -823,3 +823,23 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .unit-practice-head strong{font-size:13px;font-weight:700}
 .unit-practice-head span{font-size:12px}
 @media(max-width:900px){.tourist-unit-grid{grid-template-columns:1fr}}
+
+/* C-01: foundations-first guided source lessons. No mastery labels or tier legend. */
+.foundation-guide{border:1px solid var(--ptp-border);border-radius:var(--ptp-radius-control);
+  padding:16px;background:var(--ptp-surface);display:grid;gap:12px;min-width:0}
+.foundation-guide-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.foundation-guide-top h3{font-size:16px;font-weight:700;color:var(--ptp-ink);margin:0}
+.foundation-guide-expand{border:0;background:transparent;color:var(--ptp-link);
+  font:650 13px var(--ptp-font-body);min-height:44px;padding:8px 0;cursor:pointer}
+.foundation-guide-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.foundation-guide-step{display:flex;align-items:center;gap:11px;text-align:left;min-width:0;
+  background:#f8fbfa;border:1px solid var(--ptp-control-border);
+  border-radius:9px;padding:10px 12px;min-height:var(--ptp-target-size);
+  color:var(--ptp-ink);font:600 13px/1.45 var(--ptp-font-body)}
+.foundation-guide-step:hover{background:#eef6f2;border-color:var(--ptp-link)}
+.foundation-guide-step:focus-visible,.foundation-guide-expand:focus-visible{
+  outline:3px solid var(--ptp-link);outline-offset:2px}
+.foundation-guide-number{font-size:11px;font-variant-numeric:tabular-nums;color:var(--ptp-muted);flex:none}
+.foundation-guide-title{min-width:0;overflow-wrap:anywhere;flex:1}
+.foundation-guide-arrow{color:var(--ptp-link);flex:none}
+@media(max-width:560px){.foundation-guide{padding:12px}.foundation-guide-list{grid-template-columns:minmax(0,1fr)}}
