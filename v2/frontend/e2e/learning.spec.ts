@@ -6,10 +6,10 @@ test('26 original source sets remain discoverable in the simpler journey Library
   await page.getByRole('button',{name:'Explore lessons'}).click();
   const core=page.getByRole('region',{name:'Your path'});
   const extras=page.getByRole('region',{name:'Explore more'});
-  await expect(core.locator('.lesson-tile')).toHaveCount(20);
-  await expect(extras.locator('.lesson-tile')).toHaveCount(6);
+  await expect(core.locator('.lesson-tile')).toHaveCount(21);
+  await expect(extras.locator('.lesson-tile')).toHaveCount(5);
   await expect(page.locator('.lesson-tile')).toHaveCount(26);
-  await expect(page.locator('.journey-marker')).toHaveCount(20);
+  await expect(page.locator('.journey-marker')).toHaveCount(21);
   await expect(page.locator('.curriculum-stage-heading h2')).toHaveText(['Your path','Explore more']);
   await expect(page.getByRole('group',{name:'Browse learning stage'})).toHaveCount(0);
   await expect(core.locator('.lesson-tile').first()).toContainText('Greetings and Introductions');
