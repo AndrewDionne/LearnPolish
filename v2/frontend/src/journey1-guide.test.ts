@@ -59,7 +59,7 @@ describe('C-01 80/20 foundations-first source-backed Journey 1 guide',()=>{
    (v:typeof raw)=>{v.steps[5].lessonId='speak_swietokrzyska';},
    (v:typeof raw)=>{v.steps[10].group='end';},
    (v:typeof raw)=>{v.steps[16].unitId='T09';},
-   (v:typeof raw)=>{v.steps[0].itemIds=['Conversation_1:0'];},
+   (v:typeof raw)=>{Object.assign(v.steps[0],{itemIds:['Conversation_1:0']});},
   ]){
    const value=copy(raw);mutate(value);
    expect(()=>validateJourney1Guide(value)).toThrow();
