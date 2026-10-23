@@ -35,7 +35,7 @@ export default function Journey1Guide({steps,starterGroups,nextWordGroups,onStar
     </div>}
     {nextWordGroups.length>0 && <div className="foundation-starter foundation-next-words">
       <button type="button" className="foundation-next-toggle"
-        aria-controls="foundation-next-words" aria-expanded={moreWordsVisible}
+        aria-expanded={moreWordsVisible}
         onClick={()=>setMoreWordsVisible(open=>!open)}>
         <span>Keep building your everyday vocabulary</span>
         <span aria-hidden="true">{moreWordsVisible?'−':'+'}</span>
