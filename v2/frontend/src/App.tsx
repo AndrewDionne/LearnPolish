@@ -786,22 +786,22 @@ export default function App() {
               </button>
               <div className="due-list">{dueLanes.core.map(({lesson,itemIds})=>
                 <button type="button" className="due-row" key={lesson.id} onClick={()=>openDueReview(lesson)}>
-                  <strong>{lesson.title}</strong><span>{itemIds.length} due</span><span>Review →</span>
+                  <strong>{lesson.title}</strong><span>{itemIds.length} {itemIds.length===1?'expression':'expressions'} due</span><span>Review →</span>
                 </button>)}</div>
-            </> : <p>No course expressions are due right now.</p>}
+            </> : <p>{totalDue===0?'No expressions are due right now.':'No course expressions are due right now.'}</p>}
           </section>
           {dueLanes.personal.length>0 && <section className="due-panel" aria-label="Personal lesson scheduled review">
             <div className="due-heading"><h2>Your lessons</h2><span>{dueLaneCount(dueLanes.personal)} due now</span></div>
             <div className="due-list">{dueLanes.personal.map(({lesson,itemIds})=>
               <button type="button" className="due-row" key={lesson.id} onClick={()=>openDueReview(lesson)}>
-                <strong>{lesson.title}</strong><span>{itemIds.length} due</span><span>Review →</span>
+                <strong>{lesson.title}</strong><span>{itemIds.length} {itemIds.length===1?'expression':'expressions'} due</span><span>Review →</span>
               </button>)}</div>
           </section>}
           {dueLanes.explore.length>0 && <section className="due-panel" aria-label="Other lesson scheduled review">
             <div className="due-heading"><h2>Explore more</h2><span>{dueLaneCount(dueLanes.explore)} due now</span></div>
             <div className="due-list">{dueLanes.explore.map(({lesson,itemIds})=>
               <button type="button" className="due-row" key={lesson.id} onClick={()=>openDueReview(lesson)}>
-                <strong>{lesson.title}</strong><span>{itemIds.length} due</span><span>Review →</span>
+                <strong>{lesson.title}</strong><span>{itemIds.length} {itemIds.length===1?'expression':'expressions'} due</span><span>Review →</span>
               </button>)}</div>
           </section>}
           {totalDue===0 && scheduledNext && <p>Next scheduled review: {new Date(scheduledNext).toLocaleDateString()}.</p>}
