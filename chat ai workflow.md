@@ -1,3 +1,13 @@
+## UX-05B revision 2 CERTIFIED — owner optical corrections (2026-10-23)
+
+**Latest GitHub main:** [PR #117](https://github.com/AndrewDionne/LearnPolish/pull/117) merged squash `6db208f6fe8baf6ce2e02810e62a81d31d1b97c0`, final head `d15d98fdac41d1da2b7c94064dd33317f6a2d8a7`, [Actions #39949488803](https://github.com/AndrewDionne/LearnPolish/actions/runs/39949488803) FOUR of FOUR PASS (frontend typed/build/test + desktop/mobile browser, connected family/Speak, private backend and benchmark). Initial head failed on imported Node typings in a new geometry test; converted to Vite raw-SVG imports and reran ALL final-head checks green. Issue #2 has certification evidence; older in-progress UX-05B notes below are superseded by this entry.
+
+**Revision content in authoritative source:** `v2/brand-review/geometric-p/path-to-polish-signature.svg` now holds the full editable wordmark + custom capital P integrated straight underline; the text begins 17.59 source units beyond the rightmost P bowl. `v2/brand-review/geometric-p/path-to-polish-square.svg` redraws the same wide-bowled geometric P with increased vertical optical coverage and non-background bounds x/y=35..221 in viewBox 256, giving equal 35px-equivalent top/bottom/left/right spacing including mint endpoint. An updated review HTML and README plus active Vitest source-invariant checks are committed; an exact rendered comparison and zipped vectors were supplied for owner review.
+
+**Important production boundary:** This **design-only** merge does not change the already deployed `v2/frontend/src/BrandMark.tsx` or runtime favicon/CSS. Owner has chosen the geometric P direction and requested corrections but **has not yet approved the final visual** for switching the live brand. Next, if/when approved, carry the actual corrected geometry into a small separately four-lane-certified UX-05C production integration. No real-device/Safari, native audio/linguistic testing or public release was performed.
+
+---
+
 ## UX-05B revision 2 — tighten signature kerning and equalize square icon padding (2026-10-23)
 
 **Source of continuity:** GitHub main after [certified UX-05B design-only PR #116](https://github.com/AndrewDionne/LearnPolish/pull/116), squash `ad812a48cd659ae36f0fc390b7f42c0480bb233d`, main docs checkpoint `0181d5fcefe91d7c1d2c3671147767319be57e37`. The user selected the geometric **P with baseline and mint endpoint** as the right direction, then explicitly requested only two optical corrections and authorized execution: (1) move “Path to Polish” slightly toward the P in the primary lockup; (2) expand the square icon P vertically so top/bottom negative space equals the side negative space.
