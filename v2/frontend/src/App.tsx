@@ -17,6 +17,7 @@ import { availableModes, comprehensionChoices, correctComprehensionAnswer, itemP
 import type { LearningMode } from './modes';
 import { READING_POSITION_KEY, parseReadingPositions, safeReadingPosition } from './reading-position';
 import { firstUnvisitedBatch, practiceBatchCount, practiceBatchItems, practiceBatchLabel, usesPracticeBatches } from './practice-batches';
+import {nextLessonResume} from './lesson-resume';
 import { REVIEW_STORAGE_KEY, countDue, dueItems, nextDue, parseReviewSchedule, recordReview } from './review';
 import type { ReviewSchedule } from './review';
 import { MAX_BACKUP_BYTES, makeBackup, parseBackup } from './backup';
@@ -230,6 +231,7 @@ export default function App() {
   const chosenAnswer = correctAnswer || current?.english || '';
   const listenAnsweredCorrectly = listenGuess !== null && listenGuess === chosenAnswer;
   const last = lessons.find(x => x.id === lastLesson);
+  const lastResume = last ? nextLessonResume(last,progress,readingPositions) : null;
   const practisedCount = lessons.reduce((total, lesson) =>
     total + lesson.items.filter(item => itemPractised(progress, item.id)).length, 0);
   const completedIn = (lesson: Lesson) => lesson.items.filter(item => itemPractised(progress, item.id)).length;
@@ -267,15 +269,16 @@ export default function App() {
   const goTo = (destination: Page) => {
     stopAudio(); setLessonId(null); setGuideVisible(false); setSoundReturn(null); setEditorOpen(false); setReviewOnly(null); setBatchIndex(0); setMicroDialogueId(null); setPage(destination); setRevealed(false); setFinished(false);
   };
-  const openLesson = (lesson: Lesson) => {
+  const openLesson = (lesson: Lesson, resume=false) => {
     stopAudio();
+    const resumeAt=resume ? nextLessonResume(lesson,progress,readingPositions) : null;
     setSoundReturn(null);
     setReviewOnly(null);
     setMicroDialogueId(null);
     setSessionStartXp(expedition.events.length);
     setLessonId(lesson.id); setGuideVisible(false); setMode(lesson.kind === 'reading' ? 'read' : 'learn');
-    setBatchIndex(firstUnvisitedBatch(lesson, progress));
-    setIndex(lesson.kind === 'reading' ? safeReadingPosition(readingPositions, lesson.id, lesson.items.length) : 0);
+    setBatchIndex(resumeAt?.batchIndex ?? firstUnvisitedBatch(lesson, progress));
+    setIndex(resumeAt?.index ?? (lesson.kind === 'reading' ? safeReadingPosition(readingPositions, lesson.id, lesson.items.length) : 0));
     setRevealed(false); setTranslationOpen(false); setListenGuess(null); setReadGuess(null); setListenRevealed(false); setFinished(false);
     setLastLesson(lesson.id); saveLastLesson(lesson.id);
   };
@@ -659,7 +662,7 @@ export default function App() {
 
         {!loading && !loadError && !active && !editorOpen && page === 'home' && <>
           <section className="welcome">
-            <div><span className="eyebrow welcome-kicker">YOUR POLISH JOURNEY STARTS HERE</span><h1>Small steps.<br/><em>Real progress.</em></h1><p>Build confidence in Polish, one useful expression at a time. Listen, learn, and make it your own.</p><button type="button" className="hero-button" onClick={() => last ? openLesson(last) : goTo('library')}>{last ? 'Continue learning' : 'Explore lessons'} <span>↗</span></button></div>
+            <div><span className="eyebrow welcome-kicker">YOUR POLISH JOURNEY STARTS HERE</span><h1>Small steps.<br/><em>Real progress.</em></h1><p>Build confidence in Polish, one useful expression at a time. Listen, learn, and make it your own.</p><button type="button" className="hero-button" onClick={() => last ? openLesson(last,true) : goTo('library')}>{last ? 'Continue learning' : 'Explore lessons'} <span>↗</span></button></div>
             <div className="welcome-art" aria-hidden="true"><span className="art-orbit orbit-one"/><span className="art-orbit orbit-two"/><div className="art-center">ą</div><span className="art-accent a1">ł</span><span className="art-accent a2">ż</span><span className="art-accent a3">ś</span></div>
           </section>
           <div className="xp-ribbon" role="region" aria-label="Weekly XP progress">
@@ -676,8 +679,8 @@ export default function App() {
             <span className="review-home-number">{totalDue}</span><span><strong>Ready to review</strong><small>Your scheduled Polish expressions are ready.</small></span><span aria-hidden="true">Review →</span>
           </button>}
           <div className="section-heading"><div><span className="eyebrow">TODAY'S PATH</span><h2>Pick up where you left off</h2></div><button className="text-link" type="button" onClick={() => goTo('library')}>Browse library →</button></div>
-          {last ? <button type="button" className="resume-card" onClick={() => openLesson(last)}>
-            <span className="resume-icon">↗</span><span><small>CONTINUE YOUR LESSON</small><strong>{last.title}</strong><span>{completedIn(last)} of {last.items.length} items explored</span></span><span className="resume-arrow">→</span>
+          {last ? <button type="button" className="resume-card" onClick={() => openLesson(last,true)}>
+            <span className="resume-icon">↗</span><span><small>CONTINUE YOUR LESSON</small><strong>{last.title}</strong><span>{completedIn(last)} of {last.items.length} explored · {lastResume?.hasNewItem ? 'Next: item ' + (lastResume.overallIndex+1) : 'Ready to revisit'}</span></span><span className="resume-arrow">→</span>
           </button> : <div className="start-card"><div><strong>Your first lesson is ready.</strong><p>Choose a topic and begin with a few simple phrases.</p></div><button type="button" className="primary-action" onClick={() => goTo('library')}>Open library →</button></div>}
           <div className="section-heading lower"><div><span className="eyebrow">BUILD YOUR ROUTINE</span><h2>Explore a little more</h2></div></div>
           <div className="feature-grid">
