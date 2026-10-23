@@ -437,7 +437,7 @@ export default function App() {
     try {
       const data = makeBackup({
         personalLessons: personal, progress, reviews, readingPositions, lastLessonId: lastLesson,
-        lastCoreLessonId:coreLesson?.id??null,
+        lastCoreLessonId:courseContinue.origin==='start' || !coreLesson ? null : coreLesson.id,
         expedition,
       }, new Date().toISOString());
       const blob = new Blob([JSON.stringify(data, null, 2) + '\n'], {type:'application/json'});
