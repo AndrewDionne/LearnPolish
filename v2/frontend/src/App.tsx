@@ -5,6 +5,7 @@ import { AUDIO_RATES, useLessonAudio } from './audio';
 import OfflineDownloadControl from './OfflineDownloadControl';
 import SpeakPanel from './speech/SpeakPanel';
 import UIIcon from './UIIcon';
+import BrandMark from './BrandMark';
 import type {UIIconName} from './UIIcon';
 import {requestSpeechFeedback, SPEECH_ASSESSMENT_AVAILABLE, SPEECH_BLEND_AVAILABLE} from './speech/assessment';
 import SoundContrastDeck from './SoundContrastDeck';
@@ -497,7 +498,7 @@ export default function App() {
     <a className="skip-link" href="#main-content">Skip to main content</a>
     <aside className="sidebar">
       <button className="brand" type="button" onClick={() => goTo('home')}>
-        <span className="brand-symbol">p<span>.</span></span>
+        <span className="brand-symbol"><BrandMark size={53}/></span>
         <span className="brand-name">path to <strong>polish</strong></span>
       </button>
       <nav className="side-links" aria-label="Main navigation">
@@ -508,7 +509,7 @@ export default function App() {
 
     <div className="main-shell">
       <header className="topbar">
-        <div className="crumb"><span>PATH TO POLISH</span><span className="crumb-slash">/</span><strong>{active ? active.title : page === 'groups' ? 'Learning groups' : nav.find(x => x.id === page)?.label}</strong></div>
+        <div className="crumb"><span className="mobile-brand"><BrandMark size={30}/></span><span>PATH TO POLISH</span><span className="crumb-slash">/</span><strong>{active ? active.title : page === 'groups' ? 'Learning groups' : nav.find(x => x.id === page)?.label}</strong></div>
         
       </header>
       <main className="page-content" id="main-content" ref={mainRef} tabIndex={-1}>
