@@ -736,32 +736,27 @@ export default function App() {
         </>}
 
         {!loading && !loadError && !active && !editorOpen && page === 'expedition' && <>
-          <section className="page-title"><span className="eyebrow">OPEN MAP · PRIVATE FAMILY EXPEDITION</span><h1>Your Poland expedition<span className="title-dot">.</span></h1>
-            <p>Choose anywhere in Poland. No forced route, voting or adjacency rules. Every region you unlock stays open.</p></section>
+          <section className="page-title"><h1>Your Poland expedition<span className="title-dot">.</span></h1></section>
           <div className="expedition-quick-access">
             
             <button type="button" className="secondary-action" onClick={()=>goTo('groups')}>Learning groups &amp; scoreboards →</button>
           </div>
           <ExpeditionMap state={expedition} onChange={setExpedition} shared={familySummary}/>
           <FamilyPanel onConnection={changeFamilyConnection} onSummary={setFamilySummary} syncMessage={familySyncStatus} syncVersion={familySyncVersion}/>
-          <p className="info-footnote">Your personal/offline expedition remains in this browser. If an authorized private family service is configured and you opt in, future eligible practice also contributes to your family's separate shared map and friendly weekly rankings. The two ledgers are not merged automatically.</p>
         </>}
         {!loading && !loadError && !active && !editorOpen && page === 'groups' && <>
-          <section className="page-title"><span className="eyebrow">LEARN TOGETHER</span>
-            <h1>Learning groups<span className="title-dot">.</span></h1>
-            <p>Choose a private group, invite learners and see your group's friendly weekly scoreboards.</p>
-          </section>
+          <section className="page-title"><h1>Learning groups<span className="title-dot">.</span></h1></section>
           <button className="secondary-action group-map-return" type="button" onClick={()=>goTo('expedition')}>← Back to Poland map</button>
           <FamilyPanel onConnection={changeFamilyConnection} onSummary={setFamilySummary}
             syncMessage={familySyncStatus} syncVersion={familySyncVersion}/>
           
         </>}
         {!loading && !loadError && !active && !editorOpen && page === 'profile' && <>
-          <section className="page-title"><span className="eyebrow">YOUR JOURNEY</span><h1>Your profile<span className="title-dot">.</span></h1><p>Manage your private learning identity and review the progress saved on this device.</p></section>
+          <section className="page-title"><h1>Your profile<span className="title-dot">.</span></h1></section>
           <ProfilePanel onOpenGroups={()=>goTo('groups')}/>
           <div className="stats-row"><Counter value={lessons.length} label="Lessons available"/><Counter value={practisedCount} label="Items encountered"/><Counter value={recallRate(progress) + '%'} label="Self-rated recall"/></div>
           <section className="xp-rewards" aria-label="Your learning XP">
-            <div className="xp-rewards-heading"><div><span className="eyebrow">RECOGNITION FOR YOUR WORK</span><h2>Learning XP</h2></div>
+            <div className="xp-rewards-heading"><div><h2>Learning XP</h2></div>
               <button type="button" onClick={() => goTo('expedition')}>Open Poland map →</button></div>
             <div className="xp-stats"><div><strong>{xpStats.total}</strong><span>Lifetime XP</span></div><div><strong>{xpStats.weekly}</strong><span>This week</span></div>
               <div><strong>{xpStats.improved}</strong><span>Improvement bonuses</span></div><div><strong>{xpStats.streak}</strong><span>Day streak</span></div></div>
@@ -778,7 +773,6 @@ export default function App() {
                   onChange={e=>setSelfGoalDraft(e.target.value)}/>
                 <button type="button" onClick={() => setExpedition(old=>setXpGoal(old,'self',Number(selfGoalDraft)))}>Save goal</button>
               </label>}</fieldset>
-            <p className="xp-note">Real completed practice earns XP; repeat farming and skips earn none. Comparable objectively verified improvement earns an additional bonus. Speech-quality bonuses use the same reward interface once phonetic assessment is validated — no transcription-only grades.</p>
           </section>
           <section className="preferences"><h2>Your local learning data</h2><p>Lessons, progress, and review schedules are stored only in this browser. Export a full backup before clearing browser data or changing devices.</p>
             <div className="backup-actions"><button type="button" className="primary-action" onClick={downloadBackup}>Export full backup</button>

@@ -867,8 +867,9 @@ test('unconfigured private family service shows an honest disabled state, not in
   await page.goto('/');
   await page.getByRole('button',{name:'Expedition'}).first().click();
   const section=page.getByRole('region',{name:'Family expedition'});
-  await expect(section).toContainText('not configured yet');
-  await expect(section).toContainText('No pretend family accounts or rankings');
+  await expect(section.getByRole('heading',{name:'Private groups unavailable'})).toBeVisible();
+  await expect(section).toContainText('Your own map and XP remain on this device.');
+  await expect(section.locator('.family-scoreboard')).toHaveCount(0);
   await expect(section.getByRole('button',{name:'Sign in'})).toHaveCount(0);
   await page.screenshot({path:'test-results/family-disabled-expedition.png',fullPage:true});
 });

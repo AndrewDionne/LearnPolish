@@ -636,3 +636,49 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
  .library-author-actions>*{width:auto;flex:1;min-width:0}
  .library-controls{margin-bottom:20px}
 }
+
+/* UX-03: one restrained visual hierarchy for Profile, Groups and Poland map. */
+.learner-profile,.family-panel,.expedition-panel,.xp-rewards{
+  background:#fff;border:1px solid #dce9e5;border-radius:16px;
+  box-shadow:0 5px 22px #163f5806;
+}
+.learner-profile{margin-top:16px}
+.learner-profile-heading h2,.family-heading h2{font-size:21px;letter-spacing:-.45px;margin:0}
+.learner-profile-heading .secondary-action{background:#f4f9f6}
+.learner-profile .learner-profile-footnote{margin-bottom:0}
+.learner-profile-heading{margin-bottom:12px}
+.family-panel{margin-top:18px}
+.family-heading{margin-bottom:14px}
+.family-heading h2{margin:0}
+.family-scoreboard h3{font-size:21px;letter-spacing:-.5px;margin:20px 0 12px}
+.family-totals{gap:9px}
+.family-totals span{border:1px solid #d7e9e1;padding:10px 14px;font-size:12px}
+.family-recognition{margin-top:18px}
+.family-recognition h4{font-size:14px;margin:18px 0 12px}
+.family-board-filters{margin:0 0 18px}
+.family-board-filters button{border-radius:10px;font-size:12px}
+.family-scoreboard li{align-items:center;gap:8px 12px;padding:15px 16px;border-color:#e0eae6}
+.family-scoreboard li strong{font-size:14px;font-weight:650;overflow-wrap:anywhere}
+.family-scoreboard li span{font-size:15px;white-space:normal;text-align:right}
+.family-group-actions{margin:0 0 12px}
+.family-contribute{background:#f0f8f4;border-color:#cfe4d9}
+.family-recognition-pending{background:#f8faf9;border-color:#dce8e2;color:#355b53}
+.expedition-panel{margin-top:14px}
+.expedition-header h2{font-size:22px;letter-spacing:-.5px;margin:5px 0}
+.expedition-stat strong{font-size:26px}
+.expedition-detail{border-color:#dce9e5;background:#fbfdfc}
+.expedition-detail h3{font-size:26px;letter-spacing:-.6px;margin:8px 0 15px}
+.expedition-progress{margin:14px 0 20px}
+.region-unlocked{display:inline-flex;background:#e0f2e9;color:#155d48;border:1px solid #9acbb4;
+  border-radius:999px;font-size:12px;font-weight:750;padding:6px 11px;margin:0 0 10px}
+.expedition-detail .expedition-local-note{background:transparent;border-top:1px solid #e0eae6;
+  color:#46675f;border-radius:0;padding:12px 0 0;margin:20px 0 0;line-height:1.5}
+.xp-rewards h2{font-size:23px}
+@media(max-width:760px){
+  .family-panel{padding:17px}
+  .family-scoreboard li{grid-template-columns:minmax(0,1fr) auto}
+  .family-scoreboard li strong{min-width:0}
+  .family-scoreboard li span{max-width:128px}
+  .expedition-detail h3{font-size:23px}
+  .learner-profile-heading .secondary-action{width:100%}
+}

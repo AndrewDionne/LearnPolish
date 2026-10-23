@@ -270,13 +270,11 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
   };
 
   if(!FAMILY_API)return <section className="family-panel" aria-label="Family expedition">
-    <span className="eyebrow">FAMILY EXPEDITION</span><h2>Grow your expedition together</h2>
-    <p>The private family service is not configured yet. The map and XP work offline for one learner;
-      shared progress, invitations and rankings will activate when a secured family service is deployed.</p>
-    <p className="family-note">No pretend family accounts or rankings are shown.</p>
+    <h2>Private groups unavailable</h2>
+    <p>Private groups are unavailable. Your own map and XP remain on this device.</p>
   </section>;
   return <section className="family-panel" aria-label="Family expedition">
-    <div className="family-heading"><div><span className="eyebrow">PRIVATE LEARNING GROUPS</span><h2>Learn together</h2></div>
+    <div className="family-heading"><div><h2>Family account</h2></div>
       {token&&<button type="button" onClick={()=>void run(logout)} disabled={busy}>Sign out</button>}</div>
     {!token ? <div className="family-auth">
       {pendingVerification?<div className="family-verification">
@@ -315,7 +313,6 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
           setRecoveryPassword('');setRecoveryRequested(false);setError('');setStatus('');}}>Back to sign in</button>
       </div>:<>
         <div className="family-auth-heading">
-          <p>{authMode==='create'?'A private learner account lets you join or create a family expedition.':'Sign in to continue your family expedition.'}</p>
           <div className="family-auth-switch" role="group" aria-label="Family account access">
             <button type="button" aria-pressed={authMode==='sign-in'} disabled={busy}
               onClick={()=>{setAuthMode('sign-in');setError('');setStatus('');}}>Sign in</button>
@@ -367,28 +364,24 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
       </div>}
       {summary&&<div className="family-scoreboard">
         <h3>{summary.group.name}</h3>
-        <p className="family-group-context">Group scoreboards · {summary.members.length} {summary.members.length===1?'learner':'learners'} · current group only</p>
         <div className="family-totals"><span>{summary.totals.weekly_xp} weekly family XP</span>
           <span>{summary.totals.regions_unlocked}/16 regions opened</span></div>
         <div className="family-recognition" aria-label="Family weekly recognition">
-          <h4>Group scoreboards · this week</h4>
+          <h4>Weekly leaderboard</h4>
           <div className="family-board-filters" role="group" aria-label="Weekly recognition category">
             {RECOGNITION_CATEGORIES.map(category=><button key={category.id} type="button"
               aria-pressed={recognitionCategory===category.id}
               onClick={()=>setRecognitionCategory(category.id)}>{category.label}</button>)}
           </div>
-          <p className="family-note">{RECOGNITION_CATEGORIES.find(x=>x.id===recognitionCategory)?.description}</p>
           {recognitionCategory==='improvement'
-            ? <p role="status" className="family-recognition-pending">Most-improved recognition will use verified change from each learner's previous comparable performance. This family has no validated improvement measurements yet; no ranking is assigned.</p>
+            ? <p role="status" className="family-recognition-pending">No validated improvement measurements yet. No ranking available.</p>
             : <ol aria-label={RECOGNITION_CATEGORIES.find(x=>x.id===recognitionCategory)?.label+' leaderboard'}>
                 {rankFamily(summary.members,recognitionCategory).map(({member,score,rank})=>
                   <li key={member.id} className={member.id===userId?'family-current-learner':''}>
                     <strong>{rank===null?'—':rank+'.'} {member.name}{member.id===userId?' (you)':''}</strong>
                     <span>{recognitionLabel(recognitionCategory,score)}</span>
-                    <small>{member.active_days} practice days · tier {member.highest_tier||'—'} attempted · {member.team_xp} map XP</small>
                   </li>)}
               </ol>}
-          <p className="family-note">Friendly comparisons, based on member-declared completed practice validated against the built-in catalog. Difficulty indicates material attempted, not demonstrated mastery.</p>
         </div>
         <h4>Regions funded together</h4>
         <div className="family-regions">{summary.regions.length?summary.regions.map(r=>
