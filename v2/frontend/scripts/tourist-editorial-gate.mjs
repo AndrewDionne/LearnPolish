@@ -53,7 +53,7 @@ export function validateTouristEditorialPacket(packet,sources,protectedIds,touri
       const separator=anchor.itemId.lastIndexOf(':');
       const lessonId=anchor.itemId.slice(0,separator);
       const itemIndex=Number(anchor.itemId.slice(separator+1));
-      if(separator<1||!/^\\d+$/.test(anchor.itemId.slice(separator+1))||
+      if(separator<1||!/^\d+$/.test(anchor.itemId.slice(separator+1))||
           !Number.isSafeInteger(itemIndex))throw new Error('Invalid source item ID');
       const source=sources[lessonId];
       const rows=source&&(Array.isArray(source.cards)?source.cards:source.passages);
@@ -96,5 +96,5 @@ export function checkTouristEditorialPacket(){
 
 if(process.argv[1] && import.meta.url===pathToFileURL(resolve(process.argv[1])).href){
   const report=checkTouristEditorialPacket();
-  process.stdout.write('B-03 editorial draft/source identity PASS: '+JSON.stringify(report)+'\\n');
+  process.stdout.write('B-03 editorial draft/source identity PASS: '+JSON.stringify(report)+'\n');
 }
