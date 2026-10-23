@@ -56,7 +56,7 @@ export function validateDialogueDrafts(draft,manifest,queue,legacySources,protec
        error('missing or duplicate original source anchors '+id);
     for(const anchor of unit.sourceAnchors){
        strict(anchor,['itemId','reviewUse'],'source anchor');
-       if(!/^[a-zA-Z0-9_-]+:\\d+$/.test(anchor.itemId))error('invalid original source item ID');
+       if(!/^[a-zA-Z0-9_-]+:\d+$/.test(anchor.itemId))error('invalid original source item ID');
        const split=anchor.itemId.lastIndexOf(':');
        const name=anchor.itemId.slice(0,split),index=Number(anchor.itemId.slice(split+1));
        const source=legacySources[name];
@@ -78,7 +78,7 @@ export function validateDialogueDrafts(draft,manifest,queue,legacySources,protec
        if(t.draftId!==id+'-D'+String(j+1).padStart(2,'0')||
           t.speaker!==labels[i][j%2]||!validText(t.polish)||
           !validText(t.english)||t.audio!==null||
-          /(?:\\.mp3|https?:\\/\\/|generated\\/)/i.test(t.polish+' '+t.english))
+          /(?:\.mp3|https?:\/\/|generated\/)/i.test(t.polish+' '+t.english))
           error('candidate turn is no longer an unrecorded fixed draft '+id+':'+j);
     });
     strict(unit.candidateRead,['polish','english','question','answer','source','audio'],'Read');
@@ -150,7 +150,7 @@ export function checkDialogueDrafts(){
  const src=resolve(root,'v2/frontend/src');
  const list=dir=>readdirSync(dir,{withFileTypes:true}).flatMap(entry=>
    entry.isDirectory()?list(join(dir,entry.name)):
-   /\\.(ts|tsx|js|jsx)$/.test(entry.name)?
+   /\.(ts|tsx|js|jsx)$/.test(entry.name)?
       [readFileSync(join(dir,entry.name),'utf8')]:[]);
  const report=validateDialogueDrafts(draft,manifest,queue,sources,protectedIds,
    {runtimeReferences:list(src)});
