@@ -1,0 +1,1067 @@
+{
+  "schemaVersion": 1,
+  "status": "unpublished_f0_f1_editorial_candidates",
+  "published": false,
+  "issue": 140,
+  "scope": "F0_complete_letter_inventory_and_spelling_patterns_F1_high_frequency_words_F2_preview_only",
+  "sourcePolicy": "legacy_sound_contrasts_are_recorded_whole_words_not_verified_isolated_phonemes",
+  "approval": {
+    "nativePolish": false,
+    "englishMeaning": false,
+    "letterNamesAndIPA": false,
+    "registeredVoiceRights": false,
+    "exactUtteranceRecording": false,
+    "independentAcousticListening": false
+  },
+  "alphabet": [
+    {
+      "letter": "A",
+      "candidateWord": "auto",
+      "candidateMeaning": "car",
+      "letterName": null,
+      "primarySoundIPA": null,
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "letter": "Ą",
+      "candidateWord": "mąż",
+      "candidateMeaning": "husband",
+      "letterName": null,
+      "primarySoundIPA": null,
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "letter": "B",
+      "candidateWord": "bus",
+      "candidateMeaning": "bus",
+      "letterName": null,
+      "primarySoundIPA": null,
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "letter": "C",
+      "candidateWord": "cena",
+      "candidateMeaning": "price",
+      "letterName": null,
+      "primarySoundIPA": null,
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "letter": "Ć",
+      "candidateWord": "pięć",
+      "candidateMeaning": "five",
+      "letterName": null,
+      "primarySoundIPA": null,
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "letter": "D",
+      "candidateWord": "dom",
+      "candidateMeaning": "home",
+      "letterName": null,
+      "primarySoundIPA": null,
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "letter": "E",
+      "candidateWord": "ekran",
+      "candidateMeaning": "screen",
+      "letterName": null,
+      "primarySoundIPA": null,
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "letter": "Ę",
+      "candidateWord": "ręka",
+      "candidateMeaning": "hand",
+      "letterName": null,
+      "primarySoundIPA": null,
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "letter": "F",
+      "candidateWord": "film",
+      "candidateMeaning": "film",
+      "letterName": null,
+      "primarySoundIPA": null,
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "letter": "G",
+      "candidateWord": "gra",
+      "candidateMeaning": "game",
+      "letterName": null,
+      "primarySoundIPA": null,
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "letter": "H",
+      "candidateWord": "hotel",
+      "candidateMeaning": "hotel",
+      "letterName": null,
+      "primarySoundIPA": null,
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "letter": "I",
+      "candidateWord": "imię",
+      "candidateMeaning": "first name",
+      "letterName": null,
+      "primarySoundIPA": null,
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "letter": "J",
+      "candidateWord": "jak",
+      "candidateMeaning": "how",
+      "letterName": null,
+      "primarySoundIPA": null,
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "letter": "K",
+      "candidateWord": "kawa",
+      "candidateMeaning": "coffee",
+      "letterName": null,
+      "primarySoundIPA": null,
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "letter": "L",
+      "candidateWord": "list",
+      "candidateMeaning": "letter",
+      "letterName": null,
+      "primarySoundIPA": null,
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "letter": "Ł",
+      "candidateWord": "ławka",
+      "candidateMeaning": "bench",
+      "letterName": null,
+      "primarySoundIPA": null,
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "letter": "M",
+      "candidateWord": "mama",
+      "candidateMeaning": "mother",
+      "letterName": null,
+      "primarySoundIPA": null,
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "letter": "N",
+      "candidateWord": "noc",
+      "candidateMeaning": "night",
+      "letterName": null,
+      "primarySoundIPA": null,
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "letter": "Ń",
+      "candidateWord": "koń",
+      "candidateMeaning": "horse",
+      "letterName": null,
+      "primarySoundIPA": null,
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "letter": "O",
+      "candidateWord": "okno",
+      "candidateMeaning": "window",
+      "letterName": null,
+      "primarySoundIPA": null,
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "letter": "Ó",
+      "candidateWord": "stół",
+      "candidateMeaning": "table",
+      "letterName": null,
+      "primarySoundIPA": null,
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "letter": "P",
+      "candidateWord": "pies",
+      "candidateMeaning": "dog",
+      "letterName": null,
+      "primarySoundIPA": null,
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "letter": "R",
+      "candidateWord": "rok",
+      "candidateMeaning": "year",
+      "letterName": null,
+      "primarySoundIPA": null,
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "letter": "S",
+      "candidateWord": "sok",
+      "candidateMeaning": "juice",
+      "letterName": null,
+      "primarySoundIPA": null,
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "letter": "Ś",
+      "candidateWord": "środa",
+      "candidateMeaning": "Wednesday",
+      "letterName": null,
+      "primarySoundIPA": null,
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "letter": "T",
+      "candidateWord": "tak",
+      "candidateMeaning": "yes",
+      "letterName": null,
+      "primarySoundIPA": null,
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "letter": "U",
+      "candidateWord": "ulica",
+      "candidateMeaning": "street",
+      "letterName": null,
+      "primarySoundIPA": null,
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "letter": "W",
+      "candidateWord": "woda",
+      "candidateMeaning": "water",
+      "letterName": null,
+      "primarySoundIPA": null,
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "letter": "Y",
+      "candidateWord": "my",
+      "candidateMeaning": "we",
+      "letterName": null,
+      "primarySoundIPA": null,
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "letter": "Z",
+      "candidateWord": "zupa",
+      "candidateMeaning": "soup",
+      "letterName": null,
+      "primarySoundIPA": null,
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "letter": "Ź",
+      "candidateWord": "źle",
+      "candidateMeaning": "badly",
+      "letterName": null,
+      "primarySoundIPA": null,
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "letter": "Ż",
+      "candidateWord": "żaba",
+      "candidateMeaning": "frog",
+      "letterName": null,
+      "primarySoundIPA": null,
+      "reviewed": false,
+      "audio": null
+    }
+  ],
+  "patterns": [
+    {
+      "id": "F0-01",
+      "group": "plain vowels",
+      "spelling": "a / e / i / o",
+      "candidateExamples": [
+        "mama",
+        "ten",
+        "mi",
+        "dom"
+      ],
+      "reviewQuestion": "Contrast full vowel qualities without translating English vowel spelling.",
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "id": "F0-02",
+      "group": "high vowels",
+      "spelling": "y / i",
+      "candidateExamples": [
+        "my",
+        "mi"
+      ],
+      "reviewQuestion": "Check that hard /y/ and palatalizing /i/ are not taught as interchangeable.",
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "id": "F0-03",
+      "group": "nasal vowels",
+      "spelling": "ą",
+      "candidateExamples": [
+        "mąż",
+        "są"
+      ],
+      "reviewQuestion": "Explain nasal realization varies by following consonant; no single English 'on' substitution.",
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "id": "F0-04",
+      "group": "nasal vowels",
+      "spelling": "ę",
+      "candidateExamples": [
+        "ręka",
+        "proszę"
+      ],
+      "reviewQuestion": "Review medial nasal context and frequently oral word-final ę.",
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "id": "F0-05",
+      "group": "spelling alternatives",
+      "spelling": "ó / u",
+      "candidateExamples": [
+        "stół",
+        "ulica"
+      ],
+      "reviewQuestion": "Explain shared usual vowel value while preserving distinct spelling.",
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "id": "F0-06",
+      "group": "l-family",
+      "spelling": "l / ł",
+      "candidateExamples": [
+        "list",
+        "ławka"
+      ],
+      "reviewQuestion": "Differentiate clear Polish l from ł commonly pronounced like English w.",
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "id": "F0-07",
+      "group": "c-family",
+      "spelling": "c / cz / ć",
+      "candidateExamples": [
+        "cena",
+        "cztery",
+        "pięć"
+      ],
+      "reviewQuestion": "Verify alveolar, retroflex and alveolo-palatal affricate contrasts.",
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "id": "F0-08",
+      "group": "c-family",
+      "spelling": "ć / ci",
+      "candidateExamples": [
+        "pięć",
+        "ciasto"
+      ],
+      "reviewQuestion": "Separate letter Ć from the contextual spelling ci before a vowel.",
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "id": "F0-09",
+      "group": "s-family",
+      "spelling": "s / sz / ś",
+      "candidateExamples": [
+        "sok",
+        "szafa",
+        "środa"
+      ],
+      "reviewQuestion": "Verify three sibilant places of articulation.",
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "id": "F0-10",
+      "group": "s-family",
+      "spelling": "ś / si",
+      "candidateExamples": [
+        "środa",
+        "siedem"
+      ],
+      "reviewQuestion": "Review contextual spelling and avoid treating every si as identical in every position.",
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "id": "F0-11",
+      "group": "z-family",
+      "spelling": "z / ż / ź",
+      "candidateExamples": [
+        "zupa",
+        "żaba",
+        "źle"
+      ],
+      "reviewQuestion": "Verify three voiced sibilant qualities and final devoicing caveats.",
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "id": "F0-12",
+      "group": "z-family",
+      "spelling": "ż / rz",
+      "candidateExamples": [
+        "żaba",
+        "rzeka"
+      ],
+      "reviewQuestion": "Distinguish graphemic variants without promising all contextual pronunciations match.",
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "id": "F0-13",
+      "group": "z-family",
+      "spelling": "ź / zi",
+      "candidateExamples": [
+        "źle",
+        "zima"
+      ],
+      "reviewQuestion": "Teach palatal consonant and i spelling in context.",
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "id": "F0-14",
+      "group": "affricates",
+      "spelling": "dz / dź / dż",
+      "candidateExamples": [
+        "dzwon",
+        "dźwięk",
+        "dżem"
+      ],
+      "reviewQuestion": "Review three distinct affricates and voicing in naturally spoken words.",
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "id": "F0-15",
+      "group": "palatal spelling",
+      "spelling": "dź / dzi",
+      "candidateExamples": [
+        "dźwięk",
+        "dzień"
+      ],
+      "reviewQuestion": "Explain contextual written alternatives with verified native articulation.",
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "id": "F0-16",
+      "group": "palatal spelling",
+      "spelling": "ń / ni",
+      "candidateExamples": [
+        "koń",
+        "niebo"
+      ],
+      "reviewQuestion": "Contrast single palatal consonant and spelling before a vowel.",
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "id": "F0-17",
+      "group": "spelling alternatives",
+      "spelling": "ch / h",
+      "candidateExamples": [
+        "chleb",
+        "hotel"
+      ],
+      "reviewQuestion": "Teach spelling distinction without promising different phonemes in standard Polish.",
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "id": "F0-18",
+      "group": "clusters",
+      "spelling": "krzy / przy",
+      "candidateExamples": [
+        "Krzysztof",
+        "przystanek"
+      ],
+      "reviewQuestion": "Keep KRZY/PRZY as whole-word clusters, not isolated consonant MP3s.",
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "id": "F0-19",
+      "group": "voicing",
+      "spelling": "rz / sz after consonants",
+      "candidateExamples": [
+        "rzeka",
+        "przy",
+        "trzy"
+      ],
+      "reviewQuestion": "Native reviewer must verify voicing/assimilation and avoid rule-by-English respelling.",
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "id": "F0-20",
+      "group": "prosody",
+      "spelling": "typical penultimate stress",
+      "candidateExamples": [
+        "kawa",
+        "dzień dobry"
+      ],
+      "reviewQuestion": "Confirm natural word stress and separately teach common exception classes.",
+      "reviewed": false,
+      "audio": null
+    }
+  ],
+  "originalContrastLessonIds": [
+    "contrast_l_lstroked",
+    "contrast_c_cz_cie",
+    "contrast_s_sz_sie",
+    "contrast_z_zh_zi",
+    "contrast_krzy_przy"
+  ],
+  "vocabulary": [
+    {
+      "id": "F1-POL-01",
+      "theme": "politeness",
+      "polish": "tak",
+      "english": "yes",
+      "partOfSpeech": "word",
+      "legacyWholeUtteranceRef": "Conversation_1:14",
+      "exactNewAudio": null,
+      "reviewed": false
+    },
+    {
+      "id": "F1-POL-02",
+      "theme": "politeness",
+      "polish": "nie",
+      "english": "no",
+      "partOfSpeech": "word",
+      "legacyWholeUtteranceRef": "Conversation_1:15",
+      "exactNewAudio": null,
+      "reviewed": false
+    },
+    {
+      "id": "F1-POL-03",
+      "theme": "politeness",
+      "polish": "proszę",
+      "english": "please / here you go",
+      "partOfSpeech": "word",
+      "legacyWholeUtteranceRef": "Conversation_1:10",
+      "exactNewAudio": null,
+      "reviewed": false
+    },
+    {
+      "id": "F1-POL-04",
+      "theme": "politeness",
+      "polish": "dziękuję",
+      "english": "thank you",
+      "partOfSpeech": "word",
+      "legacyWholeUtteranceRef": "Conversation_1:8",
+      "exactNewAudio": null,
+      "reviewed": false
+    },
+    {
+      "id": "F1-POL-05",
+      "theme": "politeness",
+      "polish": "przepraszam",
+      "english": "excuse me / sorry",
+      "partOfSpeech": "word",
+      "legacyWholeUtteranceRef": "Conversation_1:12",
+      "exactNewAudio": null,
+      "reviewed": false
+    },
+    {
+      "id": "F1-POL-06",
+      "theme": "politeness",
+      "polish": "cześć",
+      "english": "hi (informal)",
+      "partOfSpeech": "word",
+      "legacyWholeUtteranceRef": "Conversation_1:2",
+      "exactNewAudio": null,
+      "reviewed": false
+    },
+    {
+      "id": "F1-POL-07",
+      "theme": "politeness",
+      "polish": "dzień dobry",
+      "english": "good morning / good day",
+      "partOfSpeech": "phrase",
+      "legacyWholeUtteranceRef": "Conversation_1:0",
+      "exactNewAudio": null,
+      "reviewed": false
+    },
+    {
+      "id": "F1-POL-08",
+      "theme": "politeness",
+      "polish": "do widzenia",
+      "english": "goodbye",
+      "partOfSpeech": "phrase",
+      "legacyWholeUtteranceRef": "Conversation_1:4",
+      "exactNewAudio": null,
+      "reviewed": false
+    },
+    {
+      "id": "F1-PEO-01",
+      "theme": "people",
+      "polish": "ja",
+      "english": "I",
+      "partOfSpeech": "pronoun",
+      "legacyWholeUtteranceRef": null,
+      "exactNewAudio": null,
+      "reviewed": false
+    },
+    {
+      "id": "F1-PEO-02",
+      "theme": "people",
+      "polish": "ty",
+      "english": "you (informal singular)",
+      "partOfSpeech": "pronoun",
+      "legacyWholeUtteranceRef": null,
+      "exactNewAudio": null,
+      "reviewed": false
+    },
+    {
+      "id": "F1-PEO-03",
+      "theme": "people",
+      "polish": "pan",
+      "english": "sir / formal male address",
+      "partOfSpeech": "address",
+      "legacyWholeUtteranceRef": null,
+      "exactNewAudio": null,
+      "reviewed": false
+    },
+    {
+      "id": "F1-PEO-04",
+      "theme": "people",
+      "polish": "pani",
+      "english": "madam / formal female address",
+      "partOfSpeech": "address",
+      "legacyWholeUtteranceRef": null,
+      "exactNewAudio": null,
+      "reviewed": false
+    },
+    {
+      "id": "F1-PEO-05",
+      "theme": "people",
+      "polish": "my",
+      "english": "we",
+      "partOfSpeech": "pronoun",
+      "legacyWholeUtteranceRef": null,
+      "exactNewAudio": null,
+      "reviewed": false
+    },
+    {
+      "id": "F1-PEO-06",
+      "theme": "people",
+      "polish": "mama",
+      "english": "mother",
+      "partOfSpeech": "noun",
+      "legacyWholeUtteranceRef": null,
+      "exactNewAudio": null,
+      "reviewed": false
+    },
+    {
+      "id": "F1-PEO-07",
+      "theme": "people",
+      "polish": "tata",
+      "english": "father",
+      "partOfSpeech": "noun",
+      "legacyWholeUtteranceRef": null,
+      "exactNewAudio": null,
+      "reviewed": false
+    },
+    {
+      "id": "F1-PEO-08",
+      "theme": "people",
+      "polish": "dziecko",
+      "english": "child",
+      "partOfSpeech": "noun",
+      "legacyWholeUtteranceRef": null,
+      "exactNewAudio": null,
+      "reviewed": false
+    },
+    {
+      "id": "F1-EVE-01",
+      "theme": "everyday-objects",
+      "polish": "dom",
+      "english": "home / house",
+      "partOfSpeech": "noun",
+      "legacyWholeUtteranceRef": null,
+      "exactNewAudio": null,
+      "reviewed": false
+    },
+    {
+      "id": "F1-EVE-02",
+      "theme": "everyday-objects",
+      "polish": "woda",
+      "english": "water",
+      "partOfSpeech": "noun",
+      "legacyWholeUtteranceRef": null,
+      "exactNewAudio": null,
+      "reviewed": false
+    },
+    {
+      "id": "F1-EVE-03",
+      "theme": "everyday-objects",
+      "polish": "kawa",
+      "english": "coffee",
+      "partOfSpeech": "noun",
+      "legacyWholeUtteranceRef": null,
+      "exactNewAudio": null,
+      "reviewed": false
+    },
+    {
+      "id": "F1-EVE-04",
+      "theme": "everyday-objects",
+      "polish": "herbata",
+      "english": "tea",
+      "partOfSpeech": "noun",
+      "legacyWholeUtteranceRef": null,
+      "exactNewAudio": null,
+      "reviewed": false
+    },
+    {
+      "id": "F1-EVE-05",
+      "theme": "everyday-objects",
+      "polish": "chleb",
+      "english": "bread",
+      "partOfSpeech": "noun",
+      "legacyWholeUtteranceRef": null,
+      "exactNewAudio": null,
+      "reviewed": false
+    },
+    {
+      "id": "F1-EVE-06",
+      "theme": "everyday-objects",
+      "polish": "sklep",
+      "english": "shop",
+      "partOfSpeech": "noun",
+      "legacyWholeUtteranceRef": null,
+      "exactNewAudio": null,
+      "reviewed": false
+    },
+    {
+      "id": "F1-EVE-07",
+      "theme": "everyday-objects",
+      "polish": "bilet",
+      "english": "ticket",
+      "partOfSpeech": "noun",
+      "legacyWholeUtteranceRef": null,
+      "exactNewAudio": null,
+      "reviewed": false
+    },
+    {
+      "id": "F1-EVE-08",
+      "theme": "everyday-objects",
+      "polish": "telefon",
+      "english": "phone",
+      "partOfSpeech": "noun",
+      "legacyWholeUtteranceRef": null,
+      "exactNewAudio": null,
+      "reviewed": false
+    },
+    {
+      "id": "F1-EVE-09",
+      "theme": "everyday-objects",
+      "polish": "ulica",
+      "english": "street",
+      "partOfSpeech": "noun",
+      "legacyWholeUtteranceRef": null,
+      "exactNewAudio": null,
+      "reviewed": false
+    },
+    {
+      "id": "F1-EVE-10",
+      "theme": "everyday-objects",
+      "polish": "pomoc",
+      "english": "help (noun)",
+      "partOfSpeech": "noun",
+      "legacyWholeUtteranceRef": null,
+      "exactNewAudio": null,
+      "reviewed": false
+    },
+    {
+      "id": "F1-QUE-01",
+      "theme": "questions-and-actions",
+      "polish": "co",
+      "english": "what",
+      "partOfSpeech": "question",
+      "legacyWholeUtteranceRef": null,
+      "exactNewAudio": null,
+      "reviewed": false
+    },
+    {
+      "id": "F1-QUE-02",
+      "theme": "questions-and-actions",
+      "polish": "kto",
+      "english": "who",
+      "partOfSpeech": "question",
+      "legacyWholeUtteranceRef": null,
+      "exactNewAudio": null,
+      "reviewed": false
+    },
+    {
+      "id": "F1-QUE-03",
+      "theme": "questions-and-actions",
+      "polish": "gdzie",
+      "english": "where",
+      "partOfSpeech": "question",
+      "legacyWholeUtteranceRef": null,
+      "exactNewAudio": null,
+      "reviewed": false
+    },
+    {
+      "id": "F1-QUE-04",
+      "theme": "questions-and-actions",
+      "polish": "kiedy",
+      "english": "when",
+      "partOfSpeech": "question",
+      "legacyWholeUtteranceRef": null,
+      "exactNewAudio": null,
+      "reviewed": false
+    },
+    {
+      "id": "F1-QUE-05",
+      "theme": "questions-and-actions",
+      "polish": "ile",
+      "english": "how much / how many",
+      "partOfSpeech": "question",
+      "legacyWholeUtteranceRef": null,
+      "exactNewAudio": null,
+      "reviewed": false
+    },
+    {
+      "id": "F1-QUE-06",
+      "theme": "questions-and-actions",
+      "polish": "jak",
+      "english": "how",
+      "partOfSpeech": "question",
+      "legacyWholeUtteranceRef": null,
+      "exactNewAudio": null,
+      "reviewed": false
+    },
+    {
+      "id": "F1-QUE-07",
+      "theme": "questions-and-actions",
+      "polish": "czy",
+      "english": "yes/no question marker",
+      "partOfSpeech": "particle",
+      "legacyWholeUtteranceRef": null,
+      "exactNewAudio": null,
+      "reviewed": false
+    },
+    {
+      "id": "F1-QUE-08",
+      "theme": "questions-and-actions",
+      "polish": "jest",
+      "english": "is (from być)",
+      "partOfSpeech": "verb-form",
+      "legacyWholeUtteranceRef": null,
+      "exactNewAudio": null,
+      "reviewed": false
+    },
+    {
+      "id": "F1-QUE-09",
+      "theme": "questions-and-actions",
+      "polish": "mam",
+      "english": "I have (from mieć)",
+      "partOfSpeech": "verb-form",
+      "legacyWholeUtteranceRef": null,
+      "exactNewAudio": null,
+      "reviewed": false
+    },
+    {
+      "id": "F1-QUE-10",
+      "theme": "questions-and-actions",
+      "polish": "chcę",
+      "english": "I want (from chcieć)",
+      "partOfSpeech": "verb-form",
+      "legacyWholeUtteranceRef": null,
+      "exactNewAudio": null,
+      "reviewed": false
+    },
+    {
+      "id": "F1-QUE-11",
+      "theme": "questions-and-actions",
+      "polish": "mogę",
+      "english": "I can / may (from móc)",
+      "partOfSpeech": "verb-form",
+      "legacyWholeUtteranceRef": null,
+      "exactNewAudio": null,
+      "reviewed": false
+    },
+    {
+      "id": "F1-QUE-12",
+      "theme": "questions-and-actions",
+      "polish": "potrzebuję",
+      "english": "I need (from potrzebować)",
+      "partOfSpeech": "verb-form",
+      "legacyWholeUtteranceRef": null,
+      "exactNewAudio": null,
+      "reviewed": false
+    },
+    {
+      "id": "F1-QUE-13",
+      "theme": "questions-and-actions",
+      "polish": "tutaj",
+      "english": "here",
+      "partOfSpeech": "adverb",
+      "legacyWholeUtteranceRef": null,
+      "exactNewAudio": null,
+      "reviewed": false
+    },
+    {
+      "id": "F1-QUE-14",
+      "theme": "questions-and-actions",
+      "polish": "tam",
+      "english": "there",
+      "partOfSpeech": "adverb",
+      "legacyWholeUtteranceRef": null,
+      "exactNewAudio": null,
+      "reviewed": false
+    },
+    {
+      "id": "F1-QUE-15",
+      "theme": "questions-and-actions",
+      "polish": "teraz",
+      "english": "now",
+      "partOfSpeech": "adverb",
+      "legacyWholeUtteranceRef": null,
+      "exactNewAudio": null,
+      "reviewed": false
+    },
+    {
+      "id": "F1-QUE-16",
+      "theme": "questions-and-actions",
+      "polish": "dobry",
+      "english": "good (masculine singular nominative)",
+      "partOfSpeech": "adjective-form",
+      "legacyWholeUtteranceRef": null,
+      "exactNewAudio": null,
+      "reviewed": false
+    }
+  ],
+  "firstSentenceCandidates": [
+    {
+      "id": "F2-01",
+      "polish": "To jest dom.",
+      "english": "This is a house.",
+      "reviewQuestion": "Check demonstrative + nominative noun; natural context.",
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "id": "F2-02",
+      "polish": "Mam wodę.",
+      "english": "I have water.",
+      "reviewQuestion": "Check accusative and everyday meaning.",
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "id": "F2-03",
+      "polish": "Chcę kawę.",
+      "english": "I want coffee.",
+      "reviewQuestion": "Review conversational tone and accusative.",
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "id": "F2-04",
+      "polish": "Potrzebuję pomocy.",
+      "english": "I need help.",
+      "reviewQuestion": "Check genitive after potrzebować and urgency.",
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "id": "F2-05",
+      "polish": "Gdzie jest sklep?",
+      "english": "Where is the shop?",
+      "reviewQuestion": "Review word order and prosody.",
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "id": "F2-06",
+      "polish": "Ile to kosztuje?",
+      "english": "How much does it cost?",
+      "reviewQuestion": "Review natural shopping usage.",
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "id": "F2-07",
+      "polish": "Czy mogę zapłacić kartą?",
+      "english": "Can I pay by card?",
+      "reviewQuestion": "Review modal + instrumental and cashier context.",
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "id": "F2-08",
+      "polish": "Nie rozumiem.",
+      "english": "I don't understand.",
+      "reviewQuestion": "Review negation and context; legacy whole-utterance may exist.",
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "id": "F2-09",
+      "polish": "Proszę mówić wolniej.",
+      "english": "Please speak more slowly.",
+      "reviewQuestion": "Check polite request and pronunciation.",
+      "reviewed": false,
+      "audio": null
+    },
+    {
+      "id": "F2-10",
+      "polish": "Czy może pan powtórzyć?",
+      "english": "Could you repeat that, sir?",
+      "reviewQuestion": "Check formal male address; separately author pani variant.",
+      "reviewed": false,
+      "audio": null
+    }
+  ],
+  "releaseRule": "never_import_into_runtime_or_grade_without_separate_reviewed_text_and_recorded_audio_PR"
+}
