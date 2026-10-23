@@ -659,7 +659,7 @@ test('Practice review queue targets only due cards and preserves scheduling afte
   await practiceTab.click();
   await expect(page.getByText('1 due now')).toBeVisible();
   await page.getByRole('button', {name:/Greetings and Introductions.*1 expression.*Review/}).click();
-  await expect(page.getByText('Review what matters')).toBeVisible();
+  await expect(page.locator('.learning-head h1')).toHaveText('Greetings and Introductions');
   await expect(page.getByText('Dzień dobry', {exact:true})).toBeVisible();
   await page.getByRole('button', {name:/Reveal meaning/}).click();
   await page.getByRole('button', {name:/Got it/}).click();
