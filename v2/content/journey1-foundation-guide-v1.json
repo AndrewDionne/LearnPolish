@@ -1,0 +1,150 @@
+{
+  "schemaVersion": 1,
+  "status": "source_mapped_foundations_priority_not_native_certified",
+  "journey": 1,
+  "allocation": {
+    "foundationSessions": 16,
+    "applicationCheckpoints": 4,
+    "foundationSharePercent": 80,
+    "metric": "guided_session_slots_not_minutes_or_mastery"
+  },
+  "notes": "Source-backed entry points into complete original lessons; no arbitrary slicing of Numbers 1–20, no learner proficiency status, no new Polish/audio. Conversation units T01–T08 stay independently available.",
+  "steps": [
+    {
+      "id": "F01",
+      "type": "foundation",
+      "group": "first-words",
+      "lessonId": "Conversation_1",
+      "title": "Greetings and everyday words"
+    },
+    {
+      "id": "F02",
+      "type": "foundation",
+      "group": "sounds",
+      "lessonId": "contrast_l_lstroked",
+      "title": "Hear L and Ł"
+    },
+    {
+      "id": "F03",
+      "type": "foundation",
+      "group": "sounds",
+      "lessonId": "contrast_c_cz_cie",
+      "title": "Hear C, CZ and Ć"
+    },
+    {
+      "id": "F04",
+      "type": "foundation",
+      "group": "sounds",
+      "lessonId": "contrast_s_sz_sie",
+      "title": "Hear S, SZ and Ś"
+    },
+    {
+      "id": "F05",
+      "type": "foundation",
+      "group": "sounds",
+      "lessonId": "contrast_z_zh_zi",
+      "title": "Hear Z, Ż and Ź"
+    },
+    {
+      "id": "F06",
+      "type": "foundation",
+      "group": "first-words",
+      "lessonId": "numbers_1-20",
+      "title": "Numbers 1–20"
+    },
+    {
+      "id": "F07",
+      "type": "foundation",
+      "group": "first-words",
+      "lessonId": "Basic_01R",
+      "title": "First short written exchanges"
+    },
+    {
+      "id": "F08",
+      "type": "foundation",
+      "group": "first-words",
+      "lessonId": "Numbers_20-100",
+      "title": "Useful larger numbers"
+    },
+    {
+      "id": "F09",
+      "type": "foundation",
+      "group": "useful-words",
+      "lessonId": "Road_Terminology",
+      "title": "Streets and places"
+    },
+    {
+      "id": "F10",
+      "type": "foundation",
+      "group": "useful-words",
+      "lessonId": "Conversation_-_shopping",
+      "title": "Shopping vocabulary and questions"
+    },
+    {
+      "id": "F11",
+      "type": "foundation",
+      "group": "useful-words",
+      "lessonId": "Conversation_-_restaurant",
+      "title": "Food and drink requests"
+    },
+    {
+      "id": "F12",
+      "type": "foundation",
+      "group": "useful-words",
+      "lessonId": "Food_and_Dinning",
+      "title": "Eating out expressions"
+    },
+    {
+      "id": "F13",
+      "type": "foundation",
+      "group": "short-sentences",
+      "lessonId": "Getting_Around_1",
+      "title": "Asking where things are"
+    },
+    {
+      "id": "F14",
+      "type": "foundation",
+      "group": "short-sentences",
+      "lessonId": "Transit_1",
+      "title": "Transport questions"
+    },
+    {
+      "id": "F15",
+      "type": "foundation",
+      "group": "short-sentences",
+      "lessonId": "Emergencies_and_Health",
+      "title": "Asking for urgent help"
+    },
+    {
+      "id": "F16",
+      "type": "foundation",
+      "group": "sounds",
+      "lessonId": "contrast_krzy_przy",
+      "title": "Revisit challenging consonant clusters"
+    },
+    {
+      "id": "A01",
+      "type": "application",
+      "unitId": "T01",
+      "title": "Use a greeting"
+    },
+    {
+      "id": "A02",
+      "type": "application",
+      "unitId": "T03",
+      "title": "Understand numbers in context"
+    },
+    {
+      "id": "A03",
+      "type": "application",
+      "unitId": "T05",
+      "title": "Follow a shop exchange"
+    },
+    {
+      "id": "A04",
+      "type": "application",
+      "unitId": "T08",
+      "title": "Read a museum conversation"
+    }
+  ]
+}
