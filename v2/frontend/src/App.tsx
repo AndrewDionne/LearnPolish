@@ -692,8 +692,8 @@ export default function App() {
         </>}
 
         {!loading && !loadError && !active && !editorOpen && page === 'library' && <>
-          <section className="page-title"><span className="eyebrow">YOUR LEARNING COLLECTION</span><h1>Lesson library<span className="title-dot">.</span></h1><p>Start with sounds and words, build useful phrases, then practise conversations and reading. Choose any lesson at any time.</p></section>
-          <div className="author-actions"><button type="button" className="primary-action" onClick={beginNew}>+ Create lesson</button><label className="import-button">Import lesson JSON<input aria-label="Import lesson JSON" type="file" accept=".json,application/json" onChange={e => { const file = e.currentTarget.files?.[0]; void importFile(file); e.currentTarget.value = ''; }} /></label></div>{importError && <p className="author-error" role="alert">{importError}</p>}
+          <section className="page-title"><h1>Lesson library<span className="title-dot">.</span></h1></section>
+          <div className="author-actions library-author-actions"><button type="button" className="secondary-action" onClick={beginNew}>+ Create lesson</button><label className="import-button">Import JSON<input aria-label="Import lesson JSON" type="file" accept=".json,application/json" onChange={e => { const file = e.currentTarget.files?.[0]; void importFile(file); e.currentTarget.value = ''; }} /></label></div>{importError && <p className="author-error" role="alert">{importError}</p>}
           <div className="library-stage-picker" role="group" aria-label="Browse learning stage">
             {libraryViewOptions.map(option=><button type="button" key={option.id}
               aria-pressed={libraryView===option.id}
@@ -703,11 +703,9 @@ export default function App() {
             </button>)}
           </div>
           <div className="library-controls"><label className="search-wrap"><span aria-hidden="true">⌕</span><input type="search" value={query} onChange={e => {setQuery(e.target.value);setLibraryView('all');}} placeholder="Search lessons or Polish phrases" aria-label="Search lessons" /></label><div className="filter-buttons" role="group" aria-label="Filter lessons">{(['all','vocabulary','reading','sounds'] as KindFilter[]).map(kind => <button type="button" key={kind} className={filter === kind ? 'chosen' : ''} onClick={() => {setFilter(kind);setLibraryView('all');}}>{kind === 'all' ? 'All lessons' : lessonLabel(kind)}</button>)}</div></div>
-          <div className="library-summary">{visibleLessons.length} {visibleLessons.length === 1 ? 'lesson' : 'lessons'} <span>· {visibleLessons.reduce((total, lesson) => total + lesson.items.length, 0)} learning items</span></div>
           <div className="curriculum-sections">{librarySections.map(section=>
             <section className="curriculum-section" aria-label={section.heading} key={section.id}>
-              <div className="curriculum-stage-heading"><div><h2>{section.heading}</h2><p>{section.description}</p></div>
-                <span>{section.tracks.reduce((total,track)=>total+track.lessons.length,0)} sets</span></div>
+              <div className="curriculum-stage-heading"><h2>{section.heading}</h2></div>
               {section.tracks.map(track=><div className="curriculum-track" key={track.id}>
                 <h3>{track.heading}</h3>
                 <div className="lesson-grid">{track.lessons.map(lesson=>
@@ -720,7 +718,7 @@ export default function App() {
         </>}
 
         {!loading && !loadError && !active && !editorOpen && page === 'practice' && <>
-          <section className="page-title"><span className="eyebrow">YOUR PRACTICE SPACE</span><h1>Keep it fresh<span className="title-dot">.</span></h1><p>Every phrase you revisit makes it easier to find the words next time.</p></section>
+          <section className="page-title"><h1>Practice<span className="title-dot">.</span></h1></section>
           <section className="due-panel">
             <div className="due-heading"><h2>Scheduled review</h2><span>{totalDue} due now</span></div>
             {dueLessons.length ? <div className="due-list">{dueLessons.filter(lesson => lesson.kind !== 'reading').map(lesson => {
@@ -731,9 +729,8 @@ export default function App() {
             })}</div> : <p>No expressions are due right now. Keep learning and they will appear here automatically.{scheduledNext ? ' Your next review is scheduled for ' + new Date(scheduledNext).toLocaleDateString() + '.' : ''}</p>}
             
           </section>
-          <div className="stats-row"><Counter value={practisedCount} label="Unique items seen"/><Counter value={Object.values(progress).reduce((total, x) => total + x.seen, 0)} label="Practice attempts"/><Counter value={recallRate(progress) + '%'} label="Self-rated recall"/></div>
-          <div className="section-heading lower"><div><span className="eyebrow">RETURN TO PRACTICE</span><h2>Continue your lessons</h2></div></div>
-          <div className="lesson-grid">{lessons.filter(x => completedIn(x) > 0).sort((a,b)=>completedIn(b)-completedIn(a)).slice(0,8).map(x => <LessonTile key={x.id} lesson={x} completed={completedIn(x)} onOpen={() => openLesson(x)}/>)}</div>
+                    {practisedCount > 0 && <><div className="section-heading lower"><div><h2>Continue learning</h2></div><button className="text-link" type="button" onClick={() => goTo('library')}>All lessons →</button></div>
+          <div className="lesson-grid">{lessons.filter(x => completedIn(x) > 0).sort((a,b)=>completedIn(b)-completedIn(a)).slice(0,4).map(x => <LessonTile key={x.id} lesson={x} completed={completedIn(x)} onOpen={() => openLesson(x)}/>)}</div></>}
           {practisedCount === 0 && <div className="start-card"><p>Practice progress will appear here after your first lesson.</p><button className="primary-action" type="button" onClick={() => goTo('library')}>Choose a lesson →</button></div>}
           
         </>}
