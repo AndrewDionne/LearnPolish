@@ -24,7 +24,7 @@ test('Profile, Expedition and Groups prioritize actions rather than repeat-use e
   await page.getByRole('button',{name:/Learning groups & scoreboards/}).click();
   await expect(page.getByRole('heading',{name:'Learning groups.'})).toBeVisible();
   const family=page.getByRole('region',{name:'Family expedition'});
-  await expect(family.getByRole('heading',{name:'Learning groups'})).toBeVisible();
+  await expect(family.getByRole('heading',{name:'Private groups unavailable'})).toBeVisible();
   await expect(family.getByText(/Private groups are unavailable/)).toBeVisible();
   await expect(page.locator('.page-title p')).toHaveCount(0);
   await page.getByRole('button',{name:/Back to Poland map/}).click();
