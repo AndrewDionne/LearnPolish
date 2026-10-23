@@ -1,3 +1,15 @@
+## UX-05E extension — consistent editor, account and private-family forms
+
+An audit identified a remaining mismatch in the **same user's input flow**: lesson authoring used 14px editor text and a pale field, family account used 13px text and a different border, and the signed-in Profile used a third input style and button radius. This is now consolidated without introducing a React form abstraction, changing the backend API, or moving any controls.
+
+New `--ptp-` tokens: `--ptp-form-label-size` (12px), `--ptp-form-text-size` (14px), `--ptp-form-gap` (8px), `--ptp-form-row-gap` (12px), `--ptp-field-radius` (9px), `--ptp-field-border` (#bcd6d1) and `--ptp-field-background` (#fbfcfc). Standard typed fields across the lesson editor, private family login/group forms, and Profile display-name/email field share these values, with **minimum 44px** controls. Family auth/create/verify primary submission actions and Profile Save are 13px/11px to match existing main action tokens. Buttons that *navigate backwards* (Back to sign in, recovery) and other privacy/permissions controls are not recoloured as primary submits.
+
+Intentional exceptions: readonly email retains a distinct muted background; checkbox size and disclosure remain unchanged; password confirmation/verification and expiring invitation codes remain visible; destructive-data actions remain red; narrow mobile layout remains single-column. Family-scoreboard filter/action appearances and Speak assessment are not part of this change. Consent is still opt-in and user authorization is still server-enforced.
+
+**Tests:** `e2e/ux05e-forms.spec.ts` checks editor labels/controls and author save on desktop and mobile, focus ring, 320px no overflow and truthful signed-out account state. The existing *real isolated two-user connected family journey* adds computed-style verification at account creation and signed-in Profile Save and continues through invitation, explicit contribution consent and member removal. All four independent final-head CI jobs remain required before merge.
+
+---
+
 # Path to Polish V2 — design-system foundation (UX-05D)
 
 **Status:** implementation tranche for shared tokens and repeat-use controls, not a new visual-identity exploration. Authoritative code: `v2/frontend/src/styles.css`. Owner-approved geometric P master remains unchanged in `v2/brand-review/geometric-p/` and `v2/frontend/src/BrandMark.tsx`.
