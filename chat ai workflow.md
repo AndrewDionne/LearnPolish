@@ -1,3 +1,15 @@
+## A-02 — Independent Home core vs recent practice (2026-10-23, certification pending)
+
+**GitHub main base:** after [certified A-01/B-01 PR #122](https://github.com/AndrewDionne/LearnPolish/pull/122), squash `d819d62acc4b136fc205a7797289ba4ccced65d8` and workflow checkpoint `46c658fc4992afba2bfaa42d4bf00ccd7eab0815`. Active branch `feat/v2-a02-independent-core-resume`.
+
+**Intent:** Home `Continue course` opens only the latest explicitly selected **mapped** built-in, independently of `ptp-v2-last-lesson`; a secondary Recent practice card keeps personal/imported and optional/noncore activity accessible without redirecting the course. New local key `ptp-v2-core-continue`, validated and updated only on regular mapped built-in `openLesson`. New/old user fallback: mapped recent, else latest authentic mapped Learn/Listen/Read activity, else first original curated course lesson; no XP, presumed skill or experimental Speak scoring used. Existing `nextLessonResume` preserves exact Numbers 1–20 batches/first unvisited Learn/Reading cursor. Empty initial course remains an ordinary Explore lessons state. `v2/CORE_CONTINUATION.md` is detailed source-of-truth specification.
+
+**Backup/restore:** keep v1 full backup format; optional `lastCoreLessonId` accepted and validated, omitted in old exports; atomic storage restore includes core cursor and reverses all keys on write failure; importing old backups removes stale browser core cursor before deriving from the restored data. Purely local state, no service/provider or privacy changes. Tests cover migration, personal and optional preservation, offline/reload, 320px, data integrity and atomic rollback; new full four-lane final-head GitHub CI required before merge. The 20-source core, six supplementary lessons, empty resident curriculum and decorative unlabeled 3×3 marks remain as in A-01.
+
+**Next:** A-03/B-02 situational source-backed course units and Listen/Speak/Read progression with editorial/native Polish source QA; physical/native mic testing deferred.
+
+---
+
 ## A-01/B-01 QUIET JOURNEY FOUNDATION CERTIFIED + MERGED (2026-10-23)
 
 **Certification:** [PR #122](https://github.com/AndrewDionne/LearnPolish/pull/122) merged squash `d819d62acc4b136fc205a7797289ba4ccced65d8`, final head `0e9a95f518354ece5b74dbd714a2e880c2b14c2d`, [Actions #39975713470](https://github.com/AndrewDionne/LearnPolish/actions/runs/39975713470) **4/4 PASS**. Initial run failed due outdated browser assertions about removed Library stage categories; updated tests to verify the intended new Library and keyboard search before full rerun. Issue #2 records complete evidence. **The following pilot account is now shipped; A-02 Home Core Continue vs recent personal practice remains open.**

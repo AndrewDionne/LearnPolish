@@ -796,3 +796,11 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .journey-marker.journey-2{color:#4b639e}
 .journey-marker.journey-3{color:#91653e}
 .journey-marker svg{display:block}
+
+
+/* A-02: course remains the primary return path; recent personal/optional
+   practice is a separate, quieter action. Never badge as a mastery tier. */
+.core-resume-card + .recent-resume-card{margin-top:12px}
+.recent-resume-card{background:#f9fbfa;border-color:var(--ptp-border)}
+.recent-resume-card .resume-icon{background:#eef2f3;color:#57717a}
+.recent-resume-card small{color:#617980}

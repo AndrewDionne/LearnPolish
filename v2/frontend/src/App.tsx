@@ -12,6 +12,7 @@ import SoundContrastDeck from './SoundContrastDeck';
 import MicroDialoguePanel from './MicroDialoguePanel';
 import {libraryMatches} from './library-curriculum';
 import {groupJourneyLibrary,journeyPlacement,nextCoreLesson} from './core-journey';
+import {CORE_CONTINUE_KEY,parseCoreContinueId,resolveCourseContinuation} from './core-continuation';
 import JourneyMarker from './JourneyMarker';
 import { parseProgress, recallRate, recordAttempt, STORAGE_KEY } from './progress';
 import type { Progress } from './progress';
@@ -141,6 +142,10 @@ export default function App() {
     try { return parseProgress(localStorage.getItem(STORAGE_KEY)); } catch { return {}; }
   });
   const [lastLesson, setLastLesson] = useState<string | null>(storedLastLesson);
+  const [coreLessonId,setCoreLessonId]=useState<string|null>(()=>{
+    try{return parseCoreContinueId(localStorage.getItem(CORE_CONTINUE_KEY));}
+    catch{return null;}
+  });
   const [expedition, setExpedition] = useState(() => {
     try { return parseExpedition(localStorage.getItem(EXPEDITION_STORAGE_KEY),
       parseGold(localStorage.getItem(GOLD_STORAGE_KEY))); }
@@ -239,6 +244,10 @@ export default function App() {
   const listenAnsweredCorrectly = listenGuess !== null && listenGuess === chosenAnswer;
   const last = lessons.find(x => x.id === lastLesson);
   const lastResume = last ? nextLessonResume(last,progress,readingPositions) : null;
+  const courseContinue=resolveCourseContinuation(builtIn,progress,coreLessonId,lastLesson);
+  const coreLesson=courseContinue.lesson;
+  const coreResume=coreLesson?nextLessonResume(coreLesson,progress,readingPositions):null;
+  const showRecent=!!last && last.id!==coreLesson?.id;
   const practisedCount = lessons.reduce((total, lesson) =>
     total + lesson.items.filter(item => itemPractised(progress, item.id)).length, 0);
   const completedIn = (lesson: Lesson) => lesson.items.filter(item => itemPractised(progress, item.id)).length;
@@ -275,6 +284,11 @@ export default function App() {
     setIndex(resumeAt?.index ?? (lesson.kind === 'reading' ? safeReadingPosition(readingPositions, lesson.id, lesson.items.length) : 0));
     setRevealed(false); setTranslationOpen(false); setListenGuess(null); setReadGuess(null); setListenRevealed(false); setFinished(false);
     setLastLesson(lesson.id); saveLastLesson(lesson.id);
+    // The user's personal/optional recent lesson never redirects the core path.
+    if(journeyPlacement(lesson)){
+      setCoreLessonId(lesson.id);
+      try{localStorage.setItem(CORE_CONTINUE_KEY,lesson.id);}catch{/* best effort */}
+    }
   };
   const openSoundPractice = () => {
     if (!active || !current?.soundPractice || mode !== 'speak' || soundReturn) return;
@@ -422,7 +436,9 @@ export default function App() {
   const downloadBackup = () => {
     try {
       const data = makeBackup({
-        personalLessons: personal, progress, reviews, readingPositions, lastLessonId: lastLesson, expedition,
+        personalLessons: personal, progress, reviews, readingPositions, lastLessonId: lastLesson,
+        lastCoreLessonId:courseContinue.origin==='start' || !coreLesson ? null : coreLesson.id,
+        expedition,
       }, new Date().toISOString());
       const blob = new Blob([JSON.stringify(data, null, 2) + '\n'], {type:'application/json'});
       const link = document.createElement('a');
@@ -456,6 +472,8 @@ export default function App() {
       setExpedition(restoredExpedition);
       setReadingPositions(data.readingPositions);
       setLastLesson(data.lastLessonId);
+      // Missing in old exports: infer from restored practice only, never stale device data.
+      setCoreLessonId(data.lastCoreLessonId??null);
       setLessonId(null); setEditorOpen(false); setReviewOnly(null); setPage('profile');
       setBackupStatus('Backup restored: ' + data.personalLessons.length + ' personal lessons and their saved practice records.');
     } catch (error) {
@@ -650,7 +668,7 @@ export default function App() {
 
         {!loading && !loadError && !active && !editorOpen && page === 'home' && <>
           <section className="welcome">
-            <div className="welcome-copy"><h1>Small steps.<br/><em>Real progress.</em></h1><button type="button" className="hero-button" onClick={() => last ? openLesson(last,true) : goTo('library')}>{last ? 'Continue learning' : 'Explore lessons'} <span aria-hidden="true">→</span></button></div>
+            <div className="welcome-copy"><h1>Small steps.<br/><em>Real progress.</em></h1><button type="button" className="hero-button" onClick={() => courseContinue.origin==='start' || !coreLesson ? goTo('library') : openLesson(coreLesson,true)}>{courseContinue.origin==='start' || !coreLesson ? 'Explore lessons' : 'Continue course'} <span aria-hidden="true">→</span></button></div>
             <div className="welcome-art" aria-hidden="true"><div className="type-card type-card-back">ł</div><div className="type-card type-card-front"><span className="type-card-caption">POLSKI</span><span className="type-card-glyph">ą</span><span className="type-card-rule"/></div><div className="type-card type-card-small">ś</div></div>
           </section>
           <div className="xp-ribbon" role="region" aria-label="Weekly XP progress">
@@ -667,9 +685,13 @@ export default function App() {
             <span className="review-home-number">{totalDue}</span><span><strong>Ready to review</strong><small>Your scheduled Polish expressions are ready.</small></span><span aria-hidden="true">Review →</span>
           </button>}
           <div className="section-heading"><div><span className="eyebrow">TODAY'S PATH</span><h2>Pick up where you left off</h2></div><button className="text-link" type="button" onClick={() => goTo('library')}>Browse library →</button></div>
-          {last ? <button type="button" className="resume-card" onClick={() => openLesson(last,true)}>
-            <span className="resume-icon">↗</span><span><small>CONTINUE YOUR LESSON</small><strong>{last.title}</strong><span>{completedIn(last)} of {last.items.length} explored · {lastResume?.hasNewItem ? 'Next: item ' + (lastResume.overallIndex+1) : 'Ready to revisit'}</span></span><span className="resume-arrow">→</span>
-          </button> : <div className="start-card"><div><strong>Your first lesson is ready.</strong><p>Choose a topic and begin with a few simple phrases.</p></div><button type="button" className="primary-action" onClick={() => goTo('library')}>Open library →</button></div>}
+          {coreLesson && <button type="button" className="resume-card core-resume-card" onClick={() => openLesson(coreLesson,true)}>
+            <span className="resume-icon">↗</span><span><small>{courseContinue.origin==='start'?'START YOUR COURSE':'CONTINUE YOUR COURSE'}</small><strong>{coreLesson.title}</strong><span>{completedIn(coreLesson)} of {coreLesson.items.length} explored · {coreResume?.hasNewItem ? 'Next: item '+(coreResume.overallIndex+1) : 'Ready to revisit'}</span></span><span className="resume-arrow">→</span>
+          </button>}
+          {showRecent && last && <button type="button" className="resume-card recent-resume-card" onClick={() => openLesson(last,true)}>
+            <span className="resume-icon">↗</span><span><small>RECENT PRACTICE</small><strong>{last.title}</strong><span>{completedIn(last)} of {last.items.length} explored · {lastResume?.hasNewItem ? 'Next: item '+(lastResume.overallIndex+1) : 'Ready to revisit'}</span></span><span className="resume-arrow">→</span>
+          </button>}
+          {!coreLesson && <div className="start-card"><div><strong>Your lessons are ready.</strong><p>Choose a lesson from your library.</p></div><button type="button" className="primary-action" onClick={() => goTo('library')}>Open library →</button></div>}
           <div className="section-heading lower"><div><span className="eyebrow">BUILD YOUR ROUTINE</span><h2>Explore a little more</h2></div></div>
           <div className="feature-grid">
             <button type="button" className="feature-card mint" onClick={() => { setFilter('vocabulary'); goTo('library'); }}><span className="feature-symbol">Aa</span><strong>Words & phrases</strong><span>Learn expressions you can use today.</span><span className="feature-next">Explore →</span></button>

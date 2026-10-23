@@ -54,3 +54,15 @@ test('expedition XP roundtrips in full backups and invalid snapshots fail closed
   expect(parseBackup(JSON.parse(JSON.stringify(saved))).expedition).toEqual(xp);
   expect(()=>parseBackup({...saved,expedition:{...xp,selectedRegion:'fake'}})).toThrow(/Invalid expedition/);
 });
+
+
+test('optional core cursor round-trips without breaking pre-A-02 backups',()=>{
+  const withCore=makeBackup({...backup,lastCoreLessonId:'Conversation_1'},backup.exportedAt);
+  expect(parseBackup(JSON.parse(JSON.stringify(withCore))).lastCoreLessonId).toBe('Conversation_1');
+  expect(parseBackup(JSON.parse(JSON.stringify(backup))).lastCoreLessonId).toBeUndefined();
+  const removed=makeBackup({...backup,lastCoreLessonId:null},backup.exportedAt);
+  expect(parseBackup(removed).lastCoreLessonId).toBeNull();
+  for(const bad of ['personal_fake','../traversal','speak_swietokrzyska','x'.repeat(141),4]){
+    expect(()=>parseBackup({...backup,lastCoreLessonId:bad})).toThrow(/core-course reference/);
+  }
+});

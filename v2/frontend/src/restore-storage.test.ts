@@ -39,6 +39,25 @@ describe('all-or-nothing local restore',()=>{
     expect(data.get('ptp-v2-last-lesson')).toBe(lesson.id);
   });
 
+  test('restores an independent core cursor and clears stale cursor for older backups',()=>{
+    const withCore=parseBackup({...backup,lastCoreLessonId:'Conversation_1'});
+    const fresh=storage({'ptp-v2-core-continue':'Basic_01R'});
+    persistRestoredBackup(withCore,fresh.store);
+    expect(fresh.data.get('ptp-v2-core-continue')).toBe('Conversation_1');
+    persistRestoredBackup(backup,fresh.store);
+    expect(fresh.data.has('ptp-v2-core-continue')).toBe(false);
+  });
+
+  test('rolls back the core cursor and older keys if the final cursor write fails',()=>{
+    const before={'ptp-v2-core-continue':'Basic_01R','ptp-v2-last-lesson':'prior',
+      'ptp-v2-progress':'priorProgress'};
+    const {data,store,failOnceOn}=storage(before);
+    failOnceOn('ptp-v2-core-continue');
+    expect(()=>persistRestoredBackup(parseBackup({...backup,lastCoreLessonId:'Conversation_1'}),store))
+      .toThrow(/previous saved data was preserved/);
+    expect(Object.fromEntries(data)).toEqual(before);
+  });
+
   test('a quota failure halfway through rolls back every touched key byte-for-byte',()=>{
     const original={'ptp-v2-personal-lessons':'[{"old":true}]',
       'ptp-v2-progress':'{"original":true}', 'ptp-v2-review-schedule':'{"old":1}',
