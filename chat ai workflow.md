@@ -1,3 +1,13 @@
+## UX-05A P-path signature certified + merged — 2026-10-23
+
+**Latest merged GitHub main:** [PR #115](https://github.com/AndrewDionne/LearnPolish/pull/115), squash `c8f704cfff7ea0f6c341f6d27d4b8bb69da02250`, final PR head `50ae1fb911694438e1c0abfef81e7a2ba484bb5c`, [Actions #39932786211](https://github.com/AndrewDionne/LearnPolish/actions/runs/39932786211) **FOUR of FOUR PASS** (frontend desktop/mobile/320px/favicons/accessibility, connected family/Speak mocks, private backend, benchmark). Supersedes all preceding UX-05A in-development statements. [Issue #2](https://github.com/AndrewDionne/LearnPolish/issues/2) records evidence.
+
+**Implemented owner proposal for review:** The previous text `p.` in the clickable desktop brand has become a crisp geometric lowercase `p` whose period is a short mint, two-node path (right/below the bowl). App brand wordmark remains `path to polish`. Standalone identical SVG favicon at `v2/frontend/public/brand-mark.svg`, shared React source `v2/frontend/src/BrandMark.tsx`, and subtle compact version on mobile breadcrumb use the same geometry; dark/sidebar and light/mobile colours adapt without another font or network dependency. Existing dark navy/mint colours remain.
+
+**Approval limitation:** Automated render, accessible keyboard/browser and asset checks PASS, but this is **not final owner visual/aesthetic brand sign-off** or physical mobile/Safari testing. No change to lesson data, source audio, scores, XP, storage, permissions or assessment transport. Owner may request optical tweaks. **Next UX-05B:** rationalise remaining design tokens, heading/font hierarchy and reusable control styling incrementally, separate small CI-gated PR; do not override the owner's icon judgement or broaden into an unapproved rebrand.
+
+---
+
 ## UX-05A — owner-requested p-dot → path identity (2026-10-23)
 
 **Certified base:** UX-04 [PR #114](https://github.com/AndrewDionne/LearnPolish/pull/114) squash `981bee3fbf98193eca9b8408578edb099d7ffc49`, [final-head CI #39931330955 all four PASS](https://github.com/AndrewDionne/LearnPolish/actions/runs/39931330955); main docs checkpoint `edc1ea9c1078884102aadd971ae9af1179184959`. Do not reinterpret old implementation statuses below as ongoing work.
