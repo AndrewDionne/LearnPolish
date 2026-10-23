@@ -4,6 +4,8 @@ import { lessonLabel, parseManifest } from './model';
 import { AUDIO_RATES, useLessonAudio } from './audio';
 import OfflineDownloadControl from './OfflineDownloadControl';
 import SpeakPanel from './speech/SpeakPanel';
+import UIIcon from './UIIcon';
+import type {UIIconName} from './UIIcon';
 import {requestSpeechFeedback, SPEECH_ASSESSMENT_AVAILABLE, SPEECH_BLEND_AVAILABLE} from './speech/assessment';
 import SoundContrastDeck from './SoundContrastDeck';
 import MicroDialoguePanel from './MicroDialoguePanel';
@@ -43,12 +45,12 @@ type SoundPracticeReturn = {
   practiceLessonId:string;practiceGroupId:string;sourceWord:string;
 };
 
-const nav: { id: Page; label: string; symbol: string }[] = [
-  { id: 'home', label: 'Home', symbol: '⌂' },
-  { id: 'library', label: 'Library', symbol: '▦' },
-  { id: 'practice', label: 'Practice', symbol: '◎' },
-  { id: 'expedition', label: 'Expedition', symbol: '◇' },
-  { id: 'profile', label: 'Profile', symbol: '◷' },
+const nav: { id: Page; label: string; icon: UIIconName }[] = [
+  { id: 'home', label: 'Home', icon: 'home' },
+  { id: 'library', label: 'Library', icon: 'library' },
+  { id: 'practice', label: 'Practice', icon: 'practice' },
+  { id: 'expedition', label: 'Expedition', icon: 'expedition' },
+  { id: 'profile', label: 'Profile', icon: 'profile' },
 ];
 
 function storedLastLesson(): string | null {
@@ -64,7 +66,7 @@ function Counter({ value, label }: { value: string | number; label: string }) {
 }
 
 function LessonTile({ lesson, completed, onOpen }: { lesson: Lesson; completed: number; onOpen: () => void }) {
-  const symbol = lesson.kind === 'reading' ? '✳' : lesson.kind === 'sounds' ? '♫' : 'Aa';
+  const symbol = lesson.kind === 'reading' ? <UIIcon name="reading" size={31}/> : lesson.kind === 'sounds' ? <UIIcon name="sounds" size={31}/> : 'Aa';
   return <button type="button" className="lesson-tile" onClick={onOpen}>
     <span className={'lesson-art ' + lesson.kind}>{symbol}</span>
     <span className="lesson-tile-body">
@@ -496,23 +498,18 @@ export default function App() {
     <aside className="sidebar">
       <button className="brand" type="button" onClick={() => goTo('home')}>
         <span className="brand-symbol">p<span>.</span></span>
-        <span className="brand-name">path to <strong>polish</strong><small>LEARN WITH CONFIDENCE</small></span>
+        <span className="brand-name">path to <strong>polish</strong></span>
       </button>
-      <span className="nav-heading">EXPLORE</span>
       <nav className="side-links" aria-label="Main navigation">
-        {nav.map(item => <button key={item.id} className={'nav-link ' + (!lessonId && (page === item.id || (page === 'groups' && item.id === 'expedition')) ? 'selected' : '')} type="button" aria-current={!lessonId && (page === item.id || (page === 'groups' && item.id === 'expedition')) ? 'page' : undefined} onClick={() => goTo(item.id)}><span className="nav-icon" aria-hidden="true">{item.symbol}</span>{item.label}</button>)}
+        {nav.map(item => <button key={item.id} className={'nav-link ' + (!lessonId && (page === item.id || (page === 'groups' && item.id === 'expedition')) ? 'selected' : '')} type="button" aria-current={!lessonId && (page === item.id || (page === 'groups' && item.id === 'expedition')) ? 'page' : undefined} onClick={() => goTo(item.id)}><span className="nav-icon"><UIIcon name={item.icon}/></span>{item.label}</button>)}
       </nav>
-      <div className="sidebar-bottom">
-        <div className="mini-mark">PL</div>
-        <div><strong>A little every day.</strong><span>Keep building your Polish.</span></div>
-      </div>
-      <span className="sidebar-version">Path to Polish · V2 preview</span>
+
     </aside>
 
     <div className="main-shell">
       <header className="topbar">
         <div className="crumb"><span>PATH TO POLISH</span><span className="crumb-slash">/</span><strong>{active ? active.title : page === 'groups' ? 'Learning groups' : nav.find(x => x.id === page)?.label}</strong></div>
-        <div className="top-right"><span className="local-pill">● Local preview</span><span className="initial-badge" aria-label="Local learner">P</span></div>
+        
       </header>
       <main className="page-content" id="main-content" ref={mainRef} tabIndex={-1}>
         {loading && <section className="empty-state" role="status"><h2>Gathering your lessons…</h2><p>Preparing your Polish library.</p></section>}
@@ -523,10 +520,9 @@ export default function App() {
           {mode === 'speak'
             ? <div className="learning-head speak-compact-head"><span className="item-count">{index + 1} <span>/ {sessionItems.length}</span></span></div>
             : <div className="learning-head">
-            <div><span className="eyebrow">{reviewOnly ? 'DUE REVIEW' : lessonLabel(active.kind)} · {active.title}</span><h1>{reviewOnly ? 'Review what matters' : mode === 'listen' ? 'Train your ear' : mode === 'read' ? 'Read & understand' : active.kind === 'sounds' ? 'Hear the difference' : 'Learn the language'}</h1><p>{reviewOnly ? 'These expressions are due for recall practice. Answer honestly; missed items remain available for review.' : mode === 'listen' ? 'Listen first, choose the meaning, then compare your answer with the Polish transcript.' : mode === 'read' ? 'Read naturally, then reveal the translation. Your reading position is remembered.' : active.kind === 'sounds' ? active.soundGroups ? 'Play each recording individually and compare neighbouring sound families. Audio quality and pronunciation notes await native review.' : 'Compare the examples and listen carefully. These lessons await native-speaker review.' : 'Think of the Polish expression before revealing its meaning.'}</p></div>
+            <div><span className="eyebrow">{reviewOnly ? 'Due review' : mode === 'listen' ? 'Listen' : mode === 'read' ? 'Read' : mode === 'learn' && active.kind === 'sounds' ? 'Sounds' : 'Learn'}</span><h1>{active.title}</h1></div>
             <span className="item-count">{activeMicroDialogue && mode === 'read' ? 'Dialogue' : index + 1} {!activeMicroDialogue && <span>/ {sessionItems.length}</span>}</span>
           </div>}
-          {active.progression && <p className="pathway-hint">Reading pathway · Step {active.progression.order} · {readingStage(active.progression.stage)} — {active.progression.goal}</p>}
           {!(activeMicroDialogue && mode === 'read') && <div className="lesson-meter" role="progressbar" aria-label="Lesson progress" aria-valuemin={0} aria-valuemax={sessionItems.length} aria-valuenow={index + 1}><span style={{ width: (100 * (index + 1) / sessionItems.length) + '%' }} /></div>}
           <div className="mode-row" role="group" aria-label="Learning modes">
             {availableModes(active).map(value => <button type="button" key={value} aria-pressed={mode === value} className={'mode ' + (mode === value ? 'active' : '')} onClick={() => switchMode(value)}>{value === 'learn' ? active.kind === 'sounds' ? 'Sounds' : 'Learn' : value === 'read' ? 'Read' : value === 'speak' ? 'Speak' : 'Listen'}</button>)}
@@ -589,12 +585,9 @@ export default function App() {
             if (index < sessionItems.length - 1) jump(index + 1);
             else { stopAudio(); setFinished(true); }
           }} /> : mode === 'listen' ? <section className="flashcard listening-card" aria-live="polite">
-            <span className="card-label">LISTEN WITHOUT READING</span>
+            
             <div className="listening-symbol" aria-hidden="true">♫</div>
             <h2>{current.comprehension ? 'Listen for a detail' : 'What did you hear?'}</h2>
-            <p className="listening-prompt">{current.comprehension
-              ? 'Listen first. Answer the question before revealing the Polish transcript.'
-              : active.kind === 'reading' ? 'Listen carefully, then reveal the transcript and assess your understanding.' : 'Play the recording. Choose the closest English meaning before revealing the Polish.'}</p>
             <AudioButton item={current} playing={audio.playing} onPlay={play}/>
             <fieldset className="speed-picker"><legend>Playback speed</legend>
               {AUDIO_RATES.map(speed => <button type="button" key={speed} aria-pressed={audio.rate === speed} onClick={() => audio.setRate(speed)} className={audio.rate === speed ? 'chosen' : ''}>{speed}×</button>)}
@@ -615,7 +608,7 @@ export default function App() {
               </div>}
             </div>}
           </section> : <section className="flashcard" aria-live="polite">
-            <span className="card-label">{mode === 'read' ? (current.title || 'POLISH PASSAGE') : active.kind === 'sounds' ? 'SOUND EXAMPLES' : 'IN POLISH'}</span>
+            {mode === 'read' && current.title && <span className="card-label">{current.title}</span>}
             <div lang="pl" className={mode === 'read' ? 'polish-text reading-text' : 'polish-text'}>{current.polish}</div>
             {current.pronunciation && mode === 'learn' && <p className="phonetic">{current.pronunciation}</p>}
             <AudioButton item={current} playing={audio.playing} onPlay={play}/>
@@ -670,8 +663,8 @@ export default function App() {
 
         {!loading && !loadError && !active && !editorOpen && page === 'home' && <>
           <section className="welcome">
-            <div><span className="eyebrow welcome-kicker">YOUR POLISH JOURNEY STARTS HERE</span><h1>Small steps.<br/><em>Real progress.</em></h1><p>Build confidence in Polish, one useful expression at a time. Listen, learn, and make it your own.</p><button type="button" className="hero-button" onClick={() => last ? openLesson(last,true) : goTo('library')}>{last ? 'Continue learning' : 'Explore lessons'} <span>↗</span></button></div>
-            <div className="welcome-art" aria-hidden="true"><span className="art-orbit orbit-one"/><span className="art-orbit orbit-two"/><div className="art-center">ą</div><span className="art-accent a1">ł</span><span className="art-accent a2">ż</span><span className="art-accent a3">ś</span></div>
+            <div className="welcome-copy"><h1>Small steps.<br/><em>Real progress.</em></h1><button type="button" className="hero-button" onClick={() => last ? openLesson(last,true) : goTo('library')}>{last ? 'Continue learning' : 'Explore lessons'} <span aria-hidden="true">→</span></button></div>
+            <div className="welcome-art" aria-hidden="true"><div className="type-card type-card-back">ł</div><div className="type-card type-card-front"><span className="type-card-caption">POLSKI</span><span className="type-card-glyph">ą</span><span className="type-card-rule"/></div><div className="type-card type-card-small">ś</div></div>
           </section>
           <div className="xp-ribbon" role="region" aria-label="Weekly XP progress">
             <div className="xp-ribbon-heading"><div><span className="eyebrow">YOUR WEEKLY EFFORT</span><strong>{xpStats.weekly} / {xpStats.goal} XP</strong>
@@ -693,8 +686,8 @@ export default function App() {
           <div className="section-heading lower"><div><span className="eyebrow">BUILD YOUR ROUTINE</span><h2>Explore a little more</h2></div></div>
           <div className="feature-grid">
             <button type="button" className="feature-card mint" onClick={() => { setFilter('vocabulary'); goTo('library'); }}><span className="feature-symbol">Aa</span><strong>Words & phrases</strong><span>Learn expressions you can use today.</span><span className="feature-next">Explore →</span></button>
-            <button type="button" className="feature-card peach" onClick={() => { setFilter('reading'); goTo('library'); }}><span className="feature-symbol">✳</span><strong>Reading practice</strong><span>Understand Polish in context.</span><span className="feature-next">Explore →</span></button>
-            <button type="button" className="feature-card blue" onClick={() => { setFilter('sounds'); goTo('library'); }}><span className="feature-symbol">♫</span><strong>Polish sounds</strong><span>Discover sounds unlike English.</span><span className="feature-next">Explore →</span></button>
+            <button type="button" className="feature-card peach" onClick={() => { setFilter('reading'); goTo('library'); }}><span className="feature-symbol"><UIIcon name="reading" size={25}/></span><strong>Reading practice</strong><span>Understand Polish in context.</span><span className="feature-next">Explore →</span></button>
+            <button type="button" className="feature-card blue" onClick={() => { setFilter('sounds'); goTo('library'); }}><span className="feature-symbol"><UIIcon name="sounds" size={25}/></span><strong>Polish sounds</strong><span>Discover sounds unlike English.</span><span className="feature-next">Explore →</span></button>
           </div>
         </>}
 
@@ -723,7 +716,7 @@ export default function App() {
               </div>)}
             </section>)}</div>
           {visibleLessons.length === 0 && <div className="empty-state"><h2>No matching lessons</h2><p>Try another search or select a different category.</p><button type="button" className="secondary-action" onClick={()=>chooseLibraryView('all')}>Show all stages</button></div>}
-          <p className="info-footnote">Built-in lessons come from the legacy collection. Personal lessons are saved to this browser only; export JSON for a portable backup.</p>
+          
         </>}
 
         {!loading && !loadError && !active && !editorOpen && page === 'practice' && <>
@@ -736,20 +729,20 @@ export default function App() {
                 <strong>{lesson.title}</strong><span>{count} {count === 1 ? 'expression' : 'expressions'} due</span><span>Review →</span>
               </button>;
             })}</div> : <p>No expressions are due right now. Keep learning and they will appear here automatically.{scheduledNext ? ' Your next review is scheduled for ' + new Date(scheduledNext).toLocaleDateString() + '.' : ''}</p>}
-            <p className="due-explain">Remembered → 1, 3, 7, 14 days and beyond. Needs practice → available again immediately. These are self-rated recall reviews, not pronunciation grades.</p>
+            
           </section>
           <div className="stats-row"><Counter value={practisedCount} label="Unique items seen"/><Counter value={Object.values(progress).reduce((total, x) => total + x.seen, 0)} label="Practice attempts"/><Counter value={recallRate(progress) + '%'} label="Self-rated recall"/></div>
           <div className="section-heading lower"><div><span className="eyebrow">RETURN TO PRACTICE</span><h2>Continue your lessons</h2></div></div>
           <div className="lesson-grid">{lessons.filter(x => completedIn(x) > 0).sort((a,b)=>completedIn(b)-completedIn(a)).slice(0,8).map(x => <LessonTile key={x.id} lesson={x} completed={completedIn(x)} onOpen={() => openLesson(x)}/>)}</div>
           {practisedCount === 0 && <div className="start-card"><p>Practice progress will appear here after your first lesson.</p><button className="primary-action" type="button" onClick={() => goTo('library')}>Choose a lesson →</button></div>}
-          <p className="info-footnote">These metrics reflect self-rated recall. Automated pronunciation assessment is a separate, upcoming feature.</p>
+          
         </>}
 
         {!loading && !loadError && !active && !editorOpen && page === 'expedition' && <>
           <section className="page-title"><span className="eyebrow">OPEN MAP · PRIVATE FAMILY EXPEDITION</span><h1>Your Poland expedition<span className="title-dot">.</span></h1>
             <p>Choose anywhere in Poland. No forced route, voting or adjacency rules. Every region you unlock stays open.</p></section>
           <div className="expedition-quick-access">
-            <span>Practising with others? Open shared weekly results without scrolling past the map.</span>
+            
             <button type="button" className="secondary-action" onClick={()=>goTo('groups')}>Learning groups &amp; scoreboards →</button>
           </div>
           <ExpeditionMap state={expedition} onChange={setExpedition} shared={familySummary}/>
@@ -764,7 +757,7 @@ export default function App() {
           <button className="secondary-action group-map-return" type="button" onClick={()=>goTo('expedition')}>← Back to Poland map</button>
           <FamilyPanel onConnection={changeFamilyConnection} onSummary={setFamilySummary}
             syncMessage={familySyncStatus} syncVersion={familySyncVersion}/>
-          <p className="info-footnote">Group scores count only eligible practice shared with that group. Your local progress and Poland map remain separate.</p>
+          
         </>}
         {!loading && !loadError && !active && !editorOpen && page === 'profile' && <>
           <section className="page-title"><span className="eyebrow">YOUR JOURNEY</span><h1>Your profile<span className="title-dot">.</span></h1><p>Manage your private learning identity and review the progress saved on this device.</p></section>
@@ -806,6 +799,6 @@ export default function App() {
       </main>
     </div>
 
-    <nav className="mobile-nav" aria-label="Mobile navigation">{nav.map(item => <button type="button" key={item.id} className={!lessonId && (page === item.id || (page === 'groups' && item.id === 'expedition')) ? 'selected' : ''} aria-current={!lessonId && (page === item.id || (page === 'groups' && item.id === 'expedition')) ? 'page' : undefined} onClick={() => goTo(item.id)}><span aria-hidden="true">{item.symbol}</span><small>{item.label}</small></button>)}</nav>
+    <nav className="mobile-nav" aria-label="Mobile navigation">{nav.map(item => <button type="button" key={item.id} className={!lessonId && (page === item.id || (page === 'groups' && item.id === 'expedition')) ? 'selected' : ''} aria-current={!lessonId && (page === item.id || (page === 'groups' && item.id === 'expedition')) ? 'page' : undefined} onClick={() => goTo(item.id)}><UIIcon name={item.icon} size={21}/><small>{item.label}</small></button>)}</nav>
   </div>;
 }
