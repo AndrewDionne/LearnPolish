@@ -1,3 +1,13 @@
+## UX-02: Library and Practice directness — 2026-10-23
+
+**Baseline certified and merged:** UX-01 [PR #111](https://github.com/AndrewDionne/LearnPolish/pull/111), integrated main `874d711c53e277fe4508eb7907c5e7dc8248d86e`, [CI #39924534279](https://github.com/AndrewDionne/LearnPolish/actions/runs/39924534279) **four of four PASS**; 2026-10-23 continuity status commit `ebf96296c412c16ccb8398fbeadab200f0f344ac`. No physical/linguistic/brand test approved.
+
+**This independent UX-02 branch (`feat/v2-ux02-library-practice-focus`) is IN DEVELOPMENT until four final-head CI jobs pass:** remove repeated Library introduction and stage descriptions/counts that duplicate the stage filter; make Create/Import visually secondary **without extra clicks, changing file support or hiding affordances**; preserve authored stage/track order, 26 source sets, searching, lesson descriptions/titles, progress meters and personal authoring actions. In Practice show a simple literal destination `Practice`, due review list and empty state first; move repeated self-rated stats out of Practice (still accessible on Profile); show up to four already-explored lessons and a clear `All lessons` route to Library. Do not introduce a new review algorithm, data-store change, score, coach or prompt.
+
+**Tests:** Playwright desktop and mobile for Library stage/search/author controls, due-review-empty Practice, Profile-owned stats, one real completed lesson and direct replay; revise prior navigation-heading fixtures, retain all existing content, E2E, accessibility, private group, offline and speech regression gates. No actual speech/provider calls, no deployment, no physical learner testing. Merge only after all four final PR-head CI lanes green and record exact PR/SHA/CI in issue #2 and this workflow. Next UX-03 Profile, family groups and Expedition screen hierarchy.
+
+---
+
 ## UX-01 certified; next priority UX-02 — 2026-10-23
 
 **Latest certified integrated V2 main:** [PR #111](https://github.com/AndrewDionne/LearnPolish/pull/111) **MERGED** at `874d711c53e277fe4508eb7907c5e7dc8248d86e` after [GitHub Actions #39924534279](https://github.com/AndrewDionne/LearnPolish/actions/runs/39924534279) **FOUR of FOUR PASS** at final PR head `c344ae4902fffc651b138d362ae0ef2b123ed7c2`. Earlier UX-01 status below saying not certified is historical and now superseded. LRN-02 was merged earlier via PR #110 at `445f10312bae3b378d84f330d74c0e1032aee142`, also four CI checks green.
