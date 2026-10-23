@@ -773,12 +773,10 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   font-size:var(--ptp-font-action);
 }
 .family-auth .family-actions button:first-child,
-.family-auth .family-verification>button:first-of-type,
 .family-auth .family-recovery>button:first-of-type{
   background:var(--ptp-primary);border-color:var(--ptp-primary);color:#fff;
 }
 .family-auth .family-actions button:first-child:hover:not(:disabled),
-.family-auth .family-verification>button:first-of-type:hover:not(:disabled),
 .family-auth .family-recovery>button:first-of-type:hover:not(:disabled),
 .learner-account-actions button:hover:not(:disabled){
   background:var(--ptp-primary-hover);
