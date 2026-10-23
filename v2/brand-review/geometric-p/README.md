@@ -1,3 +1,16 @@
+## UX-05B revision 2 — owner-requested adjustments (2026-10-23)
+
+**Requested:** (1) move the “Path to Polish” wordmark toward the capital P in the primary signature; (2) increase the P height in the app icon until its vertical clearances match the left and right clearances. Keep the approved geometric architectural concept, P proportions and one mint endpoint.
+
+**Implemented exact editable assets:**
+- `path-to-polish-signature.svg` is now the **complete vector lockup**, not the earlier letter-only sketch. Wordmark starts at x=352, immediately beside the rightmost P bowl at x=334.41 (17.59 SVG units gap); all lettering remains editable SVG `<text>` with Outfit/Avenir/Arial fallback. The navy path underlines the phrase and ends at a single mint dot.
+- `path-to-polish-square.svg` has a larger, taller white P with the same wide bowl proportion as the signature, not a copied or shrunk wordmark. Non-background mark extents (P including dot): x=35..221 and y=35..221 inside a 256-square icon, leaving **35 units of spacing on all four sides**. Dot centre (209,209), radius 12; lower baseline ends x=185 with a clear terminal gap.
+- `index.html` now previews the actual complete SVG signature and the square at 16, 24, 32, 48, 72 px. Geometry/spacing may be verified without a graphic-editor export.
+
+This is still a **review asset**, not a change to the deployed app icon/brand favicon. Owner sign-off on final primary wordmark and icon is the next gate; production integration must occur separately with complete four-lane CI.
+
+---
+
 # UX-05B · Geometric P brand exploration
 
 ## Owner direction
