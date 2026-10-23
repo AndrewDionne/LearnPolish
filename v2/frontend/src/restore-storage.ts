@@ -4,6 +4,7 @@ import {REVIEW_STORAGE_KEY} from './review';
 import {READING_POSITION_KEY} from './reading-position';
 import {EXPEDITION_STORAGE_KEY,parseExpedition} from './expedition/expedition';
 import type {LocalBackup} from './backup';
+import {CORE_CONTINUE_KEY} from './core-continuation';
 
 const LAST_LESSON_KEY='ptp-v2-last-lesson';
 type BrowserStore=Pick<Storage,'getItem'|'setItem'|'removeItem'>;
@@ -24,6 +25,8 @@ export function persistRestoredBackup(
     [READING_POSITION_KEY,JSON.stringify(backup.readingPositions)],
     [EXPEDITION_STORAGE_KEY,JSON.stringify(expedition)],
     [LAST_LESSON_KEY,backup.lastLessonId],
+    // Old exports have no core cursor: remove stale device data, infer from restored history.
+    [CORE_CONTINUE_KEY,backup.lastCoreLessonId??null],
   ];
   const previous=new Map<string,string|null>();
   const changed:string[]=[];
