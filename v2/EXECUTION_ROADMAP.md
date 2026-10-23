@@ -35,19 +35,30 @@ This audit is the **first action** under the locked execution order, not a rewri
 
 ---
 
-## Course presentation refinement — internal 3 × 3 taxonomy, learner-facing icons and colours (2026-10-23)
+## Course presentation refinement — silent 3 × 3 visual system (owner correction, 2026-10-23)
 
-**Owner direction:** The phase/level labels used during curriculum planning explain our educational objectives; **they are NOT nine headings, tier names, verbose badges, labels, or explanatory text to show learners**. Design a compact **3 × 3 semantic classification** for course lessons, while keeping the real lesson titles, clear learning actions and conversational content prominent.
+**Final owner directive superseding the previous accessibility-label/tooltip proposal:** The nine curricular locations are **internal planning and programme sequencing data**, not learner-facing labels or explanations. Represent them by a small visual icon + colour treatment on the lesson card. **No visible tier labels, descriptions, tooltip, title attribute, hover help, popover, screen-reader tier descriptions, or standalone legend.** Do not turn this into nine named navigation categories.
 
-- **Axis 1 — real-world course phase (three stages):** Visiting Poland / Extended Stay / Living in Poland. Communicate primarily through **three muted, coherent colour families**; do not assign actual colour hex values until an accessible contrast and branded palette audit.
-- **Axis 2 — pedagogical depth within each phase (three internal tiers):** foundation, practice/building, applied comprehension/conversation. Communicate primarily through **three simple recognizable, consistent icons or glyph patterns**. The meaning of `foundation` shifts with course phase: traveller = alphabet and essential letter-combination sounds; extended stay = advanced sound patterns and practical grammar; living in Poland = authentic listening/reading comprehension and sustained dialogue strategies. The second and third depth tiers apply and build each phase's foundational skills rather than introducing arbitrary content counts.
-- Nine combinations are **metadata**, not a nine-page UI navigator. The icon's colour + silhouette can classify a lesson subtly on its card, with the same treatment on lesson details/progress and optional upcoming-course view. **Do not show "Phase 2 / Tier 1 / Fundamentals" across cards, headings or main navigation.** Use ordinary lesson titles, e.g. `Ordering at a Restaurant`.
-- **Listen, Speak, Read are activity capabilities**, not the other 3×3 axis. Their own controls remain independent of the course tier icon; a lesson can teach multiple skills.
-- **Accessibility:** colour alone never carries placement; shapes visibly differ, meaningful `aria-label`/tooltip exposes human-readable course placement to screen-reader/keyboard users, and selection/disabled/progress states must not be conveyed solely by colour. Ensure contrast in light/dark/mobile; avoid dense icon-only unlabelled controls.
-- **Honesty:** pedagogical classification does not infer skill competence, unlock gates or grade accuracy. Course is *suggested linear order with free learner exploration*. Personal/custom sets remain in `Your lessons` and have **no core 3×3 mark or course-completion tier**; standalone `speak_swietokrzyska` stays a diagnostic.
-- **Implementation gate:** formalize this as optional schema/display metadata in A-01/B-01 and validate all 9 combinations plus fallback for missing/editorial-draft placements. Reuse owner-approved P and existing `--ptp-` palette. Agree final iconography and palette before a production visual change; test 320px, keyboard, screen reader, non-colour indicators and backup stability.
+**Internal vocabulary, only if names are needed in documentation/schema:**
 
-This is a **presentation policy**, not an instruction to re-tag and shuffle existing 26 lessons without source-grounded review or generate missing Polish recordings.
+| Internal journey | Beginning | Middle | End |
+|---|---|---|---|
+| **Journey 1** — Visiting Tourists | Beginning of Journey 1 | Middle of Journey 1 | End of Journey 1 |
+| **Journey 2** — Extended Stay | Beginning of Journey 2 | Middle of Journey 2 | End of Journey 2 |
+| **Journey 3** — Living in Poland | Beginning of Journey 3 | Middle of Journey 3 | End of Journey 3 |
+
+This replaces the prior `foundation / building / applied` tier **names**; pedagogical objectives still vary by journey. In Journey 1, beginning addresses alphabet, sounds and basic letter combinations. In Journey 2, beginning addresses harder pronunciation combinations and practical grammar. In Journey 3, beginning addresses listening and reading comprehension and strategies for maintaining conversations. Middle and End expand each journey's complexity through practical listening, spoken response and reading; this is **not** nine separate learning modes.
+
+**Presentation implementation policy:**
+- Three restrained colour families convey Journey 1/2/3. Three distinct silhouettes convey Beginning/Middle/End. Keep the icon visually subtle, consistent and separate from the Listen/Speak/Read **activity** controls.
+- Treat the curricular badge as **decorative, non-interactive artwork**: `aria-hidden="true"`, not focusable, without tooltip/`title`/`aria-label`/visually hidden tier copy. The lesson's actual readable **title, description and actions** remain accessible in their normal content; no curriculum tier information is injected into accessibility announcements.
+- **Never encode essential navigation, selection, completion, prerequisites, disabled state, or success/error feedback solely in icon colour**. Those meaningful states keep independent accessible text/control semantics. The decorative icon must not be the only way to navigate or understand what a lesson does.
+- No learner-facing `Beginning of Journey 2`, `Tier`, `Fundamentals` or other conceptual taxonomy copy (even behind hover), no explanatory legend and no nine-stage browsing control solely because the metadata exists.
+- Personal/imported `Your lessons` retain a separate library lane with **no canonical 3×3 mark or inferred core completion**; pronunciation lab also stays out. Preserve original source IDs, audio, user progress and free choice of all lessons.
+- In A-01/B-01, encode optional, validated journey 1/2/3 × position beginning/middle/end metadata independently from the old Library `curriculum.stage`; apply graphic treatment only after its visuals are reviewed. Check 320px layout, contrast and existing accessible **lesson titles/actions** without introducing new spoken icon labels.
+
+This is a **design contract only**, not permission to reorder lessons, add invented Polish recordings or alter scoring and user-facing behaviour.
+
 
 ---
 
