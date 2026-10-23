@@ -19,8 +19,8 @@ test('Home Continue finds the first new expression after reload while Library st
   await expect(resume).toContainText('2 of');
   await expect(resume).toContainText('Next: item 3');
   await page.reload();
-  await expect(page.getByRole('button',{name:'Continue learning'})).toBeVisible();
-  await page.getByRole('button',{name:'Continue learning'}).click();
+  await expect(page.getByRole('button',{name:'Continue course'})).toBeVisible();
+  await page.getByRole('button',{name:'Continue course'}).click();
   await expect(page.getByText('Cześć',{exact:true})).toBeVisible();
   await expect(page.locator('.item-count')).toContainText('3');
 
