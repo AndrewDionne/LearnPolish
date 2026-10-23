@@ -1,3 +1,15 @@
+## UX-05A — owner-requested p-dot → path identity (2026-10-23)
+
+**Certified base:** UX-04 [PR #114](https://github.com/AndrewDionne/LearnPolish/pull/114) squash `981bee3fbf98193eca9b8408578edb099d7ffc49`, [final-head CI #39931330955 all four PASS](https://github.com/AndrewDionne/LearnPolish/actions/runs/39931330955); main docs checkpoint `edc1ea9c1078884102aadd971ae9af1179184959`. Do not reinterpret old implementation statuses below as ongoing work.
+
+**Owner brief:** Replace the generic lowercase `p.` brand mark with an immediately recognisable but more proprietary symbol; retain the `p`, transform its dot into a small curved travel/learning route. Minimize visual complexity and avoid generic location-pin/road/map art. Proposal for **review, not final graphic/brand acceptance:** a hand-drawn vector lowercase `p` plus a mint two-endpoint route accent on the right/below the bowl. Existing navy/mint design and text wordmark remain unchanged.
+
+**Independent branch:** `feat/v2-ux05a-p-route-brand-mark`. Exact in-app master SVG geometry is `v2/frontend/src/BrandMark.tsx`, with identical geometry and standalone opaque navy background favicon `v2/frontend/public/brand-mark.svg`. Replace old `p.` CSS-rendered text in clickable desktop sidebar home brand; add noninteractive 30px contrasting variant alongside existing text breadcrumb in mobile topbar; reference Vite-base-aware favicon in `v2/frontend/index.html`. SVG uses currentColor (white on navy, navy on white), one accent colour and no webfont, external dependency, gradients or emoji.
+
+**Acceptance tests and boundary:** new desktop/mobile Playwright journeys confirm p-shape/route geometry, preserved accessible brand button, favicon loaded by browser, 320px horizontal sizing and existing navigation. Keep all learning mechanics, source content, family/private XP and speech untouched. Four **final-head** GitHub CI jobs (frontend desktop/mobile/axe, connected family mock services, private backend, benchmark) must PASS before integrating/merging. Physical mobile/Safari, user's aesthetic approval and real human linguistic/acoustic review still deferred. UX-05 broader design tokens/hierarchy review is a separate follow-on; do not expand this small owner requested mark into an unapproved rebrand.
+
+---
+
 ## UX-04 CERTIFIED; next UX-05 visual-identity audit — 2026-10-23
 
 **Latest merged GitHub main (UX-04):** [PR #114](https://github.com/AndrewDionne/LearnPolish/pull/114) squash `981bee3fbf98193eca9b8408578edb099d7ffc49`, final head `1ad7ddb869f8cff653d48221c2f2e37a4061fb69`, [Actions #39931330955](https://github.com/AndrewDionne/LearnPolish/actions/runs/39931330955) **FOUR of FOUR PASS** (frontend including desktop/mobile/axe/audio, private family connected browser/mocked Speech, private-family backend, benchmark). The prior "UX-04 in development" text below is implementation history **superseded** by this certification. UX-01 #111, UX-02 #112, UX-03 #113 were previously separately certified and merged. [GitHub issue #2](https://github.com/AndrewDionne/LearnPolish/issues/2) holds immutable merge and CI evidence.
