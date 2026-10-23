@@ -647,8 +647,9 @@ test('Practice review queue targets only due cards and preserves scheduling afte
   await page.getByRole('button', {name:/Reveal meaning/}).click();
   await page.getByRole('button', {name:/Got it/}).click();
   await expect(page.getByText('REVIEW COMPLETE', {exact:true})).toBeVisible();
-  await page.getByRole('button', {name:'Back to library →', exact:true}).click();
-  await practiceTab.click();
+  // A due review now returns directly to Practice, not via the Library.
+  await page.getByRole('button', {name:'Back to practice →', exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Practice.'})).toBeVisible();
   await expect(page.getByText('0 due now')).toBeVisible();
   await page.reload();
   await practiceTab.click();
