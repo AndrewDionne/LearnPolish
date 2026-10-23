@@ -17,17 +17,17 @@ const all=catalog.lessons.map(item=>lesson(item.id,item.id.startsWith('contrast_
 describe('A-01 source-backed, silent 3 by 3 course mapping',()=>{
   test('preserves the complete original catalogue and honest partial coverage',()=>{
     expect(catalog.lessons).toHaveLength(26);
-    expect(CORE_JOURNEY_PLACEMENTS).toHaveLength(20);
+    expect(CORE_JOURNEY_PLACEMENTS).toHaveLength(21);
     expect(new Set(CORE_JOURNEY_PLACEMENTS.map(x=>x.lessonId)).size).toBe(20);
     expect(CORE_JOURNEY_PLACEMENTS.every(x=>catalog.lessons.some(y=>y.id===x.lessonId))).toBe(true);
     expect(CORE_JOURNEY_PLACEMENTS.filter(x=>x.journey===3)).toHaveLength(0);
-    expect(orderedCoreLessons(all)).toHaveLength(20);
+    expect(orderedCoreLessons(all)).toHaveLength(21);
     const sections=groupJourneyLibrary(all);
     expect(sections.map(x=>x.heading)).toEqual(['Your path','Explore more']);
-    expect(sections[0].lessons).toHaveLength(20);
+    expect(sections[0].lessons).toHaveLength(21);
     expect(sections[1].lessons.map(x=>x.id).sort()).toEqual([
       'Countries_of_the_World','Districts_of_Warszawa','Names_of_Poland_1',
-      'Road_Terminology','The_Cities_of_Poland','speak_swietokrzyska',
+      'The_Cities_of_Poland','speak_swietokrzyska',
     ].sort());
     expect(sections.flatMap(x=>x.lessons).map(x=>x.id).sort()).toEqual(all.map(x=>x.id).sort());
   });
@@ -35,10 +35,11 @@ describe('A-01 source-backed, silent 3 by 3 course mapping',()=>{
   test('orders practical greetings before isolated geographic word lists',()=>{
     const shuffled=[...all].reverse();
     expect(orderedCoreLessons(shuffled)[0].id).toBe('Conversation_1');
-    expect(nextCoreLesson(shuffled,'Conversation_1')?.id).toBe('Basic_01R');
-    expect(nextCoreLesson(shuffled,'Emergencies_and_Health')?.id).toBe('contrast_krzy_przy');
+    expect(nextCoreLesson(shuffled,'Conversation_1')?.id).toBe('contrast_l_lstroked');
+    expect(nextCoreLesson(shuffled,'Emergencies_and_Health')?.id).toBe('On_the_tram_talking_to_another_passenger');
+    expect(nextCoreLesson(shuffled,'contrast_krzy_przy')?.id).toBe('numbers_1-20');
     expect(nextCoreLesson(shuffled,'H_M_clothes_shop_trying_on_a_T-shirt')).toBeNull();
-    expect(nextCoreLesson(shuffled,'Road_Terminology')).toBeNull();
+    expect(nextCoreLesson(shuffled,'Road_Terminology')?.id).toBe('Conversation_-_shopping');
     expect(nextCoreLesson(shuffled,'speak_swietokrzyska')).toBeNull();
     expect(nextCoreLesson(shuffled,'missing')).toBeNull();
   });
