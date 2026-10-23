@@ -843,3 +843,18 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .foundation-guide-title{min-width:0;overflow-wrap:anywhere;flex:1}
 .foundation-guide-arrow{color:var(--ptp-link);flex:none}
 @media(max-width:560px){.foundation-guide{padding:12px}.foundation-guide-list{grid-template-columns:minmax(0,1fr)}}
+
+/* C-05: small actual beginner listening/learning groups built from original audio. */
+.foundation-starter{display:grid;gap:9px;padding:12px;border:1px solid var(--ptp-border);
+  border-radius:10px;background:#f9fcfb;min-width:0}
+.foundation-starter-heading{font-size:13px;font-weight:650;color:var(--ptp-ink)}
+.foundation-starter-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.foundation-starter-button{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;
+  text-align:left;gap:4px;background:var(--ptp-surface);border:1px solid var(--ptp-control-border);
+  border-radius:9px;padding:12px;min-height:52px;color:var(--ptp-ink);cursor:pointer;
+  font:inherit}
+.foundation-starter-button strong{font-size:13px;font-weight:650}
+.foundation-starter-button span{font-size:12px;color:var(--ptp-muted)}
+.foundation-starter-button:hover{border-color:var(--ptp-link);background:#eef6f2}
+.foundation-starter-button:focus-visible{outline:3px solid var(--ptp-link);outline-offset:2px}
+@media(max-width:560px){.foundation-starter-options{grid-template-columns:1fr}}
