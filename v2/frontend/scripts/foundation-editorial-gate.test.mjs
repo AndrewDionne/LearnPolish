@@ -65,7 +65,7 @@ test('reject new fake first-word voice, reordered themes or malformed sentence b
  const fake=fresh();fake.firstSentenceCandidates[0].reviewed=true;
  assert.throws(()=>validate(fake),/F2 preview/);
  const noPhrase=fresh();noPhrase.firstSentenceCandidates.pop();
- assert.throws(()=>validate(noPhrase),/ten sentence/);
+ assert.throws(()=>validate(noPhrase),/missing preliminary bridge sentences/);
 });
 test('reject learner runtime imports and publication status flip',()=>{
  assert.throws(()=>validate(fresh(),{runtimeReferences:['v2/frontend/src/Study.tsx']}),/learner code imported/);
