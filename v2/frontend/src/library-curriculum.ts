@@ -66,6 +66,20 @@ export function groupLibraryLessons(lessons:Lesson[]): LibrarySection[] {
   return sections;
 }
 
+/** Optional next-step suggestion across authored curriculum tracks and stages.
+ * Open access is preserved: no unlock gate, score precondition or inferred
+ * advancement from personally authored lessons or the experimental lab.
+ */
+export function nextCurriculumLesson(lessons:Lesson[],currentId:string):Lesson|null {
+  const current=lessons.find(lesson=>lesson.id===currentId);
+  if(!current?.curriculum || current.curriculum.stage==='practice')return null;
+  const ordered=groupLibraryLessons(lessons)
+    .filter(section=>section.id!=='practice'&&section.id!=='personal')
+    .flatMap(section=>section.tracks.flatMap(track=>track.lessons));
+  const at=ordered.findIndex(lesson=>lesson.id===currentId);
+  return at<0 ? null : ordered[at+1]??null;
+}
+
 function normalizeSearch(value:string):string {
   return value.normalize('NFKD').toLowerCase().replace(/[_–—-]+/g,' ')
     .replace(/\s+/g,' ').trim();

@@ -7,7 +7,7 @@ import SpeakPanel from './speech/SpeakPanel';
 import {requestSpeechFeedback, SPEECH_ASSESSMENT_AVAILABLE, SPEECH_BLEND_AVAILABLE} from './speech/assessment';
 import SoundContrastDeck from './SoundContrastDeck';
 import MicroDialoguePanel from './MicroDialoguePanel';
-import { groupLibraryLessons, libraryMatches, inLibraryView, libraryViewCount, LIBRARY_STAGES } from './library-curriculum';
+import { groupLibraryLessons, libraryMatches, inLibraryView, libraryViewCount, LIBRARY_STAGES, nextCurriculumLesson } from './library-curriculum';
 import type { LibraryView } from './library-curriculum';
 import { parseProgress, recallRate, recordAttempt, STORAGE_KEY } from './progress';
 import type { Progress } from './progress';
@@ -206,6 +206,8 @@ export default function App() {
   }, [reviews]);
 
   const active = lessons.find(x => x.id === lessonId);
+  const upcomingLesson=active && !reviewOnly && !soundReturn
+    ? nextCurriculumLesson(lessons,active.id) : null;
   const activeMicroDialogue=active?.microDialogues?.find(dialogue=>dialogue.id===microDialogueId);
   const focusedGroup = soundReturn && soundReturn.practiceLessonId === active?.id ? soundReturn.practiceGroupId : null;
   const batched = !!active && usesPracticeBatches(active) && !reviewOnly && !focusedGroup;
@@ -565,7 +567,13 @@ export default function App() {
               {batched && batchIndex < totalBatches - 1
                 ? <button type="button" className="primary-action" onClick={() => changeBatch(batchIndex + 1)}>Continue to {practiceBatchLabel(active, batchIndex + 1)} →</button>
                 : soundReturn && active.id === soundReturn.practiceLessonId ? <button type="button" className="primary-action" onClick={returnFromSoundPractice}>Return to {soundReturn.sourceWord} →</button>
-                : <button type="button" className="primary-action" onClick={() => goTo('library')}>Back to library →</button>}
+                : <>
+                  {upcomingLesson && <button type="button" className="primary-action"
+                    aria-label={'Continue to '+upcomingLesson.title}
+                    onClick={() => openLesson(upcomingLesson)}>Next: {upcomingLesson.title} →</button>}
+                  <button type="button" className={upcomingLesson ? 'secondary-action' : 'primary-action'}
+                    onClick={() => goTo('library')}>Back to library →</button>
+                </>}
             </div>
           </section> : mode === 'speak' ? <SpeakPanel key={current.id} item={current} playing={audio.playing} onPlayReference={play} onStopReference={stopAudio}
             guideVisible={guideVisible} onGuideChange={setGuideVisible}
