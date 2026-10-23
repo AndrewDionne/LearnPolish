@@ -1,0 +1,151 @@
+{
+  "schemaVersion": 1,
+  "unitId": "T09",
+  "status": "provisional_author_draft_requires_native_review",
+  "published": false,
+  "sourceStatus": "no_existing_source_audio_or_approved_transcript",
+  "fictionalContext": "Imaginary accommodation and surname Nowak. The two-night reservation, breakfast window and check-out time are fictional exercise details, not property policy.",
+  "language": "pl-PL",
+  "candidateTurns": [
+    {
+      "draftId": "T09-D01",
+      "speaker": "guest",
+      "polish": "Dzień dobry, mam rezerwację na nazwisko Nowak.",
+      "english": "Hello, I have a reservation under the name Nowak.",
+      "audio": null
+    },
+    {
+      "draftId": "T09-D02",
+      "speaker": "receptionist",
+      "polish": "Dzień dobry. Na ile nocy?",
+      "english": "Hello. For how many nights?",
+      "audio": null
+    },
+    {
+      "draftId": "T09-D03",
+      "speaker": "guest",
+      "polish": "Na dwie noce.",
+      "english": "For two nights.",
+      "audio": null
+    },
+    {
+      "draftId": "T09-D04",
+      "speaker": "receptionist",
+      "polish": "Czy mogę prosić o dokument tożsamości?",
+      "english": "May I see your identification document?",
+      "audio": null
+    },
+    {
+      "draftId": "T09-D05",
+      "speaker": "guest",
+      "polish": "Oczywiście, proszę.",
+      "english": "Of course, here you are.",
+      "audio": null
+    },
+    {
+      "draftId": "T09-D06",
+      "speaker": "receptionist",
+      "polish": "Oto karta do pokoju. Pokój jest na drugim piętrze.",
+      "english": "Here is your room key card. The room is on the second floor.",
+      "audio": null
+    },
+    {
+      "draftId": "T09-D07",
+      "speaker": "guest",
+      "polish": "O której godzinie jest śniadanie?",
+      "english": "What time is breakfast?",
+      "audio": null
+    },
+    {
+      "draftId": "T09-D08",
+      "speaker": "receptionist",
+      "polish": "Od siódmej do dziesiątej.",
+      "english": "From seven until ten.",
+      "audio": null
+    },
+    {
+      "draftId": "T09-D09",
+      "speaker": "guest",
+      "polish": "Przepraszam, czy można powtórzyć?",
+      "english": "Excuse me, could you repeat that?",
+      "audio": null
+    },
+    {
+      "draftId": "T09-D10",
+      "speaker": "receptionist",
+      "polish": "Śniadanie jest od siódmej do dziesiątej.",
+      "english": "Breakfast is from seven until ten.",
+      "audio": null
+    },
+    {
+      "draftId": "T09-D11",
+      "speaker": "guest",
+      "polish": "O której godzinie trzeba się wymeldować?",
+      "english": "What time is check-out?",
+      "audio": null
+    },
+    {
+      "draftId": "T09-D12",
+      "speaker": "receptionist",
+      "polish": "Do jedenastej.",
+      "english": "By eleven.",
+      "audio": null
+    },
+    {
+      "draftId": "T09-D13",
+      "speaker": "guest",
+      "polish": "Gdzie jest winda?",
+      "english": "Where is the lift?",
+      "audio": null
+    },
+    {
+      "draftId": "T09-D14",
+      "speaker": "receptionist",
+      "polish": "Po prawej stronie, obok recepcji.",
+      "english": "On the right, next to reception.",
+      "audio": null
+    },
+    {
+      "draftId": "T09-D15",
+      "speaker": "guest",
+      "polish": "Dziękuję za pomoc.",
+      "english": "Thank you for your help.",
+      "audio": null
+    },
+    {
+      "draftId": "T09-D16",
+      "speaker": "receptionist",
+      "polish": "Proszę bardzo. Miłego pobytu!",
+      "english": "You're welcome. Enjoy your stay!",
+      "audio": null
+    }
+  ],
+  "recordingPlan": {
+    "speakerRoles": [
+      "guest",
+      "receptionist"
+    ],
+    "voiceApproval": "not_reviewed_or_authorized",
+    "expectedRecordings": 16,
+    "fileNamingRule": "After approval only: staged/private/t09/{draftId}.mp3; map to NEW canonical content IDs after review (draft IDs are NOT source IDs)",
+    "audioAcceptance": [
+      "Two distinct voices; one naturally spoken full Polish utterance per approved line without endings clipped",
+      "Native-reviewed canonical source transcript and English translation identical to the single recorded turn",
+      "Rights/license and consent metadata; source-text SHA-256, recording SHA-256 and checked sample rate/codec",
+      "Two human approvals: native-text reviewer and independent acoustic listening reviewer",
+      "No provider requests, audio publishing, recording placeholders in generated lessons or Speak scoring before separate approved content PR"
+    ]
+  },
+  "requiredReadArtifact": [
+    "Short fictional booking confirmation with name, dates/nights, check-in/check-out and clearly illustrative opening times",
+    "Native/English text review and rights/provenance checks for the written source",
+    "Comprehension prompts with one answer justified by the exact written/recorded line, plus negative distractor cases"
+  ],
+  "review": {
+    "nativeTextApproved": false,
+    "translationsApproved": false,
+    "speakerAndRightsApproved": false,
+    "audioMatchedAndApproved": false,
+    "readApproved": false
+  }
+}
