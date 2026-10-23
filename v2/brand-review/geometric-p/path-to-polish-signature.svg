@@ -1,8 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 830 580" role="img" aria-labelledby="title description">
-  <title id="title">Path to Polish geometric P signature</title>
-  <desc id="description">An architectural uppercase P, an extended baseline suggesting a path, and a detached round endpoint.</desc>
-  <g fill="#101929">
-    <path fill-rule="evenodd" d="M126 67 H305 C438 67 507 120 507 212 C507 310 438 352 305 352 H192 V502 H681 V560 H126 V352 H60 V291 H126 Z M192 125 V292 H303 C397 292 440 266 440 213 C440 156 397 125 303 125 Z"/>
-    <circle cx="750" cy="531" r="29"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1480 370" role="img" aria-labelledby="title description">
+  <title id="title">Path to Polish geometric P signature and wordmark</title>
+  <desc id="description">A custom architectural P extends into a long, straight path beneath the Path to Polish name. The lettering sits close to the P and the path ends at a mint dot.</desc>
+  <!-- The P and underline are one continuous solid letterform. -->
+  <g transform="translate(15 -22) scale(.63)" fill="#101929">
+    <path fill-rule="evenodd" d="M126 67 H305 C438 67 507 120 507 212 C507 310 438 352 305 352 H192 V502 H2140 V560 H126 V352 H60 V291 H126 Z M192 125 V292 H303 C397 292 440 266 440 213 C440 156 397 125 303 125 Z"/>
   </g>
+  <!-- Revised kerning: start only 18 units beyond the P bowl (at x334.4). -->
+  <text x="352" y="281" fill="#101929"
+    font-family="Outfit, Avenir Next, Century Gothic, Arial, sans-serif"
+    font-size="116" font-weight="500" letter-spacing="-3">Path to Polish</text>
+  <circle cx="1403" cy="312" r="19" fill="#56CFAE"/>
 </svg>
