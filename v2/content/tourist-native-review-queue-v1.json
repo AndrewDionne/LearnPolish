@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 1,
+  "status": "editorial_queue_unapproved_not_for_runtime",
+  "published": false,
+  "scope": [
+    "T02",
+    "T03",
+    "T04",
+    "T05",
+    "T06",
+    "T07",
+    "T08",
+    "T09"
+  ],
+  "workItems": [
+    {
+      "unitId": "T02",
+      "issue": 126,
+      "sourceState": "existing_source_only",
+      "status": "awaiting_native_text_and_audio_review",
+      "approvedText": false,
+      "approvedAudio": false,
+      "shortfall": "Complete self-introduction reply and protect unfinished named-response reference",
+      "deliverables": [
+        "Approve complete first-person name reply in informal/formal register",
+        "Record exactly one reviewed utterance per Speak target",
+        "Review translation, protected original IDs and contextual answer"
+      ]
+    },
+    {
+      "unitId": "T03",
+      "issue": 126,
+      "sourceState": "existing_source_only",
+      "status": "awaiting_native_text_and_audio_review",
+      "approvedText": false,
+      "approvedAudio": false,
+      "shortfall": "Price, quantity, spoken cashier response and contextual Read",
+      "deliverables": [
+        "Approve spoken Polish currency/numbers and cash/card response",
+        "Record price and payment question/reply in coherent context",
+        "Approve original price-list or receipt and grounded comprehension"
+      ]
+    },
+    {
+      "unitId": "T04",
+      "issue": 129,
+      "sourceState": "existing_source_only",
+      "status": "awaiting_native_text_and_audio_review",
+      "approvedText": false,
+      "approvedAudio": false,
+      "shortfall": "Waiter/guest conversation and real restaurant Read",
+      "deliverables": [
+        "Approve natural waiter responses and ordering/clarification turns",
+        "Record coherent two-role scene and bill request",
+        "Add independently verified menu or bill reading source"
+      ]
+    },
+    {
+      "unitId": "T05",
+      "issue": 129,
+      "sourceState": "existing_source_only",
+      "status": "awaiting_native_text_and_audio_review",
+      "approvedText": false,
+      "approvedAudio": false,
+      "shortfall": "Grocery seller responses and checkout with verified price",
+      "deliverables": [
+        "Approve quantity, variant clarification and actual seller-price response",
+        "Record role-switched seller/shopper checkout turns",
+        "Check authentic price/pay/receipt prompts against T03"
+      ]
+    },
+    {
+      "unitId": "T06",
+      "issue": 132,
+      "sourceState": "existing_source_only",
+      "status": "awaiting_native_text_and_audio_review",
+      "approvedText": false,
+      "approvedAudio": false,
+      "shortfall": "Pedestrian turns and clarification, not tram-only stop reply",
+      "deliverables": [
+        "Approve left/right/straight walking directions with destination",
+        "Record repeat/clarify exchange with appropriate register",
+        "Approve source-grounded pedestrian sign/map reading"
+      ]
+    },
+    {
+      "unitId": "T07",
+      "issue": 134,
+      "sourceState": "existing_source_only",
+      "status": "awaiting_native_text_and_audio_review",
+      "approvedText": false,
+      "approvedAudio": false,
+      "shortfall": "Transit route, platform, transfer and genuine timetables",
+      "deliverables": [
+        "Approve route number and platform reply without live policy inference",
+        "Record fare/validation/transfer clarification",
+        "Approve an authentic date-scoped timetable/sign Read item"
+      ]
+    },
+    {
+      "unitId": "T08",
+      "issue": 136,
+      "sourceState": "existing_source_only",
+      "status": "awaiting_native_text_and_audio_review",
+      "approvedText": false,
+      "approvedAudio": false,
+      "shortfall": "Museum-specific visitor role-play and reviewed notice",
+      "deliverables": [
+        "Review ticket category and sample opening hour phrases",
+        "Record museum staff/visitor replies with two voices",
+        "Approve a fictional-or-licensed real visitor sign and comprehension"
+      ]
+    },
+    {
+      "unitId": "T09",
+      "issue": 137,
+      "sourceState": "no_recorded_source",
+      "status": "awaiting_native_text_and_audio_review",
+      "approvedText": false,
+      "approvedAudio": false,
+      "shortfall": "Accommodation check-in needs native source and licensed audio before unit exists",
+      "deliverables": [
+        "Native-review every guest and receptionist proposed line and translation",
+        "Record distinct voices with transcript/audio checksums and licensing",
+        "Approve booking/check-in written notice and grounded Read/Listen questions"
+      ]
+    }
+  ]
+}
