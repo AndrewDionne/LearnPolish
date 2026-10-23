@@ -70,3 +70,9 @@
 ## Process
 
 Each coherent DPT change is a focused PR against `main`, with its own tests and the four established CI jobs: frontend build/migration/unit/desktop+mobile/axe, private family backend, connected family browser and benchmark harness. Merge **only** after all lanes pass at the final head. Record SHA/CI/known limitations in GitHub issue #2 and the workflow continuity record. Return to physical tests for reference audio quality, actual mic/Safari playback, voice assessments and human visual review without treating them as prerequisites for DPT-01–03.
+
+### 2026-10-23 learner-experience return: LRN-01 in development
+
+DPT-04 V1 Speak click/timeout certification is **MERGED** as [PR #108](https://github.com/AndrewDionne/LearnPolish/pull/108), commit `657c0669b31428d433acc5b5dbe15c7cf9255eb3`, [4/4 CI #39919348366](https://github.com/AndrewDionne/LearnPolish/actions/runs/39919348366). Pronunciation infrastructure paused for real owner testing; earlier "IN DEVELOPMENT" labels above are historical.
+
+**LRN-01:** Home `Continue learning` resumes the first not-yet-practised **Learn** word from existing local Progress, including the approved Numbers 1–10/11–20 sections. Reading retains its saved passage; all-explored returns to the first card for genuine review. Library opening deliberately starts from the beginning or its existing first unvisited Numbers section, not a hidden new resume. Pure derived cursor, no new persistence, XP/review scoring, family sync, source curriculum edits or audio. Unit + desktop/mobile E2E, four certified lanes before merge. Later user-facing priorities: review pacing, progression transparency, family-friendly engagement.
