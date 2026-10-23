@@ -295,3 +295,47 @@ test('site permission allowed but macOS/browser rejects mic shows distinct diagn
   await expect(page.getByRole('button',{name:/Start recording/})).toBeEnabled();
   expect(azureCalls).toBe(0);
 });
+
+
+test('V1 regression: two immediate assessment clicks send one take and Next discards late feedback',async({page})=>{
+  test.setTimeout(90_000);
+  await installSyntheticMicrophone(page);
+  let calls=0;
+  let release!:()=>void;
+  const gate=new Promise<void>(resolve=>{release=resolve;});
+  await page.route('**/api/v2/family/speech/assess',async route=>{
+    calls++;
+    await gate;
+    // Browser may have already aborted this response after Next.
+    try{
+      await route.fulfill({
+        status:200,contentType:'application/json',
+        body:JSON.stringify({
+          item_id:requestedItemId(route),status:'ok',engine:'azure-pl-PL-scripted',
+          calibration:'uncalibrated',scores:{accuracy:11,fluency:15,completeness:20},
+        }),
+      });
+    }catch{/* canceled request cannot be fulfilled and must not score */}
+  });
+  await connectPrivateAdult(page);
+  await recordValidTake(page);
+  // Two actions in the same browser task: no React state render between them.
+  await page.evaluate(()=>{
+    const button=[...document.querySelectorAll<HTMLButtonElement>('button')]
+      .find(b=>b.textContent?.trim()==='Check my pronunciation');
+    if(!button)throw new Error('Assessment control missing');
+    button.click();button.click();
+  });
+  await expect(page.getByRole('button',{name:'Checking pronunciation…'})).toBeDisabled();
+  await expect.poll(()=>calls).toBe(1);
+  await page.getByRole('button',{name:'Next',exact:true}).click();
+  await expect(page.getByText('Dobry wieczór',{exact:true})).toBeVisible();
+  release();
+  await page.waitForTimeout(100); // allow a canceled mock request to settle
+  expect(calls).toBe(1);
+  await expect(page.locator('.speak-scores')).toHaveCount(0);
+  await expect(page.getByText('11/100')).toHaveCount(0);
+  // A later intentional new take is still available and not blocked by the old request.
+  await recordValidTake(page);
+  await expect(page.getByRole('button',{name:'Check my pronunciation'})).toBeEnabled();
+});
