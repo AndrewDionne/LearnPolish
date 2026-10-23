@@ -10,13 +10,14 @@ import type {UIIconName} from './UIIcon';
 import {requestSpeechFeedback, SPEECH_ASSESSMENT_AVAILABLE, SPEECH_BLEND_AVAILABLE} from './speech/assessment';
 import SoundContrastDeck from './SoundContrastDeck';
 import MicroDialoguePanel from './MicroDialoguePanel';
-import { groupLibraryLessons, libraryMatches, inLibraryView, libraryViewCount, LIBRARY_STAGES, nextCurriculumLesson } from './library-curriculum';
-import type { LibraryView } from './library-curriculum';
+import {libraryMatches} from './library-curriculum';
+import {groupJourneyLibrary,journeyPlacement,nextCoreLesson} from './core-journey';
+import JourneyMarker from './JourneyMarker';
 import { parseProgress, recallRate, recordAttempt, STORAGE_KEY } from './progress';
 import type { Progress } from './progress';
 import { PERSONAL_STORAGE_KEY, importPersonalLesson, makePersonalLesson, parsePersonalLessons, toPortableLesson, upsertPersonalLesson } from './personal';
 import type { DraftItem } from './personal';
-import { availableModes, comprehensionChoices, correctComprehensionAnswer, itemPractised, itemsForMode, progressKey, readingStage } from './modes';
+import { availableModes, comprehensionChoices, correctComprehensionAnswer, itemPractised, itemsForMode, progressKey } from './modes';
 import type { LearningMode } from './modes';
 import { READING_POSITION_KEY, parseReadingPositions, safeReadingPosition } from './reading-position';
 import { firstUnvisitedBatch, practiceBatchCount, practiceBatchItems, practiceBatchLabel, usesPracticeBatches } from './practice-batches';
@@ -68,13 +69,15 @@ function Counter({ value, label }: { value: string | number; label: string }) {
 
 function LessonTile({ lesson, completed, onOpen }: { lesson: Lesson; completed: number; onOpen: () => void }) {
   const symbol = lesson.kind === 'reading' ? <UIIcon name="reading" size={31}/> : lesson.kind === 'sounds' ? <UIIcon name="sounds" size={31}/> : 'Aa';
+  const placement=journeyPlacement(lesson);
   return <button type="button" className="lesson-tile" onClick={onOpen}>
-    <span className={'lesson-art ' + lesson.kind}>{symbol}</span>
+    <span className={'lesson-art ' + lesson.kind}>{symbol}
+      {placement && <JourneyMarker placement={placement}/>}
+    </span>
     <span className="lesson-tile-body">
       <span className="eyebrow">{lessonLabel(lesson.kind)}</span>
       <strong>{lesson.title}</strong>
       {lesson.description && <span className="tile-description">{lesson.description}</span>}
-      {lesson.progression && <span className="reading-stage">Step {lesson.progression.order} · {readingStage(lesson.progression.stage)}</span>}
       <span className="tile-detail">{lesson.items.length} {lesson.kind === 'reading' ? 'passages' : 'items'} · {completed} practised</span>
       <span className="meter" aria-hidden="true"><span style={{ width: (100 * completed / lesson.items.length) + '%' }} /></span>
     </span>
@@ -114,7 +117,6 @@ export default function App() {
   const [lessonLoadAttempt,setLessonLoadAttempt]=useState(0);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<KindFilter>('all');
-  const [libraryView,setLibraryView] = useState<LibraryView>('all');
   const [lessonId, setLessonId] = useState<string | null>(null);
   const [index, setIndex] = useState(0);
   const [batchIndex,setBatchIndex] = useState(0);
@@ -210,7 +212,7 @@ export default function App() {
 
   const active = lessons.find(x => x.id === lessonId);
   const upcomingLesson=active && !reviewOnly && !soundReturn
-    ? nextCurriculumLesson(lessons,active.id) : null;
+    ? nextCoreLesson(lessons,active.id) : null;
   const activeMicroDialogue=active?.microDialogues?.find(dialogue=>dialogue.id===microDialogueId);
   const focusedGroup = soundReturn && soundReturn.practiceLessonId === active?.id ? soundReturn.practiceGroupId : null;
   const batched = !!active && usesPracticeBatches(active) && !reviewOnly && !focusedGroup;
@@ -253,22 +255,9 @@ export default function App() {
   const filtered = useMemo(() => lessons.filter(x =>
     (filter === 'all' || x.kind === filter) && libraryMatches(x,query)
   ), [lessons, filter, query]);
-  const visibleLessons = useMemo(() => filtered.filter(x=>inLibraryView(x,libraryView)),
-    [filtered,libraryView]);
-  const librarySections = useMemo(() => groupLibraryLessons(visibleLessons),[visibleLessons]);
-  const libraryViewOptions: {id:LibraryView;label:string;count:number}[] = [
-    {id:'all',label:'All stages',count:lessons.length},
-    ...LIBRARY_STAGES.map(stage=>({
-      id:stage.id,label:stage.heading,count:libraryViewCount(lessons,stage.id),
-    })),
-    ...(libraryViewCount(lessons,'personal')>0 ? [{
-      id:'personal' as const,label:'Your lessons',count:libraryViewCount(lessons,'personal'),
-    }] : []),
-  ];
-  // Choosing a stage is direct navigation, not another opaque stacked filter.
-  const chooseLibraryView=(next:LibraryView)=>{
-    setLibraryView(next);setQuery('');setFilter('all');
-  };
+  // Core is ordered independently of legacy Library tracks and personal lessons.
+  // The marker taxonomy stays invisible in headings, labels and spoken help.
+  const librarySections=useMemo(()=>groupJourneyLibrary(filtered),[filtered]);
 
   const stopAudio = () => { audio.stop(); };
   const goTo = (destination: Page) => {
@@ -692,26 +681,15 @@ export default function App() {
         {!loading && !loadError && !active && !editorOpen && page === 'library' && <>
           <section className="page-title"><h1>Lesson library<span className="title-dot">.</span></h1></section>
           <div className="author-actions library-author-actions"><button type="button" className="secondary-action" onClick={beginNew}>+ Create lesson</button><label className="import-button">Import JSON<input aria-label="Import lesson JSON" type="file" accept=".json,application/json" onChange={e => { const file = e.currentTarget.files?.[0]; void importFile(file); e.currentTarget.value = ''; }} /></label></div>{importError && <p className="author-error" role="alert">{importError}</p>}
-          <div className="library-stage-picker" role="group" aria-label="Browse learning stage">
-            {libraryViewOptions.map(option=><button type="button" key={option.id}
-              aria-pressed={libraryView===option.id}
-              className={libraryView===option.id?'selected':''}
-              onClick={()=>chooseLibraryView(option.id)}>
-              {option.label} <span className="library-stage-count" aria-hidden="true">{option.count}</span>
-            </button>)}
-          </div>
-          <div className="library-controls"><label className="search-wrap"><span aria-hidden="true">⌕</span><input type="search" value={query} onChange={e => {setQuery(e.target.value);setLibraryView('all');}} placeholder="Search lessons or Polish phrases" aria-label="Search lessons" /></label><div className="filter-buttons" role="group" aria-label="Filter lessons">{(['all','vocabulary','reading','sounds'] as KindFilter[]).map(kind => <button type="button" key={kind} className={filter === kind ? 'chosen' : ''} onClick={() => {setFilter(kind);setLibraryView('all');}}>{kind === 'all' ? 'All lessons' : lessonLabel(kind)}</button>)}</div></div>
+          <div className="library-controls"><label className="search-wrap"><span aria-hidden="true">⌕</span><input type="search" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search lessons or Polish phrases" aria-label="Search lessons" /></label><div className="filter-buttons" role="group" aria-label="Filter lessons">{(['all','vocabulary','reading','sounds'] as KindFilter[]).map(kind => <button type="button" key={kind} className={filter === kind ? 'chosen' : ''} onClick={() => setFilter(kind)}>{kind === 'all' ? 'All lessons' : lessonLabel(kind)}</button>)}</div></div>
           <div className="curriculum-sections">{librarySections.map(section=>
             <section className="curriculum-section" aria-label={section.heading} key={section.id}>
               <div className="curriculum-stage-heading"><h2>{section.heading}</h2></div>
-              {section.tracks.map(track=><div className="curriculum-track" key={track.id}>
-                <h3>{track.heading}</h3>
-                <div className="lesson-grid">{track.lessons.map(lesson=>
-                  <LessonTile key={lesson.id} lesson={lesson} completed={completedIn(lesson)}
-                    onOpen={() => openLesson(lesson)}/>)}</div>
-              </div>)}
+              <div className="lesson-grid">{section.lessons.map(lesson=>
+                <LessonTile key={lesson.id} lesson={lesson} completed={completedIn(lesson)}
+                  onOpen={() => openLesson(lesson)}/>)}</div>
             </section>)}</div>
-          {visibleLessons.length === 0 && <div className="empty-state"><h2>No matching lessons</h2><p>Try another search or select a different category.</p><button type="button" className="secondary-action" onClick={()=>chooseLibraryView('all')}>Show all stages</button></div>}
+          {filtered.length === 0 && <div className="empty-state"><h2>No matching lessons</h2><p>Try another search or select a different category.</p><button type="button" className="secondary-action" onClick={()=>{setQuery('');setFilter('all');}}>Show all lessons</button></div>}
           
         </>}
 
