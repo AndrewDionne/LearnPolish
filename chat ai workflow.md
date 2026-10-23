@@ -1,3 +1,11 @@
+## B-03 T02/T03 content-review gating tranche (2026-10-23; PR certification pending)
+
+**Authority:** Current main as of A-03/B-02 [PR #124](https://github.com/AndrewDionne/LearnPolish/pull/124), four lanes PASS; next B-03 remains a **native-content blocker** rather than a cosmetic UI task. Work branch `feat/v2-b03-tourist-editorial-source-gate` stages an **unpublished** exact-source editorial packet at `v2/content/tourist-editorial-review-v1.json`, human handoff `v2/TOURIST_T02_T03_EDITORIAL_REVIEW.md`, and a Node source-identity/protected-reference test gate in the regular migration checks. T02 has recorded reading example but incomplete protected `Conversation_1:25` for Speak; T03 only has buyer questions/isolated numbers, **no natural heard price, clerk reply or contextual Read passage**. No new Polish production text/audio, new lesson/IDs, user-facing changes, pronunciation scoring or permission to unlock 14 protected references.
+
+**Gate:** require four final-head GitHub CI lanes PASS before recommending integration; do not say native-reviewed or physically certified. Once reviewers provide complete T02/T03 Polish/English conversational text and audio evidence, make **separate** authorized content promotion PR, only then expand T04+. Maintain 26/482/455 sources, original Numbers lesson and personal/XP/privacy/consent boundaries.
+
+---
+
 ## A-03/B-02 TOURIST CONVERSATION UNITS T01–T03 CERTIFIED + MERGED (2026-10-23)
 
 **Latest product main merge:** [PR #124](https://github.com/AndrewDionne/LearnPolish/pull/124) squash `c95b3eacc64140d0a84420481e43099b8673fcdb`, final PR head `999e1536ff121be252aee6affaf32fa1c0ad7446`, [CI run #39987136585](https://github.com/AndrewDionne/LearnPolish/actions/runs/39987136585) **all 4/4 PASS** (frontend TS/Vitest/build/desktop+mobile/Axe/audio/offline, connected private family and mock Speak, private backend, benchmark). First run [#39986497381](https://github.com/AndrewDionne/LearnPolish/actions/runs/39986497381) failed one mobile E2E *selector* (`Main navigation` used on mobile); fixed to `Mobile navigation`, 4 lanes rerun from final head. [Issue #2](https://github.com/AndrewDionne/LearnPolish/issues/2) has immutable evidence. Historical below-the-fold A-03 pending notes are superseded.
