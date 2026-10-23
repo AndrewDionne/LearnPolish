@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "status": "blocked_no_native_audio",
+  "published": false,
+  "source": "v2/content/journey1-f0-f1-editorial-v1.json",
+  "notes": "No reviewed Polish letter-name, sound, first-word or sentence voice assets are certified. Intentionally empty; real candidate packages are external/manual and cannot auto-publish.",
+  "items": []
+}
