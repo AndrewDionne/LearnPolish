@@ -48,79 +48,79 @@
     {
       "id": "F06",
       "type": "foundation",
+      "group": "sounds",
+      "lessonId": "contrast_krzy_przy",
+      "title": "Hear KRZY and PRZY clusters"
+    },
+    {
+      "id": "F07",
+      "type": "foundation",
       "group": "first-words",
       "lessonId": "numbers_1-20",
       "title": "Numbers 1–20"
     },
     {
-      "id": "F07",
+      "id": "F08",
       "type": "foundation",
       "group": "first-words",
       "lessonId": "Basic_01R",
       "title": "First short written exchanges"
     },
     {
-      "id": "F08",
+      "id": "F09",
       "type": "foundation",
       "group": "first-words",
       "lessonId": "Numbers_20-100",
       "title": "Useful larger numbers"
     },
     {
-      "id": "F09",
+      "id": "F10",
       "type": "foundation",
       "group": "useful-words",
       "lessonId": "Road_Terminology",
       "title": "Streets and places"
     },
     {
-      "id": "F10",
+      "id": "F11",
       "type": "foundation",
       "group": "useful-words",
       "lessonId": "Conversation_-_shopping",
       "title": "Shopping vocabulary and questions"
     },
     {
-      "id": "F11",
+      "id": "F12",
       "type": "foundation",
       "group": "useful-words",
       "lessonId": "Conversation_-_restaurant",
       "title": "Food and drink requests"
     },
     {
-      "id": "F12",
+      "id": "F13",
       "type": "foundation",
       "group": "useful-words",
       "lessonId": "Food_and_Dinning",
       "title": "Eating out expressions"
     },
     {
-      "id": "F13",
+      "id": "F14",
       "type": "foundation",
       "group": "short-sentences",
       "lessonId": "Getting_Around_1",
       "title": "Asking where things are"
     },
     {
-      "id": "F14",
+      "id": "F15",
       "type": "foundation",
       "group": "short-sentences",
       "lessonId": "Transit_1",
       "title": "Transport questions"
     },
     {
-      "id": "F15",
+      "id": "F16",
       "type": "foundation",
       "group": "short-sentences",
       "lessonId": "Emergencies_and_Health",
       "title": "Asking for urgent help"
-    },
-    {
-      "id": "F16",
-      "type": "foundation",
-      "group": "sounds",
-      "lessonId": "contrast_krzy_przy",
-      "title": "Revisit challenging consonant clusters"
     },
     {
       "id": "A01",
