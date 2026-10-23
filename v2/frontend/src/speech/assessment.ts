@@ -119,6 +119,52 @@ export function parseSpeechFeedback(input:unknown):SpeechFeedback {
           ...(syllableFeedback ? {syllableFeedback} : {})};
 }
 
+// A single capture may consume the server's daily provider allowance as soon
+// as its request is received. Never silently retry or let a hung response
+// block the learner indefinitely. This is a UI deadline, not a provider SLA.
+export const SPEECH_REQUEST_DEADLINE_MS = 45_000;
+
+async function boundedSpeechResponse(
+  url:string, init:RequestInit, upstream?:AbortSignal,
+):Promise<{response:Response;payload:unknown}>{
+  const controller=new AbortController();
+  let timer:ReturnType<typeof setTimeout>|undefined;
+  let expired=false;
+  let rejectStop!: (reason:Error)=>void;
+  const stopped=new Promise<never>((_,reject)=>{rejectStop=reject;});
+  const cancel=()=>{
+    controller.abort();
+    rejectStop(new DOMException('Pronunciation check canceled.','AbortError'));
+  };
+  const timeout=()=>{
+    expired=true;
+    controller.abort();
+    rejectStop(new Error('Pronunciation check timed out. You can replay or try again.'));
+  };
+  if(upstream?.aborted)cancel();
+  else upstream?.addEventListener('abort',cancel,{once:true});
+  timer=setTimeout(timeout,SPEECH_REQUEST_DEADLINE_MS);
+  try{
+    const request=(async()=>{
+      const response=await fetch(url,{...init,signal:controller.signal});
+      if(!response.ok)return {response,payload:null};
+      let payload:unknown;
+      try{payload=await response.json();}
+      catch{throw new Error('Assessment response unavailable.');}
+      return {response,payload};
+    })();
+    return await Promise.race([request,stopped]);
+  }catch(error){
+    if(upstream?.aborted)throw new DOMException('Pronunciation check canceled.','AbortError');
+    if(expired)throw new Error('Pronunciation check timed out. You can replay or try again.');
+    if(error instanceof Error&&error.message==='Assessment response unavailable.')throw error;
+    throw new Error('Pronunciation assessment could not be completed. Please try again later.');
+  }finally{
+    if(timer!==undefined)clearTimeout(timer);
+    upstream?.removeEventListener('abort',cancel);
+  }
+}
+
 export async function requestSpeechFeedback(
   capture:AssessmentReadyCapture, token:string, signal?:AbortSignal, blended=false,
 ):Promise<SpeechFeedback>{
@@ -135,21 +181,11 @@ export async function requestSpeechFeedback(
   body.append('approve_azure_audio_upload','yes');
   if(blended)body.append('approve_groq_audio_upload','yes');
   const started=performance.now();
-  let response:Response;
-  try{
-    response=await fetch(FAMILY_API+(blended?'/api/v2/family/speech/assess-blend':'/api/v2/family/speech/assess'),{
-      method:'POST',
-      headers:{Authorization:'Bearer '+token},
-      body,cache:'no-store',signal,
-    });
-  }catch(error){
-    // Never display browser/proxy/provider exception text; it can contain
-    // internal URLs, authentication hints or even private transcription data.
-    if(signal?.aborted || (error instanceof Error && error.name==='AbortError')){
-      throw new DOMException('Pronunciation check canceled.','AbortError');
-    }
-    throw new Error('Pronunciation assessment could not be completed. Please try again later.');
-  }
+  const {response,payload}=await boundedSpeechResponse(
+    FAMILY_API+(blended?'/api/v2/family/speech/assess-blend':'/api/v2/family/speech/assess'),
+    {method:'POST',headers:{Authorization:'Bearer '+token},body,cache:'no-store'},
+    signal,
+  );
   if(signal?.aborted)throw new DOMException('Pronunciation check canceled.','AbortError');
   if(!response.ok){
     if(response.status===429)throw new Error('Daily free pronunciation assessment limit reached. You can still practise and replay.');
@@ -157,10 +193,6 @@ export async function requestSpeechFeedback(
     if(response.status===401)throw new Error('Sign in again to request pronunciation feedback.');
     throw new Error('Pronunciation assessment could not be completed. Please try again later.');
   }
-  let payload:unknown;
-  try{payload=await response.json();}
-  catch{throw new Error('Assessment response unavailable.');}
-  if(signal?.aborted)throw new DOMException('Pronunciation check canceled.','AbortError');
   // Bind every accepted result to the exact requested card and route. A
   // stale/swapped response must never display a grade for a different word.
   const identity=payload && typeof payload==='object'
