@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 830 580" role="img" aria-labelledby="title description">
+  <title id="title">Path to Polish geometric P signature</title>
+  <desc id="description">An architectural uppercase P, an extended baseline suggesting a path, and a detached round endpoint.</desc>
+  <g fill="#101929">
+    <path fill-rule="evenodd" d="M126 67 H305 C438 67 507 120 507 212 C507 310 438 352 305 352 H192 V502 H681 V560 H126 V352 H60 V291 H126 Z M192 125 V292 H303 C397 292 440 266 440 213 C440 156 397 125 303 125 Z"/>
+    <circle cx="750" cy="531" r="29"/>
+  </g>
+</svg>

@@ -1,3 +1,13 @@
+## UX-05B · Geometric P identity review; NOT yet the live app mark (2026-10-23)
+
+**Authoritative owner correction:** The earlier lower-case p/curving-mint-route branding from UX-05A was rejected as aesthetically unsuitable, despite passing technical CI. The owner supplied a sketch of a strong architectural capital P with an offset crossbar, long geometric baseline suggesting a path, and a detached circular terminal. The owner authorized refinement and coordinated horizontal/signature and compact/square variations for visual approval **before** replacing the app logo.
+
+**Design-only branch:** `design/v2-ux05b-geometric-p-review` based on main `0290bb56a46040c726e4d49911b44ef383a9bdb9`. Two editable, standalone SVG candidates and a static responsive self-contained HTML comparison live in `v2/brand-review/geometric-p/`. Primary signature is bespoke dark-navy geometric P and mono dot on transparent ground; independent navy tile icon uses white P and mint dot with a shortened underline and adjusted bowl. [Review README](v2/brand-review/geometric-p/README.md) contains optical tradeoffs including possible resemblance of left crossbar to ₽, color/contrast, small-size and approval criteria. Comparison sheet is also prepared as a conversation download; GitHub files are the durable vector source.
+
+**Integration gate:** Do not modify `v2/frontend/src/BrandMark.tsx`, deployed favicon, CSS, HTML, wordmark, or frontend UX based only on passing automated tests. UX-05B candidates are **provisional**, not aesthetically approved. Once the owner selects and approves geometry, implement a separate small `UX-05C` integration PR, run all four final-head CI lanes, and only then merge. Physical/Safari, native speaker and paid inference remain deferred. No change to learning progression/content/XP/privacy/voice.
+
+---
+
 ## UX-05A P-path signature certified + merged — 2026-10-23
 
 **Latest merged GitHub main:** [PR #115](https://github.com/AndrewDionne/LearnPolish/pull/115), squash `c8f704cfff7ea0f6c341f6d27d4b8bb69da02250`, final PR head `50ae1fb911694438e1c0abfef81e7a2ba484bb5c`, [Actions #39932786211](https://github.com/AndrewDionne/LearnPolish/actions/runs/39932786211) **FOUR of FOUR PASS** (frontend desktop/mobile/320px/favicons/accessibility, connected family/Speak mocks, private backend, benchmark). Supersedes all preceding UX-05A in-development statements. [Issue #2](https://github.com/AndrewDionne/LearnPolish/issues/2) records evidence.
