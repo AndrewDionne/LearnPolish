@@ -60,7 +60,7 @@ async function installSyntheticMicrophone(page:import('@playwright/test').Page){
 async function readyTake(page:import('@playwright/test').Page){
   await page.getByRole('button',{name:/Start recording|Record another take/}).click();
   await page.getByRole('button',{name:'Stop recording'}).click();
-  await expect(page.getByText(/Recording captured/)).toBeVisible();
+  await expect(page.getByText(/Recording ready/)).toBeVisible();
 }
 
 test('Świętokrzyska → focused KRZY sounds → original word without losing the guide',async({page})=>{
