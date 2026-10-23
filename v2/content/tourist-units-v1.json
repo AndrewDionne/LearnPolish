@@ -309,6 +309,63 @@
         "This tram-driver scene reuses T06's route-and-stop dialogue before extending it with the original ticket-machine question and answer; it is not an independent new recording.",
         "No verified route number, platform-selection reply, transfer instructions, timetable, current ticket-sales policy or service-disruption exchange is in these source turns."
       ]
+    },
+    {
+      "id": "T08",
+      "title": "Museum tickets and visitor information",
+      "journey": 1,
+      "position": "middle",
+      "order": 8,
+      "outcome": "Follow a museum ticket and visitor-information exchange, and practise everyday ticket and payment requests.",
+      "steps": [
+        {
+          "mode": "listen",
+          "lessonId": "Museum_buying_tickets_and_basic_info",
+          "itemIds": [
+            "Museum_buying_tickets_and_basic_info:0",
+            "Museum_buying_tickets_and_basic_info:1",
+            "Museum_buying_tickets_and_basic_info:2",
+            "Museum_buying_tickets_and_basic_info:3",
+            "Museum_buying_tickets_and_basic_info:4",
+            "Museum_buying_tickets_and_basic_info:5",
+            "Museum_buying_tickets_and_basic_info:6",
+            "Museum_buying_tickets_and_basic_info:7",
+            "Museum_buying_tickets_and_basic_info:8"
+          ]
+        },
+        {
+          "mode": "speak",
+          "lessonId": "Getting_Around_1",
+          "itemIds": [
+            "Getting_Around_1:6",
+            "Getting_Around_1:7",
+            "Getting_Around_1:8",
+            "Getting_Around_1:9",
+            "Getting_Around_1:14",
+            "Getting_Around_1:15",
+            "Getting_Around_1:17"
+          ]
+        },
+        {
+          "mode": "read",
+          "lessonId": "Museum_buying_tickets_and_basic_info",
+          "itemIds": [
+            "Museum_buying_tickets_and_basic_info:0",
+            "Museum_buying_tickets_and_basic_info:1",
+            "Museum_buying_tickets_and_basic_info:2",
+            "Museum_buying_tickets_and_basic_info:3",
+            "Museum_buying_tickets_and_basic_info:4",
+            "Museum_buying_tickets_and_basic_info:5",
+            "Museum_buying_tickets_and_basic_info:6",
+            "Museum_buying_tickets_and_basic_info:7",
+            "Museum_buying_tickets_and_basic_info:8"
+          ]
+        }
+      ],
+      "gaps": [
+        "The source museum scene is a fixed illustrative exchange; its stated opening time is not verified visitor information about any actual museum.",
+        "Spoken ticket/payment phrases are generic original recordings, not a recorded museum role-play; no independently native-reviewed timed opening notice, visitor sign or varied staff clarification is available."
+      ]
     }
   ]
 }

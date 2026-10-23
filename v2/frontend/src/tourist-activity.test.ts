@@ -106,6 +106,26 @@ describe('truthful independent unit activity / resume',()=>{
     expect(()=>validateTouristActivities(forged)).toThrow(/source item evidence/);
   });
 
+  it('preserves T01–T07 attempts when T08 is added and isolates reused ticket phrases from T07',()=>{
+    const t07=TOURIST_UNITS[6],t08=TOURIST_UNITS[7];
+    expect(t08.id).toBe('T08');
+    expect(unitActivityCounts(emptyTouristActivities(),t08)).toEqual({total:25,tried:0});
+    const repeated='Getting_Around_1:6';
+    const old=triedTouristItem(emptyTouristActivities(),t07,1,repeated);
+    expect(validateTouristActivities(old).units.T07.tried.speak).toEqual([repeated]);
+    expect(validateTouristActivities(old).units.T08).toBeUndefined();
+    const withNew=triedTouristItem(old,t08,1,repeated);
+    expect(withNew.units.T07.tried.speak).toEqual([repeated]);
+    expect(withNew.units.T08.tried.speak).toEqual([repeated]);
+    expect(unitActivityCounts(withNew,t08).tried).toBe(1);
+    expect(unitActivityCounts(withNew,t07).tried).toBe(1);
+    expect(parseTouristActivities(JSON.stringify(withNew))).toEqual(withNew);
+    const resumed=positionTouristUnit(withNew,t08,0,t08.steps[0].itemIds[4]);
+    expect(resumeTouristUnit(resumed,t08)).toEqual({stepIndex:0,itemIndex:4});
+    const unsafe={...withNew,units:{...withNew.units,T08:{tried:{speak:['Museum_buying_tickets_and_basic_info:4']}}}};
+    expect(()=>validateTouristActivities(unsafe)).toThrow(/source item evidence/);
+  });
+
   it('accepts a valid older empty state and refuses to mutate by bad IDs',()=>{
     const original=emptyTouristActivities();
     expect(triedTouristItem(original,unit,2,'made-up:25')).toBe(original);
