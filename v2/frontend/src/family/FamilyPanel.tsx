@@ -20,7 +20,6 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
   const [email,setEmail]=useState('');
   const [password,setPassword]=useState('');
   const [recoveryAvailable,setRecoveryAvailable]=useState(false);
-  const [verificationAvailable,setVerificationAvailable]=useState(false);
   const [registrationAvailable,setRegistrationAvailable]=useState(false);
   const [registrationMode,setRegistrationMode]=useState<'adult_pilot'|'closed'|'local_test'>('closed');
   const [adultConfirmed,setAdultConfirmed]=useState(false);
@@ -60,10 +59,9 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
     void familyRequest<{password_recovery_available:boolean;email_verification_available:boolean;
         registration_available?:boolean;registration_mode?:'adult_pilot'|'closed'|'local_test'}>('/api/v2/family/health')
       .then(data=>{if(active){setRecoveryAvailable(data.password_recovery_available===true);
-        setVerificationAvailable(data.email_verification_available===true);
         setRegistrationAvailable(data.registration_available===true);
         setRegistrationMode(data.registration_mode??'closed');}})
-      .catch(()=>{if(active){setRecoveryAvailable(false);setVerificationAvailable(false);
+      .catch(()=>{if(active){setRecoveryAvailable(false);
         setRegistrationAvailable(false);setRegistrationMode('closed');}});
     return ()=>{active=false;};
   },[token]);
