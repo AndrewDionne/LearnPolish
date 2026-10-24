@@ -870,3 +870,17 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .foundation-next-toggle:focus-visible{outline:3px solid var(--ptp-link);outline-offset:-3px}
 .foundation-next-words .foundation-starter-options{padding:0 12px 12px;grid-template-columns:repeat(2,minmax(0,1fr))}
 @media(max-width:560px){.foundation-next-words .foundation-starter-options{grid-template-columns:1fr}}
+
+/* C-07: text can group draft spelling parts; audio is ONLY a reviewed excerpt. */
+.pronunciation-breakdown{display:grid;justify-items:center;gap:9px;margin:10px auto 3px;max-width:100%}
+.pronunciation-parts,.syllable-audio-controls{display:flex;align-items:center;justify-content:center;
+ flex-wrap:wrap;gap:.2em;max-width:100%;font-size:clamp(18px,3vw,27px);line-height:1.45}
+.pronunciation-text-part{white-space:pre-wrap;overflow-wrap:anywhere;color:var(--ptp-ink)}
+.pronunciation-audio-part{font:inherit;font-weight:650;color:var(--ptp-link);
+ border:1px solid var(--ptp-control-border);background:var(--ptp-surface);
+ border-radius:8px;min-height:44px;min-width:44px;padding:5px 8px;
+ white-space:pre-wrap;cursor:pointer}
+.pronunciation-audio-part:hover{background:#eef6f2;border-color:var(--ptp-link)}
+.pronunciation-audio-part:disabled{opacity:.5;cursor:default}
+.pronunciation-audio-part:focus-visible{outline:3px solid var(--ptp-link);outline-offset:2px}
+.syllable-audio-controls{margin:9px auto 0;font-size:clamp(15px,2.6vw,21px)}

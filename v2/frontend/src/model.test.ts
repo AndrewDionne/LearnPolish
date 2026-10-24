@@ -148,3 +148,35 @@ describe('explicit learning tier validation',()=>{
     expect(validateLesson({...lesson,difficultyTier:9})).toBe(false);
   });
 });
+
+describe('C-07 independently reviewed source-word syllable excerpt schema',()=>{
+ const timings={
+  method:'independently-reviewed-source-excerpts-v1',
+  audio:'generated/audio/Road_Terminology/0.mp3',
+  sourceSha256:'a'.repeat(64),durationMs:1200,
+  segments:[{polish:'u',startMs:0,endMs:350},
+   {polish:'li',startMs:350,endMs:700},
+   {polish:'ca',startMs:700,endMs:1200}],
+ };
+ const item={id:'Road_Terminology:0',polish:'ulica',english:'Street',
+  audio:timings.audio,syllableAudio:timings};
+ const source={schemaVersion:1,id:'Road_Terminology',title:'Roads',
+  source:'legacy',kind:'vocabulary',items:[item]};
+ test('permits properly aligned reviewed source excerpts but not arbitrary imported personal clip data',()=>{
+  expect(validateLesson(source)).toBe(true);
+  expect(validateLesson({...source,source:'personal'})).toBe(false);
+  expect(validateLesson({...source,items:[{...item,audio:undefined}]})).toBe(false);
+  expect(validateLesson({...source,items:[{...item,polish:'aleja'}]})).toBe(false);
+ });
+ test('rejects zero/overlapping/reordered/out-of-duration excerpts',()=>{
+  expect(validateLesson({...source,items:[{...item,syllableAudio:{
+   ...timings,segments:[timings.segments[0],{...timings.segments[1],startMs:200},timings.segments[2]]
+  }}]})).toBe(false);
+  expect(validateLesson({...source,items:[{...item,syllableAudio:{
+   ...timings,segments:timings.segments.map((s,i)=>i===2?{...s,endMs:1550}:s)
+  }}]})).toBe(false);
+  expect(validateLesson({...source,items:[{...item,syllableAudio:{
+   ...timings,sourceSha256:'not-a-hash'
+  }}]})).toBe(false);
+ });
+});
