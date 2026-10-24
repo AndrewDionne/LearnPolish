@@ -55,6 +55,6 @@ test('C-16C independently browsable original Library retains source identity and
  await page.getByRole('group',{name:'Learning modes'}).getByRole('button',{name:'Listen'}).click();
  const intro=page.getByRole('region',{name:'Learn these expressions first'});
  await expect(intro.locator('.reading-intro-polish')).toHaveText('Dzień dobry');
- await expect(intro.locator('.reading-intro-english')).toHaveText('Good morning / Hello');
+ await expect(intro.locator('.reading-intro-english')).toHaveText('Good morning / Good day');
  await expect(page.getByRole('heading',{name:'What did you hear?'})).toBeVisible();
 });
