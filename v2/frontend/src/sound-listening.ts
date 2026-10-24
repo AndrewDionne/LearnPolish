@@ -73,3 +73,12 @@ export function soundListeningCards(lesson:Lesson):SoundListeningCard[]{
  }
  return result;
 }
+
+/** Highlight ONLY the exact authored focus in the complete original word. */
+export function focusedPolishParts(item:LessonItem):{before:string;focus:string;after:string}|null{
+ const focus=item.soundFocus;
+ if(!focus)return null;
+ const at=item.polish.indexOf(focus);
+ if(at<0||item.polish.indexOf(focus,at+focus.length)!==-1)return null;
+ return {before:item.polish.slice(0,at),focus,after:item.polish.slice(at+focus.length)};
+}
