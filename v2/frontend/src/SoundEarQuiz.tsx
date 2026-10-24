@@ -1,7 +1,7 @@
 import {useState} from 'react';
 import type {Lesson} from './model';
 import type {SoundListeningCard} from './sound-listening';
-import {focusedPolishParts} from './SoundContrastDeck';
+import {focusedPolishParts} from './sound-listening';
 
 export default function SoundEarQuiz({lesson,cards,playing,onPlay,onCompare}:{
  lesson:Lesson;
@@ -28,7 +28,7 @@ export default function SoundEarQuiz({lesson,cards,playing,onPlay,onCompare}:{
      </div>
    </div> : <>
      <div className="sound-ear-progress">{index+1} / {cards.length}</div>
-     <p className="sound-ear-prompt">Hear the complete word. Which sound is this example teaching?</p>
+     <p className="sound-ear-prompt">Listen to the recording. Which sound is this example teaching?</p>
      <button type="button" className="audio-btn sound-ear-play" onClick={()=>{
        if(card.item.audio)onPlay(card.item.audio);
      }}>{playing===card.item.audio?'Playing word':'▶ Hear word'}</button>
