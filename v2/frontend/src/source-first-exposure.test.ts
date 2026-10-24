@@ -1,7 +1,7 @@
 import {describe,expect,it} from 'vitest';
 import type {Lesson} from './model';
 import {originalLibraryListenIntroduction,touristListenIntroduction} from './source-first-exposure';
-import originalUnits from '../../content/tourist-units-v1.json';
+import {TOURIST_UNITS} from './tourist-units';
 import conversation from '../../../docs/sets/Conversation_1.json';
 import shopping from '../../../docs/sets/Conversation_-_shopping.json';
 import restaurant from '../../../docs/sets/Conversation_-_restaurant.json';
@@ -47,18 +47,18 @@ describe('C-16C honest whole-recording instruction for original Library and sour
   expect(intro.flat().filter(x=>x.teachingCue)).toHaveLength(15);
  });
  it('tourist Listen turns pre-teach exact original recorded subset before selected source checks',()=>{
-  const t01=originalUnits.units[0].steps[0],r01=get(t01.lessonId);
+  const t01=TOURIST_UNITS[0].steps[0],r01=get(t01.lessonId);
   const listen01=touristListenIntroduction(r01,t01,r01.items.filter(x=>t01.itemIds.includes(x.id)));
   expect(listen01.map(x=>x.polish)).toEqual(['Cześć! Jak się masz?','Dziękuję, mam się dobrze.']);
   expect(listen01[0].teachingCue).toContain('informal');
-  const t03=originalUnits.units[2].steps[0],n=get(t03.lessonId);
+  const t03=TOURIST_UNITS[2].steps[0],n=get(t03.lessonId);
   const listen03=touristListenIntroduction(n,t03,n.items.filter(x=>t03.itemIds.includes(x.id)));
   expect(listen03).toHaveLength(10);
   expect(listen03[0].polish).toBe('Jeden');
   expect(listen03[9].polish).toBe('Dziesięć');
-  const t04=originalUnits.units[3].steps[0],l=get(t04.lessonId);
+  const t04=TOURIST_UNITS[3].steps[0],l=get(t04.lessonId);
   expect(touristListenIntroduction(l,t04,l.items.filter(x=>t04.itemIds.includes(x.id)))).toHaveLength(9);
-  const t05=originalUnits.units[4].steps[0],g=get(t05.lessonId);
+  const t05=TOURIST_UNITS[4].steps[0],g=get(t05.lessonId);
   const listen05=touristListenIntroduction(g,t05,g.items.filter(x=>t05.itemIds.includes(x.id)));
   expect(listen05).toHaveLength(6);
   expect(listen05[1].teachingCue).toContain('Kilogram jabłek');
@@ -81,7 +81,7 @@ describe('C-16C honest whole-recording instruction for original Library and sour
    expect(originalLibraryListenIntroduction(changed,subset)).toEqual([]);
   }
   expect(originalLibraryListenIntroduction(source,[...selected].reverse())).toEqual([]);
-  const t01=originalUnits.units[0].steps[0],read=get(t01.lessonId);
+  const t01=TOURIST_UNITS[0].steps[0],read=get(t01.lessonId);
   const subset=read.items.filter(x=>t01.itemIds.includes(x.id));
   expect(touristListenIntroduction(read,{...t01,mode:'speak'},subset)).toEqual([]);
   expect(touristListenIntroduction(read,{...t01,itemIds:['fake:0',t01.itemIds[1]]},subset)).toEqual([]);
