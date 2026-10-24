@@ -87,7 +87,7 @@ export default function Journey1Guide({steps,starterGroups,nextWordGroups,firstS
             <strong>{group.title}</strong><span>{group.itemIds.length} expressions →</span>
           </button>)}
         </div>
-      </div>}}
+      </div>}
     </section>}
     <div className="foundation-guide-secondary-heading">Explore the original recorded lessons</div>
     <div className="foundation-guide-list">
