@@ -10,6 +10,8 @@ test('C-09: recognize sounds from original Polish whole-word recordings, then co
  await switcher.getByRole('button',{name:'Test my ear'}).click();
  await expect(switcher.getByRole('button',{name:'Test my ear'})).toHaveAttribute('aria-pressed','true');
  await expect(page.locator('.contrast-group')).toHaveCount(0);
+ // The ordinary source flashcard must NOT reveal the written answer below quiz.
+ await expect(page.locator('.polish-text')).toHaveCount(0);
  const quiz=page.locator('.sound-ear-quiz');
  await expect(quiz.locator('.sound-ear-progress')).toHaveText('1 / 6');
  await expect(quiz.getByRole('button',{name:'Hear word'})).toBeEnabled();
@@ -27,6 +29,7 @@ test('C-09: recognize sounds from original Polish whole-word recordings, then co
  await expect(quiz.locator('.sound-ear-word .sound-focus-letters')).toHaveText('Cz');
  await switcher.getByRole('button',{name:'Compare words'}).click();
  await expect(page.locator('.contrast-group')).toHaveCount(3);
+ await expect(page.locator('.polish-text')).toBeVisible();
  await expect(page.getByRole('heading',{name:'Hear sounds in real words'})).toBeVisible();
  const nav=page.getByRole('navigation',{name:isMobile?'Mobile navigation':'Main navigation'});
  await nav.getByRole('button',{name:'Library'}).click();
