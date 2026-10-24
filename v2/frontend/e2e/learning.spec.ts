@@ -390,7 +390,7 @@ test('Read resumes a saved passage and Listen reveals content only after answeri
   await page.getByRole('searchbox', { name: 'Search lessons' }).fill('Everyday Conversations: Greetings');
   await page.getByRole('button', { name: /Everyday Conversations: Greetings/ }).click();
   await expect(page.locator('.flashcard .polish-text')).toHaveText('Cześć! Jak się masz?');
-  await expect(page.getByRole('button', { name: 'Read' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('group', { name: 'Learning modes' }).getByRole('button', { name: 'Read', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: /Skip to next/ }).click();
   await expect(page.locator('.flashcard .polish-text')).toHaveText('Dziękuję, mam się dobrze.');
   await page.reload();
