@@ -122,8 +122,18 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
                speech_enabled: bool | None = None,
                speech_assessor: Callable | None = None,
                postgres_url: str | None = None,
+               pilot_adult_emails: tuple[str, ...] | None = None,
                speech_blend_enabled: bool | None = None,
                speech_transcriber: Callable | None = None) -> Flask:
+    # None = developer/test account flow (legacy), tuple = hosted adult-only pilot.
+    # Empty tuple intentionally blocks all new registrations. Existing verified
+    # sessions remain governed by ordinary server authorization.
+    if pilot_adult_emails is not None:
+        if (len(pilot_adult_emails) > 12 or len(pilot_adult_emails) != len(set(pilot_adult_emails)) or
+                any(not isinstance(email, str) or not EMAIL.fullmatch(email) or
+                    "*" in email or email.strip().lower() != email
+                    for email in pilot_adult_emails)):
+            raise RuntimeError("Invalid restricted adult pilot email allowlist")
     pg_url = postgres_url or os.environ.get("PTP_FAMILY_DATABASE_URL")
     path = database_path or os.environ.get("PTP_FAMILY_DB")
     catalog = catalog_path or os.environ.get("PTP_FAMILY_CATALOG")
@@ -405,7 +415,11 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
     def health():
         return jsonify(ok=True, version=1, catalog_items=len(known),
                        password_recovery_available=mail_sender is not None,
-                       email_verification_available=signup_sender is not None)
+                       email_verification_available=signup_sender is not None,
+                       registration_mode=("local_test" if pilot_adult_emails is None else
+                                          "adult_pilot" if pilot_adult_emails else "closed"),
+                       registration_available=(signup_sender is not None and
+                           (pilot_adult_emails is None or bool(pilot_adult_emails))))
 
     def verification_limit(identity: str, threshold: int, now: int) -> bool:
         con = db()
@@ -436,6 +450,8 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
 
     @app.post("/api/v2/family/signup")
     def signup():
+        if pilot_adult_emails is not None and not pilot_adult_emails:
+            return fail("registration_unavailable",503)
         if signup_sender is None:
             return fail("email_verification_unavailable", 503)
         data = _json()
@@ -450,6 +466,12 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
         if (not EMAIL.fullmatch(email) or not 12 <= len(password) <= 256 or
                 not 1 <= len(name) <= 48):
             return fail("invalid_registration")
+        # Adult testing ONLY: server-enforced allowlist and explicit checkbox.
+        # This is a self-attestation, NOT validated age/guardian authority.
+        # No public or minor signup until separate owner-approved safeguards.
+        if pilot_adult_emails is not None and (
+                email not in pilot_adult_emails or data.get("adult_confirmed") is not True):
+            return fail("registration_unavailable",403)
         salt = secrets.token_hex(16)
         con = db()
         now = _now()

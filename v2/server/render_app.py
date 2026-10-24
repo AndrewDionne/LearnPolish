@@ -9,6 +9,7 @@ verified origin, and live SMTP. It is NOT enabled by the free Blueprint.
 from __future__ import annotations
 
 import os
+import re
 from pathlib import Path
 import sqlite3
 from threading import Lock
@@ -55,6 +56,23 @@ def create_render_app(*, dist_path: str | Path | None = None,
     if family_enabled:
         database = database_path or os.getenv("PTP_FAMILY_DB", "")
         neon = postgres_url or os.getenv("PTP_FAMILY_DATABASE_URL", "")
+        # Render Free cannot persist SQLite. Never turn on ephemeral hosted users.
+        if os.getenv("RENDER") == "true" and not neon:
+            raise RuntimeError("Hosted family accounts require durable restricted Neon")
+        # The public endpoint is intentionally closed to new signups unless an
+        # operator independently configures a small, explicit adult test list.
+        signup_mode = os.getenv("PTP_FAMILY_SIGNUP_MODE", "closed")
+        if signup_mode not in {"closed", "adult-pilot"}:
+            raise RuntimeError("Public/minor family signup is not authorized")
+        raw_pilot = os.getenv("PTP_FAMILY_PILOT_EMAILS", "")
+        pilot_emails = tuple(x.strip().lower() for x in raw_pilot.split(",") if x.strip())
+        if len(pilot_emails) > 12 or len(pilot_emails) != len(set(pilot_emails)) or any(
+                not x or "*" in x or not re.fullmatch(r"[^@\s]{1,100}@[^@\s]{1,100}\.[^@\s]{2,30}",x)
+                for x in pilot_emails):
+            raise RuntimeError("Invalid adult pilot email allowlist")
+        if signup_mode == "adult-pilot" and not pilot_emails:
+            raise RuntimeError("Adult pilot enrollment requires an email allowlist")
+        approved_pilot = pilot_emails if signup_mode == "adult-pilot" else ()
         # The Neon Console/API creates highly privileged DB roles by default;
         # require the separately created SQL role with only ptp_v2 access.
         if neon and urlparse(neon).username != "ptp_v2_runtime":
@@ -72,7 +90,8 @@ def create_render_app(*, dist_path: str | Path | None = None,
         app = create_family_app(database_path=database or None,
                                 postgres_url=neon or None,
                                 catalog_path=str(catalog),
-                                allowed_origins=(origin,))
+                                allowed_origins=(origin,),
+                                pilot_adult_emails=approved_pilot)
     else:
         # The Free plan has NO durable private SQLite. Don't initialize family
         # routes or issue accounts that vanish on the next Render sleep/restart.

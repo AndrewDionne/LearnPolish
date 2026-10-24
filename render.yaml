@@ -14,5 +14,7 @@ services:
     envVars:
       - key: PTP_RENDER_FAMILY_MODE
         value: disabled
+      - key: PTP_FAMILY_SIGNUP_MODE
+        value: closed
       - key: PTP_SPEECH_ENABLED
         value: "0"
