@@ -1,0 +1,37 @@
+# FAM-R02 — Adult-only family pilot activation boundary
+
+**Status:** Code and deterministic test path. Not a live Render/Neon/Resend account activation and **not** permission for child enrollment, public registration, paid cloud upgrades or provider-uploaded microphone audio.
+
+## Authority
+
+Family groups, shared XP, opt-in family progress, Poland-region unlocks and private profiles are part of the Path to Polish **learning/practice app**, not tutor functionality. The owner explicitly asked to finish family account integration on 2026-10-24. Keep [R-01 release evidence](RELEASE_READINESS_R01.md) and [umbrella issue #2](https://github.com/AndrewDionne/LearnPolish/issues/2) authoritative. Old V1 user/password tables are not migrated.
+
+## Real connected live provisioning evidence (read-only)
+
+- **Neon** `Path_to_Polish` project `small-math-42082681`, branch `main` (`br-shy-band-agaf53za`), Frankfurt and actual **free_v3** tier. Database `Path_to_Polish_DB` contains **14 tables** in isolated `ptp_v2`; old `public` tables remain. The restricted SQL role `ptp_v2_runtime` has `USAGE` on V2, SELECT/INSERT in `ptp_v2.users` and **no SELECT on `public.users`**. The role is intentionally **NOLOGIN** and has no activated production password. The older `ptp_v2_app` role is overprivileged; **never** deploy its credentials.
+- **Render** existing `path-to-polish-v2` service `srv-dbbik2uq1p3s73codovg` is on **Free**, Frankfurt Docker `Dockerfile.v2`; `render.yaml` has family mode **disabled**, offline browser mode and speech disabled. The real service still has deploy-after-commit and no HTTP health-check path, despite Blueprint `checksPass`/`/health/ready`, and must be reconciled through Render Dashboard settings, without assuming editing YAML updates an existing service.
+- **HTTPS verification email** is coded against Resend in `v2/server/recovery_mail.py` and tested with HTTP stubs; **no genuine Resend API key/verified sender or delivered real email has been established**. Render Free blocks regular outbound SMTP, so real HTTPS email verification is required before public signup. No key may enter source, frontend build args, screenshots or logs.
+- **Important explicit constraint:** An organizer is not automatically a legally verified parent/guardian. This pilot is limited to **explicitly invited adults (18+ self-attestation)**. It must not be offered to minors as legally guardian-approved registration.
+
+## New fail-closed code
+
+`create_render_app` requires Neon rather than ephemeral SQLite when deployed on Render. In hosted family mode, `PTP_FAMILY_SIGNUP_MODE=closed` is default and prevents all new signups. An explicit `PTP_FAMILY_SIGNUP_MODE=adult-pilot` plus a **small (1–12), unique, exact lower-case email allowlist** from `PTP_FAMILY_PILOT_EMAILS` permits only those candidates. The family API enforces the same allowlist and requires literal JSON `adult_confirmed:true` before *any user row or verification email is generated*. Unknown addresses and absent/false/string/numeric confirmations fail. The frontend learns only `registration_mode`/`registration_available` from the unauthenticated health endpoint, shows an adult-only acknowledgment and omits signup while unavailable; never exposes the email allowlist. This is **self-attestation only**, not proof of age. Existing local-only/CI signup has its own unchanged injected-test policy and cannot override the hosted gate.
+
+The default `render.yaml` specifies `PTP_FAMILY_SIGNUP_MODE=closed`, while `PTP_RENDER_FAMILY_MODE=disabled`, `PTP_SPEECH_ENABLED=0`. No runtime env, DB role, GitHub visibility, old site or live service has been modified by this PR. Offline-only learning and 26/482/455 original library/audio remain unaffected.
+
+## Staged owner/operator activation checklist
+
+Each activation step is explicit and independently verified; **do not flip public family mode before ALL requirements below are met**.
+
+1. In Neon, enable LOGIN with a fresh strong password **only on** restricted `ptp_v2_runtime`. Re-confirm grants deny access to V1 `public`, ensure the TLS `sslmode=verify-full` direct connection and `search_path=ptp_v2` succeed using that restricted role. Keep credentials private, use no `neondb_owner` or `ptp_v2_app`.
+2. Provision **free** Resend HTTPS email sending with a verified sender and API key. Confirm a genuine test verification email and password-recovery email reach the intended mailbox, without logging or disclosing one-use codes. This external provider account is **not provisioned** in the repository; one real credential and verified sending identity are needed from the owner/operator.
+3. On the existing Render Free V2 web service, reconcile **Auto-Deploy = After CI Checks Pass**, health path `/health/ready`, and current branch `main`. In Render's **runtime secret environment only** configure `PTP_FAMILY_DATABASE_URL`, `PTP_FAMILY_RESEND_API_KEY`, `PTP_FAMILY_RESEND_FROM`. Set exact HTTPS `PTP_PUBLIC_ORIGIN=https://path-to-polish-v2.onrender.com`, `PTP_FAMILY_PILOT_EMAILS=<comma-separated explicitly approved adult mailboxes>`, `PTP_FAMILY_SIGNUP_MODE=adult-pilot`, `PTP_RENDER_FAMILY_MODE=enabled`. Maintain `PTP_SPEECH_ENABLED=0` and no persistent Render disk/paid upgrade.
+4. The frontend is **build-time**: set non-secret Render Docker build argument `PTP_FAMILY_UI_MODE=same-origin` (Render injects service environment variables as build arguments for `ARG`, per Render's own docs). **Rebuild** the Docker service so the Vite browser bundle's `VITE_FAMILY_API_URL=same-origin` agrees with the runtime API. Do not put the Neon/Resend credentials in `ARG` or `VITE_*` variables.
+5. Adult-only end-to-end physical smoke: test `/health/ready` returns `family_available:true` **after** secure Neon+email hookup, verify an unlisted email/false adult confirmation fail, register two allowed adult accounts by actual delivered email one-use codes, ensure attempts before verification are rejected, sign in, create group, invite second verified account, submit genuine learning events with explicit sharing opt-in, see group scoreboard/Poland map updates, confirm private memberships, logout and recover password from verified email, then ensure data survives a Render restart/deploy and Neon remains persistent.
+6. Before any child account or full family/public rollout: **separate guardian/child enrollment and consent** reviewed for applicable privacy standards, and security/backup/retention and account-erasure acceptance. Adult-only pilot must not be marketed as child-ready, public or fully launched.
+
+**Remaining external prerequisites**: true Resend credentials+verified sender, owner-specified adult email allowlist, restricted Neon login credential activation, Render Dashboard settings reconciliation, actual live connectivity/delivery and physical privacy acceptance. **These cannot be represented by local mocks.** Do not invent secrets, send an email without a provider, or claim accounts live based on code.
+
+## Testing / merge
+
+Regression suite tests closed mode does not write DB or send mail, adult-pilot exact allowlist and literal consent, verified email before login, restricted Render postgres wiring, duplicate/invalid allowlists, no durable SQLite on Render; existing family authorization/XP/verification/recovery and connected browser remain enforced. Requires exact-final-head **four GitHub CI lanes** before merge; afterward append certified status to root `chat ai workflow.md` and issue #2 with the remaining actual operator steps.
