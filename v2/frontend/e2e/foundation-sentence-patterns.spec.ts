@@ -57,7 +57,7 @@ test('C-11 four recorded number/quantity variations, completion and mobile no ov
  await expect(panel.locator('.sentence-pattern-polish')).toHaveText('Poproszę stolik dla jednej osoby');
  await panel.getByRole('button',{name:'Next example'}).click();
  await expect(panel.locator('.sentence-pattern-polish strong')).toHaveText('dwóch');
- await panel.getByRole('button',{name:'Check understanding'}).click();
+ await panel.locator('.sentence-pattern-next').click();
  const answers=panel.getByRole('group',{name:'Choose the meaning'});
  for(let index=0;index<4;index++){
    await answers.getByRole('button').last().click();
