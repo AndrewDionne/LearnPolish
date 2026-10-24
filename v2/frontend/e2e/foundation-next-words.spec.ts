@@ -9,7 +9,7 @@ test('C-06 first-word sequence opens 32 existing full recorded words through rea
  await toggle.click();
  await expect(toggle).toHaveAttribute('aria-expanded','true');
  const more=guide.getByRole('group',{name:'More recorded beginner practice'});
- await expect(more.getByRole('button')).toHaveCount(6);
+ await expect(more.getByRole('button')).toHaveCount(3);
  await more.getByRole('button',{name:/Street and place words/}).click();
  await expect(page.locator('.unit-practice-head')).toContainText('Street and place words');
  await expect(page.locator('.unit-practice-head')).toContainText('1/6');
@@ -24,8 +24,7 @@ test('C-06 first-word sequence opens 32 existing full recorded words through rea
  await nav.getByRole('button',{name:'Library'}).click();
  await expect(page.locator('.lesson-tile')).toHaveCount(26);
  const again=page.getByRole('region',{name:'Guided Polish foundations'});
- await again.getByRole('button',{name:/Keep building your everyday vocabulary/}).click();
- await again.getByRole('group',{name:'More recorded beginner practice'})
+ await again.getByRole('group',{name:'Short sentence practice'})
    .getByRole('button',{name:/Simple food requests/}).click();
  await expect(page.locator('.polish-text')).toHaveText('Poproszę wodę');
  await expect(page.locator('.unit-practice-head')).toContainText('1/5');
@@ -44,10 +43,10 @@ test('C-06 source-only practice sequence advances to next real group without fak
    await page.getByRole('button',{name:/Got it/}).click();
  }
  await expect(page.getByRole('heading',{name:'Nicely done!'})).toBeVisible();
- await page.getByRole('button',{name:/Next: Street and place words/}).click();
- await expect(page.locator('.unit-practice-head')).toContainText('Street and place words');
- await expect(page.locator('.polish-text')).toHaveText('ulica');
- await expect(page.locator('.unit-practice-head')).toContainText('1/6');
+ await page.getByRole('button',{name:/Next: Simple food requests/}).click();
+ await expect(page.locator('.unit-practice-head')).toContainText('Simple food requests');
+ await expect(page.locator('.polish-text')).toHaveText('Poproszę wodę');
+ await expect(page.locator('.unit-practice-head')).toContainText('1/5');
 });
 
 test('C-06 first-word disclosure fits a narrow mobile screen without staging labels',async({page})=>{
@@ -56,7 +55,7 @@ test('C-06 first-word disclosure fits a narrow mobile screen without staging lab
  await page.getByRole('button',{name:'Explore lessons'}).click();
  const guide=page.getByRole('region',{name:'Guided Polish foundations'});
  await guide.getByRole('button',{name:/Keep building your everyday vocabulary/}).click();
- await expect(guide.getByRole('group',{name:'More recorded beginner practice'}).getByRole('button')).toHaveCount(6);
+ await expect(guide.getByRole('group',{name:'More recorded beginner practice'}).getByRole('button')).toHaveCount(3);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(322);
  await expect(guide.getByText('Beginning',{exact:true})).toHaveCount(0);
  await expect(guide.getByText('Extended stay',{exact:true})).toHaveCount(0);

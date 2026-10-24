@@ -46,8 +46,7 @@ test('C-08 unreviewed automatic spelling guesses stay out of the optional guide'
  await page.goto('/');
  await page.getByRole('button',{name:'Explore lessons'}).click();
  const guide=page.getByRole('region',{name:'Guided Polish foundations'});
- await guide.getByRole('button',{name:/Keep building your everyday vocabulary/}).click();
- await guide.getByRole('group',{name:'More recorded beginner practice'})
+ await guide.getByRole('group',{name:'Short sentence practice'})
    .getByRole('button',{name:/Questions in a shop/}).click();
  await expect(page.locator('.polish-text')).toHaveText('Ile to kosztuje?');
  await expect(page.locator('.pronunciation-text-part')).toHaveCount(0);

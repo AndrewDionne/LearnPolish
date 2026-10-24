@@ -22,6 +22,7 @@ import {availableRecordedAlphabet} from './recorded-alphabet';
 import {availableSentencePatterns} from './foundation-sentence-patterns';
 import {availableStarterGroups,starterSessionItems} from './foundation-first-expressions';
 import {availableNextWordGroups,nextWordSessionItems} from './foundation-next-words';
+import {orderedFoundationGroups} from './foundation-progression';
 import {availableTouristUnits,unitStepSource,unitStepItems} from './tourist-units';
 import {TOURIST_ACTIVITY_KEY,emptyTouristActivities,parseTouristActivities,
   positionTouristUnit,triedTouristItem} from './tourist-activity';
@@ -139,6 +140,7 @@ export default function App() {
   const [mode, setMode] = useState<LearningMode>('learn');
   const [unitSession,setUnitSession]=useState<{unitId:string;stepIndex:number}|null>(null);
   const [starterGroupId,setStarterGroupId]=useState<string|null>(null);
+  const [launchSentences,setLaunchSentences]=useState(false);
   const [touristActivity,setTouristActivity]=useState(()=>{
     try{return parseTouristActivities(localStorage.getItem(TOURIST_ACTIVITY_KEY));}
     catch{return emptyTouristActivities();}
@@ -247,9 +249,13 @@ export default function App() {
   const foundationGuide=useMemo(()=>availableJourney1Guide(builtIn,touristUnits),[builtIn,touristUnits]);
   const recordedAlphabet=useMemo(()=>availableRecordedAlphabet(builtIn),[builtIn]);
   const sentencePatterns=useMemo(()=>availableSentencePatterns(builtIn),[builtIn]);
-  const starterGroups=useMemo(()=>availableStarterGroups(builtIn),[builtIn]);
-  const nextWordGroups=useMemo(()=>availableNextWordGroups(builtIn),[builtIn]);
-  const allFoundationGroups=[...starterGroups,...nextWordGroups];
+  const rawStarters=useMemo(()=>availableStarterGroups(builtIn),[builtIn]);
+  const rawVocabulary=useMemo(()=>availableNextWordGroups(builtIn),[builtIn]);
+  const orderedFoundations=useMemo(()=>orderedFoundationGroups(rawStarters,rawVocabulary),[rawStarters,rawVocabulary]);
+  const starterGroups=orderedFoundations.firstWords;
+  const nextWordGroups=orderedFoundations.basicVocabulary;
+  const firstSentenceGroups=orderedFoundations.firstSentences;
+  const allFoundationGroups=[...starterGroups,...nextWordGroups,...firstSentenceGroups];
   const starterGroup=allFoundationGroups.find(group=>group.id===starterGroupId);
   const nextFocusGroup=starterGroup?allFoundationGroups[allFoundationGroups.findIndex(g=>g.id===starterGroup.id)+1]:undefined;
   const currentUnit=unitSession?touristUnits.find(x=>x.id===unitSession.unitId):undefined;
@@ -318,10 +324,10 @@ export default function App() {
 
   const stopAudio = () => { audio.stop(); };
   const goTo = (destination: Page) => {
-    stopAudio(); setSoundQuizLessonId(null); setUnitSession(null); setStarterGroupId(null); setCoreReviewRun(null); setLessonId(null); setGuideVisible(false); setSoundReturn(null); setEditorOpen(false); setReviewOnly(null); setBatchIndex(0); setMicroDialogueId(null); setPage(destination); setRevealed(false); setFinished(false);
+    stopAudio(); setSoundQuizLessonId(null); setUnitSession(null); setStarterGroupId(null); setLaunchSentences(false); setCoreReviewRun(null); setLessonId(null); setGuideVisible(false); setSoundReturn(null); setEditorOpen(false); setReviewOnly(null); setBatchIndex(0); setMicroDialogueId(null); setPage(destination); setRevealed(false); setFinished(false);
   };
   const openLesson = (lesson: Lesson, resume=false, updateCourseCursor=true) => {
-    stopAudio();setSoundQuizLessonId(null);setUnitSession(null);setStarterGroupId(null);setCoreReviewRun(null);
+    stopAudio();setSoundQuizLessonId(null);setUnitSession(null);setStarterGroupId(null);setLaunchSentences(false);setCoreReviewRun(null);
     const resumeAt=resume ? nextLessonResume(lesson,progress,readingPositions) : null;
     setSoundReturn(null);
     setReviewOnly(null);
@@ -688,8 +694,13 @@ export default function App() {
                 : coreReviewRun ? <button type="button" className="primary-action" onClick={()=>nextCoreReview?continueCoreReview():goTo('practice')}>{nextCoreReview?'Continue scheduled review →':'Back to practice →'}</button>
                 : reviewOnly ? <button type="button" className="primary-action" onClick={()=>goTo('practice')}>Back to practice →</button>
                 : starterGroup ? <>
-                  {nextFocusGroup && <button type="button" className="primary-action"
-                    onClick={()=>openStarterGroup(nextFocusGroup.id)}>Next: {nextFocusGroup.title} →</button>}
+                  {nextFocusGroup
+                    ? <button type="button" className="primary-action"
+                        onClick={()=>openStarterGroup(nextFocusGroup.id)}>Next: {nextFocusGroup.title} →</button>
+                    : sentencePatterns.length>0 && <button type="button" className="primary-action"
+                        onClick={()=>{goTo('library');setLaunchSentences(true);}}>
+                        Next: First sentences / basic grammar →
+                      </button>}
                   <button type="button" className={nextFocusGroup?'secondary-action':'primary-action'}
                     onClick={()=>goTo('library')}>Back to library →</button>
                 </>
@@ -844,7 +855,7 @@ export default function App() {
               <div className="curriculum-stage-heading"><h2>{section.heading}</h2></div>
               {section.id==='core' && filter==='all' && !query.trim() && <>
                 <Journey1Guide steps={foundationGuide} starterGroups={starterGroups} nextWordGroups={nextWordGroups}
-                  sentencePatterns={sentencePatterns}
+                  firstSentenceGroups={firstSentenceGroups} sentencePatterns={sentencePatterns} startSentencesOpen={launchSentences}
                   recordedLetters={recordedAlphabet.letters} recordedCombinations={recordedAlphabet.combinations}
                   playing={audio.playing} speed={audio.rate} onSpeed={audio.setRate} onPlayAudio={play}
                   onStarter={openStarterGroup}
