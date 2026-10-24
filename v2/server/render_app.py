@@ -67,7 +67,7 @@ def create_render_app(*, dist_path: str | Path | None = None,
         raw_pilot = os.getenv("PTP_FAMILY_PILOT_EMAILS", "")
         pilot_emails = tuple(x.strip().lower() for x in raw_pilot.split(",") if x.strip())
         if len(pilot_emails) > 12 or len(pilot_emails) != len(set(pilot_emails)) or any(
-                not x or not re.fullmatch(r"[^@\s]{1,100}@[^@\s]{1,100}\.[^@\s]{2,30}",x)
+                not x or "*" in x or not re.fullmatch(r"[^@\s]{1,100}@[^@\s]{1,100}\.[^@\s]{2,30}",x)
                 for x in pilot_emails):
             raise RuntimeError("Invalid adult pilot email allowlist")
         if signup_mode == "adult-pilot" and not pilot_emails:
