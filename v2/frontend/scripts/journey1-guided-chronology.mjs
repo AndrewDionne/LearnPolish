@@ -55,7 +55,9 @@ export function verifyGuidedChronology(
       id:e.sourceLesson+':'+e.index,polish:e.polish,english:e.english,source:'grammar'
     })):
     groups.get(unitId).itemRefs.map(e=>({
-      id:e.id,polish:e.expectedPolish,english:e.expectedEnglish,source:'group'
+      id:e.id,polish:e.expectedPolish,
+      english:e.expectedEnglish??sourceLesson(e.id.split(':')[0]).cards[Number(e.id.split(':')[1])].meaning,
+      source:'group'
     }));
   assert.deepEqual(step.recordedSourceItems,authored,'guided source selection drift '+unitId);
   const observations=[];
