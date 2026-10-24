@@ -480,7 +480,8 @@
       ],
       "structuralReviewPrompts": [
         "question-form",
-        "yes-no-czy"
+        "yes-no-czy",
+        "ability-and-permission"
       ],
       "lexicalAndGrammarReview": "open_not_native_certified"
     },
@@ -497,7 +498,8 @@
       ],
       "structuralReviewPrompts": [
         "question-form",
-        "yes-no-czy"
+        "yes-no-czy",
+        "ability-and-permission"
       ],
       "lexicalAndGrammarReview": "open_not_native_certified"
     },
@@ -583,7 +585,9 @@
         "poproszę",
         "paragon"
       ],
-      "structuralReviewPrompts": [],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
       "lexicalAndGrammarReview": "open_not_native_certified"
     },
     {
@@ -666,9 +670,7 @@
       "firstObservedWrittenForms": [
         "małe"
       ],
-      "structuralReviewPrompts": [
-        "verb-or-person-form"
-      ],
+      "structuralReviewPrompts": [],
       "lexicalAndGrammarReview": "open_not_native_certified"
     },
     {
@@ -699,7 +701,8 @@
       ],
       "structuralReviewPrompts": [
         "question-form",
-        "yes-no-czy"
+        "yes-no-czy",
+        "ability-and-permission"
       ],
       "lexicalAndGrammarReview": "open_not_native_certified"
     },
@@ -775,7 +778,9 @@
       "firstObservedWrittenForms": [
         "siatkę"
       ],
-      "structuralReviewPrompts": [],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
       "lexicalAndGrammarReview": "open_not_native_certified"
     },
     {
@@ -808,7 +813,8 @@
       ],
       "structuralReviewPrompts": [
         "question-form",
-        "yes-no-czy"
+        "yes-no-czy",
+        "ability-and-permission"
       ],
       "lexicalAndGrammarReview": "open_not_native_certified"
     },
@@ -852,7 +858,9 @@
       "firstObservedWrittenForms": [
         "menu"
       ],
-      "structuralReviewPrompts": [],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
       "lexicalAndGrammarReview": "open_not_native_certified"
     },
     {
@@ -882,7 +890,9 @@
       "firstObservedWrittenForms": [
         "wodę"
       ],
-      "structuralReviewPrompts": [],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
       "lexicalAndGrammarReview": "open_not_native_certified"
     },
     {
@@ -896,7 +906,9 @@
       "firstObservedWrittenForms": [
         "kawę"
       ],
-      "structuralReviewPrompts": [],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
       "lexicalAndGrammarReview": "open_not_native_certified"
     },
     {
@@ -910,7 +922,9 @@
       "firstObservedWrittenForms": [
         "herbatę"
       ],
-      "structuralReviewPrompts": [],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
       "lexicalAndGrammarReview": "open_not_native_certified"
     },
     {
@@ -961,7 +975,9 @@
       "firstObservedWrittenForms": [
         "rachunek"
       ],
-      "structuralReviewPrompts": [],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
       "lexicalAndGrammarReview": "open_not_native_certified"
     },
     {
@@ -1164,7 +1180,8 @@
       ],
       "structuralReviewPrompts": [
         "question-form",
-        "yes-no-czy"
+        "yes-no-czy",
+        "ability-and-permission"
       ],
       "lexicalAndGrammarReview": "open_not_native_certified"
     },
@@ -1179,7 +1196,9 @@
       "firstObservedWrittenForms": [
         "soli"
       ],
-      "structuralReviewPrompts": [],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
       "lexicalAndGrammarReview": "open_not_native_certified"
     },
     {
@@ -1194,7 +1213,9 @@
         "mniej",
         "ostre"
       ],
-      "structuralReviewPrompts": [],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
       "lexicalAndGrammarReview": "open_not_native_certified"
     },
     {
@@ -1208,7 +1229,8 @@
       "firstObservedWrittenForms": [],
       "structuralReviewPrompts": [
         "question-form",
-        "yes-no-czy"
+        "yes-no-czy",
+        "ability-and-permission"
       ],
       "lexicalAndGrammarReview": "open_not_native_certified"
     },
@@ -1224,7 +1246,9 @@
         "jednej",
         "osoby"
       ],
-      "structuralReviewPrompts": [],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
       "lexicalAndGrammarReview": "open_not_native_certified"
     },
     {
@@ -1236,7 +1260,9 @@
       "english": "A table for two, please",
       "existingWholeRecording": "generated/audio/Food_and_Dinning/1.mp3",
       "firstObservedWrittenForms": [],
-      "structuralReviewPrompts": [],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
       "lexicalAndGrammarReview": "open_not_native_certified"
     },
     {
@@ -1265,7 +1291,9 @@
       "english": "The menu, please",
       "existingWholeRecording": "generated/audio/Food_and_Dinning/3.mp3",
       "firstObservedWrittenForms": [],
-      "structuralReviewPrompts": [],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
       "lexicalAndGrammarReview": "open_not_native_certified"
     },
     {
@@ -1296,7 +1324,9 @@
       "firstObservedWrittenForms": [
         "zupę"
       ],
-      "structuralReviewPrompts": [],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
       "lexicalAndGrammarReview": "open_not_native_certified"
     },
     {
@@ -1310,7 +1340,9 @@
       "firstObservedWrittenForms": [
         "pierogi"
       ],
-      "structuralReviewPrompts": [],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
       "lexicalAndGrammarReview": "open_not_native_certified"
     },
     {
@@ -1324,7 +1356,9 @@
       "firstObservedWrittenForms": [
         "schabowego"
       ],
-      "structuralReviewPrompts": [],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
       "lexicalAndGrammarReview": "open_not_native_certified"
     },
     {
@@ -1338,7 +1372,9 @@
       "firstObservedWrittenForms": [
         "sałatkę"
       ],
-      "structuralReviewPrompts": [],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
       "lexicalAndGrammarReview": "open_not_native_certified"
     },
     {
@@ -1350,7 +1386,9 @@
       "english": "A coffee, please",
       "existingWholeRecording": "generated/audio/Food_and_Dinning/9.mp3",
       "firstObservedWrittenForms": [],
-      "structuralReviewPrompts": [],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
       "lexicalAndGrammarReview": "open_not_native_certified"
     },
     {
@@ -1362,7 +1400,9 @@
       "english": "A tea, please",
       "existingWholeRecording": "generated/audio/Food_and_Dinning/10.mp3",
       "firstObservedWrittenForms": [],
-      "structuralReviewPrompts": [],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
       "lexicalAndGrammarReview": "open_not_native_certified"
     },
     {
@@ -1374,7 +1414,9 @@
       "english": "A beer, please",
       "existingWholeRecording": "generated/audio/Food_and_Dinning/11.mp3",
       "firstObservedWrittenForms": [],
-      "structuralReviewPrompts": [],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
       "lexicalAndGrammarReview": "open_not_native_certified"
     },
     {
@@ -1389,7 +1431,9 @@
         "kieliszek",
         "wina"
       ],
-      "structuralReviewPrompts": [],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
       "lexicalAndGrammarReview": "open_not_native_certified"
     },
     {
@@ -1403,7 +1447,9 @@
       "firstObservedWrittenForms": [
         "niegazowaną"
       ],
-      "structuralReviewPrompts": [],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
       "lexicalAndGrammarReview": "open_not_native_certified"
     },
     {
@@ -1417,7 +1463,9 @@
       "firstObservedWrittenForms": [
         "gazowaną"
       ],
-      "structuralReviewPrompts": [],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
       "lexicalAndGrammarReview": "open_not_native_certified"
     },
     {
@@ -1472,7 +1520,8 @@
       "firstObservedWrittenForms": [],
       "structuralReviewPrompts": [
         "question-form",
-        "yes-no-czy"
+        "yes-no-czy",
+        "ability-and-permission"
       ],
       "lexicalAndGrammarReview": "open_not_native_certified"
     },
@@ -1487,7 +1536,8 @@
       "firstObservedWrittenForms": [],
       "structuralReviewPrompts": [
         "question-form",
-        "yes-no-czy"
+        "yes-no-czy",
+        "ability-and-permission"
       ],
       "lexicalAndGrammarReview": "open_not_native_certified"
     },
@@ -1797,7 +1847,9 @@
         "ulicę",
         "marszałkowską"
       ],
-      "structuralReviewPrompts": [],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
       "lexicalAndGrammarReview": "open_not_native_certified"
     },
     {
@@ -1826,7 +1878,8 @@
       "firstObservedWrittenForms": [],
       "structuralReviewPrompts": [
         "question-form",
-        "yes-no-czy"
+        "yes-no-czy",
+        "ability-and-permission"
       ],
       "lexicalAndGrammarReview": "open_not_native_certified"
     },
@@ -1845,7 +1898,8 @@
       ],
       "structuralReviewPrompts": [
         "question-form",
-        "yes-no-czy"
+        "yes-no-czy",
+        "ability-and-permission"
       ],
       "lexicalAndGrammarReview": "open_not_native_certified"
     },
@@ -1860,7 +1914,8 @@
       "firstObservedWrittenForms": [],
       "structuralReviewPrompts": [
         "question-form",
-        "place-gdzie"
+        "place-gdzie",
+        "ability-and-permission"
       ],
       "lexicalAndGrammarReview": "open_not_native_certified"
     },
@@ -2573,7 +2628,8 @@
         "oddychać"
       ],
       "structuralReviewPrompts": [
-        "negation"
+        "negation",
+        "ability-and-permission"
       ],
       "lexicalAndGrammarReview": "open_not_native_certified"
     },
@@ -2639,7 +2695,8 @@
       ],
       "structuralReviewPrompts": [
         "question-form",
-        "yes-no-czy"
+        "yes-no-czy",
+        "ability-and-permission"
       ],
       "lexicalAndGrammarReview": "open_not_native_certified"
     },
@@ -2746,7 +2803,9 @@
         "są",
         "ważne"
       ],
-      "structuralReviewPrompts": [],
+      "structuralReviewPrompts": [
+        "verb-or-person-form"
+      ],
       "lexicalAndGrammarReview": "open_not_native_certified"
     },
     {
@@ -2789,6 +2848,7 @@
         "jabłek"
       ],
       "structuralReviewPrompts": [
+        "request-poprosze",
         "numbers-and-quantities"
       ],
       "lexicalAndGrammarReview": "open_not_native_certified"
@@ -2825,7 +2885,9 @@
       "english": "Red apples, please.",
       "existingWholeRecording": "generated/audio/Grocery_store_very_basic_shopping/3.mp3",
       "firstObservedWrittenForms": [],
-      "structuralReviewPrompts": [],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
       "lexicalAndGrammarReview": "open_not_native_certified"
     },
     {
@@ -2994,7 +3056,8 @@
       ],
       "structuralReviewPrompts": [
         "question-form",
-        "yes-no-czy"
+        "yes-no-czy",
+        "ability-and-permission"
       ],
       "lexicalAndGrammarReview": "open_not_native_certified"
     },
@@ -3012,7 +3075,9 @@
         "lewej",
         "stronie"
       ],
-      "structuralReviewPrompts": [],
+      "structuralReviewPrompts": [
+        "verb-or-person-form"
+      ],
       "lexicalAndGrammarReview": "open_not_native_certified"
     },
     {
@@ -3211,7 +3276,8 @@
       ],
       "structuralReviewPrompts": [
         "question-form",
-        "yes-no-czy"
+        "yes-no-czy",
+        "ability-and-permission"
       ],
       "lexicalAndGrammarReview": "open_not_native_certified"
     },
@@ -3286,7 +3352,8 @@
       ],
       "structuralReviewPrompts": [
         "question-form",
-        "yes-no-czy"
+        "yes-no-czy",
+        "ability-and-permission"
       ],
       "lexicalAndGrammarReview": "open_not_native_certified"
     },
@@ -3331,6 +3398,7 @@
         "muzeum"
       ],
       "structuralReviewPrompts": [
+        "request-poprosze",
         "numbers-and-quantities"
       ],
       "lexicalAndGrammarReview": "open_not_native_certified"
@@ -3363,6 +3431,7 @@
       "existingWholeRecording": "generated/audio/Museum_buying_tickets_and_basic_info/2.mp3",
       "firstObservedWrittenForms": [],
       "structuralReviewPrompts": [
+        "request-poprosze",
         "numbers-and-quantities"
       ],
       "lexicalAndGrammarReview": "open_not_native_certified"
