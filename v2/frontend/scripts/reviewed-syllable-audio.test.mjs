@@ -62,7 +62,7 @@ test('guard against unmatched source text/voice, right-to-use, reviewed timing a
   item=>item.segments[1].startMs=800,
   item=>item.segments[2].endMs=680,
   item=>item.segments[2].endMs=1600,
-  item=>item.segments[2].endMs=850,
+  item=>item.segments[2].endMs=849, // 351 ms unaccounted tail exceeds 350 ms limit
   item=>item.segments[0].startMs=410,
  ];
  for(const mutate of mutations){
