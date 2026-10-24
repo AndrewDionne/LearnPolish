@@ -10,6 +10,7 @@ type Props = {
   item: LessonItem;
   playing: string | null;
   onPlayReference: (path: string) => void;
+  onPlayExcerpt: (path:string,startMs:number,endMs:number) => void;
   onStopReference: () => void;
   onNext: (completedTake: boolean) => void;
   guideVisible: boolean;
@@ -19,7 +20,7 @@ type Props = {
   onAssess?: (capture: AssessmentReadyCapture, signal: AbortSignal) => Promise<SpeechFeedback>;
 };
 
-export default function SpeakPanel({item, playing, onPlayReference, onStopReference, onNext, guideVisible, onGuideChange, onPracticeSound, blended=false, onAssess}: Props) {
+export default function SpeakPanel({item, playing, onPlayReference, onPlayExcerpt, onStopReference, onNext, guideVisible, onGuideChange, onPracticeSound, blended=false, onAssess}: Props) {
   const preview = useRef<HTMLAudioElement | null>(null);
   const activeRequest = useRef<AbortController | null>(null);
   const [feedback, setFeedback] = useState<SpeechFeedback | null>(null);
@@ -79,7 +80,8 @@ export default function SpeakPanel({item, playing, onPlayReference, onStopRefere
     if (item.audio && item.referenceReview !== 'practice_only') onPlayReference(item.audio);
   };
 
-  const hasGuide = Boolean(item.pronunciationGuide || item.pronunciation);
+  const guideParts=item.syllableAudio?.segments??item.pronunciationSegments?.segments;
+  const hasGuide = Boolean(item.pronunciationGuide || item.pronunciation || (guideParts?.length??0)>1);
   const expandedGuide = guideVisible && hasGuide;
   const guide = item.pronunciationGuide;
   // The learner surface never converts experimental syllable scores into per-part grades.
@@ -121,8 +123,28 @@ export default function SpeakPanel({item, playing, onPlayReference, onStopRefere
               <span className="speak-word-english" lang="en">{part.englishCue}</span>
             </span>;
           })}
-        </span> : item.polish}
+        </span> : expandedGuide && guideParts && guideParts.length>1
+          ? <span className="speak-guided-word" aria-label={item.polish}>
+            {guideParts.map((part,index)=>{
+              const value=typeof part==='string'?part:part.polish;
+              return <span className="speak-word-segment" key={index}>
+                <span className="speak-word-polish">{value}</span>
+              </span>;
+            })}
+          </span>
+          : item.polish}
       </h2>
+      {expandedGuide && item.syllableAudio && item.audio===item.syllableAudio.audio &&
+        <div className="syllable-audio-controls" role="group" aria-label="Recorded syllable playback">
+          {item.syllableAudio.segments.map((part,index)=><button type="button" key={index}
+            className="pronunciation-audio-part"
+            aria-label={'Play syllable '+(index+1)+': '+part.polish.trim()}
+            disabled={capture.phase==='requesting'||capture.phase==='recording'||capture.phase==='processing'}
+            onClick={()=>{
+              preview.current?.pause();
+              onPlayExcerpt(item.syllableAudio!.audio,part.startMs,part.endMs);
+            }}>{part.polish}</button>)}
+        </div>}
       {expandedGuide && !guide && item.pronunciation && <p className="speak-english-fallback">{item.pronunciation}</p>}
     </div>
     {item.referenceReview === 'practice_only' && <p className="speak-reference-pending">Reference audio unavailable.</p>}
