@@ -6,6 +6,7 @@ import travel from '../../../docs/sets/Getting_Around_1.json';
 import health from '../../../docs/sets/Emergencies_and_Health.json';
 import conversation from '../../../docs/sets/Conversation_1.json';
 import food from '../../../docs/sets/Food_and_Dinning.json';
+import road from '../../../docs/sets/Road_Terminology.json';
 import type {Lesson} from './model';
 import {SENTENCE_PATTERN_SOURCE,availableSentencePatterns,validateSentencePatternSource} from './foundation-sentence-patterns';
 
@@ -16,6 +17,7 @@ const originals=[
  ['Emergencies_and_Health',health],
  ['Conversation_1',conversation],
  ['Food_and_Dinning',food],
+ ['Road_Terminology',road],
 ] as const;
 const lessons:Lesson[]=originals.map(([id,data])=>({
  schemaVersion:1,id,title:id,kind:'vocabulary',source:'legacy',
@@ -26,21 +28,21 @@ const lessons:Lesson[]=originals.map(([id,data])=>({
 }));
 const copy=<T,>(value:T):T=>structuredClone(value);
 
-describe('C-11 first sentence patterns with 20 original Polish recordings',()=>{
- it('declares five progressive patterns, four exact full original utterances each',()=>{
+describe('C-13 prerequisite-complete sentence patterns with 28 original Polish recordings',()=>{
+ it('declares seven progressive patterns and 28 exact full original recordings',()=>{
   expect(validateSentencePatternSource(raw)).toEqual(SENTENCE_PATTERN_SOURCE);
   expect(SENTENCE_PATTERN_SOURCE.map(group=>group.id)).toEqual([
-   'requests','where','permission','negative','one-two'
+   'requests','where','permission','prices','yes-no-questions','negative','one-two'
   ]);
-  expect(SENTENCE_PATTERN_SOURCE.map(group=>group.examples.length)).toEqual([4,4,4,4,4]);
+  expect(SENTENCE_PATTERN_SOURCE.map(group=>group.examples.length)).toEqual([4,5,4,3,4,4,4]);
   const all=SENTENCE_PATTERN_SOURCE.flatMap(group=>group.examples);
-  expect(new Set(all.map(x=>x.sourceLesson+':'+x.index)).size).toBe(20);
+  expect(new Set(all.map(x=>x.sourceLesson+':'+x.index)).size).toBe(28);
  });
  it('pins each full Polish sentence AND original English meaning AND original word audio',()=>{
   const available=availableSentencePatterns(lessons);
-  expect(available).toHaveLength(5);
+  expect(available).toHaveLength(7);
   for(const group of available){
-   expect(group.examples).toHaveLength(4);
+   expect(group.examples.length).toBeGreaterThanOrEqual(3);
    for(const example of group.examples){
     const item=lessons.flatMap(l=>l.items).find(x=>x.id===example.itemId);
     expect(item).toBeDefined();
@@ -53,8 +55,10 @@ describe('C-11 first sentence patterns with 20 original Polish recordings',()=>{
   expect(available[0].examples[0].polish).toBe('Poproszę wodę');
   expect(available[1].examples[0].polish).toBe('Gdzie jest przystanek?');
   expect(available[2].examples[0].polish).toBe('Czy mogę zapłacić kartą?');
-  expect(available[3].examples[0].polish).toBe('Nie rozumiem');
-  expect(available[4].examples[0].polish).toBe('Jeden bilet, proszę');
+  expect(available[3].examples[0].polish).toBe('Ile to kosztuje?');
+  expect(available[4].examples[0].polish).toBe('Czy to pociąg do Warszawy?');
+  expect(available[5].examples[0].polish).toBe('Nie rozumiem');
+  expect(available[6].examples[0].polish).toBe('Jeden bilet, proszę');
  });
  it('withholds affected group on any mismatched source text, translation, recording or blocker',()=>{
   for(const mutate of [
@@ -69,7 +73,7 @@ describe('C-11 first sentence patterns with 20 original Polish recordings',()=>{
    const changed=copy(lessons);
    mutate(changed[0]);
    expect(availableSentencePatterns(changed).some(g=>g.id==='requests')).toBe(false);
-   expect(availableSentencePatterns(changed)).toHaveLength(4);
+   expect(availableSentencePatterns(changed)).toHaveLength(6);
   }
   expect(availableSentencePatterns([])).toHaveLength(0);
  });
