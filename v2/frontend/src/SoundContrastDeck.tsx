@@ -1,7 +1,8 @@
 import {useState} from 'react';
-import {soundListeningCards} from './sound-listening';
+import {focusedPolishParts,soundListeningCards} from './sound-listening';
+export {focusedPolishParts} from './sound-listening';
 import SoundEarQuiz from './SoundEarQuiz';
-import type { Lesson, LessonItem } from './model';
+import type { Lesson } from './model';
 
 type Props = {
   lesson: Lesson;
@@ -11,15 +12,6 @@ type Props = {
   onSelect: (itemId: string) => void;
   onPlay: (audioPath: string) => void;
 };
-
-/** Preserve the whole original word while visually emphasizing authored graphemes. */
-export function focusedPolishParts(item: LessonItem): {before:string;focus:string;after:string}|null {
-  const focus=item.soundFocus;
-  if(!focus)return null;
-  const at=item.polish.indexOf(focus);
-  if(at<0 || item.polish.indexOf(focus,at+focus.length)!==-1)return null;
-  return {before:item.polish.slice(0,at),focus,after:item.polish.slice(at+focus.length)};
-}
 
 /** Compare short individual recordings side by side; no automatic phonetic grading. */
 export default function SoundContrastDeck({ lesson, focusGroupId, currentId, playing, onSelect, onPlay }: Props) {
