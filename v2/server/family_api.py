@@ -123,6 +123,7 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
                speech_assessor: Callable | None = None,
                postgres_url: str | None = None,
                pilot_adult_emails: tuple[str, ...] | None = None,
+               owner_delivered_test_codes: bool = False,
                speech_blend_enabled: bool | None = None,
                speech_transcriber: Callable | None = None) -> Flask:
     # None = developer/test account flow (legacy), tuple = hosted adult-only pilot.
@@ -411,11 +412,15 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
         response.headers["Server-Timing"]=f"speech-blend;dur={elapsed}"
         return response
 
+    if owner_delivered_test_codes and (pilot_adult_emails is None or pilot_adult_emails or signup_sender is not None):
+        raise RuntimeError("Manual tester activation requires closed hosted signup and no email sender")
+
     @app.get("/api/v2/family/health")
     def health():
         return jsonify(ok=True, version=1, catalog_items=len(known),
                        password_recovery_available=mail_sender is not None,
                        email_verification_available=signup_sender is not None,
+                       owner_delivered_activation_available=owner_delivered_test_codes,
                        registration_mode=("local_test" if pilot_adult_emails is None else
                                           "adult_pilot" if pilot_adult_emails else "closed"),
                        registration_available=(signup_sender is not None and
@@ -528,7 +533,11 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
 
     @app.post("/api/v2/family/verification/confirm")
     def confirm_verification():
-        if signup_sender is None:
+        # In owner-delivered mode the operator pre-provisions a pending user and
+        # a SHA-256-hashed one-time activation code in the private database,
+        # then personally forwards it to the recipient's actual mailbox.
+        # This endpoint never generates, emails or reveals that code.
+        if signup_sender is None and not owner_delivered_test_codes:
             return fail("email_verification_unavailable",503)
         data = _json()
         email = data.get("email")
