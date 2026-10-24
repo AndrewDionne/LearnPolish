@@ -1,0 +1,2587 @@
+{
+  "schemaVersion": 1,
+  "status": "guided_chronological_source_trace_only_not_native_lexical_or_morphology_approval",
+  "notes": "Unit order comes from actual foundation-progression and grammar pattern source manifests, NOT the original source-catalog order. Written words are orthographic forms, NOT lemmas or verified knowledge; each recorded line is a whole existing MP3 and complete source translation. The 172 basic rows mapped here are NOT certified gap-free and original Library can be explored out of order. Review each introduction and any unfamiliar morphology prior to grading.",
+  "guidedOrder": [
+    {
+      "order": 1,
+      "unitId": "simple-replies",
+      "category": "first-words",
+      "recordedSourceItems": [
+        {
+          "id": "Conversation_1:14",
+          "polish": "Tak",
+          "source": "group"
+        },
+        {
+          "id": "Conversation_1:15",
+          "polish": "Nie",
+          "source": "group"
+        }
+      ]
+    },
+    {
+      "order": 2,
+      "unitId": "politeness",
+      "category": "first-words",
+      "recordedSourceItems": [
+        {
+          "id": "Conversation_1:10",
+          "polish": "Proszę",
+          "source": "group"
+        },
+        {
+          "id": "Conversation_1:8",
+          "polish": "Dziękuję",
+          "source": "group"
+        },
+        {
+          "id": "Conversation_1:12",
+          "polish": "Przepraszam",
+          "source": "group"
+        }
+      ]
+    },
+    {
+      "order": 3,
+      "unitId": "greetings",
+      "category": "first-words",
+      "recordedSourceItems": [
+        {
+          "id": "Conversation_1:0",
+          "polish": "Dzień dobry",
+          "source": "group"
+        },
+        {
+          "id": "Conversation_1:2",
+          "polish": "Cześć",
+          "source": "group"
+        },
+        {
+          "id": "Conversation_1:4",
+          "polish": "Do widzenia",
+          "source": "group"
+        }
+      ]
+    },
+    {
+      "order": 4,
+      "unitId": "street-words",
+      "category": "basic-vocabulary",
+      "recordedSourceItems": [
+        {
+          "id": "Road_Terminology:0",
+          "polish": "ulica",
+          "english": "Street",
+          "source": "group"
+        },
+        {
+          "id": "Road_Terminology:1",
+          "polish": "aleja",
+          "english": "Avenue / Boulevard",
+          "source": "group"
+        },
+        {
+          "id": "Road_Terminology:2",
+          "polish": "plac",
+          "english": "Square / Plaza",
+          "source": "group"
+        },
+        {
+          "id": "Road_Terminology:3",
+          "polish": "droga",
+          "english": "Road",
+          "source": "group"
+        },
+        {
+          "id": "Road_Terminology:8",
+          "polish": "most",
+          "english": "Bridge",
+          "source": "group"
+        },
+        {
+          "id": "Road_Terminology:9",
+          "polish": "rondo",
+          "english": "Roundabout",
+          "source": "group"
+        }
+      ]
+    },
+    {
+      "order": 5,
+      "unitId": "transport-words",
+      "category": "basic-vocabulary",
+      "recordedSourceItems": [
+        {
+          "id": "Transit_1:2",
+          "polish": "Bilet",
+          "english": "Ticket",
+          "source": "group"
+        },
+        {
+          "id": "Transit_1:5",
+          "polish": "Metro",
+          "english": "Metro / Subway",
+          "source": "group"
+        },
+        {
+          "id": "Transit_1:6",
+          "polish": "Autobus",
+          "english": "Bus",
+          "source": "group"
+        },
+        {
+          "id": "Transit_1:7",
+          "polish": "Tramwaj",
+          "english": "Tram",
+          "source": "group"
+        },
+        {
+          "id": "Transit_1:16",
+          "polish": "Pociąg",
+          "english": "Train",
+          "source": "group"
+        },
+        {
+          "id": "Transit_1:18",
+          "polish": "Kierunek",
+          "english": "Direction",
+          "source": "group"
+        }
+      ]
+    },
+    {
+      "order": 6,
+      "unitId": "everyday-replies",
+      "category": "basic-vocabulary",
+      "recordedSourceItems": [
+        {
+          "id": "Conversation_1:16",
+          "polish": "Może",
+          "english": "Maybe",
+          "source": "group"
+        },
+        {
+          "id": "Conversation_1:17",
+          "polish": "Jasne",
+          "english": "Sure / Of course",
+          "source": "group"
+        },
+        {
+          "id": "Conversation_1:18",
+          "polish": "Oczywiście",
+          "english": "Of course",
+          "source": "group"
+        },
+        {
+          "id": "Conversation_1:19",
+          "polish": "Mam pytanie",
+          "english": "I have a question",
+          "source": "group"
+        },
+        {
+          "id": "Conversation_1:20",
+          "polish": "Nie rozumiem",
+          "english": "I don’t understand",
+          "source": "group"
+        }
+      ]
+    },
+    {
+      "order": 7,
+      "unitId": "grammar:requests",
+      "category": "grammar-explanation",
+      "recordedSourceItems": [
+        {
+          "id": "Conversation_-_restaurant:2",
+          "polish": "Poproszę wodę",
+          "english": "Water, please",
+          "source": "grammar"
+        },
+        {
+          "id": "Conversation_-_restaurant:3",
+          "polish": "Poproszę kawę",
+          "english": "Coffee, please",
+          "source": "grammar"
+        },
+        {
+          "id": "Conversation_-_restaurant:4",
+          "polish": "Poproszę herbatę",
+          "english": "Tea, please",
+          "source": "grammar"
+        },
+        {
+          "id": "Conversation_-_restaurant:0",
+          "polish": "Poproszę menu",
+          "english": "May I have the menu, please?",
+          "source": "grammar"
+        }
+      ]
+    },
+    {
+      "order": 8,
+      "unitId": "grammar:where",
+      "category": "grammar-explanation",
+      "recordedSourceItems": [
+        {
+          "id": "Getting_Around_1:0",
+          "polish": "Gdzie jest przystanek?",
+          "english": "Where is the bus/tram stop?",
+          "source": "grammar"
+        },
+        {
+          "id": "Getting_Around_1:2",
+          "polish": "Gdzie jest metro?",
+          "english": "Where is the metro?",
+          "source": "grammar"
+        },
+        {
+          "id": "Conversation_-_shopping:5",
+          "polish": "Gdzie jest kasa?",
+          "english": "Where is the checkout?",
+          "source": "grammar"
+        },
+        {
+          "id": "Emergencies_and_Health:9",
+          "polish": "Gdzie jest apteka?",
+          "english": "Where is the pharmacy?",
+          "source": "grammar"
+        },
+        {
+          "id": "Getting_Around_1:17",
+          "polish": "Gdzie mogę kupić bilet?",
+          "english": "Where can I buy a ticket?",
+          "source": "grammar"
+        }
+      ]
+    },
+    {
+      "order": 9,
+      "unitId": "grammar:permission",
+      "category": "grammar-explanation",
+      "recordedSourceItems": [
+        {
+          "id": "Conversation_-_shopping:2",
+          "polish": "Czy mogę zapłacić kartą?",
+          "english": "Can I pay by card?",
+          "source": "grammar"
+        },
+        {
+          "id": "Conversation_-_shopping:3",
+          "polish": "Czy mogę zapłacić gotówką?",
+          "english": "Can I pay in cash?",
+          "source": "grammar"
+        },
+        {
+          "id": "Conversation_-_shopping:15",
+          "polish": "Czy mogę to przymierzyć?",
+          "english": "Can I try this on?",
+          "source": "grammar"
+        },
+        {
+          "id": "Getting_Around_1:16",
+          "polish": "Czy mogę kupić bilet u kierowcy?",
+          "english": "Can I buy a ticket from the driver?",
+          "source": "grammar"
+        }
+      ]
+    },
+    {
+      "order": 10,
+      "unitId": "grammar:prices",
+      "category": "grammar-explanation",
+      "recordedSourceItems": [
+        {
+          "id": "Conversation_-_shopping:0",
+          "polish": "Ile to kosztuje?",
+          "english": "How much does this cost?",
+          "source": "grammar"
+        },
+        {
+          "id": "Conversation_-_shopping:1",
+          "polish": "Ile to razem?",
+          "english": "How much is it altogether?",
+          "source": "grammar"
+        },
+        {
+          "id": "Getting_Around_1:14",
+          "polish": "Ile kosztuje bilet?",
+          "english": "How much is the ticket?",
+          "source": "grammar"
+        }
+      ]
+    },
+    {
+      "order": 11,
+      "unitId": "grammar:yes-no-questions",
+      "category": "grammar-explanation",
+      "recordedSourceItems": [
+        {
+          "id": "Getting_Around_1:5",
+          "polish": "Czy to pociąg do Warszawy?",
+          "english": "Is this the train to Warsaw?",
+          "source": "grammar"
+        },
+        {
+          "id": "Getting_Around_1:22",
+          "polish": "Czy to daleko stąd?",
+          "english": "Is it far from here?",
+          "source": "grammar"
+        },
+        {
+          "id": "Conversation_-_shopping:19",
+          "polish": "Czy to jest na promocji?",
+          "english": "Is this on sale?",
+          "source": "grammar"
+        },
+        {
+          "id": "Road_Terminology:11",
+          "polish": "Czy to jest daleko?",
+          "english": "Is it far?",
+          "source": "grammar"
+        }
+      ]
+    },
+    {
+      "order": 12,
+      "unitId": "grammar:negative",
+      "category": "grammar-explanation",
+      "recordedSourceItems": [
+        {
+          "id": "Conversation_1:20",
+          "polish": "Nie rozumiem",
+          "english": "I don’t understand",
+          "source": "grammar"
+        },
+        {
+          "id": "Conversation_-_shopping:21",
+          "polish": "Nie mam drobnych",
+          "english": "I don’t have small change",
+          "source": "grammar"
+        },
+        {
+          "id": "Food_and_Dinning:22",
+          "polish": "Nie jem mięsa",
+          "english": "I don’t eat meat",
+          "source": "grammar"
+        },
+        {
+          "id": "Food_and_Dinning:23",
+          "polish": "Nie piję alkoholu",
+          "english": "I don’t drink alcohol",
+          "source": "grammar"
+        }
+      ]
+    },
+    {
+      "order": 13,
+      "unitId": "grammar:one-two",
+      "category": "grammar-explanation",
+      "recordedSourceItems": [
+        {
+          "id": "Getting_Around_1:6",
+          "polish": "Jeden bilet, proszę",
+          "english": "One ticket, please",
+          "source": "grammar"
+        },
+        {
+          "id": "Getting_Around_1:7",
+          "polish": "Dwa bilety, proszę",
+          "english": "Two tickets, please",
+          "source": "grammar"
+        },
+        {
+          "id": "Food_and_Dinning:0",
+          "polish": "Poproszę stolik dla jednej osoby",
+          "english": "A table for one, please",
+          "source": "grammar"
+        },
+        {
+          "id": "Food_and_Dinning:1",
+          "polish": "Poproszę stolik dla dwóch osób",
+          "english": "A table for two, please",
+          "source": "grammar"
+        }
+      ]
+    },
+    {
+      "order": 14,
+      "unitId": "food-requests",
+      "category": "first-sentence-practice",
+      "recordedSourceItems": [
+        {
+          "id": "Conversation_-_restaurant:2",
+          "polish": "Poproszę wodę",
+          "english": "Water, please",
+          "source": "group"
+        },
+        {
+          "id": "Conversation_-_restaurant:3",
+          "polish": "Poproszę kawę",
+          "english": "Coffee, please",
+          "source": "group"
+        },
+        {
+          "id": "Conversation_-_restaurant:4",
+          "polish": "Poproszę herbatę",
+          "english": "Tea, please",
+          "source": "group"
+        },
+        {
+          "id": "Conversation_-_restaurant:12",
+          "polish": "Zupa dnia",
+          "english": "Soup of the day",
+          "source": "group"
+        },
+        {
+          "id": "Conversation_-_restaurant:14",
+          "polish": "Deser",
+          "english": "Dessert",
+          "source": "group"
+        }
+      ]
+    },
+    {
+      "order": 15,
+      "unitId": "shopping-questions",
+      "category": "first-sentence-practice",
+      "recordedSourceItems": [
+        {
+          "id": "Conversation_-_shopping:0",
+          "polish": "Ile to kosztuje?",
+          "english": "How much does this cost?",
+          "source": "group"
+        },
+        {
+          "id": "Conversation_-_shopping:1",
+          "polish": "Ile to razem?",
+          "english": "How much is it altogether?",
+          "source": "group"
+        },
+        {
+          "id": "Conversation_-_shopping:2",
+          "polish": "Czy mogę zapłacić kartą?",
+          "english": "Can I pay by card?",
+          "source": "group"
+        },
+        {
+          "id": "Conversation_-_shopping:5",
+          "polish": "Gdzie jest kasa?",
+          "english": "Where is the checkout?",
+          "source": "group"
+        },
+        {
+          "id": "Conversation_-_shopping:8",
+          "polish": "Poproszę paragon",
+          "english": "Receipt, please",
+          "source": "group"
+        }
+      ]
+    },
+    {
+      "order": 16,
+      "unitId": "location-questions",
+      "category": "first-sentence-practice",
+      "recordedSourceItems": [
+        {
+          "id": "Getting_Around_1:0",
+          "polish": "Gdzie jest przystanek?",
+          "english": "Where is the bus/tram stop?",
+          "source": "group"
+        },
+        {
+          "id": "Getting_Around_1:2",
+          "polish": "Gdzie jest metro?",
+          "english": "Where is the metro?",
+          "source": "group"
+        },
+        {
+          "id": "Getting_Around_1:14",
+          "polish": "Ile kosztuje bilet?",
+          "english": "How much is the ticket?",
+          "source": "group"
+        },
+        {
+          "id": "Getting_Around_1:17",
+          "polish": "Gdzie mogę kupić bilet?",
+          "english": "Where can I buy a ticket?",
+          "source": "group"
+        },
+        {
+          "id": "Getting_Around_1:22",
+          "polish": "Czy to daleko stąd?",
+          "english": "Is it far from here?",
+          "source": "group"
+        }
+      ]
+    }
+  ],
+  "basicSourceRows": [
+    {
+      "id": "Conversation_1:0",
+      "firstGuidedUse": {
+        "unitId": "greetings",
+        "stepOrder": 3,
+        "unitItemIndex": 0
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "greetings",
+          "stepOrder": 3,
+          "unitItemIndex": 0
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Conversation_1:1",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_1:2",
+      "firstGuidedUse": {
+        "unitId": "greetings",
+        "stepOrder": 3,
+        "unitItemIndex": 1
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "greetings",
+          "stepOrder": 3,
+          "unitItemIndex": 1
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Conversation_1:3",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_1:4",
+      "firstGuidedUse": {
+        "unitId": "greetings",
+        "stepOrder": 3,
+        "unitItemIndex": 2
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "greetings",
+          "stepOrder": 3,
+          "unitItemIndex": 2
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Conversation_1:5",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_1:6",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_1:7",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_1:8",
+      "firstGuidedUse": {
+        "unitId": "politeness",
+        "stepOrder": 2,
+        "unitItemIndex": 1
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "politeness",
+          "stepOrder": 2,
+          "unitItemIndex": 1
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Conversation_1:9",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_1:10",
+      "firstGuidedUse": {
+        "unitId": "politeness",
+        "stepOrder": 2,
+        "unitItemIndex": 0
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "politeness",
+          "stepOrder": 2,
+          "unitItemIndex": 0
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Conversation_1:11",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_1:12",
+      "firstGuidedUse": {
+        "unitId": "politeness",
+        "stepOrder": 2,
+        "unitItemIndex": 2
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "politeness",
+          "stepOrder": 2,
+          "unitItemIndex": 2
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Conversation_1:13",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_1:14",
+      "firstGuidedUse": {
+        "unitId": "simple-replies",
+        "stepOrder": 1,
+        "unitItemIndex": 0
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "simple-replies",
+          "stepOrder": 1,
+          "unitItemIndex": 0
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Conversation_1:15",
+      "firstGuidedUse": {
+        "unitId": "simple-replies",
+        "stepOrder": 1,
+        "unitItemIndex": 1
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "simple-replies",
+          "stepOrder": 1,
+          "unitItemIndex": 1
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Conversation_1:16",
+      "firstGuidedUse": {
+        "unitId": "everyday-replies",
+        "stepOrder": 6,
+        "unitItemIndex": 0
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "everyday-replies",
+          "stepOrder": 6,
+          "unitItemIndex": 0
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Conversation_1:17",
+      "firstGuidedUse": {
+        "unitId": "everyday-replies",
+        "stepOrder": 6,
+        "unitItemIndex": 1
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "everyday-replies",
+          "stepOrder": 6,
+          "unitItemIndex": 1
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Conversation_1:18",
+      "firstGuidedUse": {
+        "unitId": "everyday-replies",
+        "stepOrder": 6,
+        "unitItemIndex": 2
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "everyday-replies",
+          "stepOrder": 6,
+          "unitItemIndex": 2
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Conversation_1:19",
+      "firstGuidedUse": {
+        "unitId": "everyday-replies",
+        "stepOrder": 6,
+        "unitItemIndex": 3
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "everyday-replies",
+          "stepOrder": 6,
+          "unitItemIndex": 3
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Conversation_1:20",
+      "firstGuidedUse": {
+        "unitId": "everyday-replies",
+        "stepOrder": 6,
+        "unitItemIndex": 4
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "everyday-replies",
+          "stepOrder": 6,
+          "unitItemIndex": 4
+        },
+        {
+          "unitId": "grammar:negative",
+          "stepOrder": 12,
+          "unitItemIndex": 0
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Conversation_1:21",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_1:22",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_1:23",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_1:24",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_1:25",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_-_shopping:0",
+      "firstGuidedUse": {
+        "unitId": "grammar:prices",
+        "stepOrder": 10,
+        "unitItemIndex": 0
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "grammar:prices",
+          "stepOrder": 10,
+          "unitItemIndex": 0
+        },
+        {
+          "unitId": "shopping-questions",
+          "stepOrder": 15,
+          "unitItemIndex": 0
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Conversation_-_shopping:1",
+      "firstGuidedUse": {
+        "unitId": "grammar:prices",
+        "stepOrder": 10,
+        "unitItemIndex": 1
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "grammar:prices",
+          "stepOrder": 10,
+          "unitItemIndex": 1
+        },
+        {
+          "unitId": "shopping-questions",
+          "stepOrder": 15,
+          "unitItemIndex": 1
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Conversation_-_shopping:2",
+      "firstGuidedUse": {
+        "unitId": "grammar:permission",
+        "stepOrder": 9,
+        "unitItemIndex": 0
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "grammar:permission",
+          "stepOrder": 9,
+          "unitItemIndex": 0
+        },
+        {
+          "unitId": "shopping-questions",
+          "stepOrder": 15,
+          "unitItemIndex": 2
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Conversation_-_shopping:3",
+      "firstGuidedUse": {
+        "unitId": "grammar:permission",
+        "stepOrder": 9,
+        "unitItemIndex": 1
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "grammar:permission",
+          "stepOrder": 9,
+          "unitItemIndex": 1
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Conversation_-_shopping:4",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_-_shopping:5",
+      "firstGuidedUse": {
+        "unitId": "grammar:where",
+        "stepOrder": 8,
+        "unitItemIndex": 2
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "grammar:where",
+          "stepOrder": 8,
+          "unitItemIndex": 2
+        },
+        {
+          "unitId": "shopping-questions",
+          "stepOrder": 15,
+          "unitItemIndex": 3
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Conversation_-_shopping:6",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_-_shopping:7",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_-_shopping:8",
+      "firstGuidedUse": {
+        "unitId": "shopping-questions",
+        "stepOrder": 15,
+        "unitItemIndex": 4
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "shopping-questions",
+          "stepOrder": 15,
+          "unitItemIndex": 4
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Conversation_-_shopping:9",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_-_shopping:10",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_-_shopping:11",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_-_shopping:12",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_-_shopping:13",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_-_shopping:14",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_-_shopping:15",
+      "firstGuidedUse": {
+        "unitId": "grammar:permission",
+        "stepOrder": 9,
+        "unitItemIndex": 2
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "grammar:permission",
+          "stepOrder": 9,
+          "unitItemIndex": 2
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Conversation_-_shopping:16",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_-_shopping:17",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_-_shopping:18",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_-_shopping:19",
+      "firstGuidedUse": {
+        "unitId": "grammar:yes-no-questions",
+        "stepOrder": 11,
+        "unitItemIndex": 2
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "grammar:yes-no-questions",
+          "stepOrder": 11,
+          "unitItemIndex": 2
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Conversation_-_shopping:20",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_-_shopping:21",
+      "firstGuidedUse": {
+        "unitId": "grammar:negative",
+        "stepOrder": 12,
+        "unitItemIndex": 1
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "grammar:negative",
+          "stepOrder": 12,
+          "unitItemIndex": 1
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Conversation_-_shopping:22",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_-_shopping:23",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_-_shopping:24",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_-_restaurant:0",
+      "firstGuidedUse": {
+        "unitId": "grammar:requests",
+        "stepOrder": 7,
+        "unitItemIndex": 3
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "grammar:requests",
+          "stepOrder": 7,
+          "unitItemIndex": 3
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Conversation_-_restaurant:1",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_-_restaurant:2",
+      "firstGuidedUse": {
+        "unitId": "grammar:requests",
+        "stepOrder": 7,
+        "unitItemIndex": 0
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "grammar:requests",
+          "stepOrder": 7,
+          "unitItemIndex": 0
+        },
+        {
+          "unitId": "food-requests",
+          "stepOrder": 14,
+          "unitItemIndex": 0
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Conversation_-_restaurant:3",
+      "firstGuidedUse": {
+        "unitId": "grammar:requests",
+        "stepOrder": 7,
+        "unitItemIndex": 1
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "grammar:requests",
+          "stepOrder": 7,
+          "unitItemIndex": 1
+        },
+        {
+          "unitId": "food-requests",
+          "stepOrder": 14,
+          "unitItemIndex": 1
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Conversation_-_restaurant:4",
+      "firstGuidedUse": {
+        "unitId": "grammar:requests",
+        "stepOrder": 7,
+        "unitItemIndex": 2
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "grammar:requests",
+          "stepOrder": 7,
+          "unitItemIndex": 2
+        },
+        {
+          "unitId": "food-requests",
+          "stepOrder": 14,
+          "unitItemIndex": 2
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Conversation_-_restaurant:5",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_-_restaurant:6",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_-_restaurant:7",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_-_restaurant:8",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_-_restaurant:9",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_-_restaurant:10",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_-_restaurant:11",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_-_restaurant:12",
+      "firstGuidedUse": {
+        "unitId": "food-requests",
+        "stepOrder": 14,
+        "unitItemIndex": 3
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "food-requests",
+          "stepOrder": 14,
+          "unitItemIndex": 3
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Conversation_-_restaurant:13",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_-_restaurant:14",
+      "firstGuidedUse": {
+        "unitId": "food-requests",
+        "stepOrder": 14,
+        "unitItemIndex": 4
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "food-requests",
+          "stepOrder": 14,
+          "unitItemIndex": 4
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Conversation_-_restaurant:15",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_-_restaurant:16",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_-_restaurant:17",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_-_restaurant:18",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_-_restaurant:19",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_-_restaurant:20",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_-_restaurant:21",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_-_restaurant:22",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_-_restaurant:23",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Conversation_-_restaurant:24",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Food_and_Dinning:0",
+      "firstGuidedUse": {
+        "unitId": "grammar:one-two",
+        "stepOrder": 13,
+        "unitItemIndex": 2
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "grammar:one-two",
+          "stepOrder": 13,
+          "unitItemIndex": 2
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Food_and_Dinning:1",
+      "firstGuidedUse": {
+        "unitId": "grammar:one-two",
+        "stepOrder": 13,
+        "unitItemIndex": 3
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "grammar:one-two",
+          "stepOrder": 13,
+          "unitItemIndex": 3
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Food_and_Dinning:2",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Food_and_Dinning:3",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Food_and_Dinning:4",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Food_and_Dinning:5",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Food_and_Dinning:6",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Food_and_Dinning:7",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Food_and_Dinning:8",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Food_and_Dinning:9",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Food_and_Dinning:10",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Food_and_Dinning:11",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Food_and_Dinning:12",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Food_and_Dinning:13",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Food_and_Dinning:14",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Food_and_Dinning:15",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Food_and_Dinning:16",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Food_and_Dinning:17",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Food_and_Dinning:18",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Food_and_Dinning:19",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Food_and_Dinning:20",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Food_and_Dinning:21",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Food_and_Dinning:22",
+      "firstGuidedUse": {
+        "unitId": "grammar:negative",
+        "stepOrder": 12,
+        "unitItemIndex": 2
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "grammar:negative",
+          "stepOrder": 12,
+          "unitItemIndex": 2
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Food_and_Dinning:23",
+      "firstGuidedUse": {
+        "unitId": "grammar:negative",
+        "stepOrder": 12,
+        "unitItemIndex": 3
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "grammar:negative",
+          "stepOrder": 12,
+          "unitItemIndex": 3
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Food_and_Dinning:24",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Getting_Around_1:0",
+      "firstGuidedUse": {
+        "unitId": "grammar:where",
+        "stepOrder": 8,
+        "unitItemIndex": 0
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "grammar:where",
+          "stepOrder": 8,
+          "unitItemIndex": 0
+        },
+        {
+          "unitId": "location-questions",
+          "stepOrder": 16,
+          "unitItemIndex": 0
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Getting_Around_1:1",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Getting_Around_1:2",
+      "firstGuidedUse": {
+        "unitId": "grammar:where",
+        "stepOrder": 8,
+        "unitItemIndex": 1
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "grammar:where",
+          "stepOrder": 8,
+          "unitItemIndex": 1
+        },
+        {
+          "unitId": "location-questions",
+          "stepOrder": 16,
+          "unitItemIndex": 1
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Getting_Around_1:3",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Getting_Around_1:4",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Getting_Around_1:5",
+      "firstGuidedUse": {
+        "unitId": "grammar:yes-no-questions",
+        "stepOrder": 11,
+        "unitItemIndex": 0
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "grammar:yes-no-questions",
+          "stepOrder": 11,
+          "unitItemIndex": 0
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Getting_Around_1:6",
+      "firstGuidedUse": {
+        "unitId": "grammar:one-two",
+        "stepOrder": 13,
+        "unitItemIndex": 0
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "grammar:one-two",
+          "stepOrder": 13,
+          "unitItemIndex": 0
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Getting_Around_1:7",
+      "firstGuidedUse": {
+        "unitId": "grammar:one-two",
+        "stepOrder": 13,
+        "unitItemIndex": 1
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "grammar:one-two",
+          "stepOrder": 13,
+          "unitItemIndex": 1
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Getting_Around_1:8",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Getting_Around_1:9",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Getting_Around_1:10",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Getting_Around_1:11",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Getting_Around_1:12",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Getting_Around_1:13",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Getting_Around_1:14",
+      "firstGuidedUse": {
+        "unitId": "grammar:prices",
+        "stepOrder": 10,
+        "unitItemIndex": 2
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "grammar:prices",
+          "stepOrder": 10,
+          "unitItemIndex": 2
+        },
+        {
+          "unitId": "location-questions",
+          "stepOrder": 16,
+          "unitItemIndex": 2
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Getting_Around_1:15",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Getting_Around_1:16",
+      "firstGuidedUse": {
+        "unitId": "grammar:permission",
+        "stepOrder": 9,
+        "unitItemIndex": 3
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "grammar:permission",
+          "stepOrder": 9,
+          "unitItemIndex": 3
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Getting_Around_1:17",
+      "firstGuidedUse": {
+        "unitId": "grammar:where",
+        "stepOrder": 8,
+        "unitItemIndex": 4
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "grammar:where",
+          "stepOrder": 8,
+          "unitItemIndex": 4
+        },
+        {
+          "unitId": "location-questions",
+          "stepOrder": 16,
+          "unitItemIndex": 3
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Getting_Around_1:18",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Getting_Around_1:19",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Getting_Around_1:20",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Getting_Around_1:21",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Getting_Around_1:22",
+      "firstGuidedUse": {
+        "unitId": "grammar:yes-no-questions",
+        "stepOrder": 11,
+        "unitItemIndex": 1
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "grammar:yes-no-questions",
+          "stepOrder": 11,
+          "unitItemIndex": 1
+        },
+        {
+          "unitId": "location-questions",
+          "stepOrder": 16,
+          "unitItemIndex": 4
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Getting_Around_1:23",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Getting_Around_1:24",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Getting_Around_1:25",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Transit_1:0",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Transit_1:1",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Transit_1:2",
+      "firstGuidedUse": {
+        "unitId": "transport-words",
+        "stepOrder": 5,
+        "unitItemIndex": 0
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "transport-words",
+          "stepOrder": 5,
+          "unitItemIndex": 0
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Transit_1:3",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Transit_1:4",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Transit_1:5",
+      "firstGuidedUse": {
+        "unitId": "transport-words",
+        "stepOrder": 5,
+        "unitItemIndex": 1
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "transport-words",
+          "stepOrder": 5,
+          "unitItemIndex": 1
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Transit_1:6",
+      "firstGuidedUse": {
+        "unitId": "transport-words",
+        "stepOrder": 5,
+        "unitItemIndex": 2
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "transport-words",
+          "stepOrder": 5,
+          "unitItemIndex": 2
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Transit_1:7",
+      "firstGuidedUse": {
+        "unitId": "transport-words",
+        "stepOrder": 5,
+        "unitItemIndex": 3
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "transport-words",
+          "stepOrder": 5,
+          "unitItemIndex": 3
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Transit_1:8",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Transit_1:9",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Transit_1:10",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Transit_1:11",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Transit_1:12",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Transit_1:13",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Transit_1:14",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Transit_1:15",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Transit_1:16",
+      "firstGuidedUse": {
+        "unitId": "transport-words",
+        "stepOrder": 5,
+        "unitItemIndex": 4
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "transport-words",
+          "stepOrder": 5,
+          "unitItemIndex": 4
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Transit_1:17",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Transit_1:18",
+      "firstGuidedUse": {
+        "unitId": "transport-words",
+        "stepOrder": 5,
+        "unitItemIndex": 5
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "transport-words",
+          "stepOrder": 5,
+          "unitItemIndex": 5
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Transit_1:19",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Emergencies_and_Health:0",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Emergencies_and_Health:1",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Emergencies_and_Health:2",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Emergencies_and_Health:3",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Emergencies_and_Health:4",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Emergencies_and_Health:5",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Emergencies_and_Health:6",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Emergencies_and_Health:7",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Emergencies_and_Health:8",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Emergencies_and_Health:9",
+      "firstGuidedUse": {
+        "unitId": "grammar:where",
+        "stepOrder": 8,
+        "unitItemIndex": 3
+      },
+      "allGuidedUses": [
+        {
+          "unitId": "grammar:where",
+          "stepOrder": 8,
+          "unitItemIndex": 3
+        }
+      ],
+      "encounterStatus": "recorded_source_first_guided_use_not_native_reviewed"
+    },
+    {
+      "id": "Emergencies_and_Health:10",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Emergencies_and_Health:11",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Emergencies_and_Health:12",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Emergencies_and_Health:13",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Emergencies_and_Health:14",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Emergencies_and_Health:15",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Emergencies_and_Health:16",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Emergencies_and_Health:17",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Emergencies_and_Health:18",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Emergencies_and_Health:19",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Emergencies_and_Health:20",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Emergencies_and_Health:21",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Emergencies_and_Health:22",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Emergencies_and_Health:23",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    },
+    {
+      "id": "Emergencies_and_Health:24",
+      "firstGuidedUse": null,
+      "allGuidedUses": [],
+      "encounterStatus": "legacy_library_only_no_guided_instruction_claim"
+    }
+  ],
+  "firstWrittenFormsByUnit": [
+    {
+      "unitId": "simple-replies",
+      "forms": [
+        {
+          "sourceItemId": "Conversation_1:14",
+          "newlyEncounteredWrittenForms": [
+            "tak"
+          ]
+        },
+        {
+          "sourceItemId": "Conversation_1:15",
+          "newlyEncounteredWrittenForms": [
+            "nie"
+          ]
+        }
+      ]
+    },
+    {
+      "unitId": "politeness",
+      "forms": [
+        {
+          "sourceItemId": "Conversation_1:10",
+          "newlyEncounteredWrittenForms": [
+            "proszę"
+          ]
+        },
+        {
+          "sourceItemId": "Conversation_1:8",
+          "newlyEncounteredWrittenForms": [
+            "dziękuję"
+          ]
+        },
+        {
+          "sourceItemId": "Conversation_1:12",
+          "newlyEncounteredWrittenForms": [
+            "przepraszam"
+          ]
+        }
+      ]
+    },
+    {
+      "unitId": "greetings",
+      "forms": [
+        {
+          "sourceItemId": "Conversation_1:0",
+          "newlyEncounteredWrittenForms": [
+            "dzień",
+            "dobry"
+          ]
+        },
+        {
+          "sourceItemId": "Conversation_1:2",
+          "newlyEncounteredWrittenForms": [
+            "cześć"
+          ]
+        },
+        {
+          "sourceItemId": "Conversation_1:4",
+          "newlyEncounteredWrittenForms": [
+            "do",
+            "widzenia"
+          ]
+        }
+      ]
+    },
+    {
+      "unitId": "street-words",
+      "forms": [
+        {
+          "sourceItemId": "Road_Terminology:0",
+          "newlyEncounteredWrittenForms": [
+            "ulica"
+          ]
+        },
+        {
+          "sourceItemId": "Road_Terminology:1",
+          "newlyEncounteredWrittenForms": [
+            "aleja"
+          ]
+        },
+        {
+          "sourceItemId": "Road_Terminology:2",
+          "newlyEncounteredWrittenForms": [
+            "plac"
+          ]
+        },
+        {
+          "sourceItemId": "Road_Terminology:3",
+          "newlyEncounteredWrittenForms": [
+            "droga"
+          ]
+        },
+        {
+          "sourceItemId": "Road_Terminology:8",
+          "newlyEncounteredWrittenForms": [
+            "most"
+          ]
+        },
+        {
+          "sourceItemId": "Road_Terminology:9",
+          "newlyEncounteredWrittenForms": [
+            "rondo"
+          ]
+        }
+      ]
+    },
+    {
+      "unitId": "transport-words",
+      "forms": [
+        {
+          "sourceItemId": "Transit_1:2",
+          "newlyEncounteredWrittenForms": [
+            "bilet"
+          ]
+        },
+        {
+          "sourceItemId": "Transit_1:5",
+          "newlyEncounteredWrittenForms": [
+            "metro"
+          ]
+        },
+        {
+          "sourceItemId": "Transit_1:6",
+          "newlyEncounteredWrittenForms": [
+            "autobus"
+          ]
+        },
+        {
+          "sourceItemId": "Transit_1:7",
+          "newlyEncounteredWrittenForms": [
+            "tramwaj"
+          ]
+        },
+        {
+          "sourceItemId": "Transit_1:16",
+          "newlyEncounteredWrittenForms": [
+            "pociąg"
+          ]
+        },
+        {
+          "sourceItemId": "Transit_1:18",
+          "newlyEncounteredWrittenForms": [
+            "kierunek"
+          ]
+        }
+      ]
+    },
+    {
+      "unitId": "everyday-replies",
+      "forms": [
+        {
+          "sourceItemId": "Conversation_1:16",
+          "newlyEncounteredWrittenForms": [
+            "może"
+          ]
+        },
+        {
+          "sourceItemId": "Conversation_1:17",
+          "newlyEncounteredWrittenForms": [
+            "jasne"
+          ]
+        },
+        {
+          "sourceItemId": "Conversation_1:18",
+          "newlyEncounteredWrittenForms": [
+            "oczywiście"
+          ]
+        },
+        {
+          "sourceItemId": "Conversation_1:19",
+          "newlyEncounteredWrittenForms": [
+            "mam",
+            "pytanie"
+          ]
+        },
+        {
+          "sourceItemId": "Conversation_1:20",
+          "newlyEncounteredWrittenForms": [
+            "rozumiem"
+          ]
+        }
+      ]
+    },
+    {
+      "unitId": "grammar:requests",
+      "forms": [
+        {
+          "sourceItemId": "Conversation_-_restaurant:2",
+          "newlyEncounteredWrittenForms": [
+            "poproszę",
+            "wodę"
+          ]
+        },
+        {
+          "sourceItemId": "Conversation_-_restaurant:3",
+          "newlyEncounteredWrittenForms": [
+            "kawę"
+          ]
+        },
+        {
+          "sourceItemId": "Conversation_-_restaurant:4",
+          "newlyEncounteredWrittenForms": [
+            "herbatę"
+          ]
+        },
+        {
+          "sourceItemId": "Conversation_-_restaurant:0",
+          "newlyEncounteredWrittenForms": [
+            "menu"
+          ]
+        }
+      ]
+    },
+    {
+      "unitId": "grammar:where",
+      "forms": [
+        {
+          "sourceItemId": "Getting_Around_1:0",
+          "newlyEncounteredWrittenForms": [
+            "gdzie",
+            "jest",
+            "przystanek"
+          ]
+        },
+        {
+          "sourceItemId": "Getting_Around_1:2",
+          "newlyEncounteredWrittenForms": []
+        },
+        {
+          "sourceItemId": "Conversation_-_shopping:5",
+          "newlyEncounteredWrittenForms": [
+            "kasa"
+          ]
+        },
+        {
+          "sourceItemId": "Emergencies_and_Health:9",
+          "newlyEncounteredWrittenForms": [
+            "apteka"
+          ]
+        },
+        {
+          "sourceItemId": "Getting_Around_1:17",
+          "newlyEncounteredWrittenForms": [
+            "mogę",
+            "kupić"
+          ]
+        }
+      ]
+    },
+    {
+      "unitId": "grammar:permission",
+      "forms": [
+        {
+          "sourceItemId": "Conversation_-_shopping:2",
+          "newlyEncounteredWrittenForms": [
+            "czy",
+            "zapłacić",
+            "kartą"
+          ]
+        },
+        {
+          "sourceItemId": "Conversation_-_shopping:3",
+          "newlyEncounteredWrittenForms": [
+            "gotówką"
+          ]
+        },
+        {
+          "sourceItemId": "Conversation_-_shopping:15",
+          "newlyEncounteredWrittenForms": [
+            "to",
+            "przymierzyć"
+          ]
+        },
+        {
+          "sourceItemId": "Getting_Around_1:16",
+          "newlyEncounteredWrittenForms": [
+            "u",
+            "kierowcy"
+          ]
+        }
+      ]
+    },
+    {
+      "unitId": "grammar:prices",
+      "forms": [
+        {
+          "sourceItemId": "Conversation_-_shopping:0",
+          "newlyEncounteredWrittenForms": [
+            "ile",
+            "kosztuje"
+          ]
+        },
+        {
+          "sourceItemId": "Conversation_-_shopping:1",
+          "newlyEncounteredWrittenForms": [
+            "razem"
+          ]
+        },
+        {
+          "sourceItemId": "Getting_Around_1:14",
+          "newlyEncounteredWrittenForms": []
+        }
+      ]
+    },
+    {
+      "unitId": "grammar:yes-no-questions",
+      "forms": [
+        {
+          "sourceItemId": "Getting_Around_1:5",
+          "newlyEncounteredWrittenForms": [
+            "warszawy"
+          ]
+        },
+        {
+          "sourceItemId": "Getting_Around_1:22",
+          "newlyEncounteredWrittenForms": [
+            "daleko",
+            "stąd"
+          ]
+        },
+        {
+          "sourceItemId": "Conversation_-_shopping:19",
+          "newlyEncounteredWrittenForms": [
+            "na",
+            "promocji"
+          ]
+        },
+        {
+          "sourceItemId": "Road_Terminology:11",
+          "newlyEncounteredWrittenForms": []
+        }
+      ]
+    },
+    {
+      "unitId": "grammar:negative",
+      "forms": [
+        {
+          "sourceItemId": "Conversation_1:20",
+          "newlyEncounteredWrittenForms": []
+        },
+        {
+          "sourceItemId": "Conversation_-_shopping:21",
+          "newlyEncounteredWrittenForms": [
+            "drobnych"
+          ]
+        },
+        {
+          "sourceItemId": "Food_and_Dinning:22",
+          "newlyEncounteredWrittenForms": [
+            "jem",
+            "mięsa"
+          ]
+        },
+        {
+          "sourceItemId": "Food_and_Dinning:23",
+          "newlyEncounteredWrittenForms": [
+            "piję",
+            "alkoholu"
+          ]
+        }
+      ]
+    },
+    {
+      "unitId": "grammar:one-two",
+      "forms": [
+        {
+          "sourceItemId": "Getting_Around_1:6",
+          "newlyEncounteredWrittenForms": [
+            "jeden"
+          ]
+        },
+        {
+          "sourceItemId": "Getting_Around_1:7",
+          "newlyEncounteredWrittenForms": [
+            "dwa",
+            "bilety"
+          ]
+        },
+        {
+          "sourceItemId": "Food_and_Dinning:0",
+          "newlyEncounteredWrittenForms": [
+            "stolik",
+            "dla",
+            "jednej",
+            "osoby"
+          ]
+        },
+        {
+          "sourceItemId": "Food_and_Dinning:1",
+          "newlyEncounteredWrittenForms": [
+            "dwóch",
+            "osób"
+          ]
+        }
+      ]
+    },
+    {
+      "unitId": "food-requests",
+      "forms": [
+        {
+          "sourceItemId": "Conversation_-_restaurant:2",
+          "newlyEncounteredWrittenForms": []
+        },
+        {
+          "sourceItemId": "Conversation_-_restaurant:3",
+          "newlyEncounteredWrittenForms": []
+        },
+        {
+          "sourceItemId": "Conversation_-_restaurant:4",
+          "newlyEncounteredWrittenForms": []
+        },
+        {
+          "sourceItemId": "Conversation_-_restaurant:12",
+          "newlyEncounteredWrittenForms": [
+            "zupa",
+            "dnia"
+          ]
+        },
+        {
+          "sourceItemId": "Conversation_-_restaurant:14",
+          "newlyEncounteredWrittenForms": [
+            "deser"
+          ]
+        }
+      ]
+    },
+    {
+      "unitId": "shopping-questions",
+      "forms": [
+        {
+          "sourceItemId": "Conversation_-_shopping:0",
+          "newlyEncounteredWrittenForms": []
+        },
+        {
+          "sourceItemId": "Conversation_-_shopping:1",
+          "newlyEncounteredWrittenForms": []
+        },
+        {
+          "sourceItemId": "Conversation_-_shopping:2",
+          "newlyEncounteredWrittenForms": []
+        },
+        {
+          "sourceItemId": "Conversation_-_shopping:5",
+          "newlyEncounteredWrittenForms": []
+        },
+        {
+          "sourceItemId": "Conversation_-_shopping:8",
+          "newlyEncounteredWrittenForms": [
+            "paragon"
+          ]
+        }
+      ]
+    },
+    {
+      "unitId": "location-questions",
+      "forms": [
+        {
+          "sourceItemId": "Getting_Around_1:0",
+          "newlyEncounteredWrittenForms": []
+        },
+        {
+          "sourceItemId": "Getting_Around_1:2",
+          "newlyEncounteredWrittenForms": []
+        },
+        {
+          "sourceItemId": "Getting_Around_1:14",
+          "newlyEncounteredWrittenForms": []
+        },
+        {
+          "sourceItemId": "Getting_Around_1:17",
+          "newlyEncounteredWrittenForms": []
+        },
+        {
+          "sourceItemId": "Getting_Around_1:22",
+          "newlyEncounteredWrittenForms": []
+        }
+      ]
+    }
+  ],
+  "counts": {
+    "guidedUnits": 16,
+    "guidedRecordingUses": 68,
+    "distinctGuidedSourceItems": 55,
+    "guidedBasicSourceItems": 48,
+    "legacyLibraryOnlyBasicRows": 124,
+    "basicSourceRows": 172,
+    "distinctChronologicalWrittenForms": 74
+  }
+}
