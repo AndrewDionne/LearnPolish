@@ -41,3 +41,15 @@ test('C-07 full-utterance clips and Polish letter examples are never silently tr
  await expect(page.getByRole('button',{name:/Play syllable/})).toHaveCount(0);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(322);
 });
+
+test('C-07 automatic draft syllable guesses are withheld rather than taught as verified syllabification',async({page})=>{
+ await page.goto('/');
+ await page.getByRole('button',{name:'Explore lessons'}).click();
+ const guide=page.getByRole('region',{name:'Guided Polish foundations'});
+ await guide.getByRole('button',{name:/Keep building your everyday vocabulary/}).click();
+ await guide.getByRole('group',{name:'More recorded beginner practice'})
+   .getByRole('button',{name:/Questions in a shop/}).click();
+ await expect(page.locator('.polish-text')).toHaveText('Ile to kosztuje?');
+ await expect(page.locator('.pronunciation-text-part')).toHaveCount(0);
+ await expect(page.getByRole('button',{name:'Play audio'})).toBeEnabled();
+});
