@@ -144,6 +144,9 @@ export default function App() {
   // One deliberate choice for the current Speak session, OFF at lesson start.
   // Keeps the guide open if the learner advances, without a persistent gate.
   const [guideVisible,setGuideVisible] = useState(false);
+  // Hide the original written answer while its sound-recognition clip is heard.
+  // This is presentation-only, never a second lesson, grade or progress stream.
+  const [soundQuizLessonId,setSoundQuizLessonId]=useState<string|null>(null);
   const [soundReturn,setSoundReturn] = useState<SoundPracticeReturn|null>(null);
   const [reviewOnly, setReviewOnly] = useState<string[] | null>(null);
   const [coreReviewRun,setCoreReviewRun]=useState<CoreReviewRun|null>(null);
@@ -311,10 +314,10 @@ export default function App() {
 
   const stopAudio = () => { audio.stop(); };
   const goTo = (destination: Page) => {
-    stopAudio(); setUnitSession(null); setStarterGroupId(null); setCoreReviewRun(null); setLessonId(null); setGuideVisible(false); setSoundReturn(null); setEditorOpen(false); setReviewOnly(null); setBatchIndex(0); setMicroDialogueId(null); setPage(destination); setRevealed(false); setFinished(false);
+    stopAudio(); setSoundQuizLessonId(null); setUnitSession(null); setStarterGroupId(null); setCoreReviewRun(null); setLessonId(null); setGuideVisible(false); setSoundReturn(null); setEditorOpen(false); setReviewOnly(null); setBatchIndex(0); setMicroDialogueId(null); setPage(destination); setRevealed(false); setFinished(false);
   };
   const openLesson = (lesson: Lesson, resume=false, updateCourseCursor=true) => {
-    stopAudio();setUnitSession(null);setStarterGroupId(null);setCoreReviewRun(null);
+    stopAudio();setSoundQuizLessonId(null);setUnitSession(null);setStarterGroupId(null);setCoreReviewRun(null);
     const resumeAt=resume ? nextLessonResume(lesson,progress,readingPositions) : null;
     setSoundReturn(null);
     setReviewOnly(null);
@@ -443,7 +446,7 @@ export default function App() {
   };
   const switchMode = (next: LearningMode) => {
     if (!active || !availableModes(active).includes(next)) return;
-    stopAudio();setUnitSession(null);setCoreReviewRun(null);
+    stopAudio();setSoundQuizLessonId(null);setUnitSession(null);setCoreReviewRun(null);
     setMicroDialogueId(null);
     setMode(next);
     setSessionStartXp(expedition.events.length);
@@ -653,7 +656,7 @@ export default function App() {
           {active.kind === 'sounds' && mode === 'learn' && !finished && active.soundGroups && <SoundContrastDeck lesson={active} focusGroupId={focusedGroup ?? undefined} currentId={current.id} playing={audio.playing} onSelect={id => {
             const target = sessionItems.findIndex(item => item.id === id);
             if (target >= 0) jump(target);
-          }} onPlay={play}/>}
+          }} onPlay={play} onQuizChange={enabled=>setSoundQuizLessonId(enabled?active.id:null)}/>}
           {activeMicroDialogue && mode === 'read'
             ? <MicroDialoguePanel key={activeMicroDialogue.id} lesson={active} dialogue={activeMicroDialogue}
                 playing={audio.playing} rate={audio.rate} audioError={audio.error}
@@ -735,7 +738,8 @@ export default function App() {
                 <button type="button" className="primary-action" onClick={() => record(true)}>Got it →</button>
               </div>}
             </div>}
-          </section> : <section className="flashcard" aria-live="polite">
+          </section> : soundQuizLessonId===active.id && active.kind==='sounds' && mode==='learn'
+            ? null : <section className="flashcard" aria-live="polite">
             {mode === 'read' && current.title && <span className="card-label">{current.title}</span>}
             <div lang="pl" className={mode === 'read' ? 'polish-text reading-text' : 'polish-text'}>{current.polish}</div>
             {current.pronunciation && mode === 'learn' && <p className="phonetic">{current.pronunciation}</p>}
