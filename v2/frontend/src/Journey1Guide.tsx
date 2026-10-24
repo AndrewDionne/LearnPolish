@@ -11,10 +11,11 @@ import {FOUNDATION_STAGES} from './foundation-progression';
 /** A quiet source-backed guide, not another proficiency or stage label.
  * Visible learning content follows words → vocabulary → first sentences.
  * Only existing source lesson and tourist-unit launch actions are shown. */
-export default function Journey1Guide({steps,starterGroups,nextWordGroups,sentencePatterns,startSentencesOpen,recordedLetters,recordedCombinations,playing,speed,onSpeed,onPlayAudio,onStarter,onLesson,onUnit}:{
+export default function Journey1Guide({steps,starterGroups,nextWordGroups,firstSentenceGroups,sentencePatterns,startSentencesOpen,recordedLetters,recordedCombinations,playing,speed,onSpeed,onPlayAudio,onStarter,onLesson,onUnit}:{
   steps:Journey1GuideStep[];
   starterGroups:StarterGroup[];
   nextWordGroups:StarterGroup[];
+  firstSentenceGroups:StarterGroup[];
   sentencePatterns:SentencePattern[];
   startSentencesOpen?:boolean;
   recordedLetters:RecordedGlyph[];
@@ -71,10 +72,20 @@ export default function Journey1Guide({steps,starterGroups,nextWordGroups,senten
       </div>}
       </div>
     </section>}
-    {sentencePatterns.length>0 && <section className="foundation-path-stage" aria-labelledby="foundation-stage-sentences">
+    {(firstSentenceGroups.length>0 || sentencePatterns.length>0) && <section
+      className="foundation-path-stage" aria-labelledby="foundation-stage-sentences">
       <h4 id="foundation-stage-sentences">{FOUNDATION_STAGES[2]}</h4>
-      <RecordedSentencePatterns patterns={sentencePatterns} playing={playing}
-        onPlay={onPlayAudio} startExpanded={startSentencesOpen}/>
+      {firstSentenceGroups.length>0 && <div className="foundation-starter"
+        role="group" aria-label="Short sentence practice">
+        <div className="foundation-starter-options">
+          {firstSentenceGroups.map(group=><button type="button" key={group.id}
+            className="foundation-starter-button" onClick={()=>onStarter(group.id)}>
+            <strong>{group.title}</strong><span>{group.itemIds.length} expressions →</span>
+          </button>)}
+        </div>
+      </div>}
+      {sentencePatterns.length>0 && <RecordedSentencePatterns patterns={sentencePatterns}
+        playing={playing} onPlay={onPlayAudio} startExpanded={startSentencesOpen}/>}
     </section>}
     <div className="foundation-guide-secondary-heading">Complete recorded lessons</div>
     <div className="foundation-guide-list">
