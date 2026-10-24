@@ -10,7 +10,8 @@ export type SentencePattern={
 type SourceExample={sourceLesson:string;index:number;polish:string;english:string;focus:string};
 type SourceGroup={id:string;title:string;cue:string;explanation:string;examples:SourceExample[]};
 
-const EXPECTED=['requests','where','permission','negative','one-two'];
+const EXPECTED=['requests','where','permission','prices','yes-no-questions','negative','one-two'];
+const EXPECTED_COUNTS=[4,5,4,3,4,4,4];
 const STATUS='source_only_recorded_utterances_grammar_not_independently_native_reviewed';
 const isRecord=(x:unknown):x is Record<string,unknown>=>!!x&&typeof x==='object'&&!Array.isArray(x);
 const exactKeys=(x:Record<string,unknown>,expected:string[])=>
@@ -28,7 +29,7 @@ export function validateSentencePatternSource(value:unknown):SourceGroup[]{
   if(!isRecord(g)||!exactKeys(g,['id','title','cue','explanation','examples'])||
     g.id!==EXPECTED[i]||typeof g.title!=='string'||g.title.length<9||
     typeof g.cue!=='string'||!g.cue||typeof g.explanation!=='string'||
-    g.explanation.length<50||!Array.isArray(g.examples)||g.examples.length!==4)return fail();
+    g.explanation.length<50||!Array.isArray(g.examples)||g.examples.length!==EXPECTED_COUNTS[i])return fail();
   const examples=g.examples.map(entry=>{
    if(!isRecord(entry)||!exactKeys(entry,['sourceLesson','index','polish','english','focus'])||
      typeof entry.sourceLesson!=='string'||!/^[a-zA-Z0-9_-]+$/.test(entry.sourceLesson)||
