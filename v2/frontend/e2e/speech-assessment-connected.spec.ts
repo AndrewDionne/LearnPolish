@@ -145,7 +145,7 @@ test('inconclusive and quota outcomes stay ungraded; new take clears old feedbac
   await expect(page.getByText(/could not recognize enough speech/)).toBeVisible();
   await expect(page.getByText(/This is not a score of zero/)).toBeVisible();
   await expect(page.locator('.speak-scores')).toHaveCount(0);
-  await page.getByRole('button',{name:/Record another take/}).click();
+  await page.getByRole('button',{name:/Record another take|Try again/}).click();
   await expect(page.getByText(/This is not a score of zero/)).toHaveCount(0);
   await page.getByRole('button',{name:'Stop recording'}).click();
   await expect(page.getByText(/Recording ready/)).toBeVisible();
@@ -215,7 +215,7 @@ test('Świętokrzyska is a real built-in Świętokrzyska Pronunciation Lab item 
   await expect(page.locator('.speak-latency')).toHaveCount(0);
   await expect(page.getByText('NEVER-DISPLAY-RAW-SPEECH')).toHaveCount(0);
   expect(calls).toBe(1);
-  await page.getByRole('button',{name:/Record another take/}).click();
+  await page.getByRole('button',{name:/Record another take|Try again/}).click();
   await expect(page.locator('.speak-latency')).toHaveCount(0);
   await expect(page.locator('.speak-scores')).toHaveCount(0);
 });
@@ -260,7 +260,7 @@ test('reserved acoustic fixture never exposes per-syllable grades while opt-in g
   await toggle.click();
   await expect(page.locator('.speak-word-english')).toHaveCount(0);
   await expect(page.locator('.speak-word-score')).toHaveCount(0);
-  await page.getByRole('button',{name:/Record another take/}).click();
+  await page.getByRole('button',{name:/Record another take|Try again/}).click();
   await expect(page.locator('.speak-word-score')).toHaveCount(0);
   await expect(page.locator('.speak-scores')).toHaveCount(0);
   await expect(toggle).toHaveAttribute('aria-pressed','false');
