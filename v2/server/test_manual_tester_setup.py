@@ -152,7 +152,8 @@ class PrivateTestGroupTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError,"durable restricted Neon"):
                 create_render_app(dist_path=dist,family_mode="enabled",database_path=self.db)
         with patch.dict(os.environ,{"PTP_FAMILY_TESTER_ACTIVATION":"owner-delivered",
-                                    "PTP_FAMILY_SIGNUP_MODE":"adult-pilot"}):
+                                    "PTP_FAMILY_SIGNUP_MODE":"adult-pilot",
+                                    "PTP_FAMILY_PILOT_EMAILS":"adult@example.test"}):
             with self.assertRaisesRegex(RuntimeError,"requires closed registration"):
                 create_render_app(dist_path=dist,family_mode="enabled",database_path=self.db)
         from flask import Flask
