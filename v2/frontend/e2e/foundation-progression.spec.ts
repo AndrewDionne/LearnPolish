@@ -41,7 +41,7 @@ test('C-12: First words → Basic vocabulary → First sentences / basic grammar
  await expect(page.locator('.lesson-tile')).toHaveCount(26);
 });
 
-test('C-12: completion of last basic vocabulary set leads directly to open grammar practice',async({page})=>{
+test('C-12: completion of last sentence practice set opens the grammar study panel',async({page})=>{
  await page.setViewportSize({width:320,height:740});
  await page.goto('/');
  await page.getByRole('button',{name:'Explore lessons'}).click();
