@@ -9,13 +9,11 @@ type Playback = {
   setRate: (speed: AudioRate) => void;
   error: string;
   play: (relativePath: string) => Promise<void>;
-  playExcerpt: (relativePath:string,startMs:number,endMs:number) => Promise<void>;
   stop: () => void;
 };
 
 export function useLessonAudio(): Playback {
   const player = useRef<HTMLAudioElement | null>(null);
-  const excerpt = useRef<{controller:AbortController;context:AudioContext|null;source:AudioBufferSourceNode|null}|null>(null);
   const token = useRef(0);
   const [playing, setPlaying] = useState<string | null>(null);
   const [rate, setRateValue] = useState<AudioRate>(1);
@@ -29,13 +27,6 @@ export function useLessonAudio(): Playback {
       old.pause();
       old.removeAttribute('src');
       old.load();
-    }
-    const clip=excerpt.current;
-    excerpt.current=null;
-    if(clip){
-      clip.controller.abort();
-      try{clip.source?.stop();}catch{/* already stopped */}
-      if(clip.context)void clip.context.close().catch(()=>{});
     }
     setPlaying(null);
   };
@@ -82,64 +73,6 @@ export function useLessonAudio(): Playback {
   };
 
 
-  /** Sample-accurate syllable excerpts of the SAME recorded whole Polish word.
-   * Never infer offsets: the caller gets these only from reviewed source data.
-   * WebAudio uses decoded original MP3; HTMLAudio timeupdate is too imprecise
-   * for short consonants and syllables. No new request to a speech provider. */
-  const playExcerpt=async(relativePath:string,startMs:number,endMs:number)=>{
-    stop();
-    setError('');
-    if(!/^generated\/audio\/[a-zA-Z0-9_%.-]+\/[0-9]+\.mp3$/.test(relativePath)||
-      !Number.isSafeInteger(startMs)||!Number.isSafeInteger(endMs)||
-      startMs<0||endMs<=startMs||endMs-startMs<45||endMs>30000){
-      setError('This syllable excerpt has no trusted recording boundary.');
-      return;
-    }
-    const ticket=token.current;
-    const clip:{controller:AbortController;context:AudioContext|null;source:AudioBufferSourceNode|null}={
-      controller:new AbortController(),context:null,source:null,
-    };
-    excerpt.current=clip;
-    try{
-      // Unlock WebAudio during the direct click, before fetch/await. Safari
-      // otherwise may suspend a new context outside transient activation.
-      const context=new AudioContext();
-      clip.context=context;
-      const activated=context.state==='suspended'?context.resume():Promise.resolve();
-      const response=await fetch(import.meta.env.BASE_URL+relativePath,{
-        signal:clip.controller.signal,credentials:'same-origin'});
-      if(!response.ok)throw Error('Audio recording unavailable');
-      const body=await response.arrayBuffer();
-      if(ticket!==token.current||excerpt.current!==clip)return;
-      const decoded=await context.decodeAudioData(body);
-      if(ticket!==token.current||excerpt.current!==clip)return;
-      if(endMs>Math.round(decoded.duration*1000)+30)
-        throw Error('The excerpt is outside this recording');
-      const source=context.createBufferSource();
-      source.buffer=decoded;
-      source.playbackRate.value=rate;
-      source.connect(context.destination);
-      clip.source=source;
-      source.onended=()=>{
-        if(ticket!==token.current||excerpt.current!==clip)return;
-        excerpt.current=null;
-        setPlaying(null);
-        void context.close().catch(()=>{});
-      };
-      await activated;
-      if(ticket!==token.current||excerpt.current!==clip)return;
-      source.start(0,startMs/1000,(endMs-startMs)/1000);
-      setPlaying(relativePath);
-    }catch{
-      if(ticket!==token.current||excerpt.current!==clip)return;
-      excerpt.current=null;
-      if(clip.context)void clip.context.close().catch(()=>{});
-      setPlaying(null);
-      if(!clip.controller.signal.aborted)
-        setError('Could not play this syllable excerpt. Try the full recording.');
-    }
-  };
-
   useEffect(() => () => {
     token.current++;
     const old = player.current;
@@ -149,14 +82,7 @@ export function useLessonAudio(): Playback {
       old.removeAttribute('src');
       old.load();
     }
-    const clip=excerpt.current;
-    excerpt.current=null;
-    if(clip){
-      clip.controller.abort();
-      try{clip.source?.stop();}catch{/* already ended */}
-      if(clip.context)void clip.context.close().catch(()=>{});
-    }
   }, []);
 
-  return { playing, rate, setRate, error, play, playExcerpt, stop };
+  return { playing, rate, setRate, error, play, stop };
 }
