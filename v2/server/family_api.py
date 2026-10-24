@@ -131,7 +131,8 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
     if pilot_adult_emails is not None:
         if (len(pilot_adult_emails) > 12 or len(pilot_adult_emails) != len(set(pilot_adult_emails)) or
                 any(not isinstance(email, str) or not EMAIL.fullmatch(email) or
-                    email.strip().lower() != email for email in pilot_adult_emails)):
+                    "*" in email or email.strip().lower() != email
+                    for email in pilot_adult_emails)):
             raise RuntimeError("Invalid restricted adult pilot email allowlist")
     pg_url = postgres_url or os.environ.get("PTP_FAMILY_DATABASE_URL")
     path = database_path or os.environ.get("PTP_FAMILY_DB")
