@@ -1,5 +1,6 @@
 import type {Lesson} from './model';
 import firstDialogueCues from '../../content/journey1-c15-greetings-cues-v1.json';
+import laterDialogueCues from '../../content/journey1-c16-reading-context-cues-v1.json';
 
 export type ReadingIntroductionTurn={
  id:string;polish:string;english:string;audio:string;teachingCue?:string;
@@ -30,6 +31,22 @@ export function firstDialogueTeachingCue(id:string,index:number,polish:string):s
         typeof entry.cue==='string' && entry.cue.trim().length>40 ? entry.cue : undefined;
 }
 
+/** C-16A: original complete-turn context notes for the five other Read lessons.
+ * Exact original Polish AND English must agree with the approved *source files*,
+ * while the note itself remains a draft pending native editorial checking. */
+export function contextualReadingCue(id:string,index:number,polish:string,english:string):string|undefined{
+ if(id==='Basic_01R')return firstDialogueTeachingCue(id,index,polish);
+ if(laterDialogueCues.schemaVersion!==1||
+    laterDialogueCues.status!=='source_anchored_editorial_draft_not_native_language_reviewed'||
+    laterDialogueCues.lessons.length!==5)return undefined;
+ const candidate=laterDialogueCues.lessons.find(lesson=>lesson.lesson===id);
+ if(!candidate||candidate.lines.length!==READING_INTRO_COUNTS[id as ReadingSourceId])return undefined;
+ const entry=candidate.lines[index];
+ return entry?.id===id+':'+index && entry.polish===polish &&
+        entry.english===english && typeof entry.cue==='string' &&
+        entry.cue.trim().length>40 ? entry.cue : undefined;
+}
+
 /** All-or-nothing for each original reading source: missing original text,
  * English meaning, item ID or exact MP3 disables its optional preparation.
  * The underlying original lesson is NEVER changed or hidden. */
@@ -44,9 +61,9 @@ export function recordedReadingIntroduction(lesson:Lesson):ReadingIntroductionTu
   const audio='generated/audio/'+encodeURIComponent(id)+'/'+i+'.mp3';
   if(item.id!==id+':'+i||!item.polish.trim()||!item.english.trim()||
      item.audio!==audio||item.referenceReview==='practice_only')return [];
+  const teachingCue=contextualReadingCue(id,i,item.polish,item.english);
   turns.push({id:item.id,polish:item.polish,english:item.english,audio,
-   ...(firstDialogueTeachingCue(id,i,item.polish)?
-     {teachingCue:firstDialogueTeachingCue(id,i,item.polish)}:{})});
+   ...(teachingCue?{teachingCue}:{})});
  }
  return turns;
 }

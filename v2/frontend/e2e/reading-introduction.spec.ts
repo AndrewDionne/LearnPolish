@@ -43,6 +43,7 @@ test('C-14 reading preparation is source-only, optional and usable at 320px with
  await intro.getByRole('button',{name:'Next line'}).click();
  await expect(intro.locator('.reading-intro-polish')).toHaveText('Dzień dobry, poproszę kilogram jabłek.');
  await expect(intro.locator('.reading-intro-english')).toHaveText('Good morning, I’d like a kilo of apples, please.');
+ await expect(intro.locator('.reading-intro-cue')).toContainText('Kilogram jabłek');
  await expect(intro.getByRole('button',{name:'Hear line'})).toBeEnabled();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(322);
  await intro.getByRole('button',{name:'Read conversation now'}).click();
@@ -73,4 +74,42 @@ test('C-15: unfamiliar first-dialogue forms are explained before original Read c
  await expect(intro.locator('.reading-intro-cue')).toHaveCount(0);
  await expect(page.locator('.reading-check')).toBeVisible();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(322);
+});
+
+test('C-16A: clothing contextual forms come before the unchanged first Read check at 320px',async({page})=>{
+ await page.setViewportSize({width:320,height:740});
+ await page.goto('/');
+ await page.getByRole('button',{name:'Explore lessons'}).click();
+ await page.getByRole('button',{name:/Buying Clothes: A T-Shirt/}).click();
+ const intro=page.getByRole('region',{name:'Learn this conversation first'});
+ await expect(intro.locator('.reading-intro-progress')).toHaveText('1 / 10');
+ await expect(intro.locator('.reading-intro-cue')).toContainText('polite daytime greeting');
+ await intro.getByRole('button',{name:'Next line'}).click();
+ await expect(intro.locator('.reading-intro-cue')).toContainText('pani');
+ await intro.getByRole('button',{name:'Next line'}).click();
+ await expect(intro.locator('.reading-intro-polish')).toHaveText('Szukam białej koszulki.');
+ await expect(intro.locator('.reading-intro-cue')).toContainText('after szukam');
+ await intro.getByRole('button',{name:'Read conversation now'}).click();
+ await expect(intro.locator('.reading-intro-cue')).toHaveCount(0);
+ await expect(page.locator('.reading-text')).toHaveText('Dzień dobry.');
+ await page.getByRole('button',{name:'Skip to next'}).click();
+ await page.getByRole('button',{name:'Skip to next'}).click();
+ await expect(page.locator('.reading-text')).toHaveText('Szukam białej koszulki.');
+ await expect(page.locator('.reading-check')).toBeVisible();
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(322);
+});
+
+test('C-16A: museum opening hours are introduced with original complete line and recorded audio',async({page})=>{
+ await page.goto('/');
+ await page.getByRole('button',{name:'Explore lessons'}).click();
+ await page.getByRole('button',{name:/At the Museum/}).click();
+ const intro=page.getByRole('region',{name:'Learn this conversation first'});
+ for(let i=0;i<4;i++) await intro.getByRole('button',{name:'Next line'}).click();
+ await expect(intro.locator('.reading-intro-progress')).toHaveText('5 / 9');
+ await expect(intro.locator('.reading-intro-polish'))
+   .toHaveText('Dzisiaj jesteśmy otwarci do osiemnastej.');
+ await expect(intro.locator('.reading-intro-cue')).toContainText('until 18:00');
+ await expect(intro.getByRole('button',{name:'Hear line'})).toBeEnabled();
+ await intro.getByRole('button',{name:'Read conversation now'}).click();
+ await expect(page.locator('.reading-check')).toBeVisible();
 });

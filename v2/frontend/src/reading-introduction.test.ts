@@ -1,6 +1,6 @@
 import {describe,expect,it} from 'vitest';
 import type {Lesson} from './model';
-import {READING_INTRO_COUNTS,recordedReadingIntroduction,firstDialogueTeachingCue} from './reading-introduction';
+import {READING_INTRO_COUNTS,recordedReadingIntroduction,firstDialogueTeachingCue,contextualReadingCue} from './reading-introduction';
 import basic from '../../../docs/sets/Basic_01R.json';
 import grocery from '../../../docs/sets/Grocery_store_very_basic_shopping.json';
 import clothes from '../../../docs/sets/H_M_clothes_shop_trying_on_a_T-shirt.json';
@@ -59,10 +59,33 @@ describe('C-14 reading source turn introductions before comprehension',()=>{
   expect(firstDialogueTeachingCue('Basic_01R',0,'Cześć! Jak się masz?')).toBe(beginning[0].teachingCue);
   expect(firstDialogueTeachingCue('Basic_01R',0,'changed line')).toBeUndefined();
   expect(firstDialogueTeachingCue('Basic_01R',6,'anything')).toBeUndefined();
-  expect(recordedReadingIntroduction(lessons[1]).every(row=>row.teachingCue===undefined)).toBe(true);
+  expect(recordedReadingIntroduction(lessons[1]).every(row=>(row.teachingCue?.length??0)>40)).toBe(true);
   const drift=copy(lessons[0]);drift.items[0].polish='Changed source line';
   expect(recordedReadingIntroduction(drift)[0].teachingCue).toBeUndefined();
   expect(recordedReadingIntroduction(drift)[1].teachingCue).toBeTruthy();
+ });
+ it('C-16A teaches source-anchored context before reading for the other 45 complete turns',()=>{
+  const guided=lessons.map(recordedReadingIntroduction);
+  expect(guided.flat().filter(row=>(row.teachingCue?.length??0)>40)).toHaveLength(51);
+  expect(guided.slice(1).flat()).toHaveLength(45);
+  expect(guided[1][2].teachingCue).toContain('Czerwone and zielone');
+  expect(guided[2][2].teachingCue).toContain('Szukam');
+  expect(guided[3][5].teachingCue).toContain('wysiąść');
+  expect(guided[4][3].teachingCue).toContain('Powinienem');
+  expect(guided[5][4].teachingCue).toContain('18:00');
+  for(let sourceIndex=1;sourceIndex<lessons.length;sourceIndex++){
+   const lesson=lessons[sourceIndex];
+   for(const [i,turn] of guided[sourceIndex].entries()){
+    expect(contextualReadingCue(lesson.id,i,turn.polish,turn.english)).toBe(turn.teachingCue);
+    expect(contextualReadingCue(lesson.id,i,'wrong',turn.english)).toBeUndefined();
+    expect(contextualReadingCue(lesson.id,i,turn.polish,'wrong')).toBeUndefined();
+    expect(contextualReadingCue(lesson.id,999,turn.polish,turn.english)).toBeUndefined();
+   }
+   const drift=copy(lesson);drift.items[0].polish='Changed';
+   expect(recordedReadingIntroduction(drift)[0].teachingCue).toBeUndefined();
+   expect(recordedReadingIntroduction(drift)[1].teachingCue).toBeTruthy();
+  }
+  expect(contextualReadingCue('unreviewed',0,'yes','yes')).toBeUndefined();
  });
  it('withholds only the extra preparation if original full-recording/audio/meaning is missing or protected',()=>{
   for(const edit of [
