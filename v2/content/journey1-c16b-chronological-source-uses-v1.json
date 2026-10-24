@@ -11,12 +11,14 @@
         {
           "id": "Conversation_1:14",
           "polish": "Tak",
-          "source": "group"
+          "source": "group",
+          "english": "Yes"
         },
         {
           "id": "Conversation_1:15",
           "polish": "Nie",
-          "source": "group"
+          "source": "group",
+          "english": "No"
         }
       ]
     },
@@ -28,17 +30,20 @@
         {
           "id": "Conversation_1:10",
           "polish": "Proszę",
-          "source": "group"
+          "source": "group",
+          "english": "Please / Here you go"
         },
         {
           "id": "Conversation_1:8",
           "polish": "Dziękuję",
-          "source": "group"
+          "source": "group",
+          "english": "Thank you"
         },
         {
           "id": "Conversation_1:12",
           "polish": "Przepraszam",
-          "source": "group"
+          "source": "group",
+          "english": "Excuse me / I’m sorry"
         }
       ]
     },
@@ -50,17 +55,20 @@
         {
           "id": "Conversation_1:0",
           "polish": "Dzień dobry",
-          "source": "group"
+          "source": "group",
+          "english": "Good morning / Good day"
         },
         {
           "id": "Conversation_1:2",
           "polish": "Cześć",
-          "source": "group"
+          "source": "group",
+          "english": "Hi / Hello"
         },
         {
           "id": "Conversation_1:4",
           "polish": "Do widzenia",
-          "source": "group"
+          "source": "group",
+          "english": "Goodbye"
         }
       ]
     },
