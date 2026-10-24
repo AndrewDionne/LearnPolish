@@ -18,8 +18,7 @@ test('C-16B first words introduce exact complete recordings and meanings before 
  await intro.getByRole('button',{name:'Start listening'}).click();
  await expect(intro.getByRole('button',{name:'Learn these expressions first'})).toHaveAttribute('aria-expanded','false');
  await expect(page.getByRole('heading',{name:'What did you hear?'})).toBeVisible();
- const nav=page.getByRole('navigation',{name:'Main navigation'});
- await nav.getByRole('button',{name:'Library'}).click();
+ await page.getByRole('button',{name:'Back to library'}).click();
  await expect(page.locator('.lesson-tile')).toHaveCount(26);
 });
 
@@ -52,7 +51,7 @@ test('C-16B 320px shopping sentence teaching explains grammar and keeps source p
 test('C-16B intro is a guided route aid, not an imposed overlay on the original 26 Library lessons',async({page})=>{
  await page.goto('/');
  await page.getByRole('button',{name:'Explore lessons'}).click();
- await page.getByRole('button',{name:/Basic conversation: Greetings/}).click();
+ await page.getByRole('region',{name:'Guided Polish foundations'}).locator('.foundation-guide-step').first().click();
  await page.getByRole('group',{name:'Learning modes'}).getByRole('button',{name:'Listen'}).click();
  await expect(page.getByRole('region',{name:'Learn these expressions first'})).toHaveCount(0);
  await expect(page.getByRole('heading',{name:'What did you hear?'})).toBeVisible();
