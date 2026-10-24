@@ -876,3 +876,28 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .pronunciation-parts{display:flex;align-items:center;justify-content:center;
  flex-wrap:wrap;gap:.2em;max-width:100%;font-size:clamp(18px,3vw,27px);line-height:1.45}
 .pronunciation-text-part{white-space:pre-wrap;overflow-wrap:anywhere;color:var(--ptp-ink)}
+
+/* C-09: one recorded whole word, then a small sound-family listening check. */
+.sound-ear-switch{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:12px 0}
+.sound-ear-switch button{font:inherit;font-size:13px;min-height:44px;padding:8px 15px;
+  color:var(--ptp-ink);background:var(--ptp-surface);border:1px solid var(--ptp-control-border);
+  border-radius:8px;cursor:pointer}
+.sound-ear-switch button[aria-pressed="true"]{border-color:var(--ptp-link);
+  color:var(--ptp-link);font-weight:650}
+.sound-ear-switch button:focus-visible,.sound-ear-choice:focus-visible{
+  outline:3px solid var(--ptp-link);outline-offset:2px}
+.sound-ear-quiz{display:grid;justify-items:start;gap:12px;padding:12px 0;max-width:100%}
+.sound-ear-progress{font-size:12px;color:var(--ptp-muted)}
+.sound-ear-prompt{margin:0;font-size:15px;line-height:1.5;color:var(--ptp-ink)}
+.sound-ear-choices{display:flex;flex-wrap:wrap;gap:8px;max-width:100%}
+.sound-ear-choice{font:inherit;font-size:14px;min-height:44px;padding:9px 17px;border-radius:8px;
+  color:var(--ptp-ink);border:1px solid var(--ptp-control-border);background:var(--ptp-surface);cursor:pointer}
+.sound-ear-choice.selected{border-color:var(--ptp-link);font-weight:650}
+.sound-ear-choice:disabled{cursor:default;opacity:.68}
+.sound-ear-choice.selected:disabled{opacity:1}
+.sound-ear-answer{display:grid;gap:10px;margin-top:3px}
+.sound-ear-answer p{margin:0}
+.sound-ear-word{font-size:clamp(19px,3vw,26px);font-weight:600;overflow-wrap:anywhere}
+.sound-ear-actions{display:flex;flex-wrap:wrap;gap:8px}
+.sound-ear-finish{display:grid;gap:12px}
+@media(max-width:560px){.sound-ear-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}}
