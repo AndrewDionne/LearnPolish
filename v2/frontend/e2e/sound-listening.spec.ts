@@ -33,6 +33,7 @@ test('C-09: recognize sounds from original Polish whole-word recordings, then co
  await expect(page.getByRole('heading',{name:'Hear sounds in real words'})).toBeVisible();
  const nav=page.getByRole('navigation',{name:isMobile?'Mobile navigation':'Main navigation'});
  await nav.getByRole('button',{name:'Library'}).click();
+ await page.getByRole('searchbox',{name:'Search lessons'}).fill('');
  await expect(page.locator('.lesson-tile')).toHaveCount(26);
 });
 
