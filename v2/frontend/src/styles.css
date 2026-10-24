@@ -1003,6 +1003,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
  color:var(--ptp-ink);overflow-wrap:anywhere}
 .reading-intro-english{font-size:14px;line-height:1.5;color:var(--ptp-muted);
  overflow-wrap:anywhere}
+/* C-15: a brief sentence-building cue only for the six original greeting turns. */
+.reading-intro-cue{margin:0;max-width:65ch;font-size:14px;line-height:1.55;
+ color:var(--ptp-ink);overflow-wrap:anywhere}
 .reading-intro-actions{display:flex;gap:7px;flex-wrap:wrap}
 .reading-intro-actions button{min-height:44px;font:inherit;font-size:14px;padding:8px 12px;
  color:var(--ptp-ink);border:1px solid var(--ptp-control-border);

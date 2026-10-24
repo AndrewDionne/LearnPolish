@@ -1,6 +1,6 @@
 import {describe,expect,it} from 'vitest';
 import type {Lesson} from './model';
-import {READING_INTRO_COUNTS,recordedReadingIntroduction} from './reading-introduction';
+import {READING_INTRO_COUNTS,recordedReadingIntroduction,firstDialogueTeachingCue} from './reading-introduction';
 import basic from '../../../docs/sets/Basic_01R.json';
 import grocery from '../../../docs/sets/Grocery_store_very_basic_shopping.json';
 import clothes from '../../../docs/sets/H_M_clothes_shop_trying_on_a_T-shirt.json';
@@ -48,6 +48,21 @@ describe('C-14 reading source turn introductions before comprehension',()=>{
   expect(grocery[2].polish).toBe('Jakie jabłka pan lubi? Czerwone czy zielone?');
   const directions=recordedReadingIntroduction(lessons[4]);
   expect(directions[3].polish).toBe('Na którym przystanku powinienem wysiąść?');
+ });
+ it('C-15 teaches six distinct introductory grammar cues anchored to the original complete recording',()=>{
+  const beginning=recordedReadingIntroduction(lessons[0]);
+  expect(beginning.map(row=>(row.teachingCue?.length??0)>40)).toEqual([true,true,true,true,true,true]);
+  expect(beginning[0].teachingCue).toContain('Jak się masz?');
+  expect(beginning[2].teachingCue).toContain('masz');
+  expect(beginning[3].teachingCue).toContain('Mam na imię');
+  expect(beginning[5].teachingCue).toContain('Nie before rozumiem');
+  expect(firstDialogueTeachingCue('Basic_01R',0,'Cześć! Jak się masz?')).toBe(beginning[0].teachingCue);
+  expect(firstDialogueTeachingCue('Basic_01R',0,'changed line')).toBeUndefined();
+  expect(firstDialogueTeachingCue('Basic_01R',6,'anything')).toBeUndefined();
+  expect(recordedReadingIntroduction(lessons[1]).every(row=>row.teachingCue===undefined)).toBe(true);
+  const drift=copy(lessons[0]);drift.items[0].polish='Changed source line';
+  expect(recordedReadingIntroduction(drift)[0].teachingCue).toBeUndefined();
+  expect(recordedReadingIntroduction(drift)[1].teachingCue).toBeTruthy();
  });
  it('withholds only the extra preparation if original full-recording/audio/meaning is missing or protected',()=>{
   for(const edit of [

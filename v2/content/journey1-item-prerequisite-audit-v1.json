@@ -1,0 +1,3544 @@
+{
+  "schemaVersion": 1,
+  "status": "223_source_rows_traced_individually_linguistic_prerequisites_open",
+  "ownerRule": "Lesson N can assume only language taught earlier; unfamiliar language must be explicitly introduced with recorded complete Polish and English before assessment, not delegated outside this course.",
+  "method": "The rows are in original catalog source order (7 basic source sets, then 6 original Read sets), NOT claimed to be the actual guided curriculum sequence. firstObservedWrittenForms are case-sensitive-to-inflection orthographic word forms normalized to Polish lowercase, not lexical lemmas, inflectional analysis, or learner-known vocabulary. Regex structuralReviewPrompts are search prompts, not verified grammatical classifications. All 223 item-level lexical/grammar prerequisite reviews remain OPEN. Source audio paths are expected matching originals, not acoustic/nativity certification. C14 Read currently offers whole-line preparation; original basic Learn reveals meanings. Only the 6-turn Greetings dialogue gets new explicit C15 explanatory pilot cues.",
+  "basicSourceLessonIds": [
+    "Conversation_1",
+    "Conversation_-_shopping",
+    "Conversation_-_restaurant",
+    "Food_and_Dinning",
+    "Getting_Around_1",
+    "Transit_1",
+    "Emergencies_and_Health"
+  ],
+  "readingSourceLessonIds": [
+    "Basic_01R",
+    "Grocery_store_very_basic_shopping",
+    "H_M_clothes_shop_trying_on_a_T-shirt",
+    "On_the_tram_talking_to_another_passenger",
+    "Asking_the_tram_driver_for_directions",
+    "Museum_buying_tickets_and_basic_info"
+  ],
+  "counts": {
+    "basic": 172,
+    "reading": 51,
+    "total": 223,
+    "distinctObservedWordForms": 292,
+    "openReviewRows": 223
+  },
+  "rows": [
+    {
+      "id": "Conversation_1:0",
+      "sourceLesson": "Conversation_1",
+      "sourceIndex": 0,
+      "kind": "basic",
+      "polish": "Dzień dobry",
+      "english": "Good morning / Good day",
+      "existingWholeRecording": "generated/audio/Conversation_1/0.mp3",
+      "firstObservedWrittenForms": [
+        "dzień",
+        "dobry"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_1:1",
+      "sourceLesson": "Conversation_1",
+      "sourceIndex": 1,
+      "kind": "basic",
+      "polish": "Dobry wieczór",
+      "english": "Good evening",
+      "existingWholeRecording": "generated/audio/Conversation_1/1.mp3",
+      "firstObservedWrittenForms": [
+        "wieczór"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_1:2",
+      "sourceLesson": "Conversation_1",
+      "sourceIndex": 2,
+      "kind": "basic",
+      "polish": "Cześć",
+      "english": "Hi / Hello",
+      "existingWholeRecording": "generated/audio/Conversation_1/2.mp3",
+      "firstObservedWrittenForms": [
+        "cześć"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_1:3",
+      "sourceLesson": "Conversation_1",
+      "sourceIndex": 3,
+      "kind": "basic",
+      "polish": "Hej",
+      "english": "Hey",
+      "existingWholeRecording": "generated/audio/Conversation_1/3.mp3",
+      "firstObservedWrittenForms": [
+        "hej"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_1:4",
+      "sourceLesson": "Conversation_1",
+      "sourceIndex": 4,
+      "kind": "basic",
+      "polish": "Do widzenia",
+      "english": "Goodbye",
+      "existingWholeRecording": "generated/audio/Conversation_1/4.mp3",
+      "firstObservedWrittenForms": [
+        "do",
+        "widzenia"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_1:5",
+      "sourceLesson": "Conversation_1",
+      "sourceIndex": 5,
+      "kind": "basic",
+      "polish": "Na razie",
+      "english": "See you (soon)",
+      "existingWholeRecording": "generated/audio/Conversation_1/5.mp3",
+      "firstObservedWrittenForms": [
+        "na",
+        "razie"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_1:6",
+      "sourceLesson": "Conversation_1",
+      "sourceIndex": 6,
+      "kind": "basic",
+      "polish": "Pa",
+      "english": "Bye (informal)",
+      "existingWholeRecording": "generated/audio/Conversation_1/6.mp3",
+      "firstObservedWrittenForms": [
+        "pa"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_1:7",
+      "sourceLesson": "Conversation_1",
+      "sourceIndex": 7,
+      "kind": "basic",
+      "polish": "Miłego dnia",
+      "english": "Have a nice day",
+      "existingWholeRecording": "generated/audio/Conversation_1/7.mp3",
+      "firstObservedWrittenForms": [
+        "miłego",
+        "dnia"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_1:8",
+      "sourceLesson": "Conversation_1",
+      "sourceIndex": 8,
+      "kind": "basic",
+      "polish": "Dziękuję",
+      "english": "Thank you",
+      "existingWholeRecording": "generated/audio/Conversation_1/8.mp3",
+      "firstObservedWrittenForms": [
+        "dziękuję"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_1:9",
+      "sourceLesson": "Conversation_1",
+      "sourceIndex": 9,
+      "kind": "basic",
+      "polish": "Dzięki",
+      "english": "Thanks (informal)",
+      "existingWholeRecording": "generated/audio/Conversation_1/9.mp3",
+      "firstObservedWrittenForms": [
+        "dzięki"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_1:10",
+      "sourceLesson": "Conversation_1",
+      "sourceIndex": 10,
+      "kind": "basic",
+      "polish": "Proszę",
+      "english": "Please / Here you go",
+      "existingWholeRecording": "generated/audio/Conversation_1/10.mp3",
+      "firstObservedWrittenForms": [
+        "proszę"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_1:11",
+      "sourceLesson": "Conversation_1",
+      "sourceIndex": 11,
+      "kind": "basic",
+      "polish": "Nie ma za co",
+      "english": "You’re welcome",
+      "existingWholeRecording": "generated/audio/Conversation_1/11.mp3",
+      "firstObservedWrittenForms": [
+        "nie",
+        "ma",
+        "za",
+        "co"
+      ],
+      "structuralReviewPrompts": [
+        "negation",
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_1:12",
+      "sourceLesson": "Conversation_1",
+      "sourceIndex": 12,
+      "kind": "basic",
+      "polish": "Przepraszam",
+      "english": "Excuse me / I’m sorry",
+      "existingWholeRecording": "generated/audio/Conversation_1/12.mp3",
+      "firstObservedWrittenForms": [
+        "przepraszam"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_1:13",
+      "sourceLesson": "Conversation_1",
+      "sourceIndex": 13,
+      "kind": "basic",
+      "polish": "Sorki",
+      "english": "Sorry (informal)",
+      "existingWholeRecording": "generated/audio/Conversation_1/13.mp3",
+      "firstObservedWrittenForms": [
+        "sorki"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_1:14",
+      "sourceLesson": "Conversation_1",
+      "sourceIndex": 14,
+      "kind": "basic",
+      "polish": "Tak",
+      "english": "Yes",
+      "existingWholeRecording": "generated/audio/Conversation_1/14.mp3",
+      "firstObservedWrittenForms": [
+        "tak"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_1:15",
+      "sourceLesson": "Conversation_1",
+      "sourceIndex": 15,
+      "kind": "basic",
+      "polish": "Nie",
+      "english": "No",
+      "existingWholeRecording": "generated/audio/Conversation_1/15.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [
+        "negation"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_1:16",
+      "sourceLesson": "Conversation_1",
+      "sourceIndex": 16,
+      "kind": "basic",
+      "polish": "Może",
+      "english": "Maybe",
+      "existingWholeRecording": "generated/audio/Conversation_1/16.mp3",
+      "firstObservedWrittenForms": [
+        "może"
+      ],
+      "structuralReviewPrompts": [
+        "ability-and-permission"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_1:17",
+      "sourceLesson": "Conversation_1",
+      "sourceIndex": 17,
+      "kind": "basic",
+      "polish": "Jasne",
+      "english": "Sure / Of course",
+      "existingWholeRecording": "generated/audio/Conversation_1/17.mp3",
+      "firstObservedWrittenForms": [
+        "jasne"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_1:18",
+      "sourceLesson": "Conversation_1",
+      "sourceIndex": 18,
+      "kind": "basic",
+      "polish": "Oczywiście",
+      "english": "Of course",
+      "existingWholeRecording": "generated/audio/Conversation_1/18.mp3",
+      "firstObservedWrittenForms": [
+        "oczywiście"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_1:19",
+      "sourceLesson": "Conversation_1",
+      "sourceIndex": 19,
+      "kind": "basic",
+      "polish": "Mam pytanie",
+      "english": "I have a question",
+      "existingWholeRecording": "generated/audio/Conversation_1/19.mp3",
+      "firstObservedWrittenForms": [
+        "mam",
+        "pytanie"
+      ],
+      "structuralReviewPrompts": [
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_1:20",
+      "sourceLesson": "Conversation_1",
+      "sourceIndex": 20,
+      "kind": "basic",
+      "polish": "Nie rozumiem",
+      "english": "I don’t understand",
+      "existingWholeRecording": "generated/audio/Conversation_1/20.mp3",
+      "firstObservedWrittenForms": [
+        "rozumiem"
+      ],
+      "structuralReviewPrompts": [
+        "negation",
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_1:21",
+      "sourceLesson": "Conversation_1",
+      "sourceIndex": 21,
+      "kind": "basic",
+      "polish": "Mówi pan po angielsku?",
+      "english": "Do you (sir) speak English?",
+      "existingWholeRecording": "generated/audio/Conversation_1/21.mp3",
+      "firstObservedWrittenForms": [
+        "mówi",
+        "pan",
+        "po",
+        "angielsku"
+      ],
+      "structuralReviewPrompts": [
+        "question-form",
+        "polite-address",
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_1:22",
+      "sourceLesson": "Conversation_1",
+      "sourceIndex": 22,
+      "kind": "basic",
+      "polish": "Mówi pani po angielsku?",
+      "english": "Do you (ma’am) speak English?",
+      "existingWholeRecording": "generated/audio/Conversation_1/22.mp3",
+      "firstObservedWrittenForms": [
+        "pani"
+      ],
+      "structuralReviewPrompts": [
+        "question-form",
+        "polite-address",
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_1:23",
+      "sourceLesson": "Conversation_1",
+      "sourceIndex": 23,
+      "kind": "basic",
+      "polish": "Jak masz na imię?",
+      "english": "What’s your name? (informal)",
+      "existingWholeRecording": "generated/audio/Conversation_1/23.mp3",
+      "firstObservedWrittenForms": [
+        "jak",
+        "masz",
+        "imię"
+      ],
+      "structuralReviewPrompts": [
+        "question-form",
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_1:24",
+      "sourceLesson": "Conversation_1",
+      "sourceIndex": 24,
+      "kind": "basic",
+      "polish": "Jak ma pan/pani na imię?",
+      "english": "What’s your name? (formal)",
+      "existingWholeRecording": "generated/audio/Conversation_1/24.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [
+        "question-form",
+        "polite-address",
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_1:25",
+      "sourceLesson": "Conversation_1",
+      "sourceIndex": 25,
+      "kind": "basic",
+      "polish": "Mam na imię…",
+      "english": "My name is…",
+      "existingWholeRecording": "generated/audio/Conversation_1/25.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_shopping:0",
+      "sourceLesson": "Conversation_-_shopping",
+      "sourceIndex": 0,
+      "kind": "basic",
+      "polish": "Ile to kosztuje?",
+      "english": "How much does this cost?",
+      "existingWholeRecording": "generated/audio/Conversation_-_shopping/0.mp3",
+      "firstObservedWrittenForms": [
+        "ile",
+        "to",
+        "kosztuje"
+      ],
+      "structuralReviewPrompts": [
+        "question-form",
+        "quantity-ile"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_shopping:1",
+      "sourceLesson": "Conversation_-_shopping",
+      "sourceIndex": 1,
+      "kind": "basic",
+      "polish": "Ile to razem?",
+      "english": "How much is it altogether?",
+      "existingWholeRecording": "generated/audio/Conversation_-_shopping/1.mp3",
+      "firstObservedWrittenForms": [
+        "razem"
+      ],
+      "structuralReviewPrompts": [
+        "question-form",
+        "quantity-ile"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_shopping:2",
+      "sourceLesson": "Conversation_-_shopping",
+      "sourceIndex": 2,
+      "kind": "basic",
+      "polish": "Czy mogę zapłacić kartą?",
+      "english": "Can I pay by card?",
+      "existingWholeRecording": "generated/audio/Conversation_-_shopping/2.mp3",
+      "firstObservedWrittenForms": [
+        "czy",
+        "mogę",
+        "zapłacić",
+        "kartą"
+      ],
+      "structuralReviewPrompts": [
+        "question-form",
+        "yes-no-czy",
+        "ability-and-permission"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_shopping:3",
+      "sourceLesson": "Conversation_-_shopping",
+      "sourceIndex": 3,
+      "kind": "basic",
+      "polish": "Czy mogę zapłacić gotówką?",
+      "english": "Can I pay in cash?",
+      "existingWholeRecording": "generated/audio/Conversation_-_shopping/3.mp3",
+      "firstObservedWrittenForms": [
+        "gotówką"
+      ],
+      "structuralReviewPrompts": [
+        "question-form",
+        "yes-no-czy",
+        "ability-and-permission"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_shopping:4",
+      "sourceLesson": "Conversation_-_shopping",
+      "sourceIndex": 4,
+      "kind": "basic",
+      "polish": "Przyjmujecie karty kredytowe?",
+      "english": "Do you accept credit cards?",
+      "existingWholeRecording": "generated/audio/Conversation_-_shopping/4.mp3",
+      "firstObservedWrittenForms": [
+        "przyjmujecie",
+        "karty",
+        "kredytowe"
+      ],
+      "structuralReviewPrompts": [
+        "question-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_shopping:5",
+      "sourceLesson": "Conversation_-_shopping",
+      "sourceIndex": 5,
+      "kind": "basic",
+      "polish": "Gdzie jest kasa?",
+      "english": "Where is the checkout?",
+      "existingWholeRecording": "generated/audio/Conversation_-_shopping/5.mp3",
+      "firstObservedWrittenForms": [
+        "gdzie",
+        "jest",
+        "kasa"
+      ],
+      "structuralReviewPrompts": [
+        "question-form",
+        "place-gdzie",
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_shopping:6",
+      "sourceLesson": "Conversation_-_shopping",
+      "sourceIndex": 6,
+      "kind": "basic",
+      "polish": "Chciałbym zapłacić",
+      "english": "I would like to pay (male)",
+      "existingWholeRecording": "generated/audio/Conversation_-_shopping/6.mp3",
+      "firstObservedWrittenForms": [
+        "chciałbym"
+      ],
+      "structuralReviewPrompts": [
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_shopping:7",
+      "sourceLesson": "Conversation_-_shopping",
+      "sourceIndex": 7,
+      "kind": "basic",
+      "polish": "Chciałabym zapłacić",
+      "english": "I would like to pay (female)",
+      "existingWholeRecording": "generated/audio/Conversation_-_shopping/7.mp3",
+      "firstObservedWrittenForms": [
+        "chciałabym"
+      ],
+      "structuralReviewPrompts": [
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_shopping:8",
+      "sourceLesson": "Conversation_-_shopping",
+      "sourceIndex": 8,
+      "kind": "basic",
+      "polish": "Poproszę paragon",
+      "english": "Receipt, please",
+      "existingWholeRecording": "generated/audio/Conversation_-_shopping/8.mp3",
+      "firstObservedWrittenForms": [
+        "poproszę",
+        "paragon"
+      ],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_shopping:9",
+      "sourceLesson": "Conversation_-_shopping",
+      "sourceIndex": 9,
+      "kind": "basic",
+      "polish": "Czy macie coś tańszego?",
+      "english": "Do you have something cheaper?",
+      "existingWholeRecording": "generated/audio/Conversation_-_shopping/9.mp3",
+      "firstObservedWrittenForms": [
+        "macie",
+        "coś",
+        "tańszego"
+      ],
+      "structuralReviewPrompts": [
+        "question-form",
+        "yes-no-czy"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_shopping:10",
+      "sourceLesson": "Conversation_-_shopping",
+      "sourceIndex": 10,
+      "kind": "basic",
+      "polish": "Czy macie inne kolory?",
+      "english": "Do you have other colors?",
+      "existingWholeRecording": "generated/audio/Conversation_-_shopping/10.mp3",
+      "firstObservedWrittenForms": [
+        "inne",
+        "kolory"
+      ],
+      "structuralReviewPrompts": [
+        "question-form",
+        "yes-no-czy"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_shopping:11",
+      "sourceLesson": "Conversation_-_shopping",
+      "sourceIndex": 11,
+      "kind": "basic",
+      "polish": "Czy macie inny rozmiar?",
+      "english": "Do you have another size?",
+      "existingWholeRecording": "generated/audio/Conversation_-_shopping/11.mp3",
+      "firstObservedWrittenForms": [
+        "inny",
+        "rozmiar"
+      ],
+      "structuralReviewPrompts": [
+        "question-form",
+        "yes-no-czy"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_shopping:12",
+      "sourceLesson": "Conversation_-_shopping",
+      "sourceIndex": 12,
+      "kind": "basic",
+      "polish": "Za duże",
+      "english": "Too big",
+      "existingWholeRecording": "generated/audio/Conversation_-_shopping/12.mp3",
+      "firstObservedWrittenForms": [
+        "duże"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_shopping:13",
+      "sourceLesson": "Conversation_-_shopping",
+      "sourceIndex": 13,
+      "kind": "basic",
+      "polish": "Za małe",
+      "english": "Too small",
+      "existingWholeRecording": "generated/audio/Conversation_-_shopping/13.mp3",
+      "firstObservedWrittenForms": [
+        "małe"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_shopping:14",
+      "sourceLesson": "Conversation_-_shopping",
+      "sourceIndex": 14,
+      "kind": "basic",
+      "polish": "Pasuje dobrze",
+      "english": "It fits well",
+      "existingWholeRecording": "generated/audio/Conversation_-_shopping/14.mp3",
+      "firstObservedWrittenForms": [
+        "pasuje",
+        "dobrze"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_shopping:15",
+      "sourceLesson": "Conversation_-_shopping",
+      "sourceIndex": 15,
+      "kind": "basic",
+      "polish": "Czy mogę to przymierzyć?",
+      "english": "Can I try this on?",
+      "existingWholeRecording": "generated/audio/Conversation_-_shopping/15.mp3",
+      "firstObservedWrittenForms": [
+        "przymierzyć"
+      ],
+      "structuralReviewPrompts": [
+        "question-form",
+        "yes-no-czy",
+        "ability-and-permission"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_shopping:16",
+      "sourceLesson": "Conversation_-_shopping",
+      "sourceIndex": 16,
+      "kind": "basic",
+      "polish": "Szukam koszuli",
+      "english": "I am looking for a shirt",
+      "existingWholeRecording": "generated/audio/Conversation_-_shopping/16.mp3",
+      "firstObservedWrittenForms": [
+        "szukam",
+        "koszuli"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_shopping:17",
+      "sourceLesson": "Conversation_-_shopping",
+      "sourceIndex": 17,
+      "kind": "basic",
+      "polish": "Szukam spodni",
+      "english": "I am looking for trousers",
+      "existingWholeRecording": "generated/audio/Conversation_-_shopping/17.mp3",
+      "firstObservedWrittenForms": [
+        "spodni"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_shopping:18",
+      "sourceLesson": "Conversation_-_shopping",
+      "sourceIndex": 18,
+      "kind": "basic",
+      "polish": "Szukam butów",
+      "english": "I am looking for shoes",
+      "existingWholeRecording": "generated/audio/Conversation_-_shopping/18.mp3",
+      "firstObservedWrittenForms": [
+        "butów"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_shopping:19",
+      "sourceLesson": "Conversation_-_shopping",
+      "sourceIndex": 19,
+      "kind": "basic",
+      "polish": "Czy to jest na promocji?",
+      "english": "Is this on sale?",
+      "existingWholeRecording": "generated/audio/Conversation_-_shopping/19.mp3",
+      "firstObservedWrittenForms": [
+        "promocji"
+      ],
+      "structuralReviewPrompts": [
+        "question-form",
+        "yes-no-czy",
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_shopping:20",
+      "sourceLesson": "Conversation_-_shopping",
+      "sourceIndex": 20,
+      "kind": "basic",
+      "polish": "Poproszę siatkę",
+      "english": "A shopping bag, please",
+      "existingWholeRecording": "generated/audio/Conversation_-_shopping/20.mp3",
+      "firstObservedWrittenForms": [
+        "siatkę"
+      ],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_shopping:21",
+      "sourceLesson": "Conversation_-_shopping",
+      "sourceIndex": 21,
+      "kind": "basic",
+      "polish": "Nie mam drobnych",
+      "english": "I don’t have small change",
+      "existingWholeRecording": "generated/audio/Conversation_-_shopping/21.mp3",
+      "firstObservedWrittenForms": [
+        "drobnych"
+      ],
+      "structuralReviewPrompts": [
+        "negation",
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_shopping:22",
+      "sourceLesson": "Conversation_-_shopping",
+      "sourceIndex": 22,
+      "kind": "basic",
+      "polish": "Czy mogę zapłacić później?",
+      "english": "Can I pay later?",
+      "existingWholeRecording": "generated/audio/Conversation_-_shopping/22.mp3",
+      "firstObservedWrittenForms": [
+        "później"
+      ],
+      "structuralReviewPrompts": [
+        "question-form",
+        "yes-no-czy",
+        "ability-and-permission"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_shopping:23",
+      "sourceLesson": "Conversation_-_shopping",
+      "sourceIndex": 23,
+      "kind": "basic",
+      "polish": "Tylko oglądam",
+      "english": "I’m just looking",
+      "existingWholeRecording": "generated/audio/Conversation_-_shopping/23.mp3",
+      "firstObservedWrittenForms": [
+        "tylko",
+        "oglądam"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_shopping:24",
+      "sourceLesson": "Conversation_-_shopping",
+      "sourceIndex": 24,
+      "kind": "basic",
+      "polish": "Wezmę to",
+      "english": "I’ll take it",
+      "existingWholeRecording": "generated/audio/Conversation_-_shopping/24.mp3",
+      "firstObservedWrittenForms": [
+        "wezmę"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_restaurant:0",
+      "sourceLesson": "Conversation_-_restaurant",
+      "sourceIndex": 0,
+      "kind": "basic",
+      "polish": "Poproszę menu",
+      "english": "May I have the menu, please?",
+      "existingWholeRecording": "generated/audio/Conversation_-_restaurant/0.mp3",
+      "firstObservedWrittenForms": [
+        "menu"
+      ],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_restaurant:1",
+      "sourceLesson": "Conversation_-_restaurant",
+      "sourceIndex": 1,
+      "kind": "basic",
+      "polish": "Chciałbym / Chciałabym zamówić",
+      "english": "I would like to order (male/female)",
+      "existingWholeRecording": "generated/audio/Conversation_-_restaurant/1.mp3",
+      "firstObservedWrittenForms": [
+        "zamówić"
+      ],
+      "structuralReviewPrompts": [
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_restaurant:2",
+      "sourceLesson": "Conversation_-_restaurant",
+      "sourceIndex": 2,
+      "kind": "basic",
+      "polish": "Poproszę wodę",
+      "english": "Water, please",
+      "existingWholeRecording": "generated/audio/Conversation_-_restaurant/2.mp3",
+      "firstObservedWrittenForms": [
+        "wodę"
+      ],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_restaurant:3",
+      "sourceLesson": "Conversation_-_restaurant",
+      "sourceIndex": 3,
+      "kind": "basic",
+      "polish": "Poproszę kawę",
+      "english": "Coffee, please",
+      "existingWholeRecording": "generated/audio/Conversation_-_restaurant/3.mp3",
+      "firstObservedWrittenForms": [
+        "kawę"
+      ],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_restaurant:4",
+      "sourceLesson": "Conversation_-_restaurant",
+      "sourceIndex": 4,
+      "kind": "basic",
+      "polish": "Poproszę herbatę",
+      "english": "Tea, please",
+      "existingWholeRecording": "generated/audio/Conversation_-_restaurant/4.mp3",
+      "firstObservedWrittenForms": [
+        "herbatę"
+      ],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_restaurant:5",
+      "sourceLesson": "Conversation_-_restaurant",
+      "sourceIndex": 5,
+      "kind": "basic",
+      "polish": "Jestem wegetarianinem / wegetarianką",
+      "english": "I am vegetarian (male/female)",
+      "existingWholeRecording": "generated/audio/Conversation_-_restaurant/5.mp3",
+      "firstObservedWrittenForms": [
+        "jestem",
+        "wegetarianinem",
+        "wegetarianką"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_restaurant:6",
+      "sourceLesson": "Conversation_-_restaurant",
+      "sourceIndex": 6,
+      "kind": "basic",
+      "polish": "Czy mają Państwo coś bez mięsa?",
+      "english": "Do you have anything without meat?",
+      "existingWholeRecording": "generated/audio/Conversation_-_restaurant/6.mp3",
+      "firstObservedWrittenForms": [
+        "mają",
+        "państwo",
+        "bez",
+        "mięsa"
+      ],
+      "structuralReviewPrompts": [
+        "question-form",
+        "polite-address",
+        "yes-no-czy"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_restaurant:7",
+      "sourceLesson": "Conversation_-_restaurant",
+      "sourceIndex": 7,
+      "kind": "basic",
+      "polish": "Poproszę rachunek",
+      "english": "The bill, please",
+      "existingWholeRecording": "generated/audio/Conversation_-_restaurant/7.mp3",
+      "firstObservedWrittenForms": [
+        "rachunek"
+      ],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_restaurant:8",
+      "sourceLesson": "Conversation_-_restaurant",
+      "sourceIndex": 8,
+      "kind": "basic",
+      "polish": "Smacznego!",
+      "english": "Enjoy your meal!",
+      "existingWholeRecording": "generated/audio/Conversation_-_restaurant/8.mp3",
+      "firstObservedWrittenForms": [
+        "smacznego"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_restaurant:9",
+      "sourceLesson": "Conversation_-_restaurant",
+      "sourceIndex": 9,
+      "kind": "basic",
+      "polish": "Dziękuję",
+      "english": "Thank you",
+      "existingWholeRecording": "generated/audio/Conversation_-_restaurant/9.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_restaurant:10",
+      "sourceLesson": "Conversation_-_restaurant",
+      "sourceIndex": 10,
+      "kind": "basic",
+      "polish": "Nie ma za co",
+      "english": "You're welcome",
+      "existingWholeRecording": "generated/audio/Conversation_-_restaurant/10.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [
+        "negation",
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_restaurant:11",
+      "sourceLesson": "Conversation_-_restaurant",
+      "sourceIndex": 11,
+      "kind": "basic",
+      "polish": "Polecam",
+      "english": "I recommend",
+      "existingWholeRecording": "generated/audio/Conversation_-_restaurant/11.mp3",
+      "firstObservedWrittenForms": [
+        "polecam"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_restaurant:12",
+      "sourceLesson": "Conversation_-_restaurant",
+      "sourceIndex": 12,
+      "kind": "basic",
+      "polish": "Zupa dnia",
+      "english": "Soup of the day",
+      "existingWholeRecording": "generated/audio/Conversation_-_restaurant/12.mp3",
+      "firstObservedWrittenForms": [
+        "zupa"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_restaurant:13",
+      "sourceLesson": "Conversation_-_restaurant",
+      "sourceIndex": 13,
+      "kind": "basic",
+      "polish": "Danie główne",
+      "english": "Main course",
+      "existingWholeRecording": "generated/audio/Conversation_-_restaurant/13.mp3",
+      "firstObservedWrittenForms": [
+        "danie",
+        "główne"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_restaurant:14",
+      "sourceLesson": "Conversation_-_restaurant",
+      "sourceIndex": 14,
+      "kind": "basic",
+      "polish": "Deser",
+      "english": "Dessert",
+      "existingWholeRecording": "generated/audio/Conversation_-_restaurant/14.mp3",
+      "firstObservedWrittenForms": [
+        "deser"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_restaurant:15",
+      "sourceLesson": "Conversation_-_restaurant",
+      "sourceIndex": 15,
+      "kind": "basic",
+      "polish": "Piwo",
+      "english": "Beer",
+      "existingWholeRecording": "generated/audio/Conversation_-_restaurant/15.mp3",
+      "firstObservedWrittenForms": [
+        "piwo"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_restaurant:16",
+      "sourceLesson": "Conversation_-_restaurant",
+      "sourceIndex": 16,
+      "kind": "basic",
+      "polish": "Wino",
+      "english": "Wine",
+      "existingWholeRecording": "generated/audio/Conversation_-_restaurant/16.mp3",
+      "firstObservedWrittenForms": [
+        "wino"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_restaurant:17",
+      "sourceLesson": "Conversation_-_restaurant",
+      "sourceIndex": 17,
+      "kind": "basic",
+      "polish": "Bez alkoholu",
+      "english": "Non-alcoholic",
+      "existingWholeRecording": "generated/audio/Conversation_-_restaurant/17.mp3",
+      "firstObservedWrittenForms": [
+        "alkoholu"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_restaurant:18",
+      "sourceLesson": "Conversation_-_restaurant",
+      "sourceIndex": 18,
+      "kind": "basic",
+      "polish": "Z lodem",
+      "english": "With ice",
+      "existingWholeRecording": "generated/audio/Conversation_-_restaurant/18.mp3",
+      "firstObservedWrittenForms": [
+        "z",
+        "lodem"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_restaurant:19",
+      "sourceLesson": "Conversation_-_restaurant",
+      "sourceIndex": 19,
+      "kind": "basic",
+      "polish": "Na wynos",
+      "english": "To go / takeaway",
+      "existingWholeRecording": "generated/audio/Conversation_-_restaurant/19.mp3",
+      "firstObservedWrittenForms": [
+        "wynos"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_restaurant:20",
+      "sourceLesson": "Conversation_-_restaurant",
+      "sourceIndex": 20,
+      "kind": "basic",
+      "polish": "Stolik dla dwóch osób",
+      "english": "Table for two",
+      "existingWholeRecording": "generated/audio/Conversation_-_restaurant/20.mp3",
+      "firstObservedWrittenForms": [
+        "stolik",
+        "dla",
+        "dwóch",
+        "osób"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_restaurant:21",
+      "sourceLesson": "Conversation_-_restaurant",
+      "sourceIndex": 21,
+      "kind": "basic",
+      "polish": "Czy mogę prosić o rachunek?",
+      "english": "Can I have the bill?",
+      "existingWholeRecording": "generated/audio/Conversation_-_restaurant/21.mp3",
+      "firstObservedWrittenForms": [
+        "prosić",
+        "o"
+      ],
+      "structuralReviewPrompts": [
+        "question-form",
+        "yes-no-czy",
+        "ability-and-permission"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_restaurant:22",
+      "sourceLesson": "Conversation_-_restaurant",
+      "sourceIndex": 22,
+      "kind": "basic",
+      "polish": "Poproszę bez soli",
+      "english": "Please, no salt",
+      "existingWholeRecording": "generated/audio/Conversation_-_restaurant/22.mp3",
+      "firstObservedWrittenForms": [
+        "soli"
+      ],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_restaurant:23",
+      "sourceLesson": "Conversation_-_restaurant",
+      "sourceIndex": 23,
+      "kind": "basic",
+      "polish": "Poproszę mniej ostre",
+      "english": "Please, less spicy",
+      "existingWholeRecording": "generated/audio/Conversation_-_restaurant/23.mp3",
+      "firstObservedWrittenForms": [
+        "mniej",
+        "ostre"
+      ],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Conversation_-_restaurant:24",
+      "sourceLesson": "Conversation_-_restaurant",
+      "sourceIndex": 24,
+      "kind": "basic",
+      "polish": "Czy mogę zapłacić kartą?",
+      "english": "Can I pay by card?",
+      "existingWholeRecording": "generated/audio/Conversation_-_restaurant/24.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [
+        "question-form",
+        "yes-no-czy",
+        "ability-and-permission"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Food_and_Dinning:0",
+      "sourceLesson": "Food_and_Dinning",
+      "sourceIndex": 0,
+      "kind": "basic",
+      "polish": "Poproszę stolik dla jednej osoby",
+      "english": "A table for one, please",
+      "existingWholeRecording": "generated/audio/Food_and_Dinning/0.mp3",
+      "firstObservedWrittenForms": [
+        "jednej",
+        "osoby"
+      ],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Food_and_Dinning:1",
+      "sourceLesson": "Food_and_Dinning",
+      "sourceIndex": 1,
+      "kind": "basic",
+      "polish": "Poproszę stolik dla dwóch osób",
+      "english": "A table for two, please",
+      "existingWholeRecording": "generated/audio/Food_and_Dinning/1.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Food_and_Dinning:2",
+      "sourceLesson": "Food_and_Dinning",
+      "sourceIndex": 2,
+      "kind": "basic",
+      "polish": "Czy ma pan/pani menu po angielsku?",
+      "english": "Do you have a menu in English?",
+      "existingWholeRecording": "generated/audio/Food_and_Dinning/2.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [
+        "question-form",
+        "polite-address",
+        "yes-no-czy",
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Food_and_Dinning:3",
+      "sourceLesson": "Food_and_Dinning",
+      "sourceIndex": 3,
+      "kind": "basic",
+      "polish": "Poproszę menu",
+      "english": "The menu, please",
+      "existingWholeRecording": "generated/audio/Food_and_Dinning/3.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Food_and_Dinning:4",
+      "sourceLesson": "Food_and_Dinning",
+      "sourceIndex": 4,
+      "kind": "basic",
+      "polish": "Co pan/pani poleca?",
+      "english": "What do you recommend?",
+      "existingWholeRecording": "generated/audio/Food_and_Dinning/4.mp3",
+      "firstObservedWrittenForms": [
+        "poleca"
+      ],
+      "structuralReviewPrompts": [
+        "question-form",
+        "polite-address"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Food_and_Dinning:5",
+      "sourceLesson": "Food_and_Dinning",
+      "sourceIndex": 5,
+      "kind": "basic",
+      "polish": "Poproszę zupę dnia",
+      "english": "I’ll have the soup of the day",
+      "existingWholeRecording": "generated/audio/Food_and_Dinning/5.mp3",
+      "firstObservedWrittenForms": [
+        "zupę"
+      ],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Food_and_Dinning:6",
+      "sourceLesson": "Food_and_Dinning",
+      "sourceIndex": 6,
+      "kind": "basic",
+      "polish": "Poproszę pierogi",
+      "english": "I’ll have pierogi",
+      "existingWholeRecording": "generated/audio/Food_and_Dinning/6.mp3",
+      "firstObservedWrittenForms": [
+        "pierogi"
+      ],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Food_and_Dinning:7",
+      "sourceLesson": "Food_and_Dinning",
+      "sourceIndex": 7,
+      "kind": "basic",
+      "polish": "Poproszę schabowego",
+      "english": "I’ll have a pork cutlet",
+      "existingWholeRecording": "generated/audio/Food_and_Dinning/7.mp3",
+      "firstObservedWrittenForms": [
+        "schabowego"
+      ],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Food_and_Dinning:8",
+      "sourceLesson": "Food_and_Dinning",
+      "sourceIndex": 8,
+      "kind": "basic",
+      "polish": "Poproszę sałatkę",
+      "english": "I’ll have a salad",
+      "existingWholeRecording": "generated/audio/Food_and_Dinning/8.mp3",
+      "firstObservedWrittenForms": [
+        "sałatkę"
+      ],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Food_and_Dinning:9",
+      "sourceLesson": "Food_and_Dinning",
+      "sourceIndex": 9,
+      "kind": "basic",
+      "polish": "Poproszę kawę",
+      "english": "A coffee, please",
+      "existingWholeRecording": "generated/audio/Food_and_Dinning/9.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Food_and_Dinning:10",
+      "sourceLesson": "Food_and_Dinning",
+      "sourceIndex": 10,
+      "kind": "basic",
+      "polish": "Poproszę herbatę",
+      "english": "A tea, please",
+      "existingWholeRecording": "generated/audio/Food_and_Dinning/10.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Food_and_Dinning:11",
+      "sourceLesson": "Food_and_Dinning",
+      "sourceIndex": 11,
+      "kind": "basic",
+      "polish": "Poproszę piwo",
+      "english": "A beer, please",
+      "existingWholeRecording": "generated/audio/Food_and_Dinning/11.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Food_and_Dinning:12",
+      "sourceLesson": "Food_and_Dinning",
+      "sourceIndex": 12,
+      "kind": "basic",
+      "polish": "Poproszę kieliszek wina",
+      "english": "A glass of wine, please",
+      "existingWholeRecording": "generated/audio/Food_and_Dinning/12.mp3",
+      "firstObservedWrittenForms": [
+        "kieliszek",
+        "wina"
+      ],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Food_and_Dinning:13",
+      "sourceLesson": "Food_and_Dinning",
+      "sourceIndex": 13,
+      "kind": "basic",
+      "polish": "Poproszę wodę niegazowaną",
+      "english": "Still water, please",
+      "existingWholeRecording": "generated/audio/Food_and_Dinning/13.mp3",
+      "firstObservedWrittenForms": [
+        "niegazowaną"
+      ],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Food_and_Dinning:14",
+      "sourceLesson": "Food_and_Dinning",
+      "sourceIndex": 14,
+      "kind": "basic",
+      "polish": "Poproszę wodę gazowaną",
+      "english": "Sparkling water, please",
+      "existingWholeRecording": "generated/audio/Food_and_Dinning/14.mp3",
+      "firstObservedWrittenForms": [
+        "gazowaną"
+      ],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Food_and_Dinning:15",
+      "sourceLesson": "Food_and_Dinning",
+      "sourceIndex": 15,
+      "kind": "basic",
+      "polish": "Smacznego",
+      "english": "Enjoy your meal / Bon appétit",
+      "existingWholeRecording": "generated/audio/Food_and_Dinning/15.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Food_and_Dinning:16",
+      "sourceLesson": "Food_and_Dinning",
+      "sourceIndex": 16,
+      "kind": "basic",
+      "polish": "To jest bardzo dobre",
+      "english": "This is very good",
+      "existingWholeRecording": "generated/audio/Food_and_Dinning/16.mp3",
+      "firstObservedWrittenForms": [
+        "bardzo",
+        "dobre"
+      ],
+      "structuralReviewPrompts": [
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Food_and_Dinning:17",
+      "sourceLesson": "Food_and_Dinning",
+      "sourceIndex": 17,
+      "kind": "basic",
+      "polish": "Rachunek, proszę",
+      "english": "The bill, please",
+      "existingWholeRecording": "generated/audio/Food_and_Dinning/17.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Food_and_Dinning:18",
+      "sourceLesson": "Food_and_Dinning",
+      "sourceIndex": 18,
+      "kind": "basic",
+      "polish": "Czy mogę zapłacić kartą?",
+      "english": "Can I pay by card?",
+      "existingWholeRecording": "generated/audio/Food_and_Dinning/18.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [
+        "question-form",
+        "yes-no-czy",
+        "ability-and-permission"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Food_and_Dinning:19",
+      "sourceLesson": "Food_and_Dinning",
+      "sourceIndex": 19,
+      "kind": "basic",
+      "polish": "Czy mogę zapłacić gotówką?",
+      "english": "Can I pay in cash?",
+      "existingWholeRecording": "generated/audio/Food_and_Dinning/19.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [
+        "question-form",
+        "yes-no-czy",
+        "ability-and-permission"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Food_and_Dinning:20",
+      "sourceLesson": "Food_and_Dinning",
+      "sourceIndex": 20,
+      "kind": "basic",
+      "polish": "Czy macie coś wegetariańskiego?",
+      "english": "Do you have something vegetarian?",
+      "existingWholeRecording": "generated/audio/Food_and_Dinning/20.mp3",
+      "firstObservedWrittenForms": [
+        "wegetariańskiego"
+      ],
+      "structuralReviewPrompts": [
+        "question-form",
+        "yes-no-czy"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Food_and_Dinning:21",
+      "sourceLesson": "Food_and_Dinning",
+      "sourceIndex": 21,
+      "kind": "basic",
+      "polish": "Czy macie coś wegańskiego?",
+      "english": "Do you have something vegan?",
+      "existingWholeRecording": "generated/audio/Food_and_Dinning/21.mp3",
+      "firstObservedWrittenForms": [
+        "wegańskiego"
+      ],
+      "structuralReviewPrompts": [
+        "question-form",
+        "yes-no-czy"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Food_and_Dinning:22",
+      "sourceLesson": "Food_and_Dinning",
+      "sourceIndex": 22,
+      "kind": "basic",
+      "polish": "Nie jem mięsa",
+      "english": "I don’t eat meat",
+      "existingWholeRecording": "generated/audio/Food_and_Dinning/22.mp3",
+      "firstObservedWrittenForms": [
+        "jem"
+      ],
+      "structuralReviewPrompts": [
+        "negation"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Food_and_Dinning:23",
+      "sourceLesson": "Food_and_Dinning",
+      "sourceIndex": 23,
+      "kind": "basic",
+      "polish": "Nie piję alkoholu",
+      "english": "I don’t drink alcohol",
+      "existingWholeRecording": "generated/audio/Food_and_Dinning/23.mp3",
+      "firstObservedWrittenForms": [
+        "piję"
+      ],
+      "structuralReviewPrompts": [
+        "negation"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Food_and_Dinning:24",
+      "sourceLesson": "Food_and_Dinning",
+      "sourceIndex": 24,
+      "kind": "basic",
+      "polish": "Było pyszne",
+      "english": "It was delicious",
+      "existingWholeRecording": "generated/audio/Food_and_Dinning/24.mp3",
+      "firstObservedWrittenForms": [
+        "było",
+        "pyszne"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Getting_Around_1:0",
+      "sourceLesson": "Getting_Around_1",
+      "sourceIndex": 0,
+      "kind": "basic",
+      "polish": "Gdzie jest przystanek?",
+      "english": "Where is the bus/tram stop?",
+      "existingWholeRecording": "generated/audio/Getting_Around_1/0.mp3",
+      "firstObservedWrittenForms": [
+        "przystanek"
+      ],
+      "structuralReviewPrompts": [
+        "question-form",
+        "place-gdzie",
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Getting_Around_1:1",
+      "sourceLesson": "Getting_Around_1",
+      "sourceIndex": 1,
+      "kind": "basic",
+      "polish": "Którędy do centrum?",
+      "english": "Which way to the city center?",
+      "existingWholeRecording": "generated/audio/Getting_Around_1/1.mp3",
+      "firstObservedWrittenForms": [
+        "którędy",
+        "centrum"
+      ],
+      "structuralReviewPrompts": [
+        "question-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Getting_Around_1:2",
+      "sourceLesson": "Getting_Around_1",
+      "sourceIndex": 2,
+      "kind": "basic",
+      "polish": "Gdzie jest metro?",
+      "english": "Where is the metro?",
+      "existingWholeRecording": "generated/audio/Getting_Around_1/2.mp3",
+      "firstObservedWrittenForms": [
+        "metro"
+      ],
+      "structuralReviewPrompts": [
+        "question-form",
+        "place-gdzie",
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Getting_Around_1:3",
+      "sourceLesson": "Getting_Around_1",
+      "sourceIndex": 3,
+      "kind": "basic",
+      "polish": "Na którą linię?",
+      "english": "For which line?",
+      "existingWholeRecording": "generated/audio/Getting_Around_1/3.mp3",
+      "firstObservedWrittenForms": [
+        "którą",
+        "linię"
+      ],
+      "structuralReviewPrompts": [
+        "question-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Getting_Around_1:4",
+      "sourceLesson": "Getting_Around_1",
+      "sourceIndex": 4,
+      "kind": "basic",
+      "polish": "Który to peron?",
+      "english": "Which platform is this?",
+      "existingWholeRecording": "generated/audio/Getting_Around_1/4.mp3",
+      "firstObservedWrittenForms": [
+        "który",
+        "peron"
+      ],
+      "structuralReviewPrompts": [
+        "question-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Getting_Around_1:5",
+      "sourceLesson": "Getting_Around_1",
+      "sourceIndex": 5,
+      "kind": "basic",
+      "polish": "Czy to pociąg do Warszawy?",
+      "english": "Is this the train to Warsaw?",
+      "existingWholeRecording": "generated/audio/Getting_Around_1/5.mp3",
+      "firstObservedWrittenForms": [
+        "pociąg",
+        "warszawy"
+      ],
+      "structuralReviewPrompts": [
+        "question-form",
+        "yes-no-czy"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Getting_Around_1:6",
+      "sourceLesson": "Getting_Around_1",
+      "sourceIndex": 6,
+      "kind": "basic",
+      "polish": "Jeden bilet, proszę",
+      "english": "One ticket, please",
+      "existingWholeRecording": "generated/audio/Getting_Around_1/6.mp3",
+      "firstObservedWrittenForms": [
+        "jeden",
+        "bilet"
+      ],
+      "structuralReviewPrompts": [
+        "numbers-and-quantities"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Getting_Around_1:7",
+      "sourceLesson": "Getting_Around_1",
+      "sourceIndex": 7,
+      "kind": "basic",
+      "polish": "Dwa bilety, proszę",
+      "english": "Two tickets, please",
+      "existingWholeRecording": "generated/audio/Getting_Around_1/7.mp3",
+      "firstObservedWrittenForms": [
+        "dwa",
+        "bilety"
+      ],
+      "structuralReviewPrompts": [
+        "numbers-and-quantities"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Getting_Around_1:8",
+      "sourceLesson": "Getting_Around_1",
+      "sourceIndex": 8,
+      "kind": "basic",
+      "polish": "Bilet normalny",
+      "english": "Regular ticket",
+      "existingWholeRecording": "generated/audio/Getting_Around_1/8.mp3",
+      "firstObservedWrittenForms": [
+        "normalny"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Getting_Around_1:9",
+      "sourceLesson": "Getting_Around_1",
+      "sourceIndex": 9,
+      "kind": "basic",
+      "polish": "Bilet ulgowy",
+      "english": "Discounted ticket",
+      "existingWholeRecording": "generated/audio/Getting_Around_1/9.mp3",
+      "firstObservedWrittenForms": [
+        "ulgowy"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Getting_Around_1:10",
+      "sourceLesson": "Getting_Around_1",
+      "sourceIndex": 10,
+      "kind": "basic",
+      "polish": "Bilet dobowy",
+      "english": "24-hour ticket",
+      "existingWholeRecording": "generated/audio/Getting_Around_1/10.mp3",
+      "firstObservedWrittenForms": [
+        "dobowy"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Getting_Around_1:11",
+      "sourceLesson": "Getting_Around_1",
+      "sourceIndex": 11,
+      "kind": "basic",
+      "polish": "Jak dojechać do lotniska?",
+      "english": "How do I get to the airport?",
+      "existingWholeRecording": "generated/audio/Getting_Around_1/11.mp3",
+      "firstObservedWrittenForms": [
+        "dojechać",
+        "lotniska"
+      ],
+      "structuralReviewPrompts": [
+        "question-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Getting_Around_1:12",
+      "sourceLesson": "Getting_Around_1",
+      "sourceIndex": 12,
+      "kind": "basic",
+      "polish": "Potrzebuję taksówki",
+      "english": "I need a taxi",
+      "existingWholeRecording": "generated/audio/Getting_Around_1/12.mp3",
+      "firstObservedWrittenForms": [
+        "potrzebuję",
+        "taksówki"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Getting_Around_1:13",
+      "sourceLesson": "Getting_Around_1",
+      "sourceIndex": 13,
+      "kind": "basic",
+      "polish": "Poproszę na ulicę Marszałkowską",
+      "english": "To Marszałkowska Street, please",
+      "existingWholeRecording": "generated/audio/Getting_Around_1/13.mp3",
+      "firstObservedWrittenForms": [
+        "ulicę",
+        "marszałkowską"
+      ],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Getting_Around_1:14",
+      "sourceLesson": "Getting_Around_1",
+      "sourceIndex": 14,
+      "kind": "basic",
+      "polish": "Ile kosztuje bilet?",
+      "english": "How much is the ticket?",
+      "existingWholeRecording": "generated/audio/Getting_Around_1/14.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [
+        "question-form",
+        "quantity-ile"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Getting_Around_1:15",
+      "sourceLesson": "Getting_Around_1",
+      "sourceIndex": 15,
+      "kind": "basic",
+      "polish": "Czy mogę zapłacić kartą?",
+      "english": "Can I pay by card?",
+      "existingWholeRecording": "generated/audio/Getting_Around_1/15.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [
+        "question-form",
+        "yes-no-czy",
+        "ability-and-permission"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Getting_Around_1:16",
+      "sourceLesson": "Getting_Around_1",
+      "sourceIndex": 16,
+      "kind": "basic",
+      "polish": "Czy mogę kupić bilet u kierowcy?",
+      "english": "Can I buy a ticket from the driver?",
+      "existingWholeRecording": "generated/audio/Getting_Around_1/16.mp3",
+      "firstObservedWrittenForms": [
+        "kupić",
+        "u",
+        "kierowcy"
+      ],
+      "structuralReviewPrompts": [
+        "question-form",
+        "yes-no-czy",
+        "ability-and-permission"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Getting_Around_1:17",
+      "sourceLesson": "Getting_Around_1",
+      "sourceIndex": 17,
+      "kind": "basic",
+      "polish": "Gdzie mogę kupić bilet?",
+      "english": "Where can I buy a ticket?",
+      "existingWholeRecording": "generated/audio/Getting_Around_1/17.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [
+        "question-form",
+        "place-gdzie",
+        "ability-and-permission"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Getting_Around_1:18",
+      "sourceLesson": "Getting_Around_1",
+      "sourceIndex": 18,
+      "kind": "basic",
+      "polish": "Jak długo jedzie autobus?",
+      "english": "How long does the bus take?",
+      "existingWholeRecording": "generated/audio/Getting_Around_1/18.mp3",
+      "firstObservedWrittenForms": [
+        "długo",
+        "jedzie",
+        "autobus"
+      ],
+      "structuralReviewPrompts": [
+        "question-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Getting_Around_1:19",
+      "sourceLesson": "Getting_Around_1",
+      "sourceIndex": 19,
+      "kind": "basic",
+      "polish": "Kiedy odjeżdża pociąg?",
+      "english": "When does the train leave?",
+      "existingWholeRecording": "generated/audio/Getting_Around_1/19.mp3",
+      "firstObservedWrittenForms": [
+        "kiedy",
+        "odjeżdża"
+      ],
+      "structuralReviewPrompts": [
+        "question-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Getting_Around_1:20",
+      "sourceLesson": "Getting_Around_1",
+      "sourceIndex": 20,
+      "kind": "basic",
+      "polish": "Czy ten tramwaj jedzie do centrum?",
+      "english": "Does this tram go to the center?",
+      "existingWholeRecording": "generated/audio/Getting_Around_1/20.mp3",
+      "firstObservedWrittenForms": [
+        "ten",
+        "tramwaj"
+      ],
+      "structuralReviewPrompts": [
+        "question-form",
+        "yes-no-czy"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Getting_Around_1:21",
+      "sourceLesson": "Getting_Around_1",
+      "sourceIndex": 21,
+      "kind": "basic",
+      "polish": "Proszę zatrzymać się tutaj",
+      "english": "Please stop here",
+      "existingWholeRecording": "generated/audio/Getting_Around_1/21.mp3",
+      "firstObservedWrittenForms": [
+        "zatrzymać",
+        "się",
+        "tutaj"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Getting_Around_1:22",
+      "sourceLesson": "Getting_Around_1",
+      "sourceIndex": 22,
+      "kind": "basic",
+      "polish": "Czy to daleko stąd?",
+      "english": "Is it far from here?",
+      "existingWholeRecording": "generated/audio/Getting_Around_1/22.mp3",
+      "firstObservedWrittenForms": [
+        "daleko",
+        "stąd"
+      ],
+      "structuralReviewPrompts": [
+        "question-form",
+        "yes-no-czy"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Getting_Around_1:23",
+      "sourceLesson": "Getting_Around_1",
+      "sourceIndex": 23,
+      "kind": "basic",
+      "polish": "Idzie pan/pani w dobrą stronę",
+      "english": "You are going the right way",
+      "existingWholeRecording": "generated/audio/Getting_Around_1/23.mp3",
+      "firstObservedWrittenForms": [
+        "idzie",
+        "w",
+        "dobrą",
+        "stronę"
+      ],
+      "structuralReviewPrompts": [
+        "polite-address"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Getting_Around_1:24",
+      "sourceLesson": "Getting_Around_1",
+      "sourceIndex": 24,
+      "kind": "basic",
+      "polish": "Zgubiłem się",
+      "english": "I’m lost (male)",
+      "existingWholeRecording": "generated/audio/Getting_Around_1/24.mp3",
+      "firstObservedWrittenForms": [
+        "zgubiłem"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Getting_Around_1:25",
+      "sourceLesson": "Getting_Around_1",
+      "sourceIndex": 25,
+      "kind": "basic",
+      "polish": "Zgubiłam się",
+      "english": "I’m lost (female)",
+      "existingWholeRecording": "generated/audio/Getting_Around_1/25.mp3",
+      "firstObservedWrittenForms": [
+        "zgubiłam"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Transit_1:0",
+      "sourceLesson": "Transit_1",
+      "sourceIndex": 0,
+      "kind": "basic",
+      "polish": "Gdzie jest przystanek?",
+      "english": "Where is the stop?",
+      "existingWholeRecording": "generated/audio/Transit_1/0.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [
+        "question-form",
+        "place-gdzie",
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Transit_1:1",
+      "sourceLesson": "Transit_1",
+      "sourceIndex": 1,
+      "kind": "basic",
+      "polish": "Która linia metra?",
+      "english": "Which metro line?",
+      "existingWholeRecording": "generated/audio/Transit_1/1.mp3",
+      "firstObservedWrittenForms": [
+        "która",
+        "linia",
+        "metra"
+      ],
+      "structuralReviewPrompts": [
+        "question-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Transit_1:2",
+      "sourceLesson": "Transit_1",
+      "sourceIndex": 2,
+      "kind": "basic",
+      "polish": "Bilet",
+      "english": "Ticket",
+      "existingWholeRecording": "generated/audio/Transit_1/2.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Transit_1:3",
+      "sourceLesson": "Transit_1",
+      "sourceIndex": 3,
+      "kind": "basic",
+      "polish": "Następny przystanek",
+      "english": "Next stop",
+      "existingWholeRecording": "generated/audio/Transit_1/3.mp3",
+      "firstObservedWrittenForms": [
+        "następny"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Transit_1:4",
+      "sourceLesson": "Transit_1",
+      "sourceIndex": 4,
+      "kind": "basic",
+      "polish": "Przepraszam, jak dojadę do …?",
+      "english": "Excuse me, how do I get to …?",
+      "existingWholeRecording": "generated/audio/Transit_1/4.mp3",
+      "firstObservedWrittenForms": [
+        "dojadę"
+      ],
+      "structuralReviewPrompts": [
+        "question-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Transit_1:5",
+      "sourceLesson": "Transit_1",
+      "sourceIndex": 5,
+      "kind": "basic",
+      "polish": "Metro",
+      "english": "Metro / Subway",
+      "existingWholeRecording": "generated/audio/Transit_1/5.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Transit_1:6",
+      "sourceLesson": "Transit_1",
+      "sourceIndex": 6,
+      "kind": "basic",
+      "polish": "Autobus",
+      "english": "Bus",
+      "existingWholeRecording": "generated/audio/Transit_1/6.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Transit_1:7",
+      "sourceLesson": "Transit_1",
+      "sourceIndex": 7,
+      "kind": "basic",
+      "polish": "Tramwaj",
+      "english": "Tram",
+      "existingWholeRecording": "generated/audio/Transit_1/7.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Transit_1:8",
+      "sourceLesson": "Transit_1",
+      "sourceIndex": 8,
+      "kind": "basic",
+      "polish": "Przystanek autobusowy",
+      "english": "Bus stop",
+      "existingWholeRecording": "generated/audio/Transit_1/8.mp3",
+      "firstObservedWrittenForms": [
+        "autobusowy"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Transit_1:9",
+      "sourceLesson": "Transit_1",
+      "sourceIndex": 9,
+      "kind": "basic",
+      "polish": "Przystanek tramwajowy",
+      "english": "Tram stop",
+      "existingWholeRecording": "generated/audio/Transit_1/9.mp3",
+      "firstObservedWrittenForms": [
+        "tramwajowy"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Transit_1:10",
+      "sourceLesson": "Transit_1",
+      "sourceIndex": 10,
+      "kind": "basic",
+      "polish": "W którą stronę?",
+      "english": "Which way?",
+      "existingWholeRecording": "generated/audio/Transit_1/10.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [
+        "question-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Transit_1:11",
+      "sourceLesson": "Transit_1",
+      "sourceIndex": 11,
+      "kind": "basic",
+      "polish": "Rozkład jazdy",
+      "english": "Timetable / Schedule",
+      "existingWholeRecording": "generated/audio/Transit_1/11.mp3",
+      "firstObservedWrittenForms": [
+        "rozkład",
+        "jazdy"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Transit_1:12",
+      "sourceLesson": "Transit_1",
+      "sourceIndex": 12,
+      "kind": "basic",
+      "polish": "Zatrzymać się",
+      "english": "Stop (the vehicle)",
+      "existingWholeRecording": "generated/audio/Transit_1/12.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Transit_1:13",
+      "sourceLesson": "Transit_1",
+      "sourceIndex": 13,
+      "kind": "basic",
+      "polish": "Przesiadka",
+      "english": "Transfer / Change (line)",
+      "existingWholeRecording": "generated/audio/Transit_1/13.mp3",
+      "firstObservedWrittenForms": [
+        "przesiadka"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Transit_1:14",
+      "sourceLesson": "Transit_1",
+      "sourceIndex": 14,
+      "kind": "basic",
+      "polish": "Gdzie jest stacja metra?",
+      "english": "Where is the metro station?",
+      "existingWholeRecording": "generated/audio/Transit_1/14.mp3",
+      "firstObservedWrittenForms": [
+        "stacja"
+      ],
+      "structuralReviewPrompts": [
+        "question-form",
+        "place-gdzie",
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Transit_1:15",
+      "sourceLesson": "Transit_1",
+      "sourceIndex": 15,
+      "kind": "basic",
+      "polish": "Proszę o informację",
+      "english": "I’d like some information",
+      "existingWholeRecording": "generated/audio/Transit_1/15.mp3",
+      "firstObservedWrittenForms": [
+        "informację"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Transit_1:16",
+      "sourceLesson": "Transit_1",
+      "sourceIndex": 16,
+      "kind": "basic",
+      "polish": "Pociąg",
+      "english": "Train",
+      "existingWholeRecording": "generated/audio/Transit_1/16.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Transit_1:17",
+      "sourceLesson": "Transit_1",
+      "sourceIndex": 17,
+      "kind": "basic",
+      "polish": "Dworzec kolejowy",
+      "english": "Train station",
+      "existingWholeRecording": "generated/audio/Transit_1/17.mp3",
+      "firstObservedWrittenForms": [
+        "dworzec",
+        "kolejowy"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Transit_1:18",
+      "sourceLesson": "Transit_1",
+      "sourceIndex": 18,
+      "kind": "basic",
+      "polish": "Kierunek",
+      "english": "Direction",
+      "existingWholeRecording": "generated/audio/Transit_1/18.mp3",
+      "firstObservedWrittenForms": [
+        "kierunek"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Transit_1:19",
+      "sourceLesson": "Transit_1",
+      "sourceIndex": 19,
+      "kind": "basic",
+      "polish": "Czy to jest w tę stronę?",
+      "english": "Is it in this direction?",
+      "existingWholeRecording": "generated/audio/Transit_1/19.mp3",
+      "firstObservedWrittenForms": [
+        "tę"
+      ],
+      "structuralReviewPrompts": [
+        "question-form",
+        "yes-no-czy",
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Emergencies_and_Health:0",
+      "sourceLesson": "Emergencies_and_Health",
+      "sourceIndex": 0,
+      "kind": "basic",
+      "polish": "Pomocy!",
+      "english": "Help!",
+      "existingWholeRecording": "generated/audio/Emergencies_and_Health/0.mp3",
+      "firstObservedWrittenForms": [
+        "pomocy"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Emergencies_and_Health:1",
+      "sourceLesson": "Emergencies_and_Health",
+      "sourceIndex": 1,
+      "kind": "basic",
+      "polish": "Zadzwoń na policję!",
+      "english": "Call the police!",
+      "existingWholeRecording": "generated/audio/Emergencies_and_Health/1.mp3",
+      "firstObservedWrittenForms": [
+        "zadzwoń",
+        "policję"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Emergencies_and_Health:2",
+      "sourceLesson": "Emergencies_and_Health",
+      "sourceIndex": 2,
+      "kind": "basic",
+      "polish": "Potrzebuję lekarza",
+      "english": "I need a doctor",
+      "existingWholeRecording": "generated/audio/Emergencies_and_Health/2.mp3",
+      "firstObservedWrittenForms": [
+        "lekarza"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Emergencies_and_Health:3",
+      "sourceLesson": "Emergencies_and_Health",
+      "sourceIndex": 3,
+      "kind": "basic",
+      "polish": "Wezwij karetkę!",
+      "english": "Call an ambulance!",
+      "existingWholeRecording": "generated/audio/Emergencies_and_Health/3.mp3",
+      "firstObservedWrittenForms": [
+        "wezwij",
+        "karetkę"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Emergencies_and_Health:4",
+      "sourceLesson": "Emergencies_and_Health",
+      "sourceIndex": 4,
+      "kind": "basic",
+      "polish": "Jestem ranny / ranna",
+      "english": "I am injured (male/female)",
+      "existingWholeRecording": "generated/audio/Emergencies_and_Health/4.mp3",
+      "firstObservedWrittenForms": [
+        "ranny",
+        "ranna"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Emergencies_and_Health:5",
+      "sourceLesson": "Emergencies_and_Health",
+      "sourceIndex": 5,
+      "kind": "basic",
+      "polish": "Zgubiłem się / Zgubiłam się",
+      "english": "I am lost (male/female)",
+      "existingWholeRecording": "generated/audio/Emergencies_and_Health/5.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Emergencies_and_Health:6",
+      "sourceLesson": "Emergencies_and_Health",
+      "sourceIndex": 6,
+      "kind": "basic",
+      "polish": "Mam alergię",
+      "english": "I have an allergy",
+      "existingWholeRecording": "generated/audio/Emergencies_and_Health/6.mp3",
+      "firstObservedWrittenForms": [
+        "alergię"
+      ],
+      "structuralReviewPrompts": [
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Emergencies_and_Health:7",
+      "sourceLesson": "Emergencies_and_Health",
+      "sourceIndex": 7,
+      "kind": "basic",
+      "polish": "Potrzebuję lekarstwa",
+      "english": "I need medicine",
+      "existingWholeRecording": "generated/audio/Emergencies_and_Health/7.mp3",
+      "firstObservedWrittenForms": [
+        "lekarstwa"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Emergencies_and_Health:8",
+      "sourceLesson": "Emergencies_and_Health",
+      "sourceIndex": 8,
+      "kind": "basic",
+      "polish": "Gdzie jest najbliższy szpital?",
+      "english": "Where is the nearest hospital?",
+      "existingWholeRecording": "generated/audio/Emergencies_and_Health/8.mp3",
+      "firstObservedWrittenForms": [
+        "najbliższy",
+        "szpital"
+      ],
+      "structuralReviewPrompts": [
+        "question-form",
+        "place-gdzie",
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Emergencies_and_Health:9",
+      "sourceLesson": "Emergencies_and_Health",
+      "sourceIndex": 9,
+      "kind": "basic",
+      "polish": "Gdzie jest apteka?",
+      "english": "Where is the pharmacy?",
+      "existingWholeRecording": "generated/audio/Emergencies_and_Health/9.mp3",
+      "firstObservedWrittenForms": [
+        "apteka"
+      ],
+      "structuralReviewPrompts": [
+        "question-form",
+        "place-gdzie",
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Emergencies_and_Health:10",
+      "sourceLesson": "Emergencies_and_Health",
+      "sourceIndex": 10,
+      "kind": "basic",
+      "polish": "Mam ból",
+      "english": "I have pain",
+      "existingWholeRecording": "generated/audio/Emergencies_and_Health/10.mp3",
+      "firstObservedWrittenForms": [
+        "ból"
+      ],
+      "structuralReviewPrompts": [
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Emergencies_and_Health:11",
+      "sourceLesson": "Emergencies_and_Health",
+      "sourceIndex": 11,
+      "kind": "basic",
+      "polish": "Boli mnie głowa",
+      "english": "I have a headache",
+      "existingWholeRecording": "generated/audio/Emergencies_and_Health/11.mp3",
+      "firstObservedWrittenForms": [
+        "boli",
+        "mnie",
+        "głowa"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Emergencies_and_Health:12",
+      "sourceLesson": "Emergencies_and_Health",
+      "sourceIndex": 12,
+      "kind": "basic",
+      "polish": "Boli mnie brzuch",
+      "english": "I have a stomach ache",
+      "existingWholeRecording": "generated/audio/Emergencies_and_Health/12.mp3",
+      "firstObservedWrittenForms": [
+        "brzuch"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Emergencies_and_Health:13",
+      "sourceLesson": "Emergencies_and_Health",
+      "sourceIndex": 13,
+      "kind": "basic",
+      "polish": "Mam gorączkę",
+      "english": "I have a fever",
+      "existingWholeRecording": "generated/audio/Emergencies_and_Health/13.mp3",
+      "firstObservedWrittenForms": [
+        "gorączkę"
+      ],
+      "structuralReviewPrompts": [
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Emergencies_and_Health:14",
+      "sourceLesson": "Emergencies_and_Health",
+      "sourceIndex": 14,
+      "kind": "basic",
+      "polish": "Czy możesz mi pomóc?",
+      "english": "Can you help me?",
+      "existingWholeRecording": "generated/audio/Emergencies_and_Health/14.mp3",
+      "firstObservedWrittenForms": [
+        "możesz",
+        "mi",
+        "pomóc"
+      ],
+      "structuralReviewPrompts": [
+        "question-form",
+        "yes-no-czy",
+        "ability-and-permission"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Emergencies_and_Health:15",
+      "sourceLesson": "Emergencies_and_Health",
+      "sourceIndex": 15,
+      "kind": "basic",
+      "polish": "Zgubiłem dokumenty / Zgubiłam dokumenty",
+      "english": "I lost my documents (male/female)",
+      "existingWholeRecording": "generated/audio/Emergencies_and_Health/15.mp3",
+      "firstObservedWrittenForms": [
+        "dokumenty"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Emergencies_and_Health:16",
+      "sourceLesson": "Emergencies_and_Health",
+      "sourceIndex": 16,
+      "kind": "basic",
+      "polish": "Dzwonię na pogotowie",
+      "english": "I am calling emergency services",
+      "existingWholeRecording": "generated/audio/Emergencies_and_Health/16.mp3",
+      "firstObservedWrittenForms": [
+        "dzwonię",
+        "pogotowie"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Emergencies_and_Health:17",
+      "sourceLesson": "Emergencies_and_Health",
+      "sourceIndex": 17,
+      "kind": "basic",
+      "polish": "Pożar!",
+      "english": "Fire!",
+      "existingWholeRecording": "generated/audio/Emergencies_and_Health/17.mp3",
+      "firstObservedWrittenForms": [
+        "pożar"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Emergencies_and_Health:18",
+      "sourceLesson": "Emergencies_and_Health",
+      "sourceIndex": 18,
+      "kind": "basic",
+      "polish": "Nie mogę oddychać",
+      "english": "I can’t breathe",
+      "existingWholeRecording": "generated/audio/Emergencies_and_Health/18.mp3",
+      "firstObservedWrittenForms": [
+        "oddychać"
+      ],
+      "structuralReviewPrompts": [
+        "negation",
+        "ability-and-permission"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Emergencies_and_Health:19",
+      "sourceLesson": "Emergencies_and_Health",
+      "sourceIndex": 19,
+      "kind": "basic",
+      "polish": "Złamałem / Złamałam nogę",
+      "english": "I broke my leg (male/female)",
+      "existingWholeRecording": "generated/audio/Emergencies_and_Health/19.mp3",
+      "firstObservedWrittenForms": [
+        "złamałem",
+        "złamałam",
+        "nogę"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Emergencies_and_Health:20",
+      "sourceLesson": "Emergencies_and_Health",
+      "sourceIndex": 20,
+      "kind": "basic",
+      "polish": "Potrzebuję pomocy medycznej",
+      "english": "I need medical help",
+      "existingWholeRecording": "generated/audio/Emergencies_and_Health/20.mp3",
+      "firstObservedWrittenForms": [
+        "medycznej"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Emergencies_and_Health:21",
+      "sourceLesson": "Emergencies_and_Health",
+      "sourceIndex": 21,
+      "kind": "basic",
+      "polish": "Gdzie jest najbliższa policja?",
+      "english": "Where is the nearest police station?",
+      "existingWholeRecording": "generated/audio/Emergencies_and_Health/21.mp3",
+      "firstObservedWrittenForms": [
+        "najbliższa",
+        "policja"
+      ],
+      "structuralReviewPrompts": [
+        "question-form",
+        "place-gdzie",
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Emergencies_and_Health:22",
+      "sourceLesson": "Emergencies_and_Health",
+      "sourceIndex": 22,
+      "kind": "basic",
+      "polish": "Czy mogę zadzwonić?",
+      "english": "Can I make a phone call?",
+      "existingWholeRecording": "generated/audio/Emergencies_and_Health/22.mp3",
+      "firstObservedWrittenForms": [
+        "zadzwonić"
+      ],
+      "structuralReviewPrompts": [
+        "question-form",
+        "yes-no-czy",
+        "ability-and-permission"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Emergencies_and_Health:23",
+      "sourceLesson": "Emergencies_and_Health",
+      "sourceIndex": 23,
+      "kind": "basic",
+      "polish": "Potrzebuję wody",
+      "english": "I need water",
+      "existingWholeRecording": "generated/audio/Emergencies_and_Health/23.mp3",
+      "firstObservedWrittenForms": [
+        "wody"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Emergencies_and_Health:24",
+      "sourceLesson": "Emergencies_and_Health",
+      "sourceIndex": 24,
+      "kind": "basic",
+      "polish": "Nie czuję się dobrze",
+      "english": "I don’t feel well",
+      "existingWholeRecording": "generated/audio/Emergencies_and_Health/24.mp3",
+      "firstObservedWrittenForms": [
+        "czuję"
+      ],
+      "structuralReviewPrompts": [
+        "negation"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Basic_01R:0",
+      "sourceLesson": "Basic_01R",
+      "sourceIndex": 0,
+      "kind": "reading",
+      "polish": "Cześć! Jak się masz?",
+      "english": "Hi! How are you?",
+      "existingWholeRecording": "generated/audio/Basic_01R/0.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [
+        "question-form",
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Basic_01R:1",
+      "sourceLesson": "Basic_01R",
+      "sourceIndex": 1,
+      "kind": "reading",
+      "polish": "Dziękuję, mam się dobrze.",
+      "english": "Thank you, I am well.",
+      "existingWholeRecording": "generated/audio/Basic_01R/1.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Basic_01R:2",
+      "sourceLesson": "Basic_01R",
+      "sourceIndex": 2,
+      "kind": "reading",
+      "polish": "Cześć, jak masz na imię?",
+      "english": "Hi, what is your name?",
+      "existingWholeRecording": "generated/audio/Basic_01R/2.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [
+        "question-form",
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Basic_01R:3",
+      "sourceLesson": "Basic_01R",
+      "sourceIndex": 3,
+      "kind": "reading",
+      "polish": "Mam na imię Andrew.",
+      "english": "My name is Andrew.",
+      "existingWholeRecording": "generated/audio/Basic_01R/3.mp3",
+      "firstObservedWrittenForms": [
+        "andrew"
+      ],
+      "structuralReviewPrompts": [
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Basic_01R:4",
+      "sourceLesson": "Basic_01R",
+      "sourceIndex": 4,
+      "kind": "reading",
+      "polish": "Proszę i dziękuję są bardzo ważne.",
+      "english": "Please and thank you are very important.",
+      "existingWholeRecording": "generated/audio/Basic_01R/4.mp3",
+      "firstObservedWrittenForms": [
+        "i",
+        "są",
+        "ważne"
+      ],
+      "structuralReviewPrompts": [
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Basic_01R:5",
+      "sourceLesson": "Basic_01R",
+      "sourceIndex": 5,
+      "kind": "reading",
+      "polish": "Przepraszam, nie rozumiem.",
+      "english": "I’m sorry, I don’t understand.",
+      "existingWholeRecording": "generated/audio/Basic_01R/5.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [
+        "negation",
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Grocery_store_very_basic_shopping:0",
+      "sourceLesson": "Grocery_store_very_basic_shopping",
+      "sourceIndex": 0,
+      "kind": "reading",
+      "polish": "Dzień dobry.",
+      "english": "Good morning.",
+      "existingWholeRecording": "generated/audio/Grocery_store_very_basic_shopping/0.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Grocery_store_very_basic_shopping:1",
+      "sourceLesson": "Grocery_store_very_basic_shopping",
+      "sourceIndex": 1,
+      "kind": "reading",
+      "polish": "Dzień dobry, poproszę kilogram jabłek.",
+      "english": "Good morning, I’d like a kilo of apples, please.",
+      "existingWholeRecording": "generated/audio/Grocery_store_very_basic_shopping/1.mp3",
+      "firstObservedWrittenForms": [
+        "kilogram",
+        "jabłek"
+      ],
+      "structuralReviewPrompts": [
+        "request-poprosze",
+        "numbers-and-quantities"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Grocery_store_very_basic_shopping:2",
+      "sourceLesson": "Grocery_store_very_basic_shopping",
+      "sourceIndex": 2,
+      "kind": "reading",
+      "polish": "Jakie jabłka pan lubi? Czerwone czy zielone?",
+      "english": "Which apples do you like? Red or green?",
+      "existingWholeRecording": "generated/audio/Grocery_store_very_basic_shopping/2.mp3",
+      "firstObservedWrittenForms": [
+        "jakie",
+        "jabłka",
+        "lubi",
+        "czerwone",
+        "zielone"
+      ],
+      "structuralReviewPrompts": [
+        "question-form",
+        "polite-address",
+        "yes-no-czy",
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Grocery_store_very_basic_shopping:3",
+      "sourceLesson": "Grocery_store_very_basic_shopping",
+      "sourceIndex": 3,
+      "kind": "reading",
+      "polish": "Poproszę czerwone jabłka.",
+      "english": "Red apples, please.",
+      "existingWholeRecording": "generated/audio/Grocery_store_very_basic_shopping/3.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [
+        "request-poprosze"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Grocery_store_very_basic_shopping:4",
+      "sourceLesson": "Grocery_store_very_basic_shopping",
+      "sourceIndex": 4,
+      "kind": "reading",
+      "polish": "Czy chce pan coś jeszcze?",
+      "english": "Would you like anything else?",
+      "existingWholeRecording": "generated/audio/Grocery_store_very_basic_shopping/4.mp3",
+      "firstObservedWrittenForms": [
+        "chce",
+        "jeszcze"
+      ],
+      "structuralReviewPrompts": [
+        "question-form",
+        "polite-address",
+        "yes-no-czy"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Grocery_store_very_basic_shopping:5",
+      "sourceLesson": "Grocery_store_very_basic_shopping",
+      "sourceIndex": 5,
+      "kind": "reading",
+      "polish": "Nie, dziękuję. To wszystko.",
+      "english": "No, thank you. That’s all.",
+      "existingWholeRecording": "generated/audio/Grocery_store_very_basic_shopping/5.mp3",
+      "firstObservedWrittenForms": [
+        "wszystko"
+      ],
+      "structuralReviewPrompts": [
+        "negation"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Grocery_store_very_basic_shopping:6",
+      "sourceLesson": "Grocery_store_very_basic_shopping",
+      "sourceIndex": 6,
+      "kind": "reading",
+      "polish": "Dziesięć złotych, proszę.",
+      "english": "Ten zloty, please.",
+      "existingWholeRecording": "generated/audio/Grocery_store_very_basic_shopping/6.mp3",
+      "firstObservedWrittenForms": [
+        "dziesięć",
+        "złotych"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Grocery_store_very_basic_shopping:7",
+      "sourceLesson": "Grocery_store_very_basic_shopping",
+      "sourceIndex": 7,
+      "kind": "reading",
+      "polish": "Proszę, płacę kartą.",
+      "english": "Here you go, I’ll pay by card.",
+      "existingWholeRecording": "generated/audio/Grocery_store_very_basic_shopping/7.mp3",
+      "firstObservedWrittenForms": [
+        "płacę"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Grocery_store_very_basic_shopping:8",
+      "sourceLesson": "Grocery_store_very_basic_shopping",
+      "sourceIndex": 8,
+      "kind": "reading",
+      "polish": "Dziękuję, do widzenia.",
+      "english": "Thank you, goodbye.",
+      "existingWholeRecording": "generated/audio/Grocery_store_very_basic_shopping/8.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "H_M_clothes_shop_trying_on_a_T-shirt:0",
+      "sourceLesson": "H_M_clothes_shop_trying_on_a_T-shirt",
+      "sourceIndex": 0,
+      "kind": "reading",
+      "polish": "Dzień dobry.",
+      "english": "Good morning.",
+      "existingWholeRecording": "generated/audio/H_M_clothes_shop_trying_on_a_T-shirt/0.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "H_M_clothes_shop_trying_on_a_T-shirt:1",
+      "sourceLesson": "H_M_clothes_shop_trying_on_a_T-shirt",
+      "sourceIndex": 1,
+      "kind": "reading",
+      "polish": "Przepraszam, czy może mi pani pomóc?",
+      "english": "Excuse me, can you help me?",
+      "existingWholeRecording": "generated/audio/H_M_clothes_shop_trying_on_a_T-shirt/1.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [
+        "question-form",
+        "polite-address",
+        "yes-no-czy",
+        "ability-and-permission"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "H_M_clothes_shop_trying_on_a_T-shirt:2",
+      "sourceLesson": "H_M_clothes_shop_trying_on_a_T-shirt",
+      "sourceIndex": 2,
+      "kind": "reading",
+      "polish": "Szukam białej koszulki.",
+      "english": "I am looking for a white T-shirt.",
+      "existingWholeRecording": "generated/audio/H_M_clothes_shop_trying_on_a_T-shirt/2.mp3",
+      "firstObservedWrittenForms": [
+        "białej",
+        "koszulki"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "H_M_clothes_shop_trying_on_a_T-shirt:3",
+      "sourceLesson": "H_M_clothes_shop_trying_on_a_T-shirt",
+      "sourceIndex": 3,
+      "kind": "reading",
+      "polish": "Jaki rozmiar pan nosi?",
+      "english": "What size do you wear?",
+      "existingWholeRecording": "generated/audio/H_M_clothes_shop_trying_on_a_T-shirt/3.mp3",
+      "firstObservedWrittenForms": [
+        "jaki",
+        "nosi"
+      ],
+      "structuralReviewPrompts": [
+        "question-form",
+        "polite-address"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "H_M_clothes_shop_trying_on_a_T-shirt:4",
+      "sourceLesson": "H_M_clothes_shop_trying_on_a_T-shirt",
+      "sourceIndex": 4,
+      "kind": "reading",
+      "polish": "Noszę rozmiar L.",
+      "english": "I wear size L.",
+      "existingWholeRecording": "generated/audio/H_M_clothes_shop_trying_on_a_T-shirt/4.mp3",
+      "firstObservedWrittenForms": [
+        "noszę",
+        "l"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "H_M_clothes_shop_trying_on_a_T-shirt:5",
+      "sourceLesson": "H_M_clothes_shop_trying_on_a_T-shirt",
+      "sourceIndex": 5,
+      "kind": "reading",
+      "polish": "Przepraszam, czy mogę przymierzyć tę koszulkę?",
+      "english": "Excuse me, can I try on this T-shirt?",
+      "existingWholeRecording": "generated/audio/H_M_clothes_shop_trying_on_a_T-shirt/5.mp3",
+      "firstObservedWrittenForms": [
+        "koszulkę"
+      ],
+      "structuralReviewPrompts": [
+        "question-form",
+        "yes-no-czy",
+        "ability-and-permission"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "H_M_clothes_shop_trying_on_a_T-shirt:6",
+      "sourceLesson": "H_M_clothes_shop_trying_on_a_T-shirt",
+      "sourceIndex": 6,
+      "kind": "reading",
+      "polish": "Przymierzalnie są tam, po lewej stronie.",
+      "english": "The fitting rooms are there, on the left.",
+      "existingWholeRecording": "generated/audio/H_M_clothes_shop_trying_on_a_T-shirt/6.mp3",
+      "firstObservedWrittenForms": [
+        "przymierzalnie",
+        "tam",
+        "lewej",
+        "stronie"
+      ],
+      "structuralReviewPrompts": [
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "H_M_clothes_shop_trying_on_a_T-shirt:7",
+      "sourceLesson": "H_M_clothes_shop_trying_on_a_T-shirt",
+      "sourceIndex": 7,
+      "kind": "reading",
+      "polish": "Koszulka jest dobra. Wezmę ją.",
+      "english": "The T-shirt is good. I’ll take it.",
+      "existingWholeRecording": "generated/audio/H_M_clothes_shop_trying_on_a_T-shirt/7.mp3",
+      "firstObservedWrittenForms": [
+        "koszulka",
+        "dobra",
+        "ją"
+      ],
+      "structuralReviewPrompts": [
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "H_M_clothes_shop_trying_on_a_T-shirt:8",
+      "sourceLesson": "H_M_clothes_shop_trying_on_a_T-shirt",
+      "sourceIndex": 8,
+      "kind": "reading",
+      "polish": "Gdzie jest kasa, proszę?",
+      "english": "Where is the cash desk, please?",
+      "existingWholeRecording": "generated/audio/H_M_clothes_shop_trying_on_a_T-shirt/8.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [
+        "question-form",
+        "place-gdzie",
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "H_M_clothes_shop_trying_on_a_T-shirt:9",
+      "sourceLesson": "H_M_clothes_shop_trying_on_a_T-shirt",
+      "sourceIndex": 9,
+      "kind": "reading",
+      "polish": "Dziękuję bardzo, do widzenia.",
+      "english": "Thank you very much, goodbye.",
+      "existingWholeRecording": "generated/audio/H_M_clothes_shop_trying_on_a_T-shirt/9.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "On_the_tram_talking_to_another_passenger:0",
+      "sourceLesson": "On_the_tram_talking_to_another_passenger",
+      "sourceIndex": 0,
+      "kind": "reading",
+      "polish": "Dzień dobry.",
+      "english": "Good morning.",
+      "existingWholeRecording": "generated/audio/On_the_tram_talking_to_another_passenger/0.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "On_the_tram_talking_to_another_passenger:1",
+      "sourceLesson": "On_the_tram_talking_to_another_passenger",
+      "sourceIndex": 1,
+      "kind": "reading",
+      "polish": "Przepraszam, czy to miejsce jest wolne?",
+      "english": "Excuse me, is this seat free?",
+      "existingWholeRecording": "generated/audio/On_the_tram_talking_to_another_passenger/1.mp3",
+      "firstObservedWrittenForms": [
+        "miejsce",
+        "wolne"
+      ],
+      "structuralReviewPrompts": [
+        "question-form",
+        "yes-no-czy",
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "On_the_tram_talking_to_another_passenger:2",
+      "sourceLesson": "On_the_tram_talking_to_another_passenger",
+      "sourceIndex": 2,
+      "kind": "reading",
+      "polish": "Tak, proszę usiąść.",
+      "english": "Yes, please sit down.",
+      "existingWholeRecording": "generated/audio/On_the_tram_talking_to_another_passenger/2.mp3",
+      "firstObservedWrittenForms": [
+        "usiąść"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "On_the_tram_talking_to_another_passenger:3",
+      "sourceLesson": "On_the_tram_talking_to_another_passenger",
+      "sourceIndex": 3,
+      "kind": "reading",
+      "polish": "Czy ten tramwaj jedzie do centrum?",
+      "english": "Does this tram go to the city centre?",
+      "existingWholeRecording": "generated/audio/On_the_tram_talking_to_another_passenger/3.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [
+        "question-form",
+        "yes-no-czy"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "On_the_tram_talking_to_another_passenger:4",
+      "sourceLesson": "On_the_tram_talking_to_another_passenger",
+      "sourceIndex": 4,
+      "kind": "reading",
+      "polish": "Tak, jedzie do centrum.",
+      "english": "Yes, it goes to the centre.",
+      "existingWholeRecording": "generated/audio/On_the_tram_talking_to_another_passenger/4.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "On_the_tram_talking_to_another_passenger:5",
+      "sourceLesson": "On_the_tram_talking_to_another_passenger",
+      "sourceIndex": 5,
+      "kind": "reading",
+      "polish": "Na którym przystanku muszę wysiąść?",
+      "english": "At which stop do I need to get off?",
+      "existingWholeRecording": "generated/audio/On_the_tram_talking_to_another_passenger/5.mp3",
+      "firstObservedWrittenForms": [
+        "którym",
+        "przystanku",
+        "muszę",
+        "wysiąść"
+      ],
+      "structuralReviewPrompts": [
+        "question-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "On_the_tram_talking_to_another_passenger:6",
+      "sourceLesson": "On_the_tram_talking_to_another_passenger",
+      "sourceIndex": 6,
+      "kind": "reading",
+      "polish": "Musi pan wysiąść na trzecim przystanku.",
+      "english": "You need to get off at the third stop.",
+      "existingWholeRecording": "generated/audio/On_the_tram_talking_to_another_passenger/6.mp3",
+      "firstObservedWrittenForms": [
+        "musi",
+        "trzecim"
+      ],
+      "structuralReviewPrompts": [
+        "polite-address"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "On_the_tram_talking_to_another_passenger:7",
+      "sourceLesson": "On_the_tram_talking_to_another_passenger",
+      "sourceIndex": 7,
+      "kind": "reading",
+      "polish": "Dziękuję bardzo za informację.",
+      "english": "Thank you very much for the information.",
+      "existingWholeRecording": "generated/audio/On_the_tram_talking_to_another_passenger/7.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "On_the_tram_talking_to_another_passenger:8",
+      "sourceLesson": "On_the_tram_talking_to_another_passenger",
+      "sourceIndex": 8,
+      "kind": "reading",
+      "polish": "Nie ma sprawy.",
+      "english": "No problem.",
+      "existingWholeRecording": "generated/audio/On_the_tram_talking_to_another_passenger/8.mp3",
+      "firstObservedWrittenForms": [
+        "sprawy"
+      ],
+      "structuralReviewPrompts": [
+        "negation",
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Asking_the_tram_driver_for_directions:0",
+      "sourceLesson": "Asking_the_tram_driver_for_directions",
+      "sourceIndex": 0,
+      "kind": "reading",
+      "polish": "Przepraszam, czy mogę zadać pytanie?",
+      "english": "Excuse me, may I ask a question?",
+      "existingWholeRecording": "generated/audio/Asking_the_tram_driver_for_directions/0.mp3",
+      "firstObservedWrittenForms": [
+        "zadać"
+      ],
+      "structuralReviewPrompts": [
+        "question-form",
+        "yes-no-czy",
+        "ability-and-permission"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Asking_the_tram_driver_for_directions:1",
+      "sourceLesson": "Asking_the_tram_driver_for_directions",
+      "sourceIndex": 1,
+      "kind": "reading",
+      "polish": "Przepraszam, czy tym tramwajem dojadę do centrum?",
+      "english": "Excuse me, does this tram go to the city centre?",
+      "existingWholeRecording": "generated/audio/Asking_the_tram_driver_for_directions/1.mp3",
+      "firstObservedWrittenForms": [
+        "tym",
+        "tramwajem"
+      ],
+      "structuralReviewPrompts": [
+        "question-form",
+        "yes-no-czy"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Asking_the_tram_driver_for_directions:2",
+      "sourceLesson": "Asking_the_tram_driver_for_directions",
+      "sourceIndex": 2,
+      "kind": "reading",
+      "polish": "Tak, ten tramwaj jedzie do centrum.",
+      "english": "Yes, this tram goes to the centre.",
+      "existingWholeRecording": "generated/audio/Asking_the_tram_driver_for_directions/2.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Asking_the_tram_driver_for_directions:3",
+      "sourceLesson": "Asking_the_tram_driver_for_directions",
+      "sourceIndex": 3,
+      "kind": "reading",
+      "polish": "Na którym przystanku powinienem wysiąść?",
+      "english": "At which stop should I get off?",
+      "existingWholeRecording": "generated/audio/Asking_the_tram_driver_for_directions/3.mp3",
+      "firstObservedWrittenForms": [
+        "powinienem"
+      ],
+      "structuralReviewPrompts": [
+        "question-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Asking_the_tram_driver_for_directions:4",
+      "sourceLesson": "Asking_the_tram_driver_for_directions",
+      "sourceIndex": 4,
+      "kind": "reading",
+      "polish": "Proszę wysiąść na przystanku \"Centrum\".",
+      "english": "Please get off at the ‘Centrum’ stop.",
+      "existingWholeRecording": "generated/audio/Asking_the_tram_driver_for_directions/4.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Asking_the_tram_driver_for_directions:5",
+      "sourceLesson": "Asking_the_tram_driver_for_directions",
+      "sourceIndex": 5,
+      "kind": "reading",
+      "polish": "Czy mogę kupić bilet w tramwaju?",
+      "english": "Can I buy a ticket on the tram?",
+      "existingWholeRecording": "generated/audio/Asking_the_tram_driver_for_directions/5.mp3",
+      "firstObservedWrittenForms": [
+        "tramwaju"
+      ],
+      "structuralReviewPrompts": [
+        "question-form",
+        "yes-no-czy",
+        "ability-and-permission"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Asking_the_tram_driver_for_directions:6",
+      "sourceLesson": "Asking_the_tram_driver_for_directions",
+      "sourceIndex": 6,
+      "kind": "reading",
+      "polish": "Tak, może pan kupić bilet w automacie.",
+      "english": "Yes, you can buy a ticket in the machine.",
+      "existingWholeRecording": "generated/audio/Asking_the_tram_driver_for_directions/6.mp3",
+      "firstObservedWrittenForms": [
+        "automacie"
+      ],
+      "structuralReviewPrompts": [
+        "polite-address",
+        "ability-and-permission"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Asking_the_tram_driver_for_directions:7",
+      "sourceLesson": "Asking_the_tram_driver_for_directions",
+      "sourceIndex": 7,
+      "kind": "reading",
+      "polish": "Dziękuję bardzo, do widzenia.",
+      "english": "Thank you very much, goodbye.",
+      "existingWholeRecording": "generated/audio/Asking_the_tram_driver_for_directions/7.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Museum_buying_tickets_and_basic_info:0",
+      "sourceLesson": "Museum_buying_tickets_and_basic_info",
+      "sourceIndex": 0,
+      "kind": "reading",
+      "polish": "Dzień dobry, poproszę dwa bilety do muzeum.",
+      "english": "Good morning, two tickets to the museum, please.",
+      "existingWholeRecording": "generated/audio/Museum_buying_tickets_and_basic_info/0.mp3",
+      "firstObservedWrittenForms": [
+        "muzeum"
+      ],
+      "structuralReviewPrompts": [
+        "request-poprosze",
+        "numbers-and-quantities"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Museum_buying_tickets_and_basic_info:1",
+      "sourceLesson": "Museum_buying_tickets_and_basic_info",
+      "sourceIndex": 1,
+      "kind": "reading",
+      "polish": "Normalne czy ulgowe?",
+      "english": "Regular or reduced tickets?",
+      "existingWholeRecording": "generated/audio/Museum_buying_tickets_and_basic_info/1.mp3",
+      "firstObservedWrittenForms": [
+        "normalne",
+        "ulgowe"
+      ],
+      "structuralReviewPrompts": [
+        "question-form",
+        "yes-no-czy"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Museum_buying_tickets_and_basic_info:2",
+      "sourceLesson": "Museum_buying_tickets_and_basic_info",
+      "sourceIndex": 2,
+      "kind": "reading",
+      "polish": "Poproszę dwa bilety normalne.",
+      "english": "Two regular tickets, please.",
+      "existingWholeRecording": "generated/audio/Museum_buying_tickets_and_basic_info/2.mp3",
+      "firstObservedWrittenForms": [],
+      "structuralReviewPrompts": [
+        "request-poprosze",
+        "numbers-and-quantities"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Museum_buying_tickets_and_basic_info:3",
+      "sourceLesson": "Museum_buying_tickets_and_basic_info",
+      "sourceIndex": 3,
+      "kind": "reading",
+      "polish": "Do której godziny muzeum jest otwarte?",
+      "english": "Until what time is the museum open?",
+      "existingWholeRecording": "generated/audio/Museum_buying_tickets_and_basic_info/3.mp3",
+      "firstObservedWrittenForms": [
+        "której",
+        "godziny",
+        "otwarte"
+      ],
+      "structuralReviewPrompts": [
+        "question-form",
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Museum_buying_tickets_and_basic_info:4",
+      "sourceLesson": "Museum_buying_tickets_and_basic_info",
+      "sourceIndex": 4,
+      "kind": "reading",
+      "polish": "Dzisiaj jesteśmy otwarci do osiemnastej.",
+      "english": "Today we are open until six p.m.",
+      "existingWholeRecording": "generated/audio/Museum_buying_tickets_and_basic_info/4.mp3",
+      "firstObservedWrittenForms": [
+        "dzisiaj",
+        "jesteśmy",
+        "otwarci",
+        "osiemnastej"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Museum_buying_tickets_and_basic_info:5",
+      "sourceLesson": "Museum_buying_tickets_and_basic_info",
+      "sourceIndex": 5,
+      "kind": "reading",
+      "polish": "Gdzie jest szatnia, proszę?",
+      "english": "Where is the cloakroom, please?",
+      "existingWholeRecording": "generated/audio/Museum_buying_tickets_and_basic_info/5.mp3",
+      "firstObservedWrittenForms": [
+        "szatnia"
+      ],
+      "structuralReviewPrompts": [
+        "question-form",
+        "place-gdzie",
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Museum_buying_tickets_and_basic_info:6",
+      "sourceLesson": "Museum_buying_tickets_and_basic_info",
+      "sourceIndex": 6,
+      "kind": "reading",
+      "polish": "Szatnia jest na prawo, za schodami.",
+      "english": "The cloakroom is on the right, past the stairs.",
+      "existingWholeRecording": "generated/audio/Museum_buying_tickets_and_basic_info/6.mp3",
+      "firstObservedWrittenForms": [
+        "prawo",
+        "schodami"
+      ],
+      "structuralReviewPrompts": [
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Museum_buying_tickets_and_basic_info:7",
+      "sourceLesson": "Museum_buying_tickets_and_basic_info",
+      "sourceIndex": 7,
+      "kind": "reading",
+      "polish": "Pierwsza wystawa jest na pierwszym piętrze.",
+      "english": "The first exhibition is on the first floor.",
+      "existingWholeRecording": "generated/audio/Museum_buying_tickets_and_basic_info/7.mp3",
+      "firstObservedWrittenForms": [
+        "pierwsza",
+        "wystawa",
+        "pierwszym",
+        "piętrze"
+      ],
+      "structuralReviewPrompts": [
+        "verb-or-person-form"
+      ],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    },
+    {
+      "id": "Museum_buying_tickets_and_basic_info:8",
+      "sourceLesson": "Museum_buying_tickets_and_basic_info",
+      "sourceIndex": 8,
+      "kind": "reading",
+      "polish": "Dziękuję za pomoc.",
+      "english": "Thank you for your help.",
+      "existingWholeRecording": "generated/audio/Museum_buying_tickets_and_basic_info/8.mp3",
+      "firstObservedWrittenForms": [
+        "pomoc"
+      ],
+      "structuralReviewPrompts": [],
+      "lexicalAndGrammarReview": "open_not_native_certified"
+    }
+  ]
+}
