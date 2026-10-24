@@ -1,0 +1,182 @@
+{
+  "schemaVersion": 1,
+  "status": "existing_recorded_whole_word_sound_examples_editorial_not_native_certified",
+  "notes": "Active listening questions reuse recorded whole words from five source-backed sound contrast lessons. No isolated sounds, new audio, speech scores, or separate XP. Sześć is excluded from SZ audio-choice prompt because it includes a second soft consonant that can confuse an unprompted sound-family quiz.",
+  "lessons": [
+    {
+      "lessonId": "contrast_c_cz_cie",
+      "questions": [
+        {
+          "itemId": "contrast_c_cz_cie:c:0",
+          "expectedPolish": "plac",
+          "expectedFocus": "c",
+          "groupId": "c"
+        },
+        {
+          "itemId": "contrast_c_cz_cie:cz:0",
+          "expectedPolish": "Cztery",
+          "expectedFocus": "Cz",
+          "groupId": "cz"
+        },
+        {
+          "itemId": "contrast_c_cz_cie:ci:0",
+          "expectedPolish": "Pięć",
+          "expectedFocus": "ć",
+          "groupId": "ci"
+        },
+        {
+          "itemId": "contrast_c_cz_cie:c:1",
+          "expectedPolish": "ulica",
+          "expectedFocus": "c",
+          "groupId": "c"
+        },
+        {
+          "itemId": "contrast_c_cz_cie:cz:1",
+          "expectedPolish": "Czechy",
+          "expectedFocus": "Cz",
+          "groupId": "cz"
+        },
+        {
+          "itemId": "contrast_c_cz_cie:ci:1",
+          "expectedPolish": "Sześć",
+          "expectedFocus": "ć",
+          "groupId": "ci"
+        }
+      ]
+    },
+    {
+      "lessonId": "contrast_s_sz_sie",
+      "questions": [
+        {
+          "itemId": "contrast_s_sz_sie:s:0",
+          "expectedPolish": "Sto",
+          "expectedFocus": "S",
+          "groupId": "s"
+        },
+        {
+          "itemId": "contrast_s_sz_sie:sz:1",
+          "expectedPolish": "Szwecja",
+          "expectedFocus": "Sz",
+          "groupId": "sz"
+        },
+        {
+          "itemId": "contrast_s_sz_sie:si:0",
+          "expectedPolish": "Śródmieście",
+          "expectedFocus": "Ś",
+          "groupId": "si"
+        },
+        {
+          "itemId": "contrast_s_sz_sie:s:1",
+          "expectedPolish": "Serbia",
+          "expectedFocus": "S",
+          "groupId": "s"
+        },
+        {
+          "itemId": "contrast_s_sz_sie:si:1",
+          "expectedPolish": "Siedem",
+          "expectedFocus": "Si",
+          "groupId": "si"
+        }
+      ]
+    },
+    {
+      "lessonId": "contrast_z_zh_zi",
+      "questions": [
+        {
+          "itemId": "contrast_z_zh_zi:z:0",
+          "expectedPolish": "Za małe",
+          "expectedFocus": "Z",
+          "groupId": "z"
+        },
+        {
+          "itemId": "contrast_z_zh_zi:zh:0",
+          "expectedPolish": "Żoliborz",
+          "expectedFocus": "Ż",
+          "groupId": "zh"
+        },
+        {
+          "itemId": "contrast_z_zh_zi:zi:0",
+          "expectedPolish": "Zielona Góra",
+          "expectedFocus": "Zi",
+          "groupId": "zi"
+        },
+        {
+          "itemId": "contrast_z_zh_zi:z:1",
+          "expectedPolish": "Zupa dnia",
+          "expectedFocus": "Z",
+          "groupId": "z"
+        },
+        {
+          "itemId": "contrast_z_zh_zi:zh:1",
+          "expectedPolish": "Rzeszów",
+          "expectedFocus": "Rz",
+          "groupId": "zh"
+        },
+        {
+          "itemId": "contrast_z_zh_zi:zi:1",
+          "expectedPolish": "Mateusz Woźniak",
+          "expectedFocus": "ź",
+          "groupId": "zi"
+        }
+      ]
+    },
+    {
+      "lessonId": "contrast_l_lstroked",
+      "questions": [
+        {
+          "itemId": "contrast_l_lstroked:l:0",
+          "expectedPolish": "Lublin",
+          "expectedFocus": "L",
+          "groupId": "l"
+        },
+        {
+          "itemId": "contrast_l_lstroked:lstroked:0",
+          "expectedPolish": "Łódź",
+          "expectedFocus": "Ł",
+          "groupId": "lstroked"
+        },
+        {
+          "itemId": "contrast_l_lstroked:l:1",
+          "expectedPolish": "Legnica",
+          "expectedFocus": "L",
+          "groupId": "l"
+        },
+        {
+          "itemId": "contrast_l_lstroked:lstroked:1",
+          "expectedPolish": "Łotwa",
+          "expectedFocus": "Ł",
+          "groupId": "lstroked"
+        }
+      ]
+    },
+    {
+      "lessonId": "contrast_krzy_przy",
+      "questions": [
+        {
+          "itemId": "contrast_krzy_przy:krzy:0",
+          "expectedPolish": "ulica Świętokrzyska",
+          "expectedFocus": "krzy",
+          "groupId": "krzy"
+        },
+        {
+          "itemId": "contrast_krzy_przy:przy:0",
+          "expectedPolish": "Przystanek autobusowy",
+          "expectedFocus": "Przy",
+          "groupId": "przy"
+        },
+        {
+          "itemId": "contrast_krzy_przy:krzy:1",
+          "expectedPolish": "Krzysztof Wiśniewski",
+          "expectedFocus": "Krzy",
+          "groupId": "krzy"
+        },
+        {
+          "itemId": "contrast_krzy_przy:przy:1",
+          "expectedPolish": "Czy mogę to przymierzyć?",
+          "expectedFocus": "przy",
+          "groupId": "przy"
+        }
+      ]
+    }
+  ]
+}
