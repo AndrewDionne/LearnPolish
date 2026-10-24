@@ -210,5 +210,5 @@ test('unconfigured verification delivery blocks new family signup',async ({page}
   await page.getByRole('button',{name:'Expedition'}).first().click();
   const panel=page.getByRole('region',{name:'Family expedition'});
   await expect(panel.getByRole('button',{name:'Create account'})).toBeDisabled();
-  await expect(panel.getByText(/accounts are unavailable until secure verification/)).toBeVisible();
+  await expect(panel.getByText(/New family accounts are not open yet/)).toBeVisible();
 });
