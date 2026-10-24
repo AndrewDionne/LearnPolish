@@ -41,14 +41,15 @@ test('C-12: First words → Basic vocabulary → First sentences / basic grammar
  await expect(page.locator('.lesson-tile')).toHaveCount(26);
 });
 
-test('C-12: completion of last sentence practice set opens the grammar study panel',async({page})=>{
+test('C-12: completion of final basic vocabulary group introduces grammar BEFORE sentence applications',async({page})=>{
  await page.setViewportSize({width:320,height:740});
  await page.goto('/');
  await page.getByRole('button',{name:'Explore lessons'}).click();
  const guide=page.getByRole('region',{name:'Guided Polish foundations'});
- await guide.getByRole('group',{name:'Short sentence practice'})
-  .getByRole('button',{name:/Asking where things are/}).click();
- await expect(page.locator('.polish-text')).toHaveText('Gdzie jest przystanek?');
+ await guide.getByRole('button',{name:'Keep building your everyday vocabulary'}).click();
+ await guide.getByRole('group',{name:'More recorded beginner practice'})
+  .getByRole('button',{name:/More everyday replies/}).click();
+ await expect(page.locator('.polish-text')).toHaveText('Może');
  for(let i=0;i<5;i++){
    await page.getByRole('button',{name:/Reveal meaning/}).click();
    await page.getByRole('button',{name:/Got it/}).click();
