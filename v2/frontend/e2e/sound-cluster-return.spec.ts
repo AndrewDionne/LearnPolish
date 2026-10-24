@@ -5,6 +5,10 @@ test('Sound Lab emphasizes only authored source letters without modifying full P
   await page.getByRole('button',{name:/C, CZ and Ć/}).click();
   const groups=page.locator('.contrast-group');
   await expect(groups).toHaveCount(3);
+  // Sound instruction is "sound, like in recorded WORD", never standalone syllable audio.
+  await expect(page.getByRole('heading',{name:'Hear sounds in real words'})).toBeVisible();
+  await expect(groups.locator('.contrast-group-label').first()).toContainText('like in');
+  await expect(page.getByText('Hear every sound separately')).toHaveCount(0);
   await expect(groups.nth(0).locator('.sound-focus-letters')).toHaveText(['c','c']);
   await expect(groups.nth(1).locator('.sound-focus-letters')).toHaveText(['Cz','Cz']);
   await expect(groups.nth(2).locator('.sound-focus-letters')).toHaveText(['ć','ć']);
