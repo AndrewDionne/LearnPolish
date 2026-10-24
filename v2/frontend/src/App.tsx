@@ -254,7 +254,8 @@ export default function App() {
   const orderedFoundations=useMemo(()=>orderedFoundationGroups(rawStarters,rawVocabulary),[rawStarters,rawVocabulary]);
   const starterGroups=orderedFoundations.firstWords;
   const nextWordGroups=orderedFoundations.basicVocabulary;
-  const allFoundationGroups=[...starterGroups,...nextWordGroups];
+  const firstSentenceGroups=orderedFoundations.firstSentences;
+  const allFoundationGroups=[...starterGroups,...nextWordGroups,...firstSentenceGroups];
   const starterGroup=allFoundationGroups.find(group=>group.id===starterGroupId);
   const nextFocusGroup=starterGroup?allFoundationGroups[allFoundationGroups.findIndex(g=>g.id===starterGroup.id)+1]:undefined;
   const currentUnit=unitSession?touristUnits.find(x=>x.id===unitSession.unitId):undefined;
@@ -854,7 +855,7 @@ export default function App() {
               <div className="curriculum-stage-heading"><h2>{section.heading}</h2></div>
               {section.id==='core' && filter==='all' && !query.trim() && <>
                 <Journey1Guide steps={foundationGuide} starterGroups={starterGroups} nextWordGroups={nextWordGroups}
-                  sentencePatterns={sentencePatterns} startSentencesOpen={launchSentences}
+                  firstSentenceGroups={firstSentenceGroups} sentencePatterns={sentencePatterns} startSentencesOpen={launchSentences}
                   recordedLetters={recordedAlphabet.letters} recordedCombinations={recordedAlphabet.combinations}
                   playing={audio.playing} speed={audio.rate} onSpeed={audio.setRate} onPlayAudio={play}
                   onStarter={openStarterGroup}
