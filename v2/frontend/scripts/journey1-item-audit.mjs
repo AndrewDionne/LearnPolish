@@ -16,15 +16,15 @@ export const READING=[
 ];
 const HINTS=[
  ['question-form',/[?]/u],
- ['polite-address',/\b(?:pan|pani|państwo|państwa|panu)\b/iu],
- ['negation',/\bnie\b/iu],
- ['request-poprosze',/\bpoproszę\b/iu],
- ['yes-no-czy',/\bczy\b/iu],
- ['quantity-ile',/\bile\b/iu],
- ['place-gdzie',/\bgdzie\b/iu],
- ['ability-and-permission',/\b(?:mogę|możesz|można|może)\b/iu],
- ['numbers-and-quantities',/\b(?:jeden|jedna|jedno|dwa|dwie|trzy|cztery|pięć|kilogram)\b/iu],
- ['verb-or-person-form',/\b(?:mam|masz|ma|jest|są|chciałbym|chciałabym|lubi|rozumiem|mówi)\b/iu]
+ ['polite-address',/(?<!\p{L})(?:pan|pani|państwo|państwa|panu)(?!\p{L})/iu],
+ ['negation',/(?<!\p{L})nie(?!\p{L})/iu],
+ ['request-poprosze',/(?<!\p{L})poproszę(?!\p{L})/iu],
+ ['yes-no-czy',/(?<!\p{L})czy(?!\p{L})/iu],
+ ['quantity-ile',/(?<!\p{L})ile(?!\p{L})/iu],
+ ['place-gdzie',/(?<!\p{L})gdzie(?!\p{L})/iu],
+ ['ability-and-permission',/(?<!\p{L})(?:mogę|możesz|można|może)(?!\p{L})/iu],
+ ['numbers-and-quantities',/(?<!\p{L})(?:jeden|jedna|jedno|dwa|dwie|trzy|cztery|pięć|kilogram)(?!\p{L})/iu],
+ ['verb-or-person-form',/(?<!\p{L})(?:mam|masz|ma|jest|są|chciałbym|chciałabym|lubi|rozumiem|mówi)(?!\p{L})/iu]
 ];
 const sourcePath=id=>path.join(ROOT,'docs/sets',id+'.json');
 const recordingDir=(id,kind)=>path.join(ROOT,'docs/static',id,kind==='basic'?'audio':'reading');
