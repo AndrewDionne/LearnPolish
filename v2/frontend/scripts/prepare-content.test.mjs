@@ -445,3 +445,38 @@ test('C-13 all 28 recorded beginner sentence exemplars use existing whole Polish
   }
   assert.equal(unique.size,28);
 });
+
+test('C-14 all six complete reading conversations have matching Polish, English, IDs and original MP3 files',()=>{
+ buildContent();
+ const originals={
+  Basic_01R:6,
+  Grocery_store_very_basic_shopping:9,
+  H_M_clothes_shop_trying_on_a_T-shirt:10,
+  On_the_tram_talking_to_another_passenger:9,
+  Asking_the_tram_driver_for_directions:8,
+  Museum_buying_tickets_and_basic_info:9
+ };
+ const catalog=JSON.parse(fs.readFileSync(path.resolve('public/generated/lessons.json'),'utf8')).lessons;
+ let total=0;
+ for(const [id,count] of Object.entries(originals)){
+  const source=JSON.parse(fs.readFileSync(path.resolve('../../docs/sets',id+'.json'),'utf8'));
+  const lesson=catalog.find(x=>x.id===id);
+  assert.equal(lesson?.kind,'reading');
+  assert.equal(lesson?.source,'legacy');
+  assert.equal(source.passages.length,count);
+  assert.equal(lesson.items.length,count);
+  for(let i=0;i<count;i++){
+   const line=lesson.items[i];
+   assert.equal(line.id,id+':'+i);
+   assert.equal(line.polish,source.passages[i].polish);
+   assert.equal(line.english,source.passages[i].english);
+   assert.equal(line.referenceReview,undefined);
+   assert.equal(line.audio,'generated/audio/'+encodeURIComponent(id)+'/'+i+'.mp3');
+   assert.ok(fs.existsSync(path.join('public',line.audio)),
+    'Source recorded full phrase must exist: '+line.id);
+   total++;
+  }
+ }
+ assert.equal(total,51);
+ assert.equal(catalog.length,26);
+});
