@@ -6,14 +6,16 @@ import type {SentencePattern} from './foundation-sentence-patterns';
 import RecordedSentencePatterns from './RecordedSentencePatterns';
 import RecordedAlphabetExplorer from './RecordedAlphabetExplorer';
 import type {AudioRate} from './audio';
+import {FOUNDATION_STAGES} from './foundation-progression';
 
 /** A quiet source-backed guide, not another proficiency or stage label.
  * Only actual existing source lesson and tourist-unit launch actions are shown. */
-export default function Journey1Guide({steps,starterGroups,nextWordGroups,sentencePatterns,recordedLetters,recordedCombinations,playing,speed,onSpeed,onPlayAudio,onStarter,onLesson,onUnit}:{
+export default function Journey1Guide({steps,starterGroups,nextWordGroups,sentencePatterns,startSentencesOpen,recordedLetters,recordedCombinations,playing,speed,onSpeed,onPlayAudio,onStarter,onLesson,onUnit}:{
   steps:Journey1GuideStep[];
   starterGroups:StarterGroup[];
   nextWordGroups:StarterGroup[];
   sentencePatterns:SentencePattern[];
+  startSentencesOpen?:boolean;
   recordedLetters:RecordedGlyph[];
   recordedCombinations:RecordedGlyph[];
   playing:string|null;
@@ -38,7 +40,9 @@ export default function Journey1Guide({steps,starterGroups,nextWordGroups,senten
     </div>
     <RecordedAlphabetExplorer letters={recordedLetters} combinations={recordedCombinations}
       playing={playing} speed={speed} onSpeed={onSpeed} onPlay={onPlayAudio}/>
-    {starterGroups.length>0 && <div className="foundation-starter" role="group" aria-label="First expressions practice">
+    {starterGroups.length>0 && <section className="foundation-path-stage" aria-labelledby="foundation-stage-first">
+      <h4 id="foundation-stage-first">{FOUNDATION_STAGES[0]}</h4>
+      <div className="foundation-starter" role="group" aria-label="First expressions practice">
       <div className="foundation-starter-heading">Practice eight everyday expressions</div>
       <div className="foundation-starter-options">
         {starterGroups.map(group=><button type="button" key={group.id}
@@ -46,8 +50,11 @@ export default function Journey1Guide({steps,starterGroups,nextWordGroups,senten
           <strong>{group.title}</strong><span>{group.itemIds.length} phrases →</span>
         </button>)}
       </div>
-    </div>}
-    {nextWordGroups.length>0 && <div className="foundation-starter foundation-next-words">
+      </div>
+    </section>}
+    {nextWordGroups.length>0 && <section className="foundation-path-stage" aria-labelledby="foundation-stage-vocabulary">
+      <h4 id="foundation-stage-vocabulary">{FOUNDATION_STAGES[1]}</h4>
+      <div className="foundation-starter foundation-next-words">
       <button type="button" className="foundation-next-toggle"
         aria-expanded={moreWordsVisible}
         onClick={()=>setMoreWordsVisible(open=>!open)}>
@@ -61,8 +68,13 @@ export default function Journey1Guide({steps,starterGroups,nextWordGroups,senten
           <strong>{group.title}</strong><span>{group.itemIds.length} expressions →</span>
         </button>)}
       </div>}
-    </div>}
-    <RecordedSentencePatterns patterns={sentencePatterns} playing={playing} onPlay={onPlayAudio}/>
+      </div>
+    </section>}
+    {sentencePatterns.length>0 && <section className="foundation-path-stage" aria-labelledby="foundation-stage-sentences">
+      <h4 id="foundation-stage-sentences">{FOUNDATION_STAGES[2]}</h4>
+      <RecordedSentencePatterns patterns={sentencePatterns} playing={playing}
+        onPlay={onPlayAudio} startExpanded={startSentencesOpen}/>
+    </section>}
     <div className="foundation-guide-list">
       {visible.map((step,index)=><button type="button" key={step.id}
         className="foundation-guide-step"
