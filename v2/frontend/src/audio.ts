@@ -89,7 +89,7 @@ export function useLessonAudio(): Playback {
   const playExcerpt=async(relativePath:string,startMs:number,endMs:number)=>{
     stop();
     setError('');
-    if(!/^generated\\/audio\\/[a-zA-Z0-9_%.-]+\\/[0-9]+\\.mp3$/.test(relativePath)||
+    if(!/^generated\/audio\/[a-zA-Z0-9_%.-]+\/[0-9]+\.mp3$/.test(relativePath)||
       !Number.isSafeInteger(startMs)||!Number.isSafeInteger(endMs)||
       startMs<0||endMs<=startMs||endMs-startMs<45||endMs>30000){
       setError('This syllable excerpt has no trusted recording boundary.');
