@@ -91,6 +91,10 @@ test('C-16A: clothing contextual forms come before the unchanged first Read chec
  await expect(intro.locator('.reading-intro-cue')).toContainText('after szukam');
  await intro.getByRole('button',{name:'Read conversation now'}).click();
  await expect(intro.locator('.reading-intro-cue')).toHaveCount(0);
+ await expect(page.locator('.reading-text')).toHaveText('Dzień dobry.');
+ await page.getByRole('button',{name:'Skip to next'}).click();
+ await page.getByRole('button',{name:'Skip to next'}).click();
+ await expect(page.locator('.reading-text')).toHaveText('Szukam białej koszulki.');
  await expect(page.locator('.reading-check')).toBeVisible();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(322);
 });
