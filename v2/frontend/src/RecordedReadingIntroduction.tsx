@@ -21,6 +21,7 @@ export default function RecordedReadingIntroduction({turns,playing,onPlay}:{
      <div className="reading-intro-progress">{index+1} / {turns.length}</div>
      <div className="reading-intro-polish" lang="pl">{item.polish}</div>
      <div className="reading-intro-english">{item.english}</div>
+     {item.teachingCue && <p className="reading-intro-cue">{item.teachingCue}</p>}
      <div className="reading-intro-actions">
        <button type="button" onClick={()=>onPlay(item.audio)} className="reading-intro-audio">
          {playing===item.audio?'Playing line':'▶ Hear line'}
