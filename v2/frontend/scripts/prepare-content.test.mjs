@@ -414,3 +414,34 @@ test('C-10 all 32 alphabet examples and 13 combinations point to REAL unchanged 
   }
   assert.equal(original.length,26);
 });
+
+test('C-11 all 20 recorded beginner sentence exemplars use existing whole Polish MP3 and unchanged English meanings',()=>{
+  const report=buildContent();
+  assert.equal(report.lessons,26);
+  assert.equal(report.audioCopied,455);
+  const plan=JSON.parse(fs.readFileSync(path.resolve('../content/foundation-sentence-patterns-v1.json'),'utf8'));
+  assert.equal(plan.status,'source_only_recorded_utterances_grammar_not_independently_native_reviewed');
+  assert.deepEqual(plan.groups.map(g=>g.id),['requests','where','permission','negative','one-two']);
+  assert.deepEqual(plan.groups.map(g=>g.examples.length),[4,4,4,4,4]);
+  const catalog=JSON.parse(fs.readFileSync(path.resolve('public/generated/lessons.json'),'utf8')).lessons;
+  assert.equal(catalog.length,26);
+  const unique=new Set();
+  for(const group of plan.groups)for(const entry of group.examples){
+    const id=entry.sourceLesson+':'+entry.index;
+    assert.ok(!unique.has(id),'No fabricated duplicate original source items');
+    unique.add(id);
+    const lesson=catalog.find(x=>x.id===entry.sourceLesson);
+    assert.equal(lesson?.kind,'vocabulary');
+    assert.equal(lesson?.source,'legacy');
+    const item=lesson.items.find(x=>x.id===id);
+    assert.ok(item,'Exact original utterance exists');
+    assert.equal(item.polish,entry.polish);
+    assert.equal(item.english,entry.english);
+    assert.equal(item.referenceReview,undefined);
+    assert.equal(item.polish.split(entry.focus).length,2);
+    assert.equal(item.audio,'generated/audio/'+encodeURIComponent(entry.sourceLesson)+'/'+entry.index+'.mp3');
+    assert.ok(fs.existsSync(path.join('public',item.audio)),
+      'Exact original recorded whole sentence MP3 exists: '+id);
+  }
+  assert.equal(unique.size,20);
+});
