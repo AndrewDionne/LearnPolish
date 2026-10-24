@@ -1,0 +1,187 @@
+{
+  "schemaVersion": 1,
+  "status": "source_only_recorded_utterances_grammar_not_independently_native_reviewed",
+  "notes": "All examples are exact existing COMPLETE recorded Polish utterances with their inherited English gloss. Explanations are introductory pattern observations, not newly recorded text, inflection generators, independent grammar/native certification, or universal morphological rules.",
+  "groups": [
+    {
+      "id": "requests",
+      "title": "Make a polite request",
+      "cue": "Poproszę",
+      "explanation": "Poproszę starts a polite request. Notice how the words after it change with what you ask for.",
+      "examples": [
+        {
+          "sourceLesson": "Conversation_-_restaurant",
+          "index": 2,
+          "polish": "Poproszę wodę",
+          "english": "Water, please",
+          "focus": "Poproszę"
+        },
+        {
+          "sourceLesson": "Conversation_-_restaurant",
+          "index": 3,
+          "polish": "Poproszę kawę",
+          "english": "Coffee, please",
+          "focus": "Poproszę"
+        },
+        {
+          "sourceLesson": "Conversation_-_restaurant",
+          "index": 4,
+          "polish": "Poproszę herbatę",
+          "english": "Tea, please",
+          "focus": "Poproszę"
+        },
+        {
+          "sourceLesson": "Conversation_-_restaurant",
+          "index": 0,
+          "polish": "Poproszę menu",
+          "english": "May I have the menu, please?",
+          "focus": "Poproszę"
+        }
+      ]
+    },
+    {
+      "id": "where",
+      "title": "Ask where something is",
+      "cue": "Gdzie jest",
+      "explanation": "Gdzie jest means ‘Where is ...?’ in these examples. Listen for the place named at the end.",
+      "examples": [
+        {
+          "sourceLesson": "Getting_Around_1",
+          "index": 0,
+          "polish": "Gdzie jest przystanek?",
+          "english": "Where is the bus/tram stop?",
+          "focus": "Gdzie jest"
+        },
+        {
+          "sourceLesson": "Getting_Around_1",
+          "index": 2,
+          "polish": "Gdzie jest metro?",
+          "english": "Where is the metro?",
+          "focus": "Gdzie jest"
+        },
+        {
+          "sourceLesson": "Conversation_-_shopping",
+          "index": 5,
+          "polish": "Gdzie jest kasa?",
+          "english": "Where is the checkout?",
+          "focus": "Gdzie jest"
+        },
+        {
+          "sourceLesson": "Emergencies_and_Health",
+          "index": 9,
+          "polish": "Gdzie jest apteka?",
+          "english": "Where is the pharmacy?",
+          "focus": "Gdzie jest"
+        }
+      ]
+    },
+    {
+      "id": "permission",
+      "title": "Ask if you can do something",
+      "cue": "Czy mogę",
+      "explanation": "Czy mogę introduces a question about whether you can do something. The action that follows changes.",
+      "examples": [
+        {
+          "sourceLesson": "Conversation_-_shopping",
+          "index": 2,
+          "polish": "Czy mogę zapłacić kartą?",
+          "english": "Can I pay by card?",
+          "focus": "Czy mogę"
+        },
+        {
+          "sourceLesson": "Conversation_-_shopping",
+          "index": 3,
+          "polish": "Czy mogę zapłacić gotówką?",
+          "english": "Can I pay in cash?",
+          "focus": "Czy mogę"
+        },
+        {
+          "sourceLesson": "Conversation_-_shopping",
+          "index": 15,
+          "polish": "Czy mogę to przymierzyć?",
+          "english": "Can I try this on?",
+          "focus": "Czy mogę"
+        },
+        {
+          "sourceLesson": "Getting_Around_1",
+          "index": 16,
+          "polish": "Czy mogę kupić bilet u kierowcy?",
+          "english": "Can I buy a ticket from the driver?",
+          "focus": "Czy mogę"
+        }
+      ]
+    },
+    {
+      "id": "negative",
+      "title": "Say what you don’t do",
+      "cue": "Nie",
+      "explanation": "Nie makes these short statements negative. Notice that the verb still changes with the meaning.",
+      "examples": [
+        {
+          "sourceLesson": "Conversation_1",
+          "index": 20,
+          "polish": "Nie rozumiem",
+          "english": "I don’t understand",
+          "focus": "Nie"
+        },
+        {
+          "sourceLesson": "Conversation_-_shopping",
+          "index": 21,
+          "polish": "Nie mam drobnych",
+          "english": "I don’t have small change",
+          "focus": "Nie"
+        },
+        {
+          "sourceLesson": "Food_and_Dinning",
+          "index": 22,
+          "polish": "Nie jem mięsa",
+          "english": "I don’t eat meat",
+          "focus": "Nie"
+        },
+        {
+          "sourceLesson": "Food_and_Dinning",
+          "index": 23,
+          "polish": "Nie piję alkoholu",
+          "english": "I don’t drink alcohol",
+          "focus": "Nie"
+        }
+      ]
+    },
+    {
+      "id": "one-two",
+      "title": "Ask for one or two",
+      "cue": "One or two",
+      "explanation": "Compare jeden bilet with dwa bilety, and jednej osoby with dwóch osób. The number and noun forms change together.",
+      "examples": [
+        {
+          "sourceLesson": "Getting_Around_1",
+          "index": 6,
+          "polish": "Jeden bilet, proszę",
+          "english": "One ticket, please",
+          "focus": "Jeden"
+        },
+        {
+          "sourceLesson": "Getting_Around_1",
+          "index": 7,
+          "polish": "Dwa bilety, proszę",
+          "english": "Two tickets, please",
+          "focus": "Dwa"
+        },
+        {
+          "sourceLesson": "Food_and_Dinning",
+          "index": 0,
+          "polish": "Poproszę stolik dla jednej osoby",
+          "english": "A table for one, please",
+          "focus": "jednej"
+        },
+        {
+          "sourceLesson": "Food_and_Dinning",
+          "index": 1,
+          "polish": "Poproszę stolik dla dwóch osób",
+          "english": "A table for two, please",
+          "focus": "dwóch"
+        }
+      ]
+    }
+  ]
+}
