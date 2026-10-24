@@ -234,7 +234,7 @@ test('E2 short dialogues stay inside reading lessons and allow read/listen witho
   ]);
   await dialogue.getByRole('button',{name:'Back to reading'}).click();
   await expect(dialogue).toHaveCount(0);
-  await expect(page.getByText('Cześć! Jak się masz?',{exact:true})).toBeVisible();
+  await expect(page.locator('.flashcard .polish-text')).toHaveText('Cześć! Jak się masz?');
   await expect(page.locator('.item-count')).toContainText('/ 6');
   await selector.getByRole('button',{name:/What's your name/}).click();
   const names=page.getByRole('region',{name:"Short dialogue: What's your name?"});
@@ -389,15 +389,15 @@ test('Read resumes a saved passage and Listen reveals content only after answeri
   await page.getByRole('button', { name: 'Explore lessons' }).click();
   await page.getByRole('searchbox', { name: 'Search lessons' }).fill('Everyday Conversations: Greetings');
   await page.getByRole('button', { name: /Everyday Conversations: Greetings/ }).click();
-  await expect(page.getByText('Cześć! Jak się masz?', { exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Read' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('.flashcard .polish-text')).toHaveText('Cześć! Jak się masz?');
+  await expect(page.getByRole('group', { name: 'Learning modes' }).getByRole('button', { name: 'Read', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: /Skip to next/ }).click();
-  await expect(page.getByText('Dziękuję, mam się dobrze.', { exact: true })).toBeVisible();
+  await expect(page.locator('.flashcard .polish-text')).toHaveText('Dziękuję, mam się dobrze.');
   await page.reload();
   await page.getByRole('button', { name: 'Library' }).first().click();
   await page.getByRole('searchbox', { name: 'Search lessons' }).fill('Everyday Conversations: Greetings');
   await page.getByRole('button', { name: /Everyday Conversations: Greetings/ }).click();
-  await expect(page.getByText('Dziękuję, mam się dobrze.', { exact: true })).toBeVisible();
+  await expect(page.locator('.flashcard .polish-text')).toHaveText('Dziękuję, mam się dobrze.');
 
   await page.getByRole('button', { name: 'Listen', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Listen', exact: true })).toHaveAttribute('aria-pressed', 'true');

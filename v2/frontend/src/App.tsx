@@ -9,6 +9,8 @@ import BrandMark from './BrandMark';
 import type {UIIconName} from './UIIcon';
 import {requestSpeechFeedback, SPEECH_ASSESSMENT_AVAILABLE, SPEECH_BLEND_AVAILABLE} from './speech/assessment';
 import SoundContrastDeck from './SoundContrastDeck';
+import RecordedReadingIntroduction from './RecordedReadingIntroduction';
+import {recordedReadingIntroduction} from './reading-introduction';
 import PronunciationBreakdown from './PronunciationBreakdown';
 import MicroDialoguePanel from './MicroDialoguePanel';
 import {libraryMatches} from './library-curriculum';
@@ -653,6 +655,11 @@ export default function App() {
           <div className="mode-row" role="group" aria-label="Learning modes">
             {availableModes(active).map(value => <button type="button" key={value} aria-pressed={mode === value} className={'mode ' + (mode === value ? 'active' : '')} onClick={() => switchMode(value)}>{value === 'learn' ? active.kind === 'sounds' ? 'Sounds' : 'Learn' : value === 'read' ? 'Read' : value === 'speak' ? 'Speak' : 'Listen'}</button>)}
           </div>
+          {mode==='read' && active.kind==='reading' && !unitSession && !activeMicroDialogue &&
+            !finished && index===0 &&
+            <RecordedReadingIntroduction key={active.id}
+              turns={recordedReadingIntroduction(active)}
+              playing={audio.playing} onPlay={play}/>}
           {mode === 'read' && active.microDialogues?.length && <div className="micro-dialogue-picker" role="group" aria-label="Short conversations">
             <span>Short conversations</span>
             {active.microDialogues.map(dialogue=><button type="button" key={dialogue.id}
