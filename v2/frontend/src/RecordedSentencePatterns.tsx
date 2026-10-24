@@ -8,8 +8,9 @@ function FocusedSentence({item}:{item:RecordedSentenceExample}){
    {item.polish.slice(index+item.focus.length)}
  </span>;
 }
-export default function RecordedSentencePatterns({patterns,playing,onPlay,startExpanded=false}:{
+export default function RecordedSentencePatterns({patterns,playing,onPlay,startExpanded=false,onBeginPractice}:{
  patterns:SentencePattern[];playing:string|null;onPlay:(audio:string)=>void;startExpanded?:boolean;
+ onBeginPractice?:()=>void;
 }){
  const [expanded,setExpanded]=useState(startExpanded);
  const [chosen,setChosen]=useState(0);
@@ -78,6 +79,12 @@ export default function RecordedSentencePatterns({patterns,playing,onPlay,startE
            <button type="button" className="sentence-pattern-next" onClick={next}>
              {step===group.examples.length-1?'Practise again':'Next sentence →'}
            </button>
+           {step===group.examples.length-1 && chosen<patterns.length-1 &&
+             <button type="button" className="sentence-pattern-next"
+               onClick={()=>changeGroup(chosen+1)}>Next pattern →</button>}
+           {step===group.examples.length-1 && chosen===patterns.length-1 && onBeginPractice &&
+             <button type="button" className="sentence-pattern-next"
+               onClick={onBeginPractice}>Continue to sentence practice →</button>}
          </div>}
        </div>}
      </div>
