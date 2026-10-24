@@ -80,7 +80,11 @@ export default function SpeakPanel({item, playing, onPlayReference, onPlayExcerp
     if (item.audio && item.referenceReview !== 'practice_only') onPlayReference(item.audio);
   };
 
-  const guideParts=item.syllableAudio?.segments??item.pronunciationSegments?.segments;
+  // Whisper colour grouping may remain provisional; do not teach auto-split
+  // orthography as accurate Polish syllables in the pronunciation guide.
+  const guideParts=item.syllableAudio?.segments??(
+    item.pronunciationSegments?.method!=='draft-orthographic-v1'
+      ? item.pronunciationSegments?.segments : undefined);
   const hasGuide = Boolean(item.pronunciationGuide || item.pronunciation || (guideParts?.length??0)>1);
   const expandedGuide = guideVisible && hasGuide;
   const guide = item.pronunciationGuide;
