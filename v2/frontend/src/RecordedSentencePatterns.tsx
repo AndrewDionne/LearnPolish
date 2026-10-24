@@ -8,10 +8,10 @@ function FocusedSentence({item}:{item:RecordedSentenceExample}){
    {item.polish.slice(index+item.focus.length)}
  </span>;
 }
-export default function RecordedSentencePatterns({patterns,playing,onPlay}:{
- patterns:SentencePattern[];playing:string|null;onPlay:(audio:string)=>void;
+export default function RecordedSentencePatterns({patterns,playing,onPlay,startExpanded=false}:{
+ patterns:SentencePattern[];playing:string|null;onPlay:(audio:string)=>void;startExpanded?:boolean;
 }){
- const [expanded,setExpanded]=useState(false);
+ const [expanded,setExpanded]=useState(startExpanded);
  const [chosen,setChosen]=useState(0);
  const [step,setStep]=useState(0);
  const [phase,setPhase]=useState<'study'|'check'>('study');
