@@ -51,7 +51,7 @@ describe('C-14 reading source turn introductions before comprehension',()=>{
  });
  it('C-15 teaches six distinct introductory grammar cues anchored to the original complete recording',()=>{
   const beginning=recordedReadingIntroduction(lessons[0]);
-  expect(beginning.map(row=>row.teachingCue?.length>40)).toEqual([true,true,true,true,true,true]);
+  expect(beginning.map(row=>(row.teachingCue?.length??0)>40)).toEqual([true,true,true,true,true,true]);
   expect(beginning[0].teachingCue).toContain('Jak się masz?');
   expect(beginning[2].teachingCue).toContain('masz');
   expect(beginning[3].teachingCue).toContain('Mam na imię');
