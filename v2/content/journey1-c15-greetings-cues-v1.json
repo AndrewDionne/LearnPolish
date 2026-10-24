@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "status": "source_anchored_draft_learning_cues_not_native_editorial_signoff",
+  "lesson": "Basic_01R",
+  "notes": "Original text and original audio are authoritative. These are concise teaching prompts for unfamiliar forms in the first reading dialogue, not new translations, recorded words, automatic morphological analysis, or native-speaker certification. Later dialogues still need contextual grammar cue authoring.",
+  "lines": [
+    {
+      "id": "Basic_01R:0",
+      "polish": "Cześć! Jak się masz?",
+      "cue": "Jak się masz? is an informal way to ask how someone is. Learn the complete question together; Cześć is the greeting."
+    },
+    {
+      "id": "Basic_01R:1",
+      "polish": "Dziękuję, mam się dobrze.",
+      "cue": "Dziękuję means thank you. Mam się dobrze is a complete first-person reply meaning I am well; notice mam rather than masz."
+    },
+    {
+      "id": "Basic_01R:2",
+      "polish": "Cześć, jak masz na imię?",
+      "cue": "Jak masz na imię? asks one person for their name informally. Notice masz in the question; the answer uses mam."
+    },
+    {
+      "id": "Basic_01R:3",
+      "polish": "Mam na imię Andrew.",
+      "cue": "Mam na imię… is the answer pattern for My name is…. Replace Andrew with your name when using the expression."
+    },
+    {
+      "id": "Basic_01R:4",
+      "polish": "Proszę i dziękuję są bardzo ważne.",
+      "cue": "This statement joins two polite words with i (and). Są means are, bardzo means very, and ważne describes something important."
+    },
+    {
+      "id": "Basic_01R:5",
+      "polish": "Przepraszam, nie rozumiem.",
+      "cue": "Przepraszam means excuse me or sorry. Nie before rozumiem changes I understand to I do not understand."
+    }
+  ]
+}
