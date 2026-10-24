@@ -47,6 +47,9 @@ test('C-15 records lexical forms and structural flags as review prompts, never a
  assert.ok(x.method.includes('not verified grammatical classifications'));
  const price=x.rows.find(row=>row.id==='Conversation_-_shopping:0');
  assert.ok(price.structuralReviewPrompts.includes('quantity-ile'));
+ const request=x.rows.find(row=>row.id==='Conversation_-_restaurant:0');
+ assert.ok(request.structuralReviewPrompts.includes('request-poprosze'));
+ assert.ok(x.rows.some(row=>row.polish.includes('mogę')&&row.structuralReviewPrompts.includes('ability-and-permission')));
  const no=x.rows.find(row=>row.id==='Basic_01R:5');
  assert.ok(no.structuralReviewPrompts.includes('negation'));
  assert.ok(x.rows.every(row=>row.lexicalAndGrammarReview==='open_not_native_certified'));
