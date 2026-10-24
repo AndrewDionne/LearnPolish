@@ -17,7 +17,7 @@ test('C-07 beginner Speak and Learn reveal segmented spelling but no unreviewed 
  await expect(page.getByRole('button',{name:'Play audio'})).toBeEnabled();
  await page.getByRole('group',{name:'Learning modes'}).getByRole('button',{name:'Speak'}).click();
  const speakToggle=page.getByRole('button',{name:/Pronunciation guide/});
- await speakToggle.click();
+ await expect(speakToggle).toHaveAttribute('aria-pressed','true');
  await expect(page.locator('.speak-word-segment')).toHaveCount(2);
  await expect(page.locator('.speak-word-polish')).toHaveText(['Pro','szę']);
  await expect(page.locator('.syllable-audio-controls')).toHaveCount(0);
