@@ -52,3 +52,25 @@ test('C-14 reading preparation is source-only, optional and usable at 320px with
  await expect(page.getByRole('region',{name:'Learn this conversation first'})).toHaveCount(0);
  await expect(page.locator('.unit-practice-head')).toContainText('Shopping for groceries');
 });
+
+test('C-15: unfamiliar first-dialogue forms are explained before original Read comprehension, including 320px',async({page})=>{
+ await page.setViewportSize({width:320,height:740});
+ await page.goto('/');
+ await page.getByRole('button',{name:'Explore lessons'}).click();
+ await page.getByRole('button',{name:/Everyday Conversations: Greetings/}).click();
+ const intro=page.getByRole('region',{name:'Learn this conversation first'});
+ await expect(intro.locator('.reading-intro-cue')).toContainText('Jak się masz?');
+ await expect(intro.locator('.reading-intro-polish')).toHaveText('Cześć! Jak się masz?');
+ await intro.getByRole('button',{name:'Next line'}).click();
+ await expect(intro.locator('.reading-intro-cue')).toContainText('mam rather than masz');
+ await intro.getByRole('button',{name:'Next line'}).click();
+ await expect(intro.locator('.reading-intro-cue')).toContainText('asks one person for their name');
+ await intro.getByRole('button',{name:'Next line'}).click();
+ await expect(intro.locator('.reading-intro-cue')).toContainText('Mam na imię');
+ for(let i=0;i<2;i++)await intro.getByRole('button',{name:'Next line'}).click();
+ await expect(intro.locator('.reading-intro-cue')).toContainText('Nie before rozumiem');
+ await intro.getByRole('button',{name:'Start reading'}).click();
+ await expect(intro.locator('.reading-intro-cue')).toHaveCount(0);
+ await expect(page.locator('.reading-check')).toBeVisible();
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(322);
+});
