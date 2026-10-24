@@ -141,7 +141,7 @@ export default function SpeakPanel({item, playing, onPlayReference, onStopRefere
     {item.referenceReview === 'practice_only' && <p className="speak-reference-pending">Reference audio unavailable.</p>}
     {item.audio && item.referenceReview !== 'practice_only' && <button type="button" className="audio-btn speak-audio-button"
       disabled={capture.phase === 'requesting' || capture.phase === 'recording' || capture.phase === 'processing'}
-      onClick={onReference}>{playing === item.audio ? 'Playing word' : '▶ Hear word'}</button>}
+      onClick={onReference}>{playing === item.audio ? 'Playing example' : '▶ Hear example'}</button>}
     <div className="speak-record-actions">
       {capture.phase === 'idle' || capture.phase === 'error' || capture.phase === 'inconclusive' || capture.phase === 'ready'
         ? <button type="button" className="record-button" onClick={startNewTake}>● {feedback?.status==='ok' ? 'Try again' : capture.previewUrl ? 'Record another take' : 'Start recording'}</button>
@@ -180,7 +180,7 @@ export default function SpeakPanel({item, playing, onPlayReference, onStopRefere
       </div>}
     </div>
     {onPracticeSound && item.soundPractice && capture.phase === 'ready' && <button type="button" className="sound-practice-link" onClick={onPracticeSound}>Practise {item.soundPractice.label} sounds →</button>}
-    <button type="button" className="primary-action speak-next" onClick={() => {abortAssessment(); preview.current?.pause(); onNext(capture.phase === 'ready' && !!prepared);}}>{feedback?.status==='ok'?'Next word →':'Next'}</button>
+    <button type="button" className="primary-action speak-next" onClick={() => {abortAssessment(); preview.current?.pause(); onNext(capture.phase === 'ready' && !!prepared);}}>Next</button>
     <details className="speak-private-details">
       <summary>Privacy &amp; options</summary>
       <p>Recordings stay temporarily on this device while you practise. Nothing is uploaded unless you choose Check my pronunciation, which sends one take to {blended ? 'Azure and Groq Whisper' : 'Azure'}. No recording or score is kept in your family history.</p>
