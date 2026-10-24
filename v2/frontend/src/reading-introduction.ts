@@ -9,7 +9,7 @@ export type ReadingIntroductionTurn={
 export const READING_INTRO_COUNTS={
  Basic_01R:6,
  Grocery_store_very_basic_shopping:9,
- H_M_clothes_shop_trying_on_a_T-shirt:10,
+ 'H_M_clothes_shop_trying_on_a_T-shirt':10,
  On_the_tram_talking_to_another_passenger:9,
  Asking_the_tram_driver_for_directions:8,
  Museum_buying_tickets_and_basic_info:9
