@@ -11,6 +11,7 @@ import {requestSpeechFeedback, SPEECH_ASSESSMENT_AVAILABLE, SPEECH_BLEND_AVAILAB
 import SoundContrastDeck from './SoundContrastDeck';
 import RecordedReadingIntroduction from './RecordedReadingIntroduction';
 import {recordedReadingIntroduction} from './reading-introduction';
+import {guidedPhraseIntroduction} from './guided-phrase-introduction';
 import PronunciationBreakdown from './PronunciationBreakdown';
 import MicroDialoguePanel from './MicroDialoguePanel';
 import {libraryMatches} from './library-curriculum';
@@ -660,6 +661,13 @@ export default function App() {
             <RecordedReadingIntroduction key={active.id}
               turns={recordedReadingIntroduction(active)}
               playing={audio.playing} onPlay={play}/>}
+          {mode==='listen' && starterGroup && !unitSession && !reviewOnly &&
+            index===0 && !finished && <RecordedReadingIntroduction
+              key={active.id+':'+starterGroup.id+':listen'}
+              turns={guidedPhraseIntroduction(active,starterGroup,sessionItems)}
+              playing={audio.playing} onPlay={play}
+              label="Learn these expressions first"
+              finishLabel="Start listening →" skipLabel="Listen now"/>}
           {mode === 'read' && active.microDialogues?.length && <div className="micro-dialogue-picker" role="group" aria-label="Short conversations">
             <span>Short conversations</span>
             {active.microDialogues.map(dialogue=><button type="button" key={dialogue.id}
