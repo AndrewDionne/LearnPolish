@@ -98,6 +98,9 @@ test('normal Speak shows coloured source syllables with gaps and only 67 combine
   await expect(page.locator('.speak-blended-part.focus')).toHaveCount(1);
   await expect(page.locator('.speak-blended-part.close')).toHaveCount(1);
   await expect(page.locator('.speak-word-score-primary')).toHaveText('67/100');
+  await expect(page.getByRole('button',{name:'Try again'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Next',exact:true})).toBeEnabled();
+  await expect(page.getByRole('button',{name:/Play syllable/})).toHaveCount(0);
   await expect(page.locator('.speak-word-score')).toHaveCount(0);
   await expect(page.locator('.speak-score-explanation')).toHaveCount(0);
   await expect(page.locator('.speak-blended-word')).toHaveCSS('gap',/.+/);
