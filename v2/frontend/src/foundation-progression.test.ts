@@ -3,7 +3,7 @@ import type {StarterGroup} from './foundation-first-expressions';
 import {FIRST_EXPRESSION_GROUPS} from './foundation-first-expressions';
 import {NEXT_WORD_GROUPS} from './foundation-next-words';
 import {
- FOUNDATION_STAGES,FIRST_WORD_ORDER,BASIC_VOCABULARY_ORDER,orderedFoundationGroups
+ FOUNDATION_STAGES,FIRST_WORD_ORDER,BASIC_VOCABULARY_ORDER,FIRST_SENTENCE_PRACTICE_ORDER,orderedFoundationGroups
 } from './foundation-progression';
 
 describe('C-12: explicitly sequenced foundational study',()=>{
@@ -13,7 +13,9 @@ describe('C-12: explicitly sequenced foundational study',()=>{
   ]);
   expect(FIRST_WORD_ORDER).toEqual(['simple-replies','politeness','greetings']);
   expect(BASIC_VOCABULARY_ORDER).toEqual([
-   'street-words','transport-words','everyday-replies',
+   'street-words','transport-words','everyday-replies'
+  ]);
+  expect(FIRST_SENTENCE_PRACTICE_ORDER).toEqual([
    'food-requests','shopping-questions','location-questions'
   ]);
  });
@@ -23,12 +25,15 @@ describe('C-12: explicitly sequenced foundational study',()=>{
   const ordered=orderedFoundationGroups(first,expanded);
   expect(ordered.firstWords.map(x=>x.id)).toEqual(FIRST_WORD_ORDER);
   expect(ordered.basicVocabulary.map(x=>x.id)).toEqual(BASIC_VOCABULARY_ORDER);
+  expect(ordered.firstSentences.map(x=>x.id)).toEqual(FIRST_SENTENCE_PRACTICE_ORDER);
   expect(ordered.firstWords.flatMap(x=>x.itemIds)).toHaveLength(8);
-  expect(ordered.basicVocabulary.flatMap(x=>x.itemIds)).toHaveLength(32);
+  expect(ordered.basicVocabulary.flatMap(x=>x.itemIds)).toHaveLength(17);
+  expect(ordered.firstSentences.flatMap(x=>x.itemIds)).toHaveLength(15);
   expect(ordered.firstWords.every(x=>first.includes(x))).toBe(true);
   expect(ordered.basicVocabulary.every(x=>expanded.includes(x))).toBe(true);
+  expect(ordered.firstSentences.every(x=>expanded.includes(x))).toBe(true);
   const sourceKeys=[...first,...expanded].flatMap(x=>x.itemIds);
-  const reordered=[...ordered.firstWords,...ordered.basicVocabulary].flatMap(x=>x.itemIds);
+  const reordered=[...ordered.firstWords,...ordered.basicVocabulary,...ordered.firstSentences].flatMap(x=>x.itemIds);
   expect(new Set(sourceKeys)).toEqual(new Set(reordered));
   expect(new Set(reordered).size).toBe(40);
  });
@@ -42,5 +47,6 @@ describe('C-12: explicitly sequenced foundational study',()=>{
   const reduced=orderedFoundationGroups(FIRST_EXPRESSION_GROUPS.slice(1),NEXT_WORD_GROUPS.slice(1));
   expect(reduced.firstWords.map(g=>g.id)).toEqual(['simple-replies','politeness']);
   expect(reduced.basicVocabulary.map(g=>g.id)).toEqual(BASIC_VOCABULARY_ORDER.slice(1));
+  expect(reduced.firstSentences.map(g=>g.id)).toEqual(FIRST_SENTENCE_PRACTICE_ORDER);
  });
 });
