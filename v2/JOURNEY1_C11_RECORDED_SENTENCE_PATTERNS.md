@@ -1,3 +1,5 @@
+> **EXTENDED BY [C-13 prerequisite-complete instruction](JOURNEY1_C13_PREREQUISITE_COVERAGE.md):** This historical C-11 description documents the initial 5 groups/20 recordings. C-13 has 7 groups/28 original recordings, adding necessary Gdzie mogę, Ile and Czy to examples before the recorded sentence applications.
+
 # C-11 — First short Polish sentences and grammar through real recorded utterances
 
 **Release type:** Actual learner-facing Journey 1 instruction, using unchanged, existing Polish whole-utterance MP3s and exact English meanings. This is **not** a new synthetic voice, a compositional audio generator, a proficiency claim, a separate lesson/XP system or an independently native-certified grammar course.

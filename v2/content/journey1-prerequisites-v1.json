@@ -1,0 +1,150 @@
+{
+  "schemaVersion": 1,
+  "status": "authoritative_dependency_inventory_requires_independent_full_lexical_review",
+  "notes": "Prerequisite closure is checked for explicitly catalogued Polish constructions. Any new vocabulary inside an exercise must be taught there with an exact existing whole-utterance Polish recording and its complete English meaning before being tested. This structural inventory is NOT native linguistic certification or proof all semantic/phonemic gaps are closed.",
+  "steps": [
+    {
+      "id": "simple-replies",
+      "requires": [],
+      "introduces": [
+        "yes-no-replies"
+      ]
+    },
+    {
+      "id": "politeness",
+      "requires": [],
+      "introduces": [
+        "politeness"
+      ]
+    },
+    {
+      "id": "greetings",
+      "requires": [],
+      "introduces": [
+        "greetings"
+      ]
+    },
+    {
+      "id": "street-words",
+      "requires": [],
+      "introduces": [
+        "places"
+      ]
+    },
+    {
+      "id": "transport-words",
+      "requires": [],
+      "introduces": [
+        "transport"
+      ]
+    },
+    {
+      "id": "everyday-replies",
+      "requires": [],
+      "introduces": [
+        "everyday-replies"
+      ]
+    },
+    {
+      "id": "grammar:requests",
+      "requires": [
+        "politeness"
+      ],
+      "introduces": [
+        "request-poprosze"
+      ]
+    },
+    {
+      "id": "grammar:where",
+      "requires": [
+        "places"
+      ],
+      "introduces": [
+        "where-is",
+        "where-can"
+      ]
+    },
+    {
+      "id": "grammar:permission",
+      "requires": [
+        "politeness"
+      ],
+      "introduces": [
+        "can-i",
+        "czy-question"
+      ]
+    },
+    {
+      "id": "grammar:prices",
+      "requires": [
+        "transport"
+      ],
+      "introduces": [
+        "how-much"
+      ]
+    },
+    {
+      "id": "grammar:yes-no-questions",
+      "requires": [
+        "czy-question"
+      ],
+      "introduces": [
+        "is-this"
+      ]
+    },
+    {
+      "id": "grammar:negative",
+      "requires": [
+        "yes-no-replies"
+      ],
+      "introduces": [
+        "negation"
+      ]
+    },
+    {
+      "id": "grammar:one-two",
+      "requires": [
+        "transport",
+        "request-poprosze"
+      ],
+      "introduces": [
+        "one-two-forms"
+      ]
+    },
+    {
+      "id": "food-requests",
+      "requires": [
+        "request-poprosze"
+      ],
+      "introduces": [
+        "food-phrases"
+      ]
+    },
+    {
+      "id": "shopping-questions",
+      "requires": [
+        "request-poprosze",
+        "where-is",
+        "can-i",
+        "how-much",
+        "is-this"
+      ],
+      "introduces": [
+        "shopping-phrases"
+      ]
+    },
+    {
+      "id": "location-questions",
+      "requires": [
+        "where-is",
+        "where-can",
+        "how-much",
+        "is-this",
+        "transport"
+      ],
+      "introduces": [
+        "location-phrases"
+      ]
+    }
+  ]
+}

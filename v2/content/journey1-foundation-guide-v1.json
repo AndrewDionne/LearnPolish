@@ -2,13 +2,7 @@
   "schemaVersion": 1,
   "status": "source_mapped_foundations_priority_not_native_certified",
   "journey": 1,
-  "allocation": {
-    "foundationSessions": 16,
-    "applicationCheckpoints": 4,
-    "foundationSharePercent": 80,
-    "metric": "guided_session_slots_not_minutes_or_mastery"
-  },
-  "notes": "Source-backed entry points into complete original lessons; no arbitrary slicing of Numbers 1–20, no learner proficiency status, no new Polish/audio. Conversation units T01–T08 stay independently available.",
+  "notes": "Historical 20-entry source-library index of original recorded lessons and four tourist links. Its old 16/4 split is NOT a curricular 80/20 goal and NOT the primary prerequisite-ordered learning path. Follow the source-verified C-13 prerequisite map for the guided First words → Basic vocabulary → Grammar introductions → Sentence practice curriculum. No invented audio or truncated Numbers 1–20.",
   "steps": [
     {
       "id": "F01",

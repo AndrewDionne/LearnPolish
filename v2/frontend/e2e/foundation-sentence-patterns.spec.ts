@@ -10,7 +10,7 @@ test('C-11 actual recorded request pattern teaches examples then hides Polish un
  await toggle.click();
  await expect(toggle).toHaveAttribute('aria-expanded','true');
  const groups=panel.getByRole('group',{name:'Choose a sentence pattern'});
- await expect(groups.getByRole('button')).toHaveCount(5);
+ await expect(groups.getByRole('button')).toHaveCount(7);
  await expect(panel.locator('.sentence-pattern-polish')).toHaveText('Poproszę wodę');
  await expect(panel.locator('.sentence-pattern-polish strong')).toHaveText('Poproszę');
  await expect(panel.locator('.sentence-pattern-meaning')).toHaveText('Water, please');

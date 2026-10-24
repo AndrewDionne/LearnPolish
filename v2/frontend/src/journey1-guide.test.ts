@@ -16,13 +16,13 @@ const all=catalog.lessons.map(x=>({
 })) as Lesson[];
 const copy=<T,>(data:T):T=>structuredClone(data);
 
-describe('C-01 80/20 foundations-first source-backed Journey 1 guide',()=>{
- it('sets 80% of guided session slots to actual foundations, not proficiency or estimated time',()=>{
+describe('C-13 supplementary source index without curriculum percentage targets',()=>{
+ it('preserves all 20 historical source links without equating their count to learning prerequisites',()=>{
   expect(JOURNEY1_GUIDE).toHaveLength(20);
   expect(JOURNEY1_GUIDE.filter(x=>x.type==='foundation')).toHaveLength(16);
   expect(JOURNEY1_GUIDE.filter(x=>x.type==='application')).toHaveLength(4);
-  expect(16/20).toBe(0.8);
-  expect(raw.allocation.metric).toBe('guided_session_slots_not_minutes_or_mastery');
+  expect('allocation' in raw).toBe(false);
+  expect(raw.notes).toContain('NOT a curricular 80/20 goal');
   expect(JOURNEY1_GUIDE.filter(x=>x.type==='application').map(x=>x.type==='application'&&x.unitId))
    .toEqual(['T01','T03','T05','T08']);
   expect(validateJourney1Guide(raw)).toEqual(JOURNEY1_GUIDE);
@@ -47,10 +47,9 @@ describe('C-01 80/20 foundations-first source-backed Journey 1 guide',()=>{
   expect(nextCoreLesson(all,'Conversation_1')?.id).toBe('contrast_l_lstroked');
   expect(nextCoreLesson(all,'numbers_1-20')?.id).toBe('Basic_01R');
  });
- it('fails closed on wrong ratio, unexpected tiers, changed source and invented applications',()=>{
+ it('fails closed on unexpected old quotas, tiers, changed source and invented applications',()=>{
   for(const mutate of [
-   (v:typeof raw)=>{v.allocation.foundationSharePercent=70;},
-   (v:typeof raw)=>{v.allocation.metric='proficiency_earned';},
+   (v:typeof raw)=>{Object.assign(v,{allocation:{foundationSharePercent:80}});},
    (v:typeof raw)=>{v.steps.pop();},
    (v:typeof raw)=>{v.steps[0].id='F02';},
    (v:typeof raw)=>{v.steps[3].type='application';},

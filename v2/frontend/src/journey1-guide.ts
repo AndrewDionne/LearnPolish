@@ -14,14 +14,9 @@ const groups=['sounds','first-words','useful-words','short-sentences'];
 const expectedApplications=['T01','T03','T05','T08'];
 
 export function validateJourney1Guide(value:unknown):Journey1GuideStep[]{
-  if(!isObject(value)||!keys(value,['schemaVersion','status','journey','allocation','notes','steps'])||
+  if(!isObject(value)||!keys(value,['schemaVersion','status','journey','notes','steps'])||
      value.schemaVersion!==1||value.status!=='source_mapped_foundations_priority_not_native_certified'||
      value.journey!==1||typeof value.notes!=='string'||value.notes.length<25||
-     !isObject(value.allocation)||!keys(value.allocation,
-       ['foundationSessions','applicationCheckpoints','foundationSharePercent','metric'])||
-     value.allocation.foundationSessions!==16||value.allocation.applicationCheckpoints!==4||
-     value.allocation.foundationSharePercent!==80||
-     value.allocation.metric!=='guided_session_slots_not_minutes_or_mastery'||
      !Array.isArray(value.steps)||value.steps.length!==20)
     throw new Error('Invalid Journey 1 foundation guide');
   const seenLessons=new Set<string>();
@@ -51,7 +46,9 @@ export function validateJourney1Guide(value:unknown):Journey1GuideStep[]{
 
 export const JOURNEY1_GUIDE:readonly Journey1GuideStep[]=validateJourney1Guide(raw);
 
-/** Entire existing lessons are opened unmodified. No invented audio, no source
+/** Historical optional original lesson directory; the instructional sequence is
+ * determined by journey1-prerequisites.ts instead, not a target percentage.
+ * Entire existing lessons are opened unmodified. No invented audio, no source
  * copying, no reshuffled Numbers 1–20 and no proficiency or mastery award. */
 export function availableJourney1Guide(lessons:readonly Lesson[],units:readonly TouristUnit[]):Journey1GuideStep[]{
   const byLesson=new Map(lessons.filter(x=>x.source!=='personal'&&x.curriculum?.stage!=='practice')

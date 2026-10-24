@@ -415,14 +415,14 @@ test('C-10 all 32 alphabet examples and 13 combinations point to REAL unchanged 
   assert.equal(original.length,26);
 });
 
-test('C-11 all 20 recorded beginner sentence exemplars use existing whole Polish MP3 and unchanged English meanings',()=>{
+test('C-13 all 28 recorded beginner sentence exemplars use existing whole Polish MP3 and unchanged English meanings',()=>{
   const report=buildContent();
   assert.equal(report.lessons,26);
   assert.equal(report.audioCopied,455);
   const plan=JSON.parse(fs.readFileSync(path.resolve('../content/foundation-sentence-patterns-v1.json'),'utf8'));
   assert.equal(plan.status,'source_only_recorded_utterances_grammar_not_independently_native_reviewed');
-  assert.deepEqual(plan.groups.map(g=>g.id),['requests','where','permission','negative','one-two']);
-  assert.deepEqual(plan.groups.map(g=>g.examples.length),[4,4,4,4,4]);
+  assert.deepEqual(plan.groups.map(g=>g.id),['requests','where','permission','prices','yes-no-questions','negative','one-two']);
+  assert.deepEqual(plan.groups.map(g=>g.examples.length),[4,5,4,3,4,4,4]);
   const catalog=JSON.parse(fs.readFileSync(path.resolve('public/generated/lessons.json'),'utf8')).lessons;
   assert.equal(catalog.length,26);
   const unique=new Set();
@@ -443,5 +443,5 @@ test('C-11 all 20 recorded beginner sentence exemplars use existing whole Polish
     assert.ok(fs.existsSync(path.join('public',item.audio)),
       'Exact original recorded whole sentence MP3 exists: '+id);
   }
-  assert.equal(unique.size,20);
+  assert.equal(unique.size,28);
 });

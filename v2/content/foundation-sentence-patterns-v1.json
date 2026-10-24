@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "status": "source_only_recorded_utterances_grammar_not_independently_native_reviewed",
-  "notes": "All examples are exact existing COMPLETE recorded Polish utterances with their inherited English gloss. Explanations are introductory pattern observations, not newly recorded text, inflection generators, independent grammar/native certification, or universal morphological rules.",
+  "notes": "All examples are exact existing COMPLETE recorded Polish utterances with their inherited English gloss. Explanations are introductory pattern observations, not newly recorded text, inflection generators, independent grammar/native certification, or universal morphological rules. C-13 extends in-course introductions for Gdzie mogę, Ile and Czy to before the full question exercise stage; no outside grammar course is assumed. All new examples are exact original full-utterance source recordings pending human Polish/editorial validation.",
   "groups": [
     {
       "id": "requests",
@@ -43,7 +43,7 @@
       "id": "where",
       "title": "Ask where something is",
       "cue": "Gdzie jest",
-      "explanation": "Gdzie jest means ‘Where is ...?’ in these examples. Listen for the place named at the end.",
+      "explanation": "Gdzie means ‘where’. Listen to Gdzie jest ...? (‘Where is ...?’), then Gdzie mogę ...? (‘Where can I ...?’); the place or action is introduced with its complete recorded meaning.",
       "examples": [
         {
           "sourceLesson": "Getting_Around_1",
@@ -72,6 +72,13 @@
           "polish": "Gdzie jest apteka?",
           "english": "Where is the pharmacy?",
           "focus": "Gdzie jest"
+        },
+        {
+          "sourceLesson": "Getting_Around_1",
+          "index": 17,
+          "polish": "Gdzie mogę kupić bilet?",
+          "english": "Where can I buy a ticket?",
+          "focus": "Gdzie mogę"
         }
       ]
     },
@@ -108,6 +115,71 @@
           "polish": "Czy mogę kupić bilet u kierowcy?",
           "english": "Can I buy a ticket from the driver?",
           "focus": "Czy mogę"
+        }
+      ]
+    },
+    {
+      "id": "prices",
+      "title": "Ask how much something costs",
+      "cue": "Ile",
+      "explanation": "Ile introduces ‘how much’ in these recorded questions. Compare Ile to kosztuje? with Ile kosztuje bilet?; listen for what is being priced, using the full meaning shown.",
+      "examples": [
+        {
+          "sourceLesson": "Conversation_-_shopping",
+          "index": 0,
+          "polish": "Ile to kosztuje?",
+          "english": "How much does this cost?",
+          "focus": "Ile"
+        },
+        {
+          "sourceLesson": "Conversation_-_shopping",
+          "index": 1,
+          "polish": "Ile to razem?",
+          "english": "How much is it altogether?",
+          "focus": "Ile"
+        },
+        {
+          "sourceLesson": "Getting_Around_1",
+          "index": 14,
+          "polish": "Ile kosztuje bilet?",
+          "english": "How much is the ticket?",
+          "focus": "Ile"
+        }
+      ]
+    },
+    {
+      "id": "yes-no-questions",
+      "title": "Ask a yes-or-no question",
+      "cue": "Czy to",
+      "explanation": "Czy can introduce a yes-or-no question. In these recordings Czy to ...? asks whether something is true about ‘this’ or ‘it’. Compare the complete question and translation before answering.",
+      "examples": [
+        {
+          "sourceLesson": "Getting_Around_1",
+          "index": 5,
+          "polish": "Czy to pociąg do Warszawy?",
+          "english": "Is this the train to Warsaw?",
+          "focus": "Czy to"
+        },
+        {
+          "sourceLesson": "Getting_Around_1",
+          "index": 22,
+          "polish": "Czy to daleko stąd?",
+          "english": "Is it far from here?",
+          "focus": "Czy to"
+        },
+        {
+          "sourceLesson": "Conversation_-_shopping",
+          "index": 19,
+          "polish": "Czy to jest na promocji?",
+          "english": "Is this on sale?",
+          "focus": "Czy to"
+        },
+        {
+          "sourceLesson": "Road_Terminology",
+          "index": 11,
+          "polish": "Czy to jest daleko?",
+          "english": "Is it far?",
+          "focus": "Czy to"
         }
       ]
     },

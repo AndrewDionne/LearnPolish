@@ -23,6 +23,7 @@ import {availableSentencePatterns} from './foundation-sentence-patterns';
 import {availableStarterGroups,starterSessionItems} from './foundation-first-expressions';
 import {availableNextWordGroups,nextWordSessionItems} from './foundation-next-words';
 import {orderedFoundationGroups} from './foundation-progression';
+import {prerequisiteCompletePath} from './journey1-prerequisites';
 import {availableTouristUnits,unitStepSource,unitStepItems} from './tourist-units';
 import {TOURIST_ACTIVITY_KEY,emptyTouristActivities,parseTouristActivities,
   positionTouristUnit,triedTouristItem} from './tourist-activity';
@@ -248,16 +249,24 @@ export default function App() {
   const touristUnits=useMemo(()=>availableTouristUnits(builtIn),[builtIn]);
   const foundationGuide=useMemo(()=>availableJourney1Guide(builtIn,touristUnits),[builtIn,touristUnits]);
   const recordedAlphabet=useMemo(()=>availableRecordedAlphabet(builtIn),[builtIn]);
-  const sentencePatterns=useMemo(()=>availableSentencePatterns(builtIn),[builtIn]);
+  const availablePatterns=useMemo(()=>availableSentencePatterns(builtIn),[builtIn]);
   const rawStarters=useMemo(()=>availableStarterGroups(builtIn),[builtIn]);
   const rawVocabulary=useMemo(()=>availableNextWordGroups(builtIn),[builtIn]);
   const orderedFoundations=useMemo(()=>orderedFoundationGroups(rawStarters,rawVocabulary),[rawStarters,rawVocabulary]);
-  const starterGroups=orderedFoundations.firstWords;
-  const nextWordGroups=orderedFoundations.basicVocabulary;
-  const firstSentenceGroups=orderedFoundations.firstSentences;
+  const path=useMemo(()=>prerequisiteCompletePath(
+    orderedFoundations.firstWords,orderedFoundations.basicVocabulary,
+    availablePatterns,orderedFoundations.firstSentences
+  ),[orderedFoundations,availablePatterns]);
+  const starterGroups=path.firstWords;
+  const nextWordGroups=path.basicVocabulary;
+  const sentencePatterns=path.patterns;
+  const firstSentenceGroups=path.firstSentences;
   const allFoundationGroups=[...starterGroups,...nextWordGroups,...firstSentenceGroups];
   const starterGroup=allFoundationGroups.find(group=>group.id===starterGroupId);
-  const nextFocusGroup=starterGroup?allFoundationGroups[allFoundationGroups.findIndex(g=>g.id===starterGroup.id)+1]:undefined;
+  const needsGrammar=!!starterGroup && nextWordGroups.at(-1)?.id===starterGroup.id &&
+    sentencePatterns.length>0;
+  const nextFocusGroup=needsGrammar?undefined:
+    (starterGroup?allFoundationGroups[allFoundationGroups.findIndex(g=>g.id===starterGroup.id)+1]:undefined);
   const currentUnit=unitSession?touristUnits.find(x=>x.id===unitSession.unitId):undefined;
   const unitStep=currentUnit?.steps[unitSession?.stepIndex??-1];
   const nextUnitStep=currentUnit?.steps[(unitSession?.stepIndex??-1)+1];
@@ -697,7 +706,7 @@ export default function App() {
                   {nextFocusGroup
                     ? <button type="button" className="primary-action"
                         onClick={()=>openStarterGroup(nextFocusGroup.id)}>Next: {nextFocusGroup.title} →</button>
-                    : sentencePatterns.length>0 && <button type="button" className="primary-action"
+                    : needsGrammar && <button type="button" className="primary-action"
                         onClick={()=>{goTo('library');setLaunchSentences(true);}}>
                         Next: First sentences / basic grammar →
                       </button>}
@@ -859,6 +868,7 @@ export default function App() {
                   recordedLetters={recordedAlphabet.letters} recordedCombinations={recordedAlphabet.combinations}
                   playing={audio.playing} speed={audio.rate} onSpeed={audio.setRate} onPlayAudio={play}
                   onStarter={openStarterGroup}
+                  onBeginSentencePractice={()=>{const first=firstSentenceGroups[0];if(first)openStarterGroup(first.id);}}
                   onLesson={id=>{const found=builtIn.find(x=>x.id===id);if(found)openLesson(found);}}
                   onUnit={id=>openTouristUnitStep(id,0)}/>
                 <TouristUnitCards units={touristUnits} activity={touristActivity} onStart={openTouristUnitStep}/>

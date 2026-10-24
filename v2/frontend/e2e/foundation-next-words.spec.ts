@@ -30,7 +30,7 @@ test('C-06 first-word sequence opens 32 existing full recorded words through rea
  await expect(page.locator('.unit-practice-head')).toContainText('1/5');
 });
 
-test('C-06 source-only practice sequence advances to next real group without fake new lesson',async({page})=>{
+test('C-13 first real basic vocabulary practice advances to grammar introduction, not unexplained full sentences',async({page})=>{
  await page.goto('/');
  await page.getByRole('button',{name:'Explore lessons'}).click();
  const guide=page.getByRole('region',{name:'Guided Polish foundations'});
@@ -43,10 +43,13 @@ test('C-06 source-only practice sequence advances to next real group without fak
    await page.getByRole('button',{name:/Got it/}).click();
  }
  await expect(page.getByRole('heading',{name:'Nicely done!'})).toBeVisible();
- await page.getByRole('button',{name:/Next: Simple food requests/}).click();
- await expect(page.locator('.unit-practice-head')).toContainText('Simple food requests');
- await expect(page.locator('.polish-text')).toHaveText('Poproszę wodę');
- await expect(page.locator('.unit-practice-head')).toContainText('1/5');
+ await page.getByRole('button',{name:/Next: First sentences \/ basic grammar/}).click();
+ const grammar=page.getByRole('region',{name:'Recorded first sentence patterns'});
+ await expect(grammar.getByRole('button',{name:'Build your first sentences'}))
+   .toHaveAttribute('aria-expanded','true');
+ await expect(grammar.locator('.sentence-pattern-polish')).toHaveText('Poproszę wodę');
+ await expect(grammar.getByRole('group',{name:'Choose a sentence pattern'})
+   .getByRole('button')).toHaveCount(7);
 });
 
 test('C-06 first-word disclosure fits a narrow mobile screen without staging labels',async({page})=>{
