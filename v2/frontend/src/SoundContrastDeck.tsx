@@ -11,10 +11,11 @@ type Props = {
   playing: string | null;
   onSelect: (itemId: string) => void;
   onPlay: (audioPath: string) => void;
+  onQuizChange: (active:boolean) => void;
 };
 
 /** Compare short individual recordings side by side; no automatic phonetic grading. */
-export default function SoundContrastDeck({ lesson, focusGroupId, currentId, playing, onSelect, onPlay }: Props) {
+export default function SoundContrastDeck({ lesson, focusGroupId, currentId, playing, onSelect, onPlay,onQuizChange }: Props) {
   const [view,setView]=useState<'compare'|'recognize'>('compare');
   if (!lesson.soundGroups?.length) return null;
   const byId = new Map(lesson.items.map(item => [item.id, item]));
@@ -26,12 +27,12 @@ export default function SoundContrastDeck({ lesson, focusGroupId, currentId, pla
       <span className="sound-note">Audio from existing lessons · native review pending</span>
     </div>
     {cards.length>0 && <div className="sound-ear-switch" role="group" aria-label="Sound learning activity">
-      <button type="button" aria-pressed={view==='compare'} onClick={()=>setView('compare')}>Compare words</button>
-      <button type="button" aria-pressed={view==='recognize'} onClick={()=>setView('recognize')}>Test my ear</button>
+      <button type="button" aria-pressed={view==='compare'} onClick={()=>{setView('compare');onQuizChange(false);}}>Compare words</button>
+      <button type="button" aria-pressed={view==='recognize'} onClick={()=>{setView('recognize');onQuizChange(true);}}>Test my ear</button>
     </div>}
     {view==='recognize' && cards.length>0
       ? <SoundEarQuiz key={lesson.id} lesson={lesson} cards={cards} playing={playing}
-          onPlay={onPlay} onCompare={()=>setView('compare')}/>
+          onPlay={onPlay} onCompare={()=>{setView('compare');onQuizChange(false);}}/>
       : <div className="contrast-groups">
       {groups.map(group => <article key={group.id} className="contrast-group">
         <div className="contrast-group-label">
