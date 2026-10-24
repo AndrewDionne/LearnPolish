@@ -355,3 +355,36 @@ test('micro-dialogue review fails closed on original Polish drift or unverified 
   sceneAlternative.scenes[0].replyPractice.choices[2]={index:0,polish:'Cześć! Jak się masz?'};
   assert.throws(()=>attachMicroDialogues(changed,sceneAlternative),/Invalid source-grounded E2 reply/);
 });
+
+test('C-09 source-backed sound-ear exercises preserve real full-word MP3s and original lesson IDs',()=>{
+  const report=buildContent();
+  assert.equal(report.lessons,26);
+  assert.equal(report.sounds,5);
+  assert.equal(report.audioCopied,455);
+  const plan=JSON.parse(fs.readFileSync(path.resolve('../content/sound-listening-v1.json'),'utf8'));
+  const catalog=JSON.parse(fs.readFileSync(path.resolve('public/generated/lessons.json'),'utf8')).lessons;
+  assert.equal(plan.status,'existing_recorded_whole_word_sound_examples_editorial_not_native_certified');
+  assert.deepEqual(plan.lessons.map(x=>x.questions.length),[6,5,6,4,4]);
+  const used=new Set();
+  for(const practice of plan.lessons){
+    const lesson=catalog.find(l=>l.id===practice.lessonId);
+    assert.equal(lesson?.kind,'sounds');
+    assert.equal(lesson?.source,'curated');
+    for(const question of practice.questions){
+      assert.ok(!used.has(question.itemId),'Each listening check uses a unique existing sound item');
+      used.add(question.itemId);
+      const item=lesson.items.find(i=>i.id===question.itemId);
+      const group=lesson.soundGroups.find(g=>g.id===question.groupId);
+      assert.ok(item && group && group.itemIds.includes(item.id));
+      assert.equal(item.polish,question.expectedPolish);
+      assert.equal(item.soundFocus,question.expectedFocus);
+      assert.equal(item.soundGroupId,group.id);
+      assert.ok(item.audio?.startsWith('generated/audio/'));
+      assert.ok(fs.existsSync(path.join('public',item.audio)));
+      assert.equal(item.polish.split(item.soundFocus).length,2);
+    }
+  }
+  assert.equal(used.size,25);
+  assert.ok(!used.has('contrast_s_sz_sie:sz:0'),'Avoid the ambiguous Sześć sound-family quiz');
+  assert.equal(catalog.length,26,'No cloned learner lessons for sound questions');
+});
