@@ -80,11 +80,11 @@ describe('C-16C honest whole-recording instruction for original Library and sour
    const subset=selected.map(x=>changed.items.find(y=>y.id===x.id)??x);
    expect(originalLibraryListenIntroduction(changed,subset)).toEqual([]);
   }
-  expect(originalLibraryListenIntroduction(source,selected.toReversed())).toEqual([]);
+  expect(originalLibraryListenIntroduction(source,[...selected].reverse())).toEqual([]);
   const t01=originalUnits.units[0].steps[0],read=get(t01.lessonId);
   const subset=read.items.filter(x=>t01.itemIds.includes(x.id));
   expect(touristListenIntroduction(read,{...t01,mode:'speak'},subset)).toEqual([]);
   expect(touristListenIntroduction(read,{...t01,itemIds:['fake:0',t01.itemIds[1]]},subset)).toEqual([]);
-  expect(touristListenIntroduction(read,t01,subset.toReversed())).toEqual([]);
+  expect(touristListenIntroduction(read,t01,[...subset].reverse())).toEqual([]);
  });
 });
