@@ -21,6 +21,9 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
   const [password,setPassword]=useState('');
   const [recoveryAvailable,setRecoveryAvailable]=useState(false);
   const [verificationAvailable,setVerificationAvailable]=useState(false);
+  const [registrationAvailable,setRegistrationAvailable]=useState(false);
+  const [registrationMode,setRegistrationMode]=useState<'adult_pilot'|'closed'|'local_test'>('closed');
+  const [adultConfirmed,setAdultConfirmed]=useState(false);
   const [pendingVerification,setPendingVerification]=useState(false);
   const [authMode,setAuthMode]=useState<'sign-in'|'create'>('create');
   const [verificationCode,setVerificationCode]=useState('');
@@ -54,10 +57,14 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
   useEffect(()=>{
     if(!FAMILY_API||token)return;
     let active=true;
-    void familyRequest<{password_recovery_available:boolean;email_verification_available:boolean}>('/api/v2/family/health')
+    void familyRequest<{password_recovery_available:boolean;email_verification_available:boolean;
+        registration_available?:boolean;registration_mode?:'adult_pilot'|'closed'|'local_test'}>('/api/v2/family/health')
       .then(data=>{if(active){setRecoveryAvailable(data.password_recovery_available===true);
-        setVerificationAvailable(data.email_verification_available===true);}})
-      .catch(()=>{if(active){setRecoveryAvailable(false);setVerificationAvailable(false);}});
+        setVerificationAvailable(data.email_verification_available===true);
+        setRegistrationAvailable(data.registration_available===true);
+        setRegistrationMode(data.registration_mode??'closed');}})
+      .catch(()=>{if(active){setRecoveryAvailable(false);setVerificationAvailable(false);
+        setRegistrationAvailable(false);setRegistrationMode('closed');}});
     return ()=>{active=false;};
   },[token]);
   useEffect(()=>{
@@ -189,7 +196,8 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
     setStatus('Signed in. Choose or create a family.');
   };
   const signUp=async()=>{
-    await familyRequest('/api/v2/family/signup','POST',{email,name,password});
+    await familyRequest('/api/v2/family/signup','POST',{email,name,password,
+      ...(registrationMode==='adult_pilot'?{adult_confirmed:adultConfirmed}:{})});
     setPendingVerification(true);
     setVerificationCode('');
     setStatus('Check your email for a one-time verification code.');
@@ -318,7 +326,7 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
               onClick={()=>{setAuthMode('sign-in');setError('');setStatus('');}}>Sign in</button>
             {authMode==='create'
               ? <span className="family-auth-current" aria-current="step">Create account</span>
-              : <button type="button" aria-pressed={false} disabled={busy||!verificationAvailable}
+              : <button type="button" aria-pressed={false} disabled={busy||!registrationAvailable}
                   onClick={()=>{setAuthMode('create');setError('');setStatus('');}}>Create account</button>}
           </div>
         </div>
@@ -327,15 +335,22 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
         <label>Email<input type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)}/></label>
         <label>Password<input type="password" autoComplete={authMode==='create'?'new-password':'current-password'}
           value={password} onChange={e=>setPassword(e.target.value)}/></label>
+        {authMode==='create'&&registrationMode==='adult_pilot'&&<label className="family-adult-confirmation">
+          <input type="checkbox" checked={adultConfirmed} onChange={e=>setAdultConfirmed(e.target.checked)}/>
+          I confirm that I am 18 or older. This test is for invited adults only.
+        </label>}
         <div className="family-actions">
           {authMode==='create'
-            ? <button type="button" disabled={busy||!verificationAvailable||name.trim().length<2||!email.trim()||password.length<12}
+            ? <button type="button" disabled={busy||!registrationAvailable||
+                (registrationMode==='adult_pilot'&&!adultConfirmed)||
+                name.trim().length<2||!email.trim()||password.length<12}
                 onClick={()=>void run(signUp)}>Create account</button>
             : <button type="button" disabled={busy||!email.trim()||!password}
                 onClick={()=>void run(login)}>Sign in to family</button>}
         </div>
         {authMode==='create'&&<small>Use a password of at least 12 characters. Verify the code in your email before joining a family.</small>}
-        {!verificationAvailable&&<p className="family-note">New family accounts are unavailable until secure verification email delivery is configured.</p>}
+        {!registrationAvailable&&<p className="family-note">New family accounts are not open yet. Existing verified adults may sign in when the service is connected.</p>}
+        {registrationMode==='adult_pilot'&&<p className="family-note">Private adult-only test; registration requires an invitation for your email. Child accounts are not yet available.</p>}
         {recoveryAvailable&&<button type="button" className="family-recovery-link" disabled={busy} onClick={()=>{
           setRecoveryMode(true);setError('');setStatus('');}}>Forgot password?</button>}
       </>}
