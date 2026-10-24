@@ -35,6 +35,34 @@ export type EnglishPronunciationGuide = {
 };
 
 export type PronunciationSegments = {method:'authored-v1'|'editorial-draft-v1'|'draft-orthographic-v1';segments:string[]};
+export type ReviewedSyllableAudio = {
+  method:'independently-reviewed-source-excerpts-v1';
+  audio:string;
+  sourceSha256:string;
+  durationMs:number;
+  segments:{polish:string;startMs:number;endMs:number}[];
+};
+/** This exists only after a verified source-MP3 hash, real timing probe, rights,
+ * independent Polish syllabification and an acoustic boundary review. */
+export function validReviewedSyllableAudio(value:unknown,polish:string,audio?:string):value is ReviewedSyllableAudio{
+  if(!value||typeof value!=='object'||!audio)return false;
+  const x=value as Partial<ReviewedSyllableAudio>;
+  if(x.method!=='independently-reviewed-source-excerpts-v1'||x.audio!==audio||
+    typeof x.sourceSha256!=='string'||!(/^[0-9a-f]{64}$/).test(x.sourceSha256)||
+    !Number.isSafeInteger(x.durationMs)||!x.durationMs||x.durationMs<400||x.durationMs>30000||
+    !Array.isArray(x.segments)||x.segments.length<2||x.segments.length>24)return false;
+  let end=0;
+  for(let i=0;i<x.segments.length;i++){
+    const part=x.segments[i];
+    if(typeof part?.polish!=='string'||!part.polish||
+      !Number.isSafeInteger(part.startMs)||!Number.isSafeInteger(part.endMs)||
+      part.startMs<0||part.endMs<=part.startMs||part.endMs>x.durationMs||
+      part.endMs-part.startMs<45||(i===0&&part.startMs>350)||
+      (i>0&&(part.startMs<end||part.startMs-end>350)))return false;
+    end=part.endMs;
+  }
+  return end>=x.durationMs-350&&x.segments.map(p=>p.polish).join('')===polish;
+}
 
 export type LessonItem = {
   id: string;
@@ -44,6 +72,7 @@ export type LessonItem = {
   pronunciationGuide?: EnglishPronunciationGuide;
   /** Exact textual grouping. Draft segments are not speaker-verified Polish syllables. */
   pronunciationSegments?: PronunciationSegments;
+  syllableAudio?: ReviewedSyllableAudio;
   /** Authored optional route to an existing recorded sound exercise, not a diagnosis. */
   soundPractice?: {lessonId:string;groupId:string;label:string};
   title?: string;
@@ -112,6 +141,8 @@ export function validateLesson(value: unknown): value is Lesson {
         typeof item.soundPractice.groupId === 'string' && item.soundPractice.groupId.length > 0 &&
         typeof item.soundPractice.label === 'string' && item.soundPractice.label.length > 0
       )) &&
+      (item.syllableAudio === undefined || (x.source !== 'personal' &&
+        validReviewedSyllableAudio(item.syllableAudio,item.polish,item.audio))) &&
       (item.pronunciationSegments === undefined || (
         !!item.pronunciationSegments &&
         ['authored-v1','editorial-draft-v1','draft-orthographic-v1'].includes(item.pronunciationSegments.method) &&
