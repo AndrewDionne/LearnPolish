@@ -69,9 +69,6 @@ test('new catalog retires bundled sound examples while retaining all other legac
   });
   assert.equal(report.referenceReviewItems,14);
   assert.equal(report.items, 482);
-  assert.deepEqual(report.syllableAudio,{
-    reviewedItems:0,reviewedSegments:0,awaitingNativeAcousticReview:true,
-  });
   assert.equal(report.pronunciationGrouping.total,482);
   assert.equal(report.pronunciationGrouping.authored,1);
   assert.ok(report.pronunciationGrouping.editorial>=19);
@@ -90,8 +87,8 @@ test('new catalog retires bundled sound examples while retaining all other legac
   assert.deepEqual(report.legacyGroupedSoundSetsRetired,
     ['letter_recognition_1', 'letter_recognition_2', 'letter_recognition_3']);
   const catalog = JSON.parse(fs.readFileSync(path.resolve('public/generated/lessons.json'), 'utf8')).lessons;
-  assert.equal(catalog.flatMap(lesson=>lesson.items).filter(item=>item.syllableAudio).length,0,
-    'Do not claim fabricated approved source-word syllable excerpts');
+  assert.equal(catalog.flatMap(lesson=>lesson.items).filter(item=>Object.hasOwn(item,'syllableAudio')).length,0,
+    'Word-only pronunciation must never introduce syllable audio metadata');
   const audit=inspectSpeakCatalog({schemaVersion:1,lessons:catalog});
   assert.deepEqual({
     modules:audit.summary.modules,
