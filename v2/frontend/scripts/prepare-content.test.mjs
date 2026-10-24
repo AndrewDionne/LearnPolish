@@ -388,3 +388,29 @@ test('C-09 source-backed sound-ear exercises preserve real full-word MP3s and or
   assert.ok(!used.has('contrast_s_sz_sie:sz:0'),'Avoid the ambiguous Sześć sound-family quiz');
   assert.equal(catalog.length,26,'No cloned learner lessons for sound questions');
 });
+
+test('C-10 all 32 alphabet examples and 13 combinations point to REAL unchanged Polish + English + MP3',()=>{
+  buildContent();
+  const data=JSON.parse(fs.readFileSync(path.resolve('../content/alphabet-recorded-examples-v1.json'),'utf8'));
+  assert.equal(data.status,'inherited_whole_word_recordings_not_independently_native_certified');
+  assert.equal(data.letters.length,32);
+  assert.equal(data.combinations.length,13);
+  assert.deepEqual(data.letters.map(row=>row.label),
+    'A Ą B C Ć D E Ę F G H I J K L Ł M N Ń O Ó P R S Ś T U W Y Z Ź Ż'.split(' '));
+  const original=JSON.parse(fs.readFileSync(path.resolve('public/generated/lessons.json'),'utf8')).lessons;
+  for(const item of [...data.letters,...data.combinations]){
+    const lesson=original.find(x=>x.id===item.sourceLesson);
+    assert.ok(lesson && lesson.source==='legacy' && lesson.kind==='vocabulary');
+    const record=lesson.items.find(x=>x.id===item.sourceLesson+':'+item.index);
+    assert.ok(record,'Exact source item must exist: '+item.label);
+    assert.equal(record.polish,item.polish);
+    assert.equal(record.english,item.english);
+    assert.equal(record.referenceReview,undefined);
+    assert.equal(item.polish.split(item.focus).length,2);
+    assert.equal(item.focus.toLocaleUpperCase('pl-PL'),item.label);
+    assert.equal(record.audio,'generated/audio/'+encodeURIComponent(item.sourceLesson)+'/'+item.index+'.mp3');
+    assert.ok(fs.existsSync(path.join('public',record.audio)),
+      'The exact full-word Polish example MP3 must exist: '+item.label);
+  }
+  assert.equal(original.length,26);
+});
