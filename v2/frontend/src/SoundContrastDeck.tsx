@@ -33,7 +33,7 @@ export default function SoundContrastDeck({ lesson, focusGroupId, currentId, pla
         <div className="contrast-group-label">
           <strong lang="pl">{group.label}{(()=>{
             const example=group.itemIds.map(id=>byId.get(id)).find(item=>
-              !!item?.audio && !!focusedPolishParts(item));
+              item!==undefined && !!item.audio && !!focusedPolishParts(item));
             return example ? <>, like in {example.polish}</> : null;
           })()}</strong><span>{group.ipa}</span>
         </div>
