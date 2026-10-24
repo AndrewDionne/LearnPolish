@@ -694,7 +694,7 @@ export default function App() {
                     onClick={() => goTo('library')}>Back to library →</button>
                 </>}
             </div>
-          </section> : mode === 'speak' ? <SpeakPanel key={current.id} item={current} playing={audio.playing} onPlayReference={play} onPlayExcerpt={(path,start,end)=>{void audio.playExcerpt(path,start,end);}} onStopReference={stopAudio}
+          </section> : mode === 'speak' ? <SpeakPanel key={current.id} item={current} playing={audio.playing} onPlayReference={play} onStopReference={stopAudio}
             guideVisible={guideVisible} onGuideChange={setGuideVisible}
             onPracticeSound={!soundReturn && current.soundPractice ? openSoundPractice : undefined}
             blended={SPEECH_BLEND_AVAILABLE && !!current.pronunciationSegments}
@@ -740,7 +740,7 @@ export default function App() {
             <div lang="pl" className={mode === 'read' ? 'polish-text reading-text' : 'polish-text'}>{current.polish}</div>
             {current.pronunciation && mode === 'learn' && <p className="phonetic">{current.pronunciation}</p>}
             {mode==='learn' && <PronunciationBreakdown item={current} visible={guideVisible}
-              onToggle={setGuideVisible} onPlayExcerpt={(path,start,end)=>{void audio.playExcerpt(path,start,end);}}/>}
+              onToggle={setGuideVisible}/>}
             <AudioButton item={current} playing={audio.playing} onPlay={play}/>
             {audio.error && <p className="audio-error" role="alert">{audio.error}</p>}
             {mode === 'read' && current.audio && <fieldset className="speed-picker"><legend>Playback speed</legend>
