@@ -18,6 +18,7 @@ import TouristUnitCards from './TouristUnitCards';
 import Journey1Guide from './Journey1Guide';
 import {availableJourney1Guide} from './journey1-guide';
 import {availableStarterGroups,starterSessionItems} from './foundation-first-expressions';
+import {availableNextWordGroups,nextWordSessionItems} from './foundation-next-words';
 import {availableTouristUnits,unitStepSource,unitStepItems} from './tourist-units';
 import {TOURIST_ACTIVITY_KEY,emptyTouristActivities,parseTouristActivities,
   positionTouristUnit,triedTouristItem} from './tourist-activity';
@@ -239,7 +240,10 @@ export default function App() {
   const touristUnits=useMemo(()=>availableTouristUnits(builtIn),[builtIn]);
   const foundationGuide=useMemo(()=>availableJourney1Guide(builtIn,touristUnits),[builtIn,touristUnits]);
   const starterGroups=useMemo(()=>availableStarterGroups(builtIn),[builtIn]);
-  const starterGroup=starterGroups.find(group=>group.id===starterGroupId);
+  const nextWordGroups=useMemo(()=>availableNextWordGroups(builtIn),[builtIn]);
+  const allFoundationGroups=[...starterGroups,...nextWordGroups];
+  const starterGroup=allFoundationGroups.find(group=>group.id===starterGroupId);
+  const nextFocusGroup=starterGroup?allFoundationGroups[allFoundationGroups.findIndex(g=>g.id===starterGroup.id)+1]:undefined;
   const currentUnit=unitSession?touristUnits.find(x=>x.id===unitSession.unitId):undefined;
   const unitStep=currentUnit?.steps[unitSession?.stepIndex??-1];
   const nextUnitStep=currentUnit?.steps[(unitSession?.stepIndex??-1)+1];
@@ -254,7 +258,9 @@ export default function App() {
       : unitStep && unitStep.lessonId===active.id && unitStep.mode===mode
         ? unitStepItems(active,unitStep)
       : starterGroup && starterGroup.lessonId===active.id && !unitStep && !reviewOnly
-        ? starterSessionItems(active,starterGroup,mode==='read'?'learn':mode)
+        ? (starterGroups.some(g=>g.id===starterGroup.id)
+          ? starterSessionItems(active,starterGroup,mode==='read'?'learn':mode)
+          : nextWordSessionItems(active,starterGroup,mode==='read'?'learn':mode))
       : reviewOnly && mode === 'learn' ? active.items.filter(item => reviewOnly.includes(item.id))
       : batched ? practiceBatchItems(active, mode, batchIndex)
       : itemsForMode(active, mode)
@@ -325,9 +331,13 @@ export default function App() {
     }
   };
   const openStarterGroup=(id:string)=>{
-    const group=starterGroups.find(g=>g.id===id);
+    const group=allFoundationGroups.find(g=>g.id===id);
     const source=group&&builtIn.find(lesson=>lesson.id===group.lessonId);
-    if(!group||!source||starterSessionItems(source,group,'learn').length!==group.itemIds.length)return;
+    if(!group||!source)return;
+    const items=starterGroups.some(g=>g.id===group.id)
+      ? starterSessionItems(source,group,'learn')
+      : nextWordSessionItems(source,group,'learn');
+    if(items.length!==group.itemIds.length)return;
     // No new content, XP rules or records: only original source items in short batches.
     openLesson(source,false,false);
     setStarterGroupId(group.id);
@@ -628,7 +638,7 @@ export default function App() {
               }}>{dialogue.title} · {dialogue.turns.length} turns</button>)}
           </div>}
           {starterGroup && active.id===starterGroup.lessonId && <div className="unit-practice-head">
-            <strong>{starterGroup.title}</strong><span>Original recorded expressions · {index+1}/{sessionItems.length}</span>
+            <strong>{starterGroup.title}</strong><span>Existing recordings · {index+1}/{sessionItems.length}</span>
           </div>}
           {currentUnit && unitStep && <div className="unit-practice-head">
             <strong>{currentUnit.title}</strong>
@@ -669,6 +679,12 @@ export default function App() {
                 : soundReturn && active.id === soundReturn.practiceLessonId ? <button type="button" className="primary-action" onClick={returnFromSoundPractice}>Return to {soundReturn.sourceWord} →</button>
                 : coreReviewRun ? <button type="button" className="primary-action" onClick={()=>nextCoreReview?continueCoreReview():goTo('practice')}>{nextCoreReview?'Continue scheduled review →':'Back to practice →'}</button>
                 : reviewOnly ? <button type="button" className="primary-action" onClick={()=>goTo('practice')}>Back to practice →</button>
+                : starterGroup ? <>
+                  {nextFocusGroup && <button type="button" className="primary-action"
+                    onClick={()=>openStarterGroup(nextFocusGroup.id)}>Next: {nextFocusGroup.title} →</button>}
+                  <button type="button" className={nextFocusGroup?'secondary-action':'primary-action'}
+                    onClick={()=>goTo('library')}>Back to library →</button>
+                </>
                 : <>
                   {upcomingLesson && <button type="button" className="primary-action"
                     aria-label={'Continue to '+upcomingLesson.title}
@@ -816,7 +832,7 @@ export default function App() {
             <section className="curriculum-section" aria-label={section.heading} key={section.id}>
               <div className="curriculum-stage-heading"><h2>{section.heading}</h2></div>
               {section.id==='core' && filter==='all' && !query.trim() && <>
-                <Journey1Guide steps={foundationGuide} starterGroups={starterGroups}
+                <Journey1Guide steps={foundationGuide} starterGroups={starterGroups} nextWordGroups={nextWordGroups}
                   onStarter={openStarterGroup}
                   onLesson={id=>{const found=builtIn.find(x=>x.id===id);if(found)openLesson(found);}}
                   onUnit={id=>openTouristUnitStep(id,0)}/>

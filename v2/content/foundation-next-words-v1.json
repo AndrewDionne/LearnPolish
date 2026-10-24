@@ -1,0 +1,209 @@
+{
+  "schemaVersion": 1,
+  "status": "source_only_original_recordings_not_independently_native_certified",
+  "sourcePolicy": "fixed_existing_whole_utterances_do_not_create_new_lessons_or_voice",
+  "groups": [
+    {
+      "id": "everyday-replies",
+      "title": "More everyday replies",
+      "lessonId": "Conversation_1",
+      "itemRefs": [
+        {
+          "id": "Conversation_1:16",
+          "expectedPolish": "Może",
+          "expectedEnglish": "Maybe"
+        },
+        {
+          "id": "Conversation_1:17",
+          "expectedPolish": "Jasne",
+          "expectedEnglish": "Sure / Of course"
+        },
+        {
+          "id": "Conversation_1:18",
+          "expectedPolish": "Oczywiście",
+          "expectedEnglish": "Of course"
+        },
+        {
+          "id": "Conversation_1:19",
+          "expectedPolish": "Mam pytanie",
+          "expectedEnglish": "I have a question"
+        },
+        {
+          "id": "Conversation_1:20",
+          "expectedPolish": "Nie rozumiem",
+          "expectedEnglish": "I don’t understand"
+        }
+      ]
+    },
+    {
+      "id": "street-words",
+      "title": "Street and place words",
+      "lessonId": "Road_Terminology",
+      "itemRefs": [
+        {
+          "id": "Road_Terminology:0",
+          "expectedPolish": "ulica",
+          "expectedEnglish": "Street"
+        },
+        {
+          "id": "Road_Terminology:1",
+          "expectedPolish": "aleja",
+          "expectedEnglish": "Avenue / Boulevard"
+        },
+        {
+          "id": "Road_Terminology:2",
+          "expectedPolish": "plac",
+          "expectedEnglish": "Square / Plaza"
+        },
+        {
+          "id": "Road_Terminology:3",
+          "expectedPolish": "droga",
+          "expectedEnglish": "Road"
+        },
+        {
+          "id": "Road_Terminology:8",
+          "expectedPolish": "most",
+          "expectedEnglish": "Bridge"
+        },
+        {
+          "id": "Road_Terminology:9",
+          "expectedPolish": "rondo",
+          "expectedEnglish": "Roundabout"
+        }
+      ]
+    },
+    {
+      "id": "transport-words",
+      "title": "Getting around: first words",
+      "lessonId": "Transit_1",
+      "itemRefs": [
+        {
+          "id": "Transit_1:2",
+          "expectedPolish": "Bilet",
+          "expectedEnglish": "Ticket"
+        },
+        {
+          "id": "Transit_1:5",
+          "expectedPolish": "Metro",
+          "expectedEnglish": "Metro / Subway"
+        },
+        {
+          "id": "Transit_1:6",
+          "expectedPolish": "Autobus",
+          "expectedEnglish": "Bus"
+        },
+        {
+          "id": "Transit_1:7",
+          "expectedPolish": "Tramwaj",
+          "expectedEnglish": "Tram"
+        },
+        {
+          "id": "Transit_1:16",
+          "expectedPolish": "Pociąg",
+          "expectedEnglish": "Train"
+        },
+        {
+          "id": "Transit_1:18",
+          "expectedPolish": "Kierunek",
+          "expectedEnglish": "Direction"
+        }
+      ]
+    },
+    {
+      "id": "food-requests",
+      "title": "Simple food requests",
+      "lessonId": "Conversation_-_restaurant",
+      "itemRefs": [
+        {
+          "id": "Conversation_-_restaurant:2",
+          "expectedPolish": "Poproszę wodę",
+          "expectedEnglish": "Water, please"
+        },
+        {
+          "id": "Conversation_-_restaurant:3",
+          "expectedPolish": "Poproszę kawę",
+          "expectedEnglish": "Coffee, please"
+        },
+        {
+          "id": "Conversation_-_restaurant:4",
+          "expectedPolish": "Poproszę herbatę",
+          "expectedEnglish": "Tea, please"
+        },
+        {
+          "id": "Conversation_-_restaurant:12",
+          "expectedPolish": "Zupa dnia",
+          "expectedEnglish": "Soup of the day"
+        },
+        {
+          "id": "Conversation_-_restaurant:14",
+          "expectedPolish": "Deser",
+          "expectedEnglish": "Dessert"
+        }
+      ]
+    },
+    {
+      "id": "shopping-questions",
+      "title": "Questions in a shop",
+      "lessonId": "Conversation_-_shopping",
+      "itemRefs": [
+        {
+          "id": "Conversation_-_shopping:0",
+          "expectedPolish": "Ile to kosztuje?",
+          "expectedEnglish": "How much does this cost?"
+        },
+        {
+          "id": "Conversation_-_shopping:1",
+          "expectedPolish": "Ile to razem?",
+          "expectedEnglish": "How much is it altogether?"
+        },
+        {
+          "id": "Conversation_-_shopping:2",
+          "expectedPolish": "Czy mogę zapłacić kartą?",
+          "expectedEnglish": "Can I pay by card?"
+        },
+        {
+          "id": "Conversation_-_shopping:5",
+          "expectedPolish": "Gdzie jest kasa?",
+          "expectedEnglish": "Where is the checkout?"
+        },
+        {
+          "id": "Conversation_-_shopping:8",
+          "expectedPolish": "Poproszę paragon",
+          "expectedEnglish": "Receipt, please"
+        }
+      ]
+    },
+    {
+      "id": "location-questions",
+      "title": "Asking where things are",
+      "lessonId": "Getting_Around_1",
+      "itemRefs": [
+        {
+          "id": "Getting_Around_1:0",
+          "expectedPolish": "Gdzie jest przystanek?",
+          "expectedEnglish": "Where is the bus/tram stop?"
+        },
+        {
+          "id": "Getting_Around_1:2",
+          "expectedPolish": "Gdzie jest metro?",
+          "expectedEnglish": "Where is the metro?"
+        },
+        {
+          "id": "Getting_Around_1:14",
+          "expectedPolish": "Ile kosztuje bilet?",
+          "expectedEnglish": "How much is the ticket?"
+        },
+        {
+          "id": "Getting_Around_1:17",
+          "expectedPolish": "Gdzie mogę kupić bilet?",
+          "expectedEnglish": "Where can I buy a ticket?"
+        },
+        {
+          "id": "Getting_Around_1:22",
+          "expectedPolish": "Czy to daleko stąd?",
+          "expectedEnglish": "Is it far from here?"
+        }
+      ]
+    }
+  ]
+}
