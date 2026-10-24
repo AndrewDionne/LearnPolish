@@ -13,7 +13,7 @@
     "typecheck": "tsc -b",
     "test": "vitest run",
     "test:migration": "node --test scripts/prepare-content.test.mjs && node --test scripts/voice-production.test.mjs && node --test scripts/content-integrity.test.mjs && node --test scripts/tourist-editorial-gate.test.mjs && node scripts/tourist-editorial-gate.mjs && node --test scripts/tourist-native-review-gate.test.mjs && node scripts/tourist-native-review-gate.mjs && node --test scripts/tourist-dialogue-review-gate.test.mjs && node scripts/tourist-dialogue-review-gate.mjs && node --test scripts/foundation-editorial-gate.test.mjs && node scripts/foundation-editorial-gate.mjs && node --test scripts/foundation-review-intake.test.mjs && node scripts/foundation-review-intake.mjs && node --test scripts/foundation-release-compiler.test.mjs && node scripts/foundation-release-compiler.mjs && node --test scripts/journey1-item-audit.test.mjs && node scripts/journey1-item-audit.mjs && node --test scripts/reading-context-cues.test.mjs && node scripts/reading-context-cues.mjs && node --test scripts/journey1-guided-chronology.test.mjs && node scripts/journey1-guided-chronology.mjs && node --test scripts/journey1-tourist-source-trace.test.mjs && node scripts/journey1-tourist-source-trace.mjs",
-    "check": "npm run test:migration && npm run content && npm run typecheck && npm run test && npm run build && npm run test:offline",
+    "check": "npm run test:migration && npm run content && npm run typecheck && npm run test && npm run build && npm run test:offline && npm run test:release-artifact",
     "test:e2e": "playwright test",
     "preview": "vite preview --host 127.0.0.1 --port 4173",
     "test:offline": "node --test scripts/build-offline.test.mjs scripts/offline-remove.test.mjs && node --check dist/sw.js",
@@ -23,7 +23,8 @@
     "audit:journey1-items": "node scripts/journey1-item-audit.mjs",
     "audit:reading-context": "node scripts/reading-context-cues.mjs",
     "audit:guided-chronology": "node scripts/journey1-guided-chronology.mjs",
-    "audit:tourist-source-uses": "node scripts/journey1-tourist-source-trace.mjs"
+    "audit:tourist-source-uses": "node scripts/journey1-tourist-source-trace.mjs",
+    "test:release-artifact": "node --test scripts/release-asset-preflight.test.mjs && node scripts/release-asset-preflight.mjs --dist dist"
   },
   "dependencies": {
     "react": "^19.2.0",
