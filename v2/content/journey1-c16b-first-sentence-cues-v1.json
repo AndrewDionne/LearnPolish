@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 1,
+  "status": "source_anchored_draft_guided_sentence_teaching_not_native_certified",
+  "notes": "Fifteen source-anchored first-sentence practice cues support the C-13 seven-pattern grammar before graded Listen. All existing full-utterance recordings and source English remain unchanged. These are draft introductions, not verified native morphology, invented word recordings, a grammar engine, or evidence of mastered knowledge.",
+  "entries": [
+    {
+      "id": "Conversation_-_restaurant:2",
+      "polish": "Poproszę wodę",
+      "english": "Water, please",
+      "cue": "Poproszę is a polite way to ask for something. Wodę means water as the thing you are requesting; practise the complete sentence."
+    },
+    {
+      "id": "Conversation_-_restaurant:3",
+      "polish": "Poproszę kawę",
+      "english": "Coffee, please",
+      "cue": "Poproszę introduces the request; kawę is coffee in the form used after this request. Compare it with Poproszę wodę."
+    },
+    {
+      "id": "Conversation_-_restaurant:4",
+      "polish": "Poproszę herbatę",
+      "english": "Tea, please",
+      "cue": "Herbatę means tea when requested here. Poproszę remains the same while the requested drink changes."
+    },
+    {
+      "id": "Conversation_-_restaurant:12",
+      "polish": "Zupa dnia",
+      "english": "Soup of the day",
+      "cue": "Zupa means soup; dnia means of the day. Zupa dnia is the common full menu phrase soup of the day."
+    },
+    {
+      "id": "Conversation_-_restaurant:14",
+      "polish": "Deser",
+      "english": "Dessert",
+      "cue": "Deser is dessert. This is a standalone noun here, so learn the complete recorded word and its meaning."
+    },
+    {
+      "id": "Conversation_-_shopping:0",
+      "polish": "Ile to kosztuje?",
+      "english": "How much does this cost?",
+      "cue": "Ile asks how much. To means this or it; kosztuje means costs. Together Ile to kosztuje? asks how much this costs."
+    },
+    {
+      "id": "Conversation_-_shopping:1",
+      "polish": "Ile to razem?",
+      "english": "How much is it altogether?",
+      "cue": "Ile ...? asks how much, while razem means together or altogether. Compare this with Ile to kosztuje?."
+    },
+    {
+      "id": "Conversation_-_shopping:2",
+      "polish": "Czy mogę zapłacić kartą?",
+      "english": "Can I pay by card?",
+      "cue": "Czy introduces the yes/no question. Mogę means can I, zapłacić means to pay, and kartą means by card."
+    },
+    {
+      "id": "Conversation_-_shopping:5",
+      "polish": "Gdzie jest kasa?",
+      "english": "Where is the checkout?",
+      "cue": "Gdzie asks where, jest means is, and kasa is the checkout or cash desk. The question follows the Gdzie jest ...? pattern."
+    },
+    {
+      "id": "Conversation_-_shopping:8",
+      "polish": "Poproszę paragon",
+      "english": "Receipt, please",
+      "cue": "Poproszę makes this polite. Paragon means a receipt; use the whole expression when asking for one."
+    },
+    {
+      "id": "Getting_Around_1:0",
+      "polish": "Gdzie jest przystanek?",
+      "english": "Where is the bus/tram stop?",
+      "cue": "Gdzie jest ...? asks where something is. Przystanek is a stop for a bus or tram; here you ask where the stop is."
+    },
+    {
+      "id": "Getting_Around_1:2",
+      "polish": "Gdzie jest metro?",
+      "english": "Where is the metro?",
+      "cue": "Gdzie jest ...? is the same where-is question. Metro names the subway or metro system."
+    },
+    {
+      "id": "Getting_Around_1:14",
+      "polish": "Ile kosztuje bilet?",
+      "english": "How much is the ticket?",
+      "cue": "Ile means how much, kosztuje means costs, and bilet means ticket. Notice that the price question differs from Ile to kosztuje?."
+    },
+    {
+      "id": "Getting_Around_1:17",
+      "polish": "Gdzie mogę kupić bilet?",
+      "english": "Where can I buy a ticket?",
+      "cue": "Gdzie means where; mogę means can I; kupić means buy; bilet means ticket. Practise the complete Where can I buy a ticket? question."
+    },
+    {
+      "id": "Getting_Around_1:22",
+      "polish": "Czy to daleko stąd?",
+      "english": "Is it far from here?",
+      "cue": "Czy starts a yes/no question. To means it or this, daleko means far, and stąd means from here."
+    }
+  ]
+}
