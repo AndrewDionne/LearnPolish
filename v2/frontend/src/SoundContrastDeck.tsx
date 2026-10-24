@@ -15,8 +15,8 @@ type Props = {
 
 /** Compare short individual recordings side by side; no automatic phonetic grading. */
 export default function SoundContrastDeck({ lesson, focusGroupId, currentId, playing, onSelect, onPlay }: Props) {
-  if (!lesson.soundGroups?.length) return null;
   const [view,setView]=useState<'compare'|'recognize'>('compare');
+  if (!lesson.soundGroups?.length) return null;
   const byId = new Map(lesson.items.map(item => [item.id, item]));
   const cards= soundListeningCards(lesson);
   const groups = focusGroupId ? lesson.soundGroups.filter(g => g.id === focusGroupId) : lesson.soundGroups;
