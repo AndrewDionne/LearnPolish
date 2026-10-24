@@ -44,10 +44,10 @@ test('C-06 source-only practice sequence advances to next real group without fak
    await page.getByRole('button',{name:/Got it/}).click();
  }
  await expect(page.getByRole('heading',{name:'Nicely done!'})).toBeVisible();
- await page.getByRole('button',{name:/Next: Street and place words/}).click();
- await expect(page.locator('.unit-practice-head')).toContainText('Street and place words');
- await expect(page.locator('.polish-text')).toHaveText('ulica');
- await expect(page.locator('.unit-practice-head')).toContainText('1/6');
+ await page.getByRole('button',{name:/Next: Simple food requests/}).click();
+ await expect(page.locator('.unit-practice-head')).toContainText('Simple food requests');
+ await expect(page.locator('.polish-text')).toHaveText('Poproszę wodę');
+ await expect(page.locator('.unit-practice-head')).toContainText('1/5');
 });
 
 test('C-06 first-word disclosure fits a narrow mobile screen without staging labels',async({page})=>{
