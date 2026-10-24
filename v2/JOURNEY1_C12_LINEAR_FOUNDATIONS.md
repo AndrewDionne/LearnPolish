@@ -1,3 +1,5 @@
+> **SUPERSEDED BY [C-13 prerequisite-complete instruction](JOURNEY1_C13_PREREQUISITE_COVERAGE.md):** Owner withdrew the 80/20 quota. C-12's original order put sentence applications BEFORE the grammar they require. C-13 now teaches grammar first, then applies it. Historical implementation description below is kept only for continuity.
+
 # C-12 — Authoritative first-word → basic-vocabulary → first-sentence progression
 
 **Curriculum owner decision:** Within Journey 1 fundamentals, the content sequence is **First words → Basic vocabulary → First sentences / basic grammar**. Alphabet/letter combinations and sound-recognition fundamentals remain available before this sequence. These are normal **instructional headings** requested by the owner, NOT the app's hidden three-by-three journey tier indicators; never add accessibility labels or hover legends for the internal position-tier scheme.
