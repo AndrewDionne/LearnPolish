@@ -1,6 +1,6 @@
 import {expect,test} from '@playwright/test';
 
-test('C-07 beginner Speak and Learn reveal segmented spelling but no unreviewed syllable playback',async({page,isMobile})=>{
+test('C-08 word-level Speak and Learn show optional spelling guide without any syllable playback',async({page,isMobile})=>{
  await page.goto('/');
  await page.getByRole('button',{name:'Explore lessons'}).click();
  const guide=page.getByRole('region',{name:'Guided Polish foundations'});
@@ -20,14 +20,14 @@ test('C-07 beginner Speak and Learn reveal segmented spelling but no unreviewed 
  await expect(speakToggle).toHaveAttribute('aria-pressed','true');
  await expect(page.locator('.speak-word-segment')).toHaveCount(2);
  await expect(page.locator('.speak-word-polish')).toHaveText(['Pro','szę']);
- await expect(page.locator('.syllable-audio-controls')).toHaveCount(0);
+ await expect(page.getByRole('button',{name:/Play syllable/})).toHaveCount(0);
  await expect(page.getByRole('button',{name:/Hear example/})).toBeEnabled();
  const nav=page.getByRole('navigation',{name:isMobile?'Mobile navigation':'Main navigation'});
  await nav.getByRole('button',{name:'Library'}).click();
  await expect(page.locator('.lesson-tile')).toHaveCount(26);
 });
 
-test('C-07 full-utterance clips and Polish letter examples are never silently treated as reviewed syllable MP3s',async({page})=>{
+test('C-08 whole-utterance reference audio is the only playback target at mobile width',async({page})=>{
  await page.setViewportSize({width:320,height:740});
  await page.goto('/');
  await page.getByRole('button',{name:'Explore lessons'}).click();
@@ -42,7 +42,7 @@ test('C-07 full-utterance clips and Polish letter examples are never silently tr
  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(322);
 });
 
-test('C-07 automatic draft syllable guesses are withheld rather than taught as verified syllabification',async({page})=>{
+test('C-08 unreviewed automatic spelling guesses stay out of the optional guide',async({page})=>{
  await page.goto('/');
  await page.getByRole('button',{name:'Explore lessons'}).click();
  const guide=page.getByRole('region',{name:'Guided Polish foundations'});
