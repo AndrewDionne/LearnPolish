@@ -31,7 +31,7 @@ test('C-16B refuses hidden source order changes, incorrect first exposure or fak
   [(x)=>x.guidedOrder[0].recordedSourceItems[0].polish='Nie','guided source selection drift'],
   [(x)=>x.guidedOrder[13].recordedSourceItems.pop(),'guided source selection drift'],
   [(x)=>x.basicSourceRows[0].firstGuidedUse=null,'actual guided first introduction drift'],
-  [(x)=>x.basicSourceRows[0].encounterStatus='approved','encounterStatus'],
+  [(x)=>x.basicSourceRows[0].encounterStatus='approved','recorded_source_first_guided_use'],
   [(x)=>x.basicSourceRows.pop(),'172'],
   [(x)=>x.firstWrittenFormsByUnit[0].forms[0].newlyEncounteredWrittenForms=['made-up'],'actual first guided written forms drift'],
   [(x)=>x.status='native_certified','guided_chronological_source_trace_only'],
