@@ -55,7 +55,7 @@ def read_manifest(data: dict) -> tuple[str, str, list[dict]]:
     return name.strip(), owner.strip().lower(), cleaned
 
 
-def provision_test_group(connection, manifest: dict, now: int | None = None) -> dict:
+def provision_test_group(connection, manifest: dict, now: int | None = None, before_commit=None) -> dict:
     """Atomically provision 1 group + unique pending accounts, no shared credentials.
 
     Caller commits and distributes the private returned receipt; never print it.
@@ -93,16 +93,20 @@ def provision_test_group(connection, manifest: dict, now: int | None = None) -> 
         for person in packs:
             connection.execute("INSERT INTO members(family_id,user_id,joined_at) VALUES(?,?,?)",
                                (group_id,person["user_id"],epoch))
+        # Write the private receipt BEFORE the Neon transaction commits, so a
+        # crash cannot create accounts whose activation secrets were lost.
+        # No plaintext password/code is ever committed to the database.
+        details={"group_name":group,
+                 "participants":[{k:v for k,v in pack.items() if k!="user_id"} for pack in packs],
+                 "delivery":"Send each participant only THEIR OWN private details. Organizer delivers manually.",
+                 "verification":"Recipient enters the activation code in the app after the temporary-password sign-in prompt. Change the temporary password after signing in."}
+        if before_commit is not None:
+            before_commit(details)
         connection.commit()
     except BaseException:
         connection.rollback()
         raise
-    # user_id/group id are not needed by testers, never include session secrets.
-    for pack in packs:
-        del pack["user_id"]
-    return {"group_name":group,"participants":packs,
-            "delivery":"Send each participant only THEIR OWN private details. Organizer delivers manually.",
-            "verification":"Recipient enters the activation code in the app after the temporary-password sign-in prompt. Change the temporary password after signing in."}
+    return details
 
 
 def _private_write(path: Path, data: dict) -> None:
@@ -143,19 +147,8 @@ def main(argv=None):
         raise RuntimeError("Use only PTP_FAMILY_DATABASE_URL for least-privileged ptp_v2_runtime; never owner/V1")
     connection=open_postgres(url)
     try:
-        # Create an exclusive safe file before inserting rows; if Neon fails,
-        # remove the unusable file and rollback. A process crash leaves it
-        # private so an operator can recover instead of losing credentials.
-        receipt={"status":"pending_activation","group_name":group,"participants":[]}
-        _private_write(out,receipt)
         try:
-            data=provision_test_group(connection,info)
-            with open(out,"w",encoding="utf-8") as handle:
-                # File already created by us as owner-private 0600.
-                json.dump(data,handle,ensure_ascii=False,indent=2)
-                handle.write("\n")
-                handle.flush()
-                os.fsync(handle.fileno())
+            provision_test_group(connection,info,before_commit=lambda details:_private_write(out,details))
         except BaseException:
             out.unlink(missing_ok=True)
             raise
