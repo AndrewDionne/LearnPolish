@@ -98,6 +98,40 @@ class AdultPilotAdmissionTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError,"Invalid adult pilot"):
                 create_render_app(dist_path=self._dist(),family_mode="enabled",
                     database_path=self.db,public_origin="https://example.com",require_email=False)
+    def test_render_adult_pilot_wires_restricted_policy_to_family_backend(self):
+        from flask import Flask
+        import render_app
+        seen=[]
+        def fake_family(**kwargs):
+            seen.append(kwargs)
+            api=Flask("v2-pilot")
+            @api.get("/api/v2/family/health")
+            def health():
+                return {"ok":True}
+            return api
+        neon="postgresql://ptp_v2_runtime:private@neon.example.test/Path_to_Polish_DB"
+        with patch.dict(os.environ,{"RENDER":"true",
+                                    "PTP_FAMILY_SIGNUP_MODE":"adult-pilot",
+                                    "PTP_FAMILY_PILOT_EMAILS":self.email}), \
+             patch.object(render_app,"create_family_app",side_effect=fake_family), \
+             patch.object(render_app,"configured_sender",return_value=lambda *_:None), \
+             patch.object(render_app,"postgres_ready",return_value=True):
+            app=create_render_app(dist_path=self._dist(),family_mode="enabled",
+                postgres_url=neon,public_origin="https://path-to-polish-v2.onrender.com")
+            self.assertEqual(app.test_client().get("/health/ready").status_code,200)
+        self.assertEqual(len(seen),1)
+        self.assertEqual(seen[0]["pilot_adult_emails"],(self.email,))
+        self.assertEqual(seen[0]["postgres_url"],neon)
+        self.assertEqual(seen[0]["allowed_origins"],("https://path-to-polish-v2.onrender.com",))
+        self.assertIsNone(seen[0]["database_path"])
+        with patch.dict(os.environ,{"PTP_FAMILY_SIGNUP_MODE":"closed",
+                                    "PTP_FAMILY_PILOT_EMAILS":self.email}), \
+             patch.object(render_app,"create_family_app",side_effect=fake_family), \
+             patch.object(render_app,"configured_sender",return_value=lambda *_:None):
+            create_render_app(dist_path=self._dist(),family_mode="enabled",
+                postgres_url=neon,public_origin="https://path-to-polish-v2.onrender.com")
+        self.assertEqual(seen[-1]["pilot_adult_emails"],())
+
     def test_allowlist_policy_rejects_wildcard_ambiguous_duplicates(self):
         for allowed in (("adult@example.test","adult@example.test"),("*@example.test",),
                         (" INVITED@example.test ",),tuple(f"a{x}@test.example" for x in range(13))):
