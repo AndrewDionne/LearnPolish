@@ -101,13 +101,16 @@ export function useLessonAudio(): Playback {
     };
     excerpt.current=clip;
     try{
+      // Unlock WebAudio during the direct click, before fetch/await. Safari
+      // otherwise may suspend a new context outside transient activation.
+      const context=new AudioContext();
+      clip.context=context;
+      const activated=context.state==='suspended'?context.resume():Promise.resolve();
       const response=await fetch(import.meta.env.BASE_URL+relativePath,{
         signal:clip.controller.signal,credentials:'same-origin'});
       if(!response.ok)throw Error('Audio recording unavailable');
       const body=await response.arrayBuffer();
       if(ticket!==token.current||excerpt.current!==clip)return;
-      const context=new AudioContext();
-      clip.context=context;
       const decoded=await context.decodeAudioData(body);
       if(ticket!==token.current||excerpt.current!==clip)return;
       if(endMs>Math.round(decoded.duration*1000)+30)
@@ -123,7 +126,7 @@ export function useLessonAudio(): Playback {
         setPlaying(null);
         void context.close().catch(()=>{});
       };
-      if(context.state==='suspended')await context.resume();
+      await activated;
       if(ticket!==token.current||excerpt.current!==clip)return;
       source.start(0,startMs/1000,(endMs-startMs)/1000);
       setPlaying(relativePath);
