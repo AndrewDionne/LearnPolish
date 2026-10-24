@@ -1,6 +1,4 @@
 import fs from 'node:fs';
-import {execFileSync} from 'node:child_process';
-import {attachManifestSyllableAudio} from './reviewed-syllable-audio.mjs';
 import {attachPronunciationSegments,parsePronunciationOverrides} from './pronunciation-segments.mjs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -15,7 +13,6 @@ const microDialoguesFile = path.join(root, 'v2/content/micro-dialogues.json');
 const libraryCatalogFile = path.join(root, 'v2/content/library-catalog.json');
 const pronunciationGuideFile = path.join(root, 'v2/content/pronunciation-swietokrzyska.json');
 const pronunciationOverridesFile = path.join(root, 'v2/content/pronunciation-segment-overrides.json');
-const reviewedSyllableAudioFile = path.join(root, 'v2/content/reviewed-syllable-audio-v1.json');
 const voiceProductionFile = path.join(root, 'v2/content/voice-production.json');
 const otherReferenceBlockersFile = path.join(root, 'v2/content/additional-speak-reference-blockers.json');
 const UNSCORABLE_REFERENCE = /\/|[0-9]|…|\.{3,}/u;
@@ -460,19 +457,6 @@ export function buildContent() {
   const referenceReviewItems=attachReferenceReview(lessons,
     JSON.parse(fs.readFileSync(voiceProductionFile,'utf8')),
     JSON.parse(fs.readFileSync(otherReferenceBlockersFile,'utf8')));
-  const syllableAudio=attachManifestSyllableAudio(lessons,
-    JSON.parse(fs.readFileSync(reviewedSyllableAudioFile,'utf8')),outRoot,{
-      // Applied only after external audio/native reviews are explicitly
-      // accepted; blocked empty production manifest never invokes ffprobe.
-      probeDuration:relative=>{
-        const target=path.join(outRoot,relative);
-        const seconds=Number.parseFloat(execFileSync('ffprobe',[
-          '-v','error','-show_entries','format=duration',
-          '-of','default=noprint_wrappers=1:nokey=1',target
-        ],{encoding:'utf8',timeout:10000}).trim());
-        return seconds*1000;
-      }
-    });
   const curriculumCounts=attachLibraryCatalog(lessons,
     JSON.parse(fs.readFileSync(libraryCatalogFile,'utf8')));
   fs.writeFileSync(path.join(outRoot, 'lessons.json'), JSON.stringify({ schemaVersion: 1, lessons }, null, 2) + '\n');
@@ -480,7 +464,6 @@ export function buildContent() {
     lessons: lessons.length,
     pronunciationGrouping,
     referenceReviewItems,
-    syllableAudio,
     curriculumCounts,
     vocabulary: lessons.filter(x => x.kind === 'vocabulary').length,
     reading: lessons.filter(x => x.kind === 'reading').length,

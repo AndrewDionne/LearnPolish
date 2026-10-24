@@ -1,3 +1,5 @@
+> **SUPERSEDED by [C-08 authoritative pronunciation workflow](JOURNEY1_C08_PRONUNCIATION_WORKFLOW.md) (2026-10-24).** This is historical C-07 implementation context, NOT a current plan or gap. The user explicitly does **not** want per-syllable audio for normal word practice. C-08 removes the syllable excerpt engine, timing manifest and approval pipeline. Follow the full-word recording → learner recording → overall score + coloured syllable text → Try again/Next workflow; sound lessons use “sound, like in word” with complete example-word audio.
+
 # C-07 — Syllable-level pronunciation guide and authentic source-audio playback gate
 
 ## What exists and what remains missing

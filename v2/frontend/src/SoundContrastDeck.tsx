@@ -25,12 +25,18 @@ export default function SoundContrastDeck({ lesson, focusGroupId, currentId, pla
   const groups = focusGroupId ? lesson.soundGroups.filter(g => g.id === focusGroupId) : lesson.soundGroups;
   return <section className="contrast-deck" aria-label="Compare Polish sounds">
     <div className="contrast-intro">
-      <div><span className="eyebrow">SOUND LAB · LISTEN AND COMPARE</span><h2>Hear every sound separately</h2><p>{lesson.intro}</p></div>
+      <div><span className="eyebrow">SOUND LAB · LISTEN AND COMPARE</span><h2>Hear sounds in real words</h2><p>{lesson.intro}</p></div>
       <span className="sound-note">Audio from existing lessons · native review pending</span>
     </div>
     <div className="contrast-groups">
       {groups.map(group => <article key={group.id} className="contrast-group">
-        <div className="contrast-group-label"><strong lang="pl">{group.label}</strong><span>{group.ipa}</span></div>
+        <div className="contrast-group-label">
+          <strong lang="pl">{group.label}{(()=>{
+            const example=group.itemIds.map(id=>byId.get(id)).find(item=>
+              item!==undefined && !!item.audio && !!focusedPolishParts(item));
+            return example ? <>, like in {example.polish}</> : null;
+          })()}</strong><span>{group.ipa}</span>
+        </div>
         <p>{group.hint}</p>
         <div className="contrast-examples">
           {group.itemIds.map(id => {
@@ -52,6 +58,6 @@ export default function SoundContrastDeck({ lesson, focusGroupId, currentId, pla
         </div>
       </article>)}
     </div>
-    <p className="sound-caption">Play a recorded example, then try it in Speak. These are full words or phrases containing the highlighted combination—not isolated syllable recordings. Pronunciation scores are not available for these exercises yet.</p>
+    <p className="sound-caption">Listen to each complete example word, with its sound highlighted.</p>
   </section>;
 }
