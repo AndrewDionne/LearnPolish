@@ -1,12 +1,13 @@
 import {useState} from 'react';
 import type {RecordedGlyph} from './recorded-alphabet';
+import {AUDIO_RATES,type AudioRate} from './audio';
 
 type Props={
  letters:RecordedGlyph[];
  combinations:RecordedGlyph[];
  playing:string|null;
- speed:number;
- onSpeed:(speed:number)=>void;
+ speed:AudioRate;
+ onSpeed:(speed:AudioRate)=>void;
  onPlay:(source:string)=>void;
 };
 
@@ -51,7 +52,7 @@ export default function RecordedAlphabetExplorer({
        </button>
        <fieldset className="alphabet-speeds">
          <legend>Playback speed</legend>
-         {[0.75,0.85,1].map(rate=><button type="button" key={rate} aria-pressed={rate===speed}
+         {AUDIO_RATES.map(rate=><button type="button" key={rate} aria-pressed={rate===speed}
            onClick={()=>onSpeed(rate)}>{rate}×</button>)}
        </fieldset>
        <button type="button" className="alphabet-next" onClick={()=>
