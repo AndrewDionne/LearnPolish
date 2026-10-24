@@ -1,0 +1,273 @@
+{
+  "schemaVersion": 1,
+  "status": "complete_inventory_unverified_individual_language_prerequisites",
+  "notes": "26 original active V2 lesson IDs and 8 actual tourist units have been inventoried for the no-outside-learning requirement. This is an evidence-based source/lesson audit, NOT a native speaker item-by-item signoff nor automatic proof of concept coverage. Six recorded Reading lessons now have an introductory full-turn audio/translation pass; other source sets remain unreviewed for all individual grammatical prerequisites. Protected audio is not certified.",
+  "lessons": [
+    {
+      "id": "contrast_l_lstroked",
+      "itemCount": 4,
+      "learnerSupport": "sound-contrast",
+      "reviewStatus": "open_linguistic_prerequisite_review",
+      "observedGap": "Whole-word sound contrasts are examples, not isolated/native-certified letter-name sounds",
+      "nextBridge": "Explain letter L/Ł context and confirm spoken contrast with Polish-native reviewer"
+    },
+    {
+      "id": "contrast_c_cz_cie",
+      "itemCount": 6,
+      "learnerSupport": "sound-contrast",
+      "reviewStatus": "open_linguistic_prerequisite_review",
+      "observedGap": "Three sounds heard in different whole words; writing/phonetic context not independently verified",
+      "nextBridge": "Review Polish c/cz/ć/ci spelling contexts with suitable complete recorded examples"
+    },
+    {
+      "id": "contrast_s_sz_sie",
+      "itemCount": 6,
+      "learnerSupport": "sound-contrast",
+      "reviewStatus": "open_linguistic_prerequisite_review",
+      "observedGap": "s/sz/ś/si contrasts are not reviewed native minimal pairs",
+      "nextBridge": "Validate contrast exemplars and spelling context; retain complete words only"
+    },
+    {
+      "id": "contrast_z_zh_zi",
+      "itemCount": 6,
+      "learnerSupport": "sound-contrast",
+      "reviewStatus": "open_linguistic_prerequisite_review",
+      "observedGap": "z/ż/rz/ź/zi orthography and phonetic grouping needs native review",
+      "nextBridge": "Review context-dependent written forms and original recording matches"
+    },
+    {
+      "id": "contrast_krzy_przy",
+      "itemCount": 4,
+      "learnerSupport": "sound-contrast",
+      "reviewStatus": "open_linguistic_prerequisite_review",
+      "observedGap": "Difficult clusters occur inside longer original whole words before broader root vocabulary",
+      "nextBridge": "Keep optional until foundational consonants and meanings are taught"
+    },
+    {
+      "id": "numbers_1-20",
+      "itemCount": 20,
+      "learnerSupport": "recorded-word-list",
+      "reviewStatus": "open_linguistic_prerequisite_review",
+      "observedGap": "Numbers are recorded; transfer to quantities, noun forms and price utterances is not complete",
+      "nextBridge": "Link the intact 1–20 set into later number-and-noun demonstrations; keep optional 10+10 practice"
+    },
+    {
+      "id": "Numbers_20-100",
+      "itemCount": 36,
+      "learnerSupport": "optional-original-inventory",
+      "reviewStatus": "open_linguistic_prerequisite_review",
+      "observedGap": "Mixed tens, compound numbers and numbers over 100/1000 have no explicit place-value progression",
+      "nextBridge": "Introduce tens and combinations with real source audio before compound quantities"
+    },
+    {
+      "id": "Road_Terminology",
+      "itemCount": 27,
+      "learnerSupport": "optional-original-inventory",
+      "reviewStatus": "open_linguistic_prerequisite_review",
+      "observedGap": "Road/street terms include multi-word morphology and two protected speech references",
+      "nextBridge": "Introduce core road nouns before case-marked location/direction expressions; review protected refs"
+    },
+    {
+      "id": "Districts_of_Warszawa",
+      "itemCount": 20,
+      "learnerSupport": "optional-original-inventory",
+      "reviewStatus": "open_linguistic_prerequisite_review",
+      "observedGap": "Warsaw geography is not a beginner prerequisite; proper-name phonetics are unreviewed",
+      "nextBridge": "Keep optional, teach geographic references when needed inside real directions"
+    },
+    {
+      "id": "The_Cities_of_Poland",
+      "itemCount": 29,
+      "learnerSupport": "optional-original-inventory",
+      "reviewStatus": "open_linguistic_prerequisite_review",
+      "observedGap": "Twenty-nine city names are geography inventory, not graded language progression",
+      "nextBridge": "Use individual names when route/direction context calls for them"
+    },
+    {
+      "id": "Names_of_Poland_1",
+      "itemCount": 32,
+      "learnerSupport": "optional-original-inventory",
+      "reviewStatus": "open_linguistic_prerequisite_review",
+      "observedGap": "Thirty-two proper names do not teach personal introduction structures",
+      "nextBridge": "Teach greeting and name-question/answer patterns first"
+    },
+    {
+      "id": "Countries_of_the_World",
+      "itemCount": 68,
+      "learnerSupport": "optional-original-inventory",
+      "reviewStatus": "open_linguistic_prerequisite_review",
+      "observedGap": "Sixty-eight country names do not teach nationality or where-from grammar",
+      "nextBridge": "Keep optional; preteach selected country/name when an introduction actually needs it"
+    },
+    {
+      "id": "Conversation_1",
+      "itemCount": 26,
+      "learnerSupport": "guided-source-subset",
+      "reviewStatus": "open_linguistic_prerequisite_review",
+      "observedGap": "Full original introductions exceed focused first words and include unreviewed reference cases",
+      "nextBridge": "Introduce full source expressions with gloss/audio; audit question, person and verb forms"
+    },
+    {
+      "id": "Conversation_-_shopping",
+      "itemCount": 25,
+      "learnerSupport": "guided-source-subset",
+      "reviewStatus": "open_linguistic_prerequisite_review",
+      "observedGap": "Full shopping lesson contains price, payment, discount and additional unintroduced request forms",
+      "nextBridge": "Teach prices and Czy questions then introduce each new complete source phrase before asking recall"
+    },
+    {
+      "id": "Conversation_-_restaurant",
+      "itemCount": 25,
+      "learnerSupport": "guided-source-subset",
+      "reviewStatus": "open_linguistic_prerequisite_review",
+      "observedGap": "Full orders/bill/payment contain new request and noun-case forms; protected variants remain",
+      "nextBridge": "Introduce recorded Poproszę and food vocabulary; review all later item inflections and variants"
+    },
+    {
+      "id": "Food_and_Dinning",
+      "itemCount": 25,
+      "learnerSupport": "guided-source-subset",
+      "reviewStatus": "open_linguistic_prerequisite_review",
+      "observedGap": "Table size, food preferences and negative conjugations outgrow the first example patterns",
+      "nextBridge": "Add short native-reviewed bridges for agreement, negation and waiter replies"
+    },
+    {
+      "id": "Getting_Around_1",
+      "itemCount": 26,
+      "learnerSupport": "guided-source-subset",
+      "reviewStatus": "open_linguistic_prerequisite_review",
+      "observedGap": "Full location questions use route, ticket and stop syntax not all covered by curated subset",
+      "nextBridge": "Introduce where/can/quantity first; audit every question and find original response clips"
+    },
+    {
+      "id": "Transit_1",
+      "itemCount": 20,
+      "learnerSupport": "guided-source-subset",
+      "reviewStatus": "open_linguistic_prerequisite_review",
+      "observedGap": "Ticket, stop and route expressions require transport vocabulary and further grammatical forms",
+      "nextBridge": "Preteach recorded travel nouns and follow with route/ticket mini exchanges"
+    },
+    {
+      "id": "Emergencies_and_Health",
+      "itemCount": 25,
+      "learnerSupport": "guided-source-subset",
+      "reviewStatus": "open_linguistic_prerequisite_review",
+      "observedGap": "Emergency/medical wording is safety-critical; four references need verification",
+      "nextBridge": "Keep authentic urgent help phrases accessible, but obtain native/medical language review before scoring"
+    },
+    {
+      "id": "Basic_01R",
+      "itemCount": 6,
+      "learnerSupport": "whole-turn-introduction",
+      "reviewStatus": "open_linguistic_prerequisite_review",
+      "observedGap": "Original first dialogue already includes name and how-are-you grammar outside isolated first words",
+      "nextBridge": "First teach all six original recorded lines and meanings; review grammar for name/response transfers"
+    },
+    {
+      "id": "Grocery_store_very_basic_shopping",
+      "itemCount": 9,
+      "learnerSupport": "whole-turn-introduction",
+      "reviewStatus": "open_linguistic_prerequisite_review",
+      "observedGap": "Clerk questions about adjective colour/quantity and polite address are new to first words",
+      "nextBridge": "Teach all nine original recorded turns before testing and review quantities/colour forms"
+    },
+    {
+      "id": "H_M_clothes_shop_trying_on_a_T-shirt",
+      "itemCount": 10,
+      "learnerSupport": "whole-turn-introduction",
+      "reviewStatus": "open_linguistic_prerequisite_review",
+      "observedGap": "Size, clothing adjectives and fitting-room case grammar are not covered in introductory path",
+      "nextBridge": "Teach all ten original recorded turns first; add lesson-internal size/colour grammar bridge"
+    },
+    {
+      "id": "On_the_tram_talking_to_another_passenger",
+      "itemCount": 9,
+      "learnerSupport": "whole-turn-introduction",
+      "reviewStatus": "open_linguistic_prerequisite_review",
+      "observedGap": "Polite seating and travel-stop reply grammar extends beyond basic route nouns",
+      "nextBridge": "Preteach nine original whole turns and review seat/stop forms before comprehension"
+    },
+    {
+      "id": "Asking_the_tram_driver_for_directions",
+      "itemCount": 8,
+      "learnerSupport": "whole-turn-introduction",
+      "reviewStatus": "open_linguistic_prerequisite_review",
+      "observedGap": "Getting off and destination wording introduces new case and verb forms",
+      "nextBridge": "Teach all eight recorded turns; review wysiąść and tram-route wording"
+    },
+    {
+      "id": "Museum_buying_tickets_and_basic_info",
+      "itemCount": 9,
+      "learnerSupport": "whole-turn-introduction",
+      "reviewStatus": "open_linguistic_prerequisite_review",
+      "observedGap": "Museum prices, schedules and exhibition questions assume time/ticket vocabulary",
+      "nextBridge": "Preteach nine recorded lines and expand opening-hour/quantity concepts"
+    },
+    {
+      "id": "speak_swietokrzyska",
+      "itemCount": 1,
+      "learnerSupport": "unverified-lab",
+      "reviewStatus": "open_linguistic_prerequisite_review",
+      "observedGap": "Diagnostic lacks verified spoken reference and may not support assessed beginner practice",
+      "nextBridge": "Remain separate from course until authentic verified word audio and teacher check"
+    }
+  ],
+  "touristUnits": [
+    {
+      "id": "T01",
+      "learnerSupport": "source-only-tourist",
+      "reviewStatus": "open_linguistic_prerequisite_review",
+      "observedGap": "Early greeting dialogue assumes response structures beyond one-word politeness",
+      "nextBridge": "Use original Read/Listen lines, show full meanings and explicitly teach reply pattern"
+    },
+    {
+      "id": "T02",
+      "learnerSupport": "source-only-tourist",
+      "reviewStatus": "open_linguistic_prerequisite_review",
+      "observedGap": "Original spoken first-person name response remains missing/unsafe for scored Speak",
+      "nextBridge": "Keep protected response excluded; add reviewed full-phrase recorded name answer"
+    },
+    {
+      "id": "T03",
+      "learnerSupport": "source-only-tourist",
+      "reviewStatus": "open_linguistic_prerequisite_review",
+      "observedGap": "No verified prices/payment reading exchange or change-giving response",
+      "nextBridge": "Teach numbers, Ile and Czy mogę forms before applying and produce authentic native-reviewed reply"
+    },
+    {
+      "id": "T04",
+      "learnerSupport": "source-only-tourist",
+      "reviewStatus": "open_linguistic_prerequisite_review",
+      "observedGap": "Missing natural waiter question/reply and restaurant comprehension context",
+      "nextBridge": "Use full recorded requests and add verified two-way waiter/customer audio"
+    },
+    {
+      "id": "T05",
+      "learnerSupport": "source-only-tourist",
+      "reviewStatus": "open_linguistic_prerequisite_review",
+      "observedGap": "Grocery seller's price/payment follow-up and language accuracy remain source-only",
+      "nextBridge": "Preteach full recorded dialogue turns and review pricing/quantity follow-up"
+    },
+    {
+      "id": "T06",
+      "learnerSupport": "source-only-tourist",
+      "reviewStatus": "open_linguistic_prerequisite_review",
+      "observedGap": "Pedestrian left/right/straight-ahead and clarification replies unavailable",
+      "nextBridge": "Teach source route/stop turns then provide native-reviewed wayfinding replies"
+    },
+    {
+      "id": "T07",
+      "learnerSupport": "source-only-tourist",
+      "reviewStatus": "open_linguistic_prerequisite_review",
+      "observedGap": "Platform, timetable, transfers and ticket policy lack verified contemporary dialogue",
+      "nextBridge": "Use original tram-driver scene; obtain verified ticket/route expansions when required"
+    },
+    {
+      "id": "T08",
+      "learnerSupport": "source-only-tourist",
+      "reviewStatus": "open_linguistic_prerequisite_review",
+      "observedGap": "Museum price/hours/exhibition sequence needs contextual time/ticket teaching and review",
+      "nextBridge": "Preteach original museum dialogue and native-review hours/exhibition wording"
+    }
+  ]
+}
