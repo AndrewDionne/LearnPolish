@@ -133,3 +133,51 @@ test('private profile edits display name and shows only joined learning groups',
   await page.getByRole('button',{name:/Learning groups & scoreboards/}).first().click();
   await expect(page.getByRole('heading',{name:'Learning groups'})).toBeVisible();
 });
+
+
+test('private manual tester signs in, enters one-use organizer code, then sees personal group on desktop/mobile',async({page})=>{
+  await page.route('**/api/v2/family/health',route=>route.fulfill(json({
+    ok:true,registration_mode:'closed',registration_available:false,
+    email_verification_available:false,password_recovery_available:false,
+    owner_delivered_activation_available:true
+  })));
+  let signInCount=0;
+  await page.route('**/api/v2/family/login',route=>{
+    signInCount++;
+    if(signInCount===1){
+      return route.fulfill({status:403,contentType:'application/json',
+        body:JSON.stringify({error:'email_verification_required'})});
+    }
+    return route.fulfill(json({token:'unique-session-after-private-code',user:{id:5,name:'Tester'}}));
+  });
+  let verificationCount=0;
+  await page.route('**/api/v2/family/verification/confirm',route=>{
+    const data=route.request().postDataJSON() as {email:string;code:string};
+    expect(data.email).toBe('tester@example.test');
+    expect(data.code).toBe('one-time-owner-delivered-code');
+    verificationCount++;
+    return route.fulfill(json({verified:true}));
+  });
+  await page.route('**/api/v2/family/me',route=>route.fulfill(json({
+    user:{id:5},families:[{id:3,name:'Polish Explorers',can_invite:false}]
+  })));
+  await page.goto('/');
+  await page.getByRole('button',{name:'Expedition'}).first().click();
+  const panel=page.getByRole('region',{name:'Family expedition'});
+  await expect(panel.getByRole('button',{name:'Sign in to family'})).toBeVisible();
+  await expect(panel.getByLabel('Display name')).toHaveCount(0);
+  await expect(panel.getByText(/set up by your group organizer/)).toBeVisible();
+  await expect(panel.getByRole('button',{name:'Create account'})).toBeDisabled();
+  await panel.getByLabel('Email').fill('tester@example.test');
+  await panel.getByLabel('Password').fill('per-recipient-temporary-test-password');
+  await panel.getByRole('button',{name:'Sign in to family'}).click();
+  await expect(panel.getByRole('heading',{name:'Activate your account'})).toBeVisible();
+  await expect(panel.getByText(/expires after 7 days/)).toBeVisible();
+  await expect(panel.getByRole('button',{name:'Resend code'})).toHaveCount(0);
+  await panel.getByLabel('Verification code').fill('one-time-owner-delivered-code');
+  await panel.getByRole('button',{name:'Activate account'}).click();
+  await expect(panel.getByLabel('Choose family group')).toBeVisible();
+  await expect(panel.getByLabel('Choose family group').locator('option')).toHaveCount(2);
+  expect(verificationCount).toBe(1);
+  expect(signInCount).toBe(2);
+});

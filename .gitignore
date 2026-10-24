@@ -110,3 +110,8 @@ ptp-speech-v1--*.wav
 # Owner's FINAL fixed on-disk Polish research directory (recordings and AI outputs).
 # Keep this exact path in place; ignored files must not be added to Git.
 /PathToPolish-Private-AI/
+
+# Private pre-provisioned test group manifest and one-time per-person login packs.
+# Never commit emails, temporary passwords or activation codes.
+/v2/server/tester-private/
+*tester-activation-credentials*.json

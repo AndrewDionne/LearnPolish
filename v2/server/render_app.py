@@ -73,6 +73,15 @@ def create_render_app(*, dist_path: str | Path | None = None,
         if signup_mode == "adult-pilot" and not pilot_emails:
             raise RuntimeError("Adult pilot enrollment requires an email allowlist")
         approved_pilot = pilot_emails if signup_mode == "adult-pilot" else ()
+        # Private operator-created accounts can use single-use codes personally
+        # delivered to their own email by the group organizer. This does not
+        # create public registration or require an SMTP/Resend integration.
+        tester_activation = os.getenv("PTP_FAMILY_TESTER_ACTIVATION", "disabled")
+        if tester_activation not in {"disabled", "owner-delivered"}:
+            raise RuntimeError("Unsupported tester activation mode")
+        owner_delivered = tester_activation == "owner-delivered"
+        if owner_delivered and (signup_mode != "closed" or pilot_emails):
+            raise RuntimeError("Owner-delivered activation requires closed registration")
         # The Neon Console/API creates highly privileged DB roles by default;
         # require the separately created SQL role with only ptp_v2 access.
         if neon and urlparse(neon).username != "ptp_v2_runtime":
@@ -84,14 +93,18 @@ def create_render_app(*, dist_path: str | Path | None = None,
         origin = _trusted_origin(public_origin or os.getenv("PTP_PUBLIC_ORIGIN", ""))
         email_required = (os.getenv("PTP_RENDER_REQUIRE_EMAIL", "1") == "1"
                           if require_email is None else require_email)
-        if email_required and (configured_sender("verification") is None or
-                               configured_sender("recovery") is None):
-            raise RuntimeError("Live V2 account verification/recovery SMTP must be configured")
+        if owner_delivered:
+            if configured_sender("verification") is not None or configured_sender("recovery") is not None:
+                raise RuntimeError("Owner-delivered codes cannot mix with automated email")
+        elif email_required and (configured_sender("verification") is None or
+                                 configured_sender("recovery") is None):
+            raise RuntimeError("Live V2 account verification/recovery email must be configured")
         app = create_family_app(database_path=database or None,
                                 postgres_url=neon or None,
                                 catalog_path=str(catalog),
                                 allowed_origins=(origin,),
-                                pilot_adult_emails=approved_pilot)
+                                pilot_adult_emails=approved_pilot,
+                                owner_delivered_test_codes=owner_delivered)
     else:
         # The Free plan has NO durable private SQLite. Don't initialize family
         # routes or issue accounts that vanish on the next Render sleep/restart.

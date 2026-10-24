@@ -21,6 +21,7 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
   const [password,setPassword]=useState('');
   const [recoveryAvailable,setRecoveryAvailable]=useState(false);
   const [registrationAvailable,setRegistrationAvailable]=useState(false);
+  const [ownerDeliveredActivation,setOwnerDeliveredActivation]=useState(false);
   const [registrationMode,setRegistrationMode]=useState<'adult_pilot'|'closed'|'local_test'>('closed');
   const [adultConfirmed,setAdultConfirmed]=useState(false);
   const [pendingVerification,setPendingVerification]=useState(false);
@@ -57,12 +58,15 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
     if(!FAMILY_API||token)return;
     let active=true;
     void familyRequest<{password_recovery_available:boolean;email_verification_available:boolean;
-        registration_available?:boolean;registration_mode?:'adult_pilot'|'closed'|'local_test'}>('/api/v2/family/health')
+        registration_available?:boolean;registration_mode?:'adult_pilot'|'closed'|'local_test';
+        owner_delivered_activation_available?:boolean}>('/api/v2/family/health')
       .then(data=>{if(active){setRecoveryAvailable(data.password_recovery_available===true);
         setRegistrationAvailable(data.registration_available===true);
-        setRegistrationMode(data.registration_mode??'closed');}})
+        setRegistrationMode(data.registration_mode??'closed');
+        setOwnerDeliveredActivation(data.owner_delivered_activation_available===true);
+        if(data.owner_delivered_activation_available===true)setAuthMode('sign-in');}})
       .catch(()=>{if(active){setRecoveryAvailable(false);
-        setRegistrationAvailable(false);setRegistrationMode('closed');}});
+        setRegistrationAvailable(false);setRegistrationMode('closed');setOwnerDeliveredActivation(false);}});
     return ()=>{active=false;};
   },[token]);
   useEffect(()=>{
@@ -185,7 +189,9 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
     }catch(e){
       if(e instanceof Error&&e.message==='email verification required'){
         setPendingVerification(true);
-        setStatus('Confirm your email address to activate this family account.');
+        setStatus(ownerDeliveredActivation
+          ?'Enter the one-time activation code shared with you by your group organizer.'
+          :'Confirm your email address to activate this family account.');
         return;
       }
       throw e;
@@ -284,18 +290,20 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
       {token&&<button type="button" onClick={()=>void run(logout)} disabled={busy}>Sign out</button>}</div>
     {!token ? <div className="family-auth">
       {pendingVerification?<div className="family-verification">
-        <h3>Verify your email</h3>
-        <p>Enter the code sent to your mailbox within 30 minutes. Family invitations,
-          shared XP and account access require verified email.</p>
+        <h3>{ownerDeliveredActivation?'Activate your account':'Verify your email'}</h3>
+        {ownerDeliveredActivation
+          ?<p>Enter the private activation code your group organizer shared with you. It expires after 7 days.</p>
+          :<p>Enter the code sent to your mailbox within 30 minutes. Family invitations,
+            shared XP and account access require verified email.</p>}
         <label>Email<input type="email" value={email} autoComplete="email"
           onChange={e=>setEmail(e.target.value)}/></label>
         <label>Verification code<input value={verificationCode} autoComplete="off"
           onChange={e=>setVerificationCode(e.target.value.trim())}/></label>
         <div className="family-actions">
           <button type="button" disabled={busy||!verificationCode.trim()}
-            onClick={()=>void run(verifyEmail)}>Verify email</button>
-          <button type="button" disabled={busy||!email.trim()||!password}
-            onClick={()=>void run(resendVerification)}>Resend code</button>
+            onClick={()=>void run(verifyEmail)}>{ownerDeliveredActivation?'Activate account':'Verify email'}</button>
+          {!ownerDeliveredActivation&&<button type="button" disabled={busy||!email.trim()||!password}
+            onClick={()=>void run(resendVerification)}>Resend code</button>}
         </div>
         <button type="button" disabled={busy} onClick={()=>{
           setPendingVerification(false);setAuthMode('sign-in');setVerificationCode('');setError('');setStatus('');
@@ -347,7 +355,9 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
                 onClick={()=>void run(login)}>Sign in to family</button>}
         </div>
         {authMode==='create'&&<small>Use a password of at least 12 characters. Verify the code in your email before joining a family.</small>}
-        {!registrationAvailable&&<p className="family-note">New family accounts are not open yet. Existing verified adults may sign in when the service is connected.</p>}
+        {!registrationAvailable&&<p className="family-note">{ownerDeliveredActivation
+          ?'Private tester accounts are set up by your group organizer. Sign in using your own email and temporary password.'
+          :'New family accounts are not open yet. Existing verified adults may sign in when the service is connected.'}</p>}
         {registrationMode==='adult_pilot'&&<p className="family-note">Private adult-only test; registration requires an invitation for your email. Child accounts are not yet available.</p>}
         {recoveryAvailable&&<button type="button" className="family-recovery-link" disabled={busy} onClick={()=>{
           setRecoveryMode(true);setError('');setStatus('');}}>Forgot password?</button>}
