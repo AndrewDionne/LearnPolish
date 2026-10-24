@@ -480,3 +480,34 @@ test('C-14 all six complete reading conversations have matching Polish, English,
  assert.equal(total,51);
  assert.equal(catalog.length,26);
 });
+
+test('C-14 full Journey 1 inventory covers exactly 26 active source lessons/482 items and eight original tourist units, not false native certification',()=>{
+ buildContent();
+ const report=JSON.parse(fs.readFileSync(path.resolve('../content/journey1-full-source-gap-audit-v1.json'),'utf8'));
+ const corpus=JSON.parse(fs.readFileSync(path.resolve('public/generated/lessons.json'),'utf8')).lessons;
+ const units=JSON.parse(fs.readFileSync(path.resolve('../content/tourist-units-v1.json'),'utf8')).units;
+ assert.equal(report.status,'complete_inventory_unverified_individual_language_prerequisites');
+ assert.equal(report.lessons.length,26);
+ assert.equal(report.touristUnits.length,8);
+ assert.deepEqual(new Set(report.lessons.map(row=>row.id)),new Set(corpus.map(x=>x.id)));
+ assert.deepEqual(new Set(report.touristUnits.map(row=>row.id)),new Set(units.map(x=>x.id)));
+ let all=0;
+ for(const row of report.lessons){
+  const source=corpus.find(x=>x.id===row.id);
+  assert.equal(row.itemCount,source.items.length);
+  assert.equal(row.reviewStatus,'open_linguistic_prerequisite_review');
+  assert.ok(row.observedGap.length>=35);
+  assert.ok(row.nextBridge.length>=35);
+  assert.ok(row.learnerSupport);
+  if(source.kind==='reading')assert.equal(row.learnerSupport,'whole-turn-introduction');
+  all+=row.itemCount;
+ }
+ assert.equal(all,482);
+ for(const row of report.touristUnits){
+  assert.equal(row.reviewStatus,'open_linguistic_prerequisite_review');
+  assert.ok(row.observedGap.length>=30);
+  assert.ok(row.nextBridge.length>=30);
+ }
+ assert.equal(report.lessons.filter(row=>row.learnerSupport==='whole-turn-introduction')
+  .reduce((n,x)=>n+x.itemCount,0),51);
+});
