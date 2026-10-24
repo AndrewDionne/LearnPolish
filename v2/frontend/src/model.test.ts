@@ -162,13 +162,13 @@ describe('C-07 independently reviewed source-word syllable excerpt schema',()=>{
   audio:timings.audio,syllableAudio:timings};
  const source={schemaVersion:1,id:'Road_Terminology',title:'Roads',
   source:'legacy',kind:'vocabulary',items:[item]};
- it('permits properly aligned reviewed source excerpts but not arbitrary imported personal clip data',()=>{
+ test('permits properly aligned reviewed source excerpts but not arbitrary imported personal clip data',()=>{
   expect(validateLesson(source)).toBe(true);
   expect(validateLesson({...source,source:'personal'})).toBe(false);
   expect(validateLesson({...source,items:[{...item,audio:undefined}]})).toBe(false);
   expect(validateLesson({...source,items:[{...item,polish:'aleja'}]})).toBe(false);
  });
- it('rejects zero/overlapping/reordered/out-of-duration excerpts',()=>{
+ test('rejects zero/overlapping/reordered/out-of-duration excerpts',()=>{
   expect(validateLesson({...source,items:[{...item,syllableAudio:{
    ...timings,segments:[timings.segments[0],{...timings.segments[1],startMs:200},timings.segments[2]]
   }}]})).toBe(false);
