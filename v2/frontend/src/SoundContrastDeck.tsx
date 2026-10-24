@@ -1,3 +1,6 @@
+import {useState} from 'react';
+import {soundListeningCards} from './sound-listening';
+import SoundEarQuiz from './SoundEarQuiz';
 import type { Lesson, LessonItem } from './model';
 
 type Props = {
@@ -21,14 +24,23 @@ export function focusedPolishParts(item: LessonItem): {before:string;focus:strin
 /** Compare short individual recordings side by side; no automatic phonetic grading. */
 export default function SoundContrastDeck({ lesson, focusGroupId, currentId, playing, onSelect, onPlay }: Props) {
   if (!lesson.soundGroups?.length) return null;
+  const [view,setView]=useState<'compare'|'recognize'>('compare');
   const byId = new Map(lesson.items.map(item => [item.id, item]));
+  const cards= soundListeningCards(lesson);
   const groups = focusGroupId ? lesson.soundGroups.filter(g => g.id === focusGroupId) : lesson.soundGroups;
   return <section className="contrast-deck" aria-label="Compare Polish sounds">
     <div className="contrast-intro">
       <div><span className="eyebrow">SOUND LAB · LISTEN AND COMPARE</span><h2>Hear sounds in real words</h2><p>{lesson.intro}</p></div>
       <span className="sound-note">Audio from existing lessons · native review pending</span>
     </div>
-    <div className="contrast-groups">
+    {cards.length>0 && <div className="sound-ear-switch" role="group" aria-label="Sound learning activity">
+      <button type="button" aria-pressed={view==='compare'} onClick={()=>setView('compare')}>Compare words</button>
+      <button type="button" aria-pressed={view==='recognize'} onClick={()=>setView('recognize')}>Test my ear</button>
+    </div>}
+    {view==='recognize' && cards.length>0
+      ? <SoundEarQuiz key={lesson.id} lesson={lesson} cards={cards} playing={playing}
+          onPlay={onPlay} onCompare={()=>setView('compare')}/>
+      : <div className="contrast-groups">
       {groups.map(group => <article key={group.id} className="contrast-group">
         <div className="contrast-group-label">
           <strong lang="pl">{group.label}{(()=>{
@@ -57,7 +69,7 @@ export default function SoundContrastDeck({ lesson, focusGroupId, currentId, pla
           })}
         </div>
       </article>)}
-    </div>
-    <p className="sound-caption">Listen to each complete example word, with its sound highlighted.</p>
+    </div>}
+    {view==='compare' && <p className="sound-caption">Listen to each complete example word, with its sound highlighted.</p>}
   </section>;
 }
