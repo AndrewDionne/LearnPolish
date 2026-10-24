@@ -36,9 +36,9 @@ test('C-09: recognize sounds from original Polish whole-word recordings, then co
 test('C-09: complete a two-sound contrast check with no fabricated syllable recording or pronunciation score',async({page})=>{
  await page.setViewportSize({width:320,height:740});
  await page.goto('/');
- await page.getByRole('button',{name:'Library'}).first().click();
- await page.getByRole('searchbox',{name:'Search lessons'}).fill('L, Ł');
- await page.getByRole('button',{name:/L and Ł/}).click();
+ await page.getByRole('button',{name:'Explore lessons'}).click();
+ await page.getByRole('region',{name:'Guided Polish foundations'})
+   .getByRole('button',{name:/Hear L and Ł/}).click();
  await page.getByRole('button',{name:'Test my ear'}).click();
  const quiz=page.locator('.sound-ear-quiz');
  await expect(quiz.locator('.sound-ear-progress')).toHaveText('1 / 4');
