@@ -46,7 +46,7 @@ describe('C-12: explicitly sequenced foundational study',()=>{
    .toThrow(/Unrecognized/);
   const reduced=orderedFoundationGroups(FIRST_EXPRESSION_GROUPS.slice(1),NEXT_WORD_GROUPS.slice(1));
   expect(reduced.firstWords.map(g=>g.id)).toEqual(['simple-replies','politeness']);
-  expect(reduced.basicVocabulary.map(g=>g.id)).toEqual(BASIC_VOCABULARY_ORDER.slice(1));
+  expect(reduced.basicVocabulary.map(g=>g.id)).toEqual(BASIC_VOCABULARY_ORDER.filter(id=>id!=='everyday-replies'));
   expect(reduced.firstSentences.map(g=>g.id)).toEqual(FIRST_SENTENCE_PRACTICE_ORDER);
  });
 });
