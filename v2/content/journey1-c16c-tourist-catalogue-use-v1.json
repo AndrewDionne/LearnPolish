@@ -1,0 +1,1264 @@
+{
+  "schemaVersion": 1,
+  "status": "source_provenance_and_catalogue_order_trace_only_not_native_or_prerequisite_certification",
+  "notes": "T01–T08 can be opened independently and are not a required sequential course; earlier-listed scenes do NOT constitute proof that a learner completed or learned them. firstTouristManifestMention is an inventory position only. guidedFirstUse means exact matching source item is present in the 16-unit guided reference list, NOT proof learner has encountered it. All listen sets must be taught within the opened scene before assessment; Speak itself shows the source full recording and meaning. Open gaps from source tourist manifest are reproduced without fictional recordings or right-to-use claims.",
+  "units": [
+    {
+      "id": "T01",
+      "title": "Greetings and polite replies",
+      "steps": [
+        {
+          "mode": "listen",
+          "sourceLesson": "Basic_01R",
+          "sourceItems": [
+            {
+              "id": "Basic_01R:0",
+              "polish": "Cześć! Jak się masz?",
+              "english": "Hi! How are you?",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Basic_01R:1",
+              "polish": "Dziękuję, mam się dobrze.",
+              "english": "Thank you, I am well.",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            }
+          ]
+        },
+        {
+          "mode": "speak",
+          "sourceLesson": "Conversation_1",
+          "sourceItems": [
+            {
+              "id": "Conversation_1:0",
+              "polish": "Dzień dobry",
+              "english": "Good morning / Good day",
+              "guidedFirstUse": {
+                "unitId": "greetings",
+                "stepOrder": 3
+              },
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Conversation_1:2",
+              "polish": "Cześć",
+              "english": "Hi / Hello",
+              "guidedFirstUse": {
+                "unitId": "greetings",
+                "stepOrder": 3
+              },
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Conversation_1:8",
+              "polish": "Dziękuję",
+              "english": "Thank you",
+              "guidedFirstUse": {
+                "unitId": "politeness",
+                "stepOrder": 2
+              },
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Conversation_1:12",
+              "polish": "Przepraszam",
+              "english": "Excuse me / I’m sorry",
+              "guidedFirstUse": {
+                "unitId": "politeness",
+                "stepOrder": 2
+              },
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Conversation_1:20",
+              "polish": "Nie rozumiem",
+              "english": "I don’t understand",
+              "guidedFirstUse": {
+                "unitId": "everyday-replies",
+                "stepOrder": 6
+              },
+              "firstTouristManifestMention": true
+            }
+          ]
+        },
+        {
+          "mode": "read",
+          "sourceLesson": "Basic_01R",
+          "sourceItems": [
+            {
+              "id": "Basic_01R:0",
+              "polish": "Cześć! Jak się masz?",
+              "english": "Hi! How are you?",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": false
+            },
+            {
+              "id": "Basic_01R:1",
+              "polish": "Dziękuję, mam się dobrze.",
+              "english": "Thank you, I am well.",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": false
+            },
+            {
+              "id": "Basic_01R:4",
+              "polish": "Proszę i dziękuję są bardzo ważne.",
+              "english": "Please and thank you are very important.",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Basic_01R:5",
+              "polish": "Przepraszam, nie rozumiem.",
+              "english": "I’m sorry, I don’t understand.",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            }
+          ]
+        }
+      ],
+      "originalOpenGaps": [],
+      "counts": {
+        "mentions": 11,
+        "distinctSourceItems": 9,
+        "guidedReferencedMentions": 5,
+        "outsideGuidedMentions": 6,
+        "newInTouristManifest": 9
+      }
+    },
+    {
+      "id": "T02",
+      "title": "Introductions and names",
+      "steps": [
+        {
+          "mode": "listen",
+          "sourceLesson": "Basic_01R",
+          "sourceItems": [
+            {
+              "id": "Basic_01R:2",
+              "polish": "Cześć, jak masz na imię?",
+              "english": "Hi, what is your name?",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Basic_01R:3",
+              "polish": "Mam na imię Andrew.",
+              "english": "My name is Andrew.",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            }
+          ]
+        },
+        {
+          "mode": "speak",
+          "sourceLesson": "Conversation_1",
+          "sourceItems": [
+            {
+              "id": "Conversation_1:23",
+              "polish": "Jak masz na imię?",
+              "english": "What’s your name? (informal)",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            }
+          ]
+        },
+        {
+          "mode": "read",
+          "sourceLesson": "Basic_01R",
+          "sourceItems": [
+            {
+              "id": "Basic_01R:2",
+              "polish": "Cześć, jak masz na imię?",
+              "english": "Hi, what is your name?",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": false
+            },
+            {
+              "id": "Basic_01R:3",
+              "polish": "Mam na imię Andrew.",
+              "english": "My name is Andrew.",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": false
+            }
+          ]
+        }
+      ],
+      "originalOpenGaps": [
+        "First-person spoken name reply in original phrase set has unfinished reference and remains excluded from scored Speak."
+      ],
+      "counts": {
+        "mentions": 5,
+        "distinctSourceItems": 3,
+        "guidedReferencedMentions": 0,
+        "outsideGuidedMentions": 5,
+        "newInTouristManifest": 3
+      }
+    },
+    {
+      "id": "T03",
+      "title": "Numbers, prices and payment",
+      "steps": [
+        {
+          "mode": "listen",
+          "sourceLesson": "numbers_1-20",
+          "sourceItems": [
+            {
+              "id": "numbers_1-20:0",
+              "polish": "Jeden",
+              "english": "One",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "numbers_1-20:1",
+              "polish": "Dwa",
+              "english": "Two",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "numbers_1-20:2",
+              "polish": "Trzy",
+              "english": "Three",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "numbers_1-20:3",
+              "polish": "Cztery",
+              "english": "Four",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "numbers_1-20:4",
+              "polish": "Pięć",
+              "english": "Five",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "numbers_1-20:5",
+              "polish": "Sześć",
+              "english": "Six",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "numbers_1-20:6",
+              "polish": "Siedem",
+              "english": "Seven",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "numbers_1-20:7",
+              "polish": "Osiem",
+              "english": "Eight",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "numbers_1-20:8",
+              "polish": "Dziewięć",
+              "english": "Nine",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "numbers_1-20:9",
+              "polish": "Dziesięć",
+              "english": "Ten",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            }
+          ]
+        },
+        {
+          "mode": "speak",
+          "sourceLesson": "Conversation_-_shopping",
+          "sourceItems": [
+            {
+              "id": "Conversation_-_shopping:0",
+              "polish": "Ile to kosztuje?",
+              "english": "How much does this cost?",
+              "guidedFirstUse": {
+                "unitId": "grammar:prices",
+                "stepOrder": 10
+              },
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Conversation_-_shopping:1",
+              "polish": "Ile to razem?",
+              "english": "How much is it altogether?",
+              "guidedFirstUse": {
+                "unitId": "grammar:prices",
+                "stepOrder": 10
+              },
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Conversation_-_shopping:2",
+              "polish": "Czy mogę zapłacić kartą?",
+              "english": "Can I pay by card?",
+              "guidedFirstUse": {
+                "unitId": "grammar:permission",
+                "stepOrder": 9
+              },
+              "firstTouristManifestMention": true
+            }
+          ]
+        }
+      ],
+      "originalOpenGaps": [
+        "No verified conversational reading passage combining quantities, prices and payment exists yet; no Read step is presented."
+      ],
+      "counts": {
+        "mentions": 13,
+        "distinctSourceItems": 13,
+        "guidedReferencedMentions": 3,
+        "outsideGuidedMentions": 10,
+        "newInTouristManifest": 13
+      }
+    },
+    {
+      "id": "T04",
+      "title": "Ordering food and drinks",
+      "steps": [
+        {
+          "mode": "listen",
+          "sourceLesson": "Food_and_Dinning",
+          "sourceItems": [
+            {
+              "id": "Food_and_Dinning:0",
+              "polish": "Poproszę stolik dla jednej osoby",
+              "english": "A table for one, please",
+              "guidedFirstUse": {
+                "unitId": "grammar:one-two",
+                "stepOrder": 13
+              },
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Food_and_Dinning:1",
+              "polish": "Poproszę stolik dla dwóch osób",
+              "english": "A table for two, please",
+              "guidedFirstUse": {
+                "unitId": "grammar:one-two",
+                "stepOrder": 13
+              },
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Food_and_Dinning:3",
+              "polish": "Poproszę menu",
+              "english": "The menu, please",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Food_and_Dinning:5",
+              "polish": "Poproszę zupę dnia",
+              "english": "I’ll have the soup of the day",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Food_and_Dinning:6",
+              "polish": "Poproszę pierogi",
+              "english": "I’ll have pierogi",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Food_and_Dinning:9",
+              "polish": "Poproszę kawę",
+              "english": "A coffee, please",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Food_and_Dinning:10",
+              "polish": "Poproszę herbatę",
+              "english": "A tea, please",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Food_and_Dinning:17",
+              "polish": "Rachunek, proszę",
+              "english": "The bill, please",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Food_and_Dinning:18",
+              "polish": "Czy mogę zapłacić kartą?",
+              "english": "Can I pay by card?",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            }
+          ]
+        },
+        {
+          "mode": "speak",
+          "sourceLesson": "Conversation_-_restaurant",
+          "sourceItems": [
+            {
+              "id": "Conversation_-_restaurant:0",
+              "polish": "Poproszę menu",
+              "english": "May I have the menu, please?",
+              "guidedFirstUse": {
+                "unitId": "grammar:requests",
+                "stepOrder": 7
+              },
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Conversation_-_restaurant:2",
+              "polish": "Poproszę wodę",
+              "english": "Water, please",
+              "guidedFirstUse": {
+                "unitId": "grammar:requests",
+                "stepOrder": 7
+              },
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Conversation_-_restaurant:3",
+              "polish": "Poproszę kawę",
+              "english": "Coffee, please",
+              "guidedFirstUse": {
+                "unitId": "grammar:requests",
+                "stepOrder": 7
+              },
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Conversation_-_restaurant:4",
+              "polish": "Poproszę herbatę",
+              "english": "Tea, please",
+              "guidedFirstUse": {
+                "unitId": "grammar:requests",
+                "stepOrder": 7
+              },
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Conversation_-_restaurant:7",
+              "polish": "Poproszę rachunek",
+              "english": "The bill, please",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Conversation_-_restaurant:20",
+              "polish": "Stolik dla dwóch osób",
+              "english": "Table for two",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Conversation_-_restaurant:21",
+              "polish": "Czy mogę prosić o rachunek?",
+              "english": "Can I have the bill?",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Conversation_-_restaurant:24",
+              "polish": "Czy mogę zapłacić kartą?",
+              "english": "Can I pay by card?",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            }
+          ]
+        }
+      ],
+      "originalOpenGaps": [
+        "Only individual recorded restaurant expressions are available; no approved natural waiter reply, two-way ordering exchange or restaurant reading exercise."
+      ],
+      "counts": {
+        "mentions": 17,
+        "distinctSourceItems": 17,
+        "guidedReferencedMentions": 6,
+        "outsideGuidedMentions": 11,
+        "newInTouristManifest": 17
+      }
+    },
+    {
+      "id": "T05",
+      "title": "Shopping for groceries",
+      "steps": [
+        {
+          "mode": "listen",
+          "sourceLesson": "Grocery_store_very_basic_shopping",
+          "sourceItems": [
+            {
+              "id": "Grocery_store_very_basic_shopping:0",
+              "polish": "Dzień dobry.",
+              "english": "Good morning.",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Grocery_store_very_basic_shopping:1",
+              "polish": "Dzień dobry, poproszę kilogram jabłek.",
+              "english": "Good morning, I’d like a kilo of apples, please.",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Grocery_store_very_basic_shopping:2",
+              "polish": "Jakie jabłka pan lubi? Czerwone czy zielone?",
+              "english": "Which apples do you like? Red or green?",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Grocery_store_very_basic_shopping:3",
+              "polish": "Poproszę czerwone jabłka.",
+              "english": "Red apples, please.",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Grocery_store_very_basic_shopping:4",
+              "polish": "Czy chce pan coś jeszcze?",
+              "english": "Would you like anything else?",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Grocery_store_very_basic_shopping:5",
+              "polish": "Nie, dziękuję. To wszystko.",
+              "english": "No, thank you. That’s all.",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            }
+          ]
+        },
+        {
+          "mode": "speak",
+          "sourceLesson": "Conversation_-_shopping",
+          "sourceItems": [
+            {
+              "id": "Conversation_-_shopping:0",
+              "polish": "Ile to kosztuje?",
+              "english": "How much does this cost?",
+              "guidedFirstUse": {
+                "unitId": "grammar:prices",
+                "stepOrder": 10
+              },
+              "firstTouristManifestMention": false
+            },
+            {
+              "id": "Conversation_-_shopping:5",
+              "polish": "Gdzie jest kasa?",
+              "english": "Where is the checkout?",
+              "guidedFirstUse": {
+                "unitId": "grammar:where",
+                "stepOrder": 8
+              },
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Conversation_-_shopping:8",
+              "polish": "Poproszę paragon",
+              "english": "Receipt, please",
+              "guidedFirstUse": {
+                "unitId": "shopping-questions",
+                "stepOrder": 15
+              },
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Conversation_-_shopping:20",
+              "polish": "Poproszę siatkę",
+              "english": "A shopping bag, please",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Conversation_-_shopping:23",
+              "polish": "Tylko oglądam",
+              "english": "I’m just looking",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Conversation_-_shopping:24",
+              "polish": "Wezmę to",
+              "english": "I’ll take it",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            }
+          ]
+        },
+        {
+          "mode": "read",
+          "sourceLesson": "Grocery_store_very_basic_shopping",
+          "sourceItems": [
+            {
+              "id": "Grocery_store_very_basic_shopping:0",
+              "polish": "Dzień dobry.",
+              "english": "Good morning.",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": false
+            },
+            {
+              "id": "Grocery_store_very_basic_shopping:1",
+              "polish": "Dzień dobry, poproszę kilogram jabłek.",
+              "english": "Good morning, I’d like a kilo of apples, please.",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": false
+            },
+            {
+              "id": "Grocery_store_very_basic_shopping:2",
+              "polish": "Jakie jabłka pan lubi? Czerwone czy zielone?",
+              "english": "Which apples do you like? Red or green?",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": false
+            },
+            {
+              "id": "Grocery_store_very_basic_shopping:3",
+              "polish": "Poproszę czerwone jabłka.",
+              "english": "Red apples, please.",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": false
+            },
+            {
+              "id": "Grocery_store_very_basic_shopping:4",
+              "polish": "Czy chce pan coś jeszcze?",
+              "english": "Would you like anything else?",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": false
+            },
+            {
+              "id": "Grocery_store_very_basic_shopping:5",
+              "polish": "Nie, dziękuję. To wszystko.",
+              "english": "No, thank you. That’s all.",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": false
+            }
+          ]
+        }
+      ],
+      "originalOpenGaps": [
+        "The original grocery reading/audio is a source-only scenario, not native-certified; verified seller price and payment replies remain outstanding under T03."
+      ],
+      "counts": {
+        "mentions": 18,
+        "distinctSourceItems": 12,
+        "guidedReferencedMentions": 3,
+        "outsideGuidedMentions": 15,
+        "newInTouristManifest": 11
+      }
+    },
+    {
+      "id": "T06",
+      "title": "Finding your way to the centre",
+      "steps": [
+        {
+          "mode": "listen",
+          "sourceLesson": "Asking_the_tram_driver_for_directions",
+          "sourceItems": [
+            {
+              "id": "Asking_the_tram_driver_for_directions:0",
+              "polish": "Przepraszam, czy mogę zadać pytanie?",
+              "english": "Excuse me, may I ask a question?",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Asking_the_tram_driver_for_directions:1",
+              "polish": "Przepraszam, czy tym tramwajem dojadę do centrum?",
+              "english": "Excuse me, does this tram go to the city centre?",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Asking_the_tram_driver_for_directions:2",
+              "polish": "Tak, ten tramwaj jedzie do centrum.",
+              "english": "Yes, this tram goes to the centre.",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Asking_the_tram_driver_for_directions:3",
+              "polish": "Na którym przystanku powinienem wysiąść?",
+              "english": "At which stop should I get off?",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Asking_the_tram_driver_for_directions:4",
+              "polish": "Proszę wysiąść na przystanku \"Centrum\".",
+              "english": "Please get off at the ‘Centrum’ stop.",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            }
+          ]
+        },
+        {
+          "mode": "speak",
+          "sourceLesson": "Getting_Around_1",
+          "sourceItems": [
+            {
+              "id": "Getting_Around_1:0",
+              "polish": "Gdzie jest przystanek?",
+              "english": "Where is the bus/tram stop?",
+              "guidedFirstUse": {
+                "unitId": "grammar:where",
+                "stepOrder": 8
+              },
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Getting_Around_1:1",
+              "polish": "Którędy do centrum?",
+              "english": "Which way to the city center?",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Getting_Around_1:2",
+              "polish": "Gdzie jest metro?",
+              "english": "Where is the metro?",
+              "guidedFirstUse": {
+                "unitId": "grammar:where",
+                "stepOrder": 8
+              },
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Getting_Around_1:11",
+              "polish": "Jak dojechać do lotniska?",
+              "english": "How do I get to the airport?",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Getting_Around_1:20",
+              "polish": "Czy ten tramwaj jedzie do centrum?",
+              "english": "Does this tram go to the center?",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Getting_Around_1:22",
+              "polish": "Czy to daleko stąd?",
+              "english": "Is it far from here?",
+              "guidedFirstUse": {
+                "unitId": "grammar:yes-no-questions",
+                "stepOrder": 11
+              },
+              "firstTouristManifestMention": true
+            }
+          ]
+        },
+        {
+          "mode": "read",
+          "sourceLesson": "Asking_the_tram_driver_for_directions",
+          "sourceItems": [
+            {
+              "id": "Asking_the_tram_driver_for_directions:0",
+              "polish": "Przepraszam, czy mogę zadać pytanie?",
+              "english": "Excuse me, may I ask a question?",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": false
+            },
+            {
+              "id": "Asking_the_tram_driver_for_directions:1",
+              "polish": "Przepraszam, czy tym tramwajem dojadę do centrum?",
+              "english": "Excuse me, does this tram go to the city centre?",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": false
+            },
+            {
+              "id": "Asking_the_tram_driver_for_directions:2",
+              "polish": "Tak, ten tramwaj jedzie do centrum.",
+              "english": "Yes, this tram goes to the centre.",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": false
+            },
+            {
+              "id": "Asking_the_tram_driver_for_directions:3",
+              "polish": "Na którym przystanku powinienem wysiąść?",
+              "english": "At which stop should I get off?",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": false
+            },
+            {
+              "id": "Asking_the_tram_driver_for_directions:4",
+              "polish": "Proszę wysiąść na przystanku \"Centrum\".",
+              "english": "Please get off at the ‘Centrum’ stop.",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": false
+            }
+          ]
+        }
+      ],
+      "originalOpenGaps": [
+        "Original tram-driver dialogue supports route and stop questions; it is not a pedestrian walk-through with left, right or straight-ahead instructions.",
+        "No native-reviewed pedestrian directions reply, repeat/clarify role-play, or verified wayfinding sign is available for a complete directions lesson."
+      ],
+      "counts": {
+        "mentions": 16,
+        "distinctSourceItems": 11,
+        "guidedReferencedMentions": 3,
+        "outsideGuidedMentions": 13,
+        "newInTouristManifest": 11
+      }
+    },
+    {
+      "id": "T07",
+      "title": "Taking a tram and buying a ticket",
+      "steps": [
+        {
+          "mode": "listen",
+          "sourceLesson": "Asking_the_tram_driver_for_directions",
+          "sourceItems": [
+            {
+              "id": "Asking_the_tram_driver_for_directions:0",
+              "polish": "Przepraszam, czy mogę zadać pytanie?",
+              "english": "Excuse me, may I ask a question?",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": false
+            },
+            {
+              "id": "Asking_the_tram_driver_for_directions:1",
+              "polish": "Przepraszam, czy tym tramwajem dojadę do centrum?",
+              "english": "Excuse me, does this tram go to the city centre?",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": false
+            },
+            {
+              "id": "Asking_the_tram_driver_for_directions:2",
+              "polish": "Tak, ten tramwaj jedzie do centrum.",
+              "english": "Yes, this tram goes to the centre.",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": false
+            },
+            {
+              "id": "Asking_the_tram_driver_for_directions:3",
+              "polish": "Na którym przystanku powinienem wysiąść?",
+              "english": "At which stop should I get off?",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": false
+            },
+            {
+              "id": "Asking_the_tram_driver_for_directions:4",
+              "polish": "Proszę wysiąść na przystanku \"Centrum\".",
+              "english": "Please get off at the ‘Centrum’ stop.",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": false
+            },
+            {
+              "id": "Asking_the_tram_driver_for_directions:5",
+              "polish": "Czy mogę kupić bilet w tramwaju?",
+              "english": "Can I buy a ticket on the tram?",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Asking_the_tram_driver_for_directions:6",
+              "polish": "Tak, może pan kupić bilet w automacie.",
+              "english": "Yes, you can buy a ticket in the machine.",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Asking_the_tram_driver_for_directions:7",
+              "polish": "Dziękuję bardzo, do widzenia.",
+              "english": "Thank you very much, goodbye.",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            }
+          ]
+        },
+        {
+          "mode": "speak",
+          "sourceLesson": "Getting_Around_1",
+          "sourceItems": [
+            {
+              "id": "Getting_Around_1:3",
+              "polish": "Na którą linię?",
+              "english": "For which line?",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Getting_Around_1:4",
+              "polish": "Który to peron?",
+              "english": "Which platform is this?",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Getting_Around_1:6",
+              "polish": "Jeden bilet, proszę",
+              "english": "One ticket, please",
+              "guidedFirstUse": {
+                "unitId": "grammar:one-two",
+                "stepOrder": 13
+              },
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Getting_Around_1:7",
+              "polish": "Dwa bilety, proszę",
+              "english": "Two tickets, please",
+              "guidedFirstUse": {
+                "unitId": "grammar:one-two",
+                "stepOrder": 13
+              },
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Getting_Around_1:8",
+              "polish": "Bilet normalny",
+              "english": "Regular ticket",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Getting_Around_1:9",
+              "polish": "Bilet ulgowy",
+              "english": "Discounted ticket",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Getting_Around_1:14",
+              "polish": "Ile kosztuje bilet?",
+              "english": "How much is the ticket?",
+              "guidedFirstUse": {
+                "unitId": "grammar:prices",
+                "stepOrder": 10
+              },
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Getting_Around_1:17",
+              "polish": "Gdzie mogę kupić bilet?",
+              "english": "Where can I buy a ticket?",
+              "guidedFirstUse": {
+                "unitId": "grammar:where",
+                "stepOrder": 8
+              },
+              "firstTouristManifestMention": true
+            }
+          ]
+        },
+        {
+          "mode": "read",
+          "sourceLesson": "Asking_the_tram_driver_for_directions",
+          "sourceItems": [
+            {
+              "id": "Asking_the_tram_driver_for_directions:0",
+              "polish": "Przepraszam, czy mogę zadać pytanie?",
+              "english": "Excuse me, may I ask a question?",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": false
+            },
+            {
+              "id": "Asking_the_tram_driver_for_directions:1",
+              "polish": "Przepraszam, czy tym tramwajem dojadę do centrum?",
+              "english": "Excuse me, does this tram go to the city centre?",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": false
+            },
+            {
+              "id": "Asking_the_tram_driver_for_directions:2",
+              "polish": "Tak, ten tramwaj jedzie do centrum.",
+              "english": "Yes, this tram goes to the centre.",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": false
+            },
+            {
+              "id": "Asking_the_tram_driver_for_directions:3",
+              "polish": "Na którym przystanku powinienem wysiąść?",
+              "english": "At which stop should I get off?",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": false
+            },
+            {
+              "id": "Asking_the_tram_driver_for_directions:4",
+              "polish": "Proszę wysiąść na przystanku \"Centrum\".",
+              "english": "Please get off at the ‘Centrum’ stop.",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": false
+            },
+            {
+              "id": "Asking_the_tram_driver_for_directions:5",
+              "polish": "Czy mogę kupić bilet w tramwaju?",
+              "english": "Can I buy a ticket on the tram?",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": false
+            },
+            {
+              "id": "Asking_the_tram_driver_for_directions:6",
+              "polish": "Tak, może pan kupić bilet w automacie.",
+              "english": "Yes, you can buy a ticket in the machine.",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": false
+            },
+            {
+              "id": "Asking_the_tram_driver_for_directions:7",
+              "polish": "Dziękuję bardzo, do widzenia.",
+              "english": "Thank you very much, goodbye.",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": false
+            }
+          ]
+        }
+      ],
+      "originalOpenGaps": [
+        "This tram-driver scene reuses T06's route-and-stop dialogue before extending it with the original ticket-machine question and answer; it is not an independent new recording.",
+        "No verified route number, platform-selection reply, transfer instructions, timetable, current ticket-sales policy or service-disruption exchange is in these source turns."
+      ],
+      "counts": {
+        "mentions": 24,
+        "distinctSourceItems": 16,
+        "guidedReferencedMentions": 4,
+        "outsideGuidedMentions": 20,
+        "newInTouristManifest": 11
+      }
+    },
+    {
+      "id": "T08",
+      "title": "Museum tickets and visitor information",
+      "steps": [
+        {
+          "mode": "listen",
+          "sourceLesson": "Museum_buying_tickets_and_basic_info",
+          "sourceItems": [
+            {
+              "id": "Museum_buying_tickets_and_basic_info:0",
+              "polish": "Dzień dobry, poproszę dwa bilety do muzeum.",
+              "english": "Good morning, two tickets to the museum, please.",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Museum_buying_tickets_and_basic_info:1",
+              "polish": "Normalne czy ulgowe?",
+              "english": "Regular or reduced tickets?",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Museum_buying_tickets_and_basic_info:2",
+              "polish": "Poproszę dwa bilety normalne.",
+              "english": "Two regular tickets, please.",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Museum_buying_tickets_and_basic_info:3",
+              "polish": "Do której godziny muzeum jest otwarte?",
+              "english": "Until what time is the museum open?",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Museum_buying_tickets_and_basic_info:4",
+              "polish": "Dzisiaj jesteśmy otwarci do osiemnastej.",
+              "english": "Today we are open until six p.m.",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Museum_buying_tickets_and_basic_info:5",
+              "polish": "Gdzie jest szatnia, proszę?",
+              "english": "Where is the cloakroom, please?",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Museum_buying_tickets_and_basic_info:6",
+              "polish": "Szatnia jest na prawo, za schodami.",
+              "english": "The cloakroom is on the right, past the stairs.",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Museum_buying_tickets_and_basic_info:7",
+              "polish": "Pierwsza wystawa jest na pierwszym piętrze.",
+              "english": "The first exhibition is on the first floor.",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Museum_buying_tickets_and_basic_info:8",
+              "polish": "Dziękuję za pomoc.",
+              "english": "Thank you for your help.",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            }
+          ]
+        },
+        {
+          "mode": "speak",
+          "sourceLesson": "Getting_Around_1",
+          "sourceItems": [
+            {
+              "id": "Getting_Around_1:6",
+              "polish": "Jeden bilet, proszę",
+              "english": "One ticket, please",
+              "guidedFirstUse": {
+                "unitId": "grammar:one-two",
+                "stepOrder": 13
+              },
+              "firstTouristManifestMention": false
+            },
+            {
+              "id": "Getting_Around_1:7",
+              "polish": "Dwa bilety, proszę",
+              "english": "Two tickets, please",
+              "guidedFirstUse": {
+                "unitId": "grammar:one-two",
+                "stepOrder": 13
+              },
+              "firstTouristManifestMention": false
+            },
+            {
+              "id": "Getting_Around_1:8",
+              "polish": "Bilet normalny",
+              "english": "Regular ticket",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": false
+            },
+            {
+              "id": "Getting_Around_1:9",
+              "polish": "Bilet ulgowy",
+              "english": "Discounted ticket",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": false
+            },
+            {
+              "id": "Getting_Around_1:14",
+              "polish": "Ile kosztuje bilet?",
+              "english": "How much is the ticket?",
+              "guidedFirstUse": {
+                "unitId": "grammar:prices",
+                "stepOrder": 10
+              },
+              "firstTouristManifestMention": false
+            },
+            {
+              "id": "Getting_Around_1:15",
+              "polish": "Czy mogę zapłacić kartą?",
+              "english": "Can I pay by card?",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": true
+            },
+            {
+              "id": "Getting_Around_1:17",
+              "polish": "Gdzie mogę kupić bilet?",
+              "english": "Where can I buy a ticket?",
+              "guidedFirstUse": {
+                "unitId": "grammar:where",
+                "stepOrder": 8
+              },
+              "firstTouristManifestMention": false
+            }
+          ]
+        },
+        {
+          "mode": "read",
+          "sourceLesson": "Museum_buying_tickets_and_basic_info",
+          "sourceItems": [
+            {
+              "id": "Museum_buying_tickets_and_basic_info:0",
+              "polish": "Dzień dobry, poproszę dwa bilety do muzeum.",
+              "english": "Good morning, two tickets to the museum, please.",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": false
+            },
+            {
+              "id": "Museum_buying_tickets_and_basic_info:1",
+              "polish": "Normalne czy ulgowe?",
+              "english": "Regular or reduced tickets?",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": false
+            },
+            {
+              "id": "Museum_buying_tickets_and_basic_info:2",
+              "polish": "Poproszę dwa bilety normalne.",
+              "english": "Two regular tickets, please.",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": false
+            },
+            {
+              "id": "Museum_buying_tickets_and_basic_info:3",
+              "polish": "Do której godziny muzeum jest otwarte?",
+              "english": "Until what time is the museum open?",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": false
+            },
+            {
+              "id": "Museum_buying_tickets_and_basic_info:4",
+              "polish": "Dzisiaj jesteśmy otwarci do osiemnastej.",
+              "english": "Today we are open until six p.m.",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": false
+            },
+            {
+              "id": "Museum_buying_tickets_and_basic_info:5",
+              "polish": "Gdzie jest szatnia, proszę?",
+              "english": "Where is the cloakroom, please?",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": false
+            },
+            {
+              "id": "Museum_buying_tickets_and_basic_info:6",
+              "polish": "Szatnia jest na prawo, za schodami.",
+              "english": "The cloakroom is on the right, past the stairs.",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": false
+            },
+            {
+              "id": "Museum_buying_tickets_and_basic_info:7",
+              "polish": "Pierwsza wystawa jest na pierwszym piętrze.",
+              "english": "The first exhibition is on the first floor.",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": false
+            },
+            {
+              "id": "Museum_buying_tickets_and_basic_info:8",
+              "polish": "Dziękuję za pomoc.",
+              "english": "Thank you for your help.",
+              "guidedFirstUse": null,
+              "firstTouristManifestMention": false
+            }
+          ]
+        }
+      ],
+      "originalOpenGaps": [
+        "The source museum scene is a fixed illustrative exchange; its stated opening time is not verified visitor information about any actual museum.",
+        "Spoken ticket/payment phrases are generic original recordings, not a recorded museum role-play; no independently native-reviewed timed opening notice, visitor sign or varied staff clarification is available."
+      ],
+      "counts": {
+        "mentions": 25,
+        "distinctSourceItems": 16,
+        "guidedReferencedMentions": 4,
+        "outsideGuidedMentions": 21,
+        "newInTouristManifest": 10
+      }
+    }
+  ],
+  "counts": {
+    "touristUnits": 8,
+    "stepCount": 22,
+    "totalItemMentions": 129,
+    "distinctItemsAcrossTourists": 85,
+    "guidedReferencedMentions": 28,
+    "outsideGuidedMentions": 101,
+    "firstTouristManifestMentions": 85
+  }
+}

@@ -48,11 +48,13 @@ test('C-16B 320px shopping sentence teaching explains grammar and keeps source p
  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(322);
 });
 
-test('C-16B intro is a guided route aid, not an imposed overlay on the original 26 Library lessons',async({page})=>{
+test('C-16C independently browsable original Library retains source identity and now teaches before Listen',async({page})=>{
  await page.goto('/');
  await page.getByRole('button',{name:'Explore lessons'}).click();
  await page.getByRole('region',{name:'Guided Polish foundations'}).locator('.foundation-guide-step').first().click();
  await page.getByRole('group',{name:'Learning modes'}).getByRole('button',{name:'Listen'}).click();
- await expect(page.getByRole('region',{name:'Learn these expressions first'})).toHaveCount(0);
+ const intro=page.getByRole('region',{name:'Learn these expressions first'});
+ await expect(intro.locator('.reading-intro-polish')).toHaveText('Dzień dobry');
+ await expect(intro.locator('.reading-intro-english')).toHaveText('Good morning / Good day');
  await expect(page.getByRole('heading',{name:'What did you hear?'})).toBeVisible();
 });

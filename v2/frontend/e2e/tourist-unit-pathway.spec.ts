@@ -86,7 +86,7 @@ test('T04 source-only restaurant practice offers Listen and Speak without fabric
   await expect(page.locator('.item-count')).toContainText('/ 9');
   await expect(page.getByRole('button',{name:'Play audio'})).toBeEnabled();
   await page.getByRole('group',{name:'Choose the meaning'}).getByRole('button',{name:'A table for one, please'}).click();
-  await expect(page.getByText('Poproszę stolik dla jednej osoby',{exact:true})).toBeVisible();
+  await expect(page.locator('.listen-transcript')).toHaveText('Poproszę stolik dla jednej osoby');
   await page.getByRole('navigation',{name:isMobile?'Mobile navigation':'Main navigation'}).getByRole('button',{name:'Library'}).click();
   await unit.getByRole('button',{name:'Ordering food and drinks: Speak'}).click();
   await expect(page.locator('.unit-practice-head')).toContainText('Speak · 2/2');
@@ -103,7 +103,7 @@ test('T05 grocery story uses original listening and reading, with independent sh
   await expect(page.locator('.item-count')).toContainText('/ 6');
   await expect(page.getByRole('button',{name:'Play audio'})).toBeEnabled();
   await page.getByRole('button',{name:'Reveal transcript & translation'}).click();
-  await expect(page.getByText('Dzień dobry.',{exact:true})).toBeVisible();
+  await expect(page.locator('.listen-transcript')).toHaveText('Dzień dobry.');
   const nav=page.getByRole('navigation',{name:isMobile?'Mobile navigation':'Main navigation'});
   await nav.getByRole('button',{name:'Library'}).click();
   await unit.getByRole('button',{name:'Shopping for groceries: Speak'}).click();
@@ -147,7 +147,7 @@ test('T06 uses original recorded route exchange and Speak directions without inv
   await expect(page.locator('.item-count')).toContainText('/ 5');
   await expect(page.getByRole('button',{name:'Play audio'})).toBeEnabled();
   await page.getByRole('button',{name:'Reveal transcript & translation'}).click();
-  await expect(page.getByText('Przepraszam, czy mogę zadać pytanie?',{exact:true})).toBeVisible();
+  await expect(page.locator('.listen-transcript')).toHaveText('Przepraszam, czy mogę zadać pytanie?');
   const nav=page.getByRole('navigation',{name:isMobile?'Mobile navigation':'Main navigation'});
   await nav.getByRole('button',{name:'Library'}).click();
   await card.getByRole('button',{name:'Finding your way to the centre: Speak'}).click();
