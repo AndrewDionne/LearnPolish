@@ -19,11 +19,15 @@ test('C-12: First words → Basic vocabulary → First sentences / basic grammar
  await expect(toggle).toHaveAttribute('aria-expanded','false');
  await toggle.click();
  const vocabulary=second.getByRole('group',{name:'More recorded beginner practice'});
- await expect(vocabulary.getByRole('button')).toHaveCount(6);
+ await expect(vocabulary.getByRole('button')).toHaveCount(3);
  await expect(vocabulary.getByRole('button').first()).toContainText('Street and place words');
  await expect(vocabulary.getByRole('button').nth(1)).toContainText('Getting around: first words');
  await expect(vocabulary.getByRole('button').nth(2)).toContainText('More everyday replies');
- await expect(vocabulary.getByRole('button').last()).toContainText('Asking where things are');
+ const phrases=phases.nth(2).getByRole('group',{name:'Short sentence practice'});
+ await expect(phrases.getByRole('button')).toHaveCount(3);
+ await expect(phrases.getByRole('button').first()).toContainText('Simple food requests');
+ await expect(phrases.getByRole('button').nth(1)).toContainText('Questions in a shop');
+ await expect(phrases.getByRole('button').last()).toContainText('Asking where things are');
  const grammar=phases.nth(2).getByRole('region',{name:'Recorded first sentence patterns'});
  await expect(grammar.getByRole('button',{name:'Build your first sentences'}))
    .toHaveAttribute('aria-expanded','false');
@@ -42,8 +46,7 @@ test('C-12: completion of last basic vocabulary set leads directly to open gramm
  await page.goto('/');
  await page.getByRole('button',{name:'Explore lessons'}).click();
  const guide=page.getByRole('region',{name:'Guided Polish foundations'});
- await guide.getByRole('button',{name:'Keep building your everyday vocabulary'}).click();
- await guide.getByRole('group',{name:'More recorded beginner practice'})
+ await guide.getByRole('group',{name:'Short sentence practice'})
   .getByRole('button',{name:/Asking where things are/}).click();
  await expect(page.locator('.polish-text')).toHaveText('Gdzie jest przystanek?');
  for(let i=0;i<5;i++){
