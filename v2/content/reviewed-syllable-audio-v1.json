@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 1,
+  "status": "blocked_pending_independent_native_syllable_and_acoustic_timing_review",
+  "notes": "No source-word syllable boundaries or isolated syllable MP3s have been independently validated. Do not seed, guess or publish excerpt times. Source audio remains whole utterances. This manifest is intentionally empty until reviewed recordings, syllabification, rights and actual listening signoff exist.",
+  "items": []
+}
