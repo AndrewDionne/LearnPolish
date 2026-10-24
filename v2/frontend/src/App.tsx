@@ -12,6 +12,7 @@ import SoundContrastDeck from './SoundContrastDeck';
 import RecordedReadingIntroduction from './RecordedReadingIntroduction';
 import {recordedReadingIntroduction} from './reading-introduction';
 import {guidedPhraseIntroduction} from './guided-phrase-introduction';
+import {originalLibraryListenIntroduction,touristListenIntroduction} from './source-first-exposure';
 import PronunciationBreakdown from './PronunciationBreakdown';
 import MicroDialoguePanel from './MicroDialoguePanel';
 import {libraryMatches} from './library-curriculum';
@@ -667,6 +668,19 @@ export default function App() {
               turns={guidedPhraseIntroduction(active,starterGroup,sessionItems)}
               playing={audio.playing} onPlay={play}
               label="Learn these expressions first"
+              finishLabel="Start listening →" skipLabel="Listen now"/>}
+          {mode==='listen' && !finished && index===0 && !starterGroup &&
+            !unitSession && !reviewOnly && !focusedGroup && active.kind==='vocabulary' &&
+            <RecordedReadingIntroduction key={active.id+':source-listen'}
+              turns={originalLibraryListenIntroduction(active,sessionItems)}
+              playing={audio.playing} onPlay={play}
+              label="Learn these expressions first"
+              finishLabel="Start listening →" skipLabel="Listen now"/>}
+          {mode==='listen' && !finished && index===0 && unitStep?.mode==='listen' &&
+            <RecordedReadingIntroduction key={active.id+':'+unitSession?.unitId+':tourist-listen'}
+              turns={touristListenIntroduction(active,unitStep,sessionItems)}
+              playing={audio.playing} onPlay={play}
+              label="Learn this scene first"
               finishLabel="Start listening →" skipLabel="Listen now"/>}
           {mode === 'read' && active.microDialogues?.length && <div className="micro-dialogue-picker" role="group" aria-label="Short conversations">
             <span>Short conversations</span>
