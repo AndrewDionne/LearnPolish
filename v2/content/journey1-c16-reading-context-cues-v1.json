@@ -1,0 +1,302 @@
+{
+  "schemaVersion": 1,
+  "status": "source_anchored_editorial_draft_not_native_language_reviewed",
+  "notes": "Each of the 45 additional reading turns retains its original complete Polish utterance, exact English meaning and same original MP3 under the C14 introduction. Cues help explain new words, morphology, register and sentence patterns before source comprehension. This is authored educational draft material, NOT Polish-native grammatical verification, pronunciation certification, or permission to manufacture isolated recordings. One original line and its cue must match together or the cue is withheld.",
+  "lessons": [
+    {
+      "lesson": "Grocery_store_very_basic_shopping",
+      "lines": [
+        {
+          "id": "Grocery_store_very_basic_shopping:0",
+          "polish": "Dzień dobry.",
+          "english": "Good morning.",
+          "cue": "Dzień dobry is a polite daytime greeting. A shop worker and a customer can both use it."
+        },
+        {
+          "id": "Grocery_store_very_basic_shopping:1",
+          "polish": "Dzień dobry, poproszę kilogram jabłek.",
+          "english": "Good morning, I’d like a kilo of apples, please.",
+          "cue": "Poproszę is a polite request: 'I'd like ... please.' Kilogram jabłek means a kilogram of apples; the form jabłek follows the quantity."
+        },
+        {
+          "id": "Grocery_store_very_basic_shopping:2",
+          "polish": "Jakie jabłka pan lubi? Czerwone czy zielone?",
+          "english": "Which apples do you like? Red or green?",
+          "cue": "Jakie asks which kind of apples; pan politely addresses a man. Czerwone and zielone describe plural apples: red or green."
+        },
+        {
+          "id": "Grocery_store_very_basic_shopping:3",
+          "polish": "Poproszę czerwone jabłka.",
+          "english": "Red apples, please.",
+          "cue": "Poproszę introduces the choice. Czerwone describes the plural noun jabłka, so the colour ends in -e here."
+        },
+        {
+          "id": "Grocery_store_very_basic_shopping:4",
+          "polish": "Czy chce pan coś jeszcze?",
+          "english": "Would you like anything else?",
+          "cue": "Czy introduces a yes/no question. Chce pan is the polite 'would you like' to a man; coś jeszcze means anything else."
+        },
+        {
+          "id": "Grocery_store_very_basic_shopping:5",
+          "polish": "Nie, dziękuję. To wszystko.",
+          "english": "No, thank you. That’s all.",
+          "cue": "Nie means no. To wszystko is a useful complete response: that's all."
+        },
+        {
+          "id": "Grocery_store_very_basic_shopping:6",
+          "polish": "Dziesięć złotych, proszę.",
+          "english": "Ten zloty, please.",
+          "cue": "Dziesięć is ten. Dziesięć złotych is the standard price expression for ten złoty; złotych is the form used after ten."
+        },
+        {
+          "id": "Grocery_store_very_basic_shopping:7",
+          "polish": "Proszę, płacę kartą.",
+          "english": "Here you go, I’ll pay by card.",
+          "cue": "Proszę here means 'here you go.' Płacę means I'm paying; kartą means by card."
+        },
+        {
+          "id": "Grocery_store_very_basic_shopping:8",
+          "polish": "Dziękuję, do widzenia.",
+          "english": "Thank you, goodbye.",
+          "cue": "Dziękuję means thank you; do widzenia is a polite goodbye at the end of a purchase."
+        }
+      ]
+    },
+    {
+      "lesson": "H_M_clothes_shop_trying_on_a_T-shirt",
+      "lines": [
+        {
+          "id": "H_M_clothes_shop_trying_on_a_T-shirt:0",
+          "polish": "Dzień dobry.",
+          "english": "Good morning.",
+          "cue": "Dzień dobry is the polite daytime greeting; it also works when entering a clothing shop."
+        },
+        {
+          "id": "H_M_clothes_shop_trying_on_a_T-shirt:1",
+          "polish": "Przepraszam, czy może mi pani pomóc?",
+          "english": "Excuse me, can you help me?",
+          "cue": "Przepraszam politely gets attention. Czy może mi pani pomóc? asks a woman formally for help; mi means me."
+        },
+        {
+          "id": "H_M_clothes_shop_trying_on_a_T-shirt:2",
+          "polish": "Szukam białej koszulki.",
+          "english": "I am looking for a white T-shirt.",
+          "cue": "Szukam means 'I'm looking for.' Białej koszulki means a white T-shirt in the form used after szukam; compare koszulka elsewhere."
+        },
+        {
+          "id": "H_M_clothes_shop_trying_on_a_T-shirt:3",
+          "polish": "Jaki rozmiar pan nosi?",
+          "english": "What size do you wear?",
+          "cue": "Jaki rozmiar asks what size. Pan politely addresses a man; nosi here means 'you wear' in this formal question."
+        },
+        {
+          "id": "H_M_clothes_shop_trying_on_a_T-shirt:4",
+          "polish": "Noszę rozmiar L.",
+          "english": "I wear size L.",
+          "cue": "Noszę means I wear, while nosi in the previous question addressed the customer. Rozmiar L is size L."
+        },
+        {
+          "id": "H_M_clothes_shop_trying_on_a_T-shirt:5",
+          "polish": "Przepraszam, czy mogę przymierzyć tę koszulkę?",
+          "english": "Excuse me, can I try on this T-shirt?",
+          "cue": "Czy mogę ...? asks 'May I ...?' Przymierzyć means try on, and tę koszulkę points to this T-shirt as the thing tried on."
+        },
+        {
+          "id": "H_M_clothes_shop_trying_on_a_T-shirt:6",
+          "polish": "Przymierzalnie są tam, po lewej stronie.",
+          "english": "The fitting rooms are there, on the left.",
+          "cue": "Przymierzalnie are fitting rooms. Są means are, tam means there, and po lewej stronie means on the left-hand side."
+        },
+        {
+          "id": "H_M_clothes_shop_trying_on_a_T-shirt:7",
+          "polish": "Koszulka jest dobra. Wezmę ją.",
+          "english": "The T-shirt is good. I’ll take it.",
+          "cue": "Koszulka jest dobra says the T-shirt is good/right. Wezmę ją means I'll take it; ją refers back to feminine koszulka."
+        },
+        {
+          "id": "H_M_clothes_shop_trying_on_a_T-shirt:8",
+          "polish": "Gdzie jest kasa, proszę?",
+          "english": "Where is the cash desk, please?",
+          "cue": "Gdzie jest ...? asks where something is. Kasa means the cash desk or checkout; proszę adds politeness."
+        },
+        {
+          "id": "H_M_clothes_shop_trying_on_a_T-shirt:9",
+          "polish": "Dziękuję bardzo, do widzenia.",
+          "english": "Thank you very much, goodbye.",
+          "cue": "Dziękuję bardzo means thank you very much. Do widzenia is the polite parting phrase."
+        }
+      ]
+    },
+    {
+      "lesson": "On_the_tram_talking_to_another_passenger",
+      "lines": [
+        {
+          "id": "On_the_tram_talking_to_another_passenger:0",
+          "polish": "Dzień dobry.",
+          "english": "Good morning.",
+          "cue": "Dzień dobry is a polite greeting when addressing another passenger."
+        },
+        {
+          "id": "On_the_tram_talking_to_another_passenger:1",
+          "polish": "Przepraszam, czy to miejsce jest wolne?",
+          "english": "Excuse me, is this seat free?",
+          "cue": "Czy to ...? frames a yes/no question. Miejsce means seat/place; jest wolne asks whether it is free."
+        },
+        {
+          "id": "On_the_tram_talking_to_another_passenger:2",
+          "polish": "Tak, proszę usiąść.",
+          "english": "Yes, please sit down.",
+          "cue": "Tak means yes. Proszę usiąść is a polite way to invite someone to sit down; treat the complete phrase as a useful instruction."
+        },
+        {
+          "id": "On_the_tram_talking_to_another_passenger:3",
+          "polish": "Czy ten tramwaj jedzie do centrum?",
+          "english": "Does this tram go to the city centre?",
+          "cue": "Czy asks a yes/no question. Ten tramwaj means this tram, and jedzie do centrum means goes to the city centre."
+        },
+        {
+          "id": "On_the_tram_talking_to_another_passenger:4",
+          "polish": "Tak, jedzie do centrum.",
+          "english": "Yes, it goes to the centre.",
+          "cue": "Tak confirms yes. Jedzie do centrum repeats 'goes to the centre' without needing to repeat the subject."
+        },
+        {
+          "id": "On_the_tram_talking_to_another_passenger:5",
+          "polish": "Na którym przystanku muszę wysiąść?",
+          "english": "At which stop do I need to get off?",
+          "cue": "Na którym przystanku asks at which stop. Muszę means I must/need to; wysiąść means to get off a vehicle."
+        },
+        {
+          "id": "On_the_tram_talking_to_another_passenger:6",
+          "polish": "Musi pan wysiąść na trzecim przystanku.",
+          "english": "You need to get off at the third stop.",
+          "cue": "Musi pan is formal 'you must' to a man. Na trzecim przystanku means at the third stop; notice trzecim after na."
+        },
+        {
+          "id": "On_the_tram_talking_to_another_passenger:7",
+          "polish": "Dziękuję bardzo za informację.",
+          "english": "Thank you very much for the information.",
+          "cue": "Dziękuję bardzo means thank you very much. Za informację means for the information."
+        },
+        {
+          "id": "On_the_tram_talking_to_another_passenger:8",
+          "polish": "Nie ma sprawy.",
+          "english": "No problem.",
+          "cue": "Nie ma sprawy is a common complete reply to thanks: no problem."
+        }
+      ]
+    },
+    {
+      "lesson": "Asking_the_tram_driver_for_directions",
+      "lines": [
+        {
+          "id": "Asking_the_tram_driver_for_directions:0",
+          "polish": "Przepraszam, czy mogę zadać pytanie?",
+          "english": "Excuse me, may I ask a question?",
+          "cue": "Przepraszam gets someone's attention politely. Czy mogę ...? asks permission; zadać pytanie means to ask a question."
+        },
+        {
+          "id": "Asking_the_tram_driver_for_directions:1",
+          "polish": "Przepraszam, czy tym tramwajem dojadę do centrum?",
+          "english": "Excuse me, does this tram go to the city centre?",
+          "cue": "Czy ...? makes a yes/no question. Tym tramwajem means by/on this tram, and dojadę do centrum means I will get to the centre."
+        },
+        {
+          "id": "Asking_the_tram_driver_for_directions:2",
+          "polish": "Tak, ten tramwaj jedzie do centrum.",
+          "english": "Yes, this tram goes to the centre.",
+          "cue": "Tak means yes. Ten tramwaj is this tram; jedzie do centrum means it goes to the centre."
+        },
+        {
+          "id": "Asking_the_tram_driver_for_directions:3",
+          "polish": "Na którym przystanku powinienem wysiąść?",
+          "english": "At which stop should I get off?",
+          "cue": "Na którym przystanku asks at which stop. Powinienem means I should (masculine speaker); wysiąść means get off."
+        },
+        {
+          "id": "Asking_the_tram_driver_for_directions:4",
+          "polish": "Proszę wysiąść na przystanku \"Centrum\".",
+          "english": "Please get off at the ‘Centrum’ stop.",
+          "cue": "Proszę wysiąść means please get off. Na przystanku Centrum specifies the stop named Centrum."
+        },
+        {
+          "id": "Asking_the_tram_driver_for_directions:5",
+          "polish": "Czy mogę kupić bilet w tramwaju?",
+          "english": "Can I buy a ticket on the tram?",
+          "cue": "Czy mogę ...? asks may I. Kupić bilet means buy a ticket; w tramwaju means on the tram."
+        },
+        {
+          "id": "Asking_the_tram_driver_for_directions:6",
+          "polish": "Tak, może pan kupić bilet w automacie.",
+          "english": "Yes, you can buy a ticket in the machine.",
+          "cue": "Może pan is formal 'you can' to a man. W automacie means at/in the ticket machine; this describes the machine, not today's ticketing rules."
+        },
+        {
+          "id": "Asking_the_tram_driver_for_directions:7",
+          "polish": "Dziękuję bardzo, do widzenia.",
+          "english": "Thank you very much, goodbye.",
+          "cue": "Dziękuję bardzo is thank you very much; do widzenia is the polite goodbye."
+        }
+      ]
+    },
+    {
+      "lesson": "Museum_buying_tickets_and_basic_info",
+      "lines": [
+        {
+          "id": "Museum_buying_tickets_and_basic_info:0",
+          "polish": "Dzień dobry, poproszę dwa bilety do muzeum.",
+          "english": "Good morning, two tickets to the museum, please.",
+          "cue": "Dzień dobry greets the clerk politely. Poproszę is 'I'd like ... please'; dwa bilety means two tickets, do muzeum means to the museum."
+        },
+        {
+          "id": "Museum_buying_tickets_and_basic_info:1",
+          "polish": "Normalne czy ulgowe?",
+          "english": "Regular or reduced tickets?",
+          "cue": "Normalne czy ulgowe? asks regular or discounted tickets. The nouns are left unspoken because the context is already tickets."
+        },
+        {
+          "id": "Museum_buying_tickets_and_basic_info:2",
+          "polish": "Poproszę dwa bilety normalne.",
+          "english": "Two regular tickets, please.",
+          "cue": "Poproszę repeats the polite request. Dwa bilety normalne means two regular tickets."
+        },
+        {
+          "id": "Museum_buying_tickets_and_basic_info:3",
+          "polish": "Do której godziny muzeum jest otwarte?",
+          "english": "Until what time is the museum open?",
+          "cue": "Do której godziny asks until what time. Muzeum jest otwarte means the museum is open."
+        },
+        {
+          "id": "Museum_buying_tickets_and_basic_info:4",
+          "polish": "Dzisiaj jesteśmy otwarci do osiemnastej.",
+          "english": "Today we are open until six p.m.",
+          "cue": "Dzisiaj means today, jesteśmy otwarci means we are open. Do osiemnastej means until 18:00, or six in the evening."
+        },
+        {
+          "id": "Museum_buying_tickets_and_basic_info:5",
+          "polish": "Gdzie jest szatnia, proszę?",
+          "english": "Where is the cloakroom, please?",
+          "cue": "Gdzie jest ...? asks where something is. Szatnia is the cloakroom and proszę makes the question polite."
+        },
+        {
+          "id": "Museum_buying_tickets_and_basic_info:6",
+          "polish": "Szatnia jest na prawo, za schodami.",
+          "english": "The cloakroom is on the right, past the stairs.",
+          "cue": "Szatnia jest ... means the cloakroom is .... Na prawo means to the right, and za schodami means beyond/past the stairs."
+        },
+        {
+          "id": "Museum_buying_tickets_and_basic_info:7",
+          "polish": "Pierwsza wystawa jest na pierwszym piętrze.",
+          "english": "The first exhibition is on the first floor.",
+          "cue": "Pierwsza wystawa means the first exhibition. Na pierwszym piętrze means on the first floor; the ending changes after na."
+        },
+        {
+          "id": "Museum_buying_tickets_and_basic_info:8",
+          "polish": "Dziękuję za pomoc.",
+          "english": "Thank you for your help.",
+          "cue": "Dziękuję za pomoc is thank you for your help; za pomoc explains what the thanks are for."
+        }
+      ]
+    }
+  ]
+}
