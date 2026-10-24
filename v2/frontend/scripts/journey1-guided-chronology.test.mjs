@@ -27,7 +27,7 @@ test('C-16B 172-item audit follows actual foundation first use; optional Library
 });
 test('C-16B refuses hidden source order changes, incorrect first exposure or fake approval',()=>{
  for(const [edit,part] of [
-  [(x)=>x.guidedOrder.reverse(),'actual guided unit order'],
+  [(x)=>{x.guidedOrder[0].unitId='out-of-order';},'actual guided unit order'],
   [(x)=>x.guidedOrder[0].recordedSourceItems[0].polish='Nie','guided source selection drift'],
   [(x)=>x.guidedOrder[13].recordedSourceItems.pop(),'guided source selection drift'],
   [(x)=>x.basicSourceRows[0].firstGuidedUse=null,'actual guided first introduction drift'],
