@@ -2,15 +2,18 @@ import {useState} from 'react';
 import type {Journey1GuideStep} from './journey1-guide';
 import type {StarterGroup} from './foundation-first-expressions';
 import type {RecordedGlyph} from './recorded-alphabet';
+import type {SentencePattern} from './foundation-sentence-patterns';
+import RecordedSentencePatterns from './RecordedSentencePatterns';
 import RecordedAlphabetExplorer from './RecordedAlphabetExplorer';
 import type {AudioRate} from './audio';
 
 /** A quiet source-backed guide, not another proficiency or stage label.
  * Only actual existing source lesson and tourist-unit launch actions are shown. */
-export default function Journey1Guide({steps,starterGroups,nextWordGroups,recordedLetters,recordedCombinations,playing,speed,onSpeed,onPlayAudio,onStarter,onLesson,onUnit}:{
+export default function Journey1Guide({steps,starterGroups,nextWordGroups,sentencePatterns,recordedLetters,recordedCombinations,playing,speed,onSpeed,onPlayAudio,onStarter,onLesson,onUnit}:{
   steps:Journey1GuideStep[];
   starterGroups:StarterGroup[];
   nextWordGroups:StarterGroup[];
+  sentencePatterns:SentencePattern[];
   recordedLetters:RecordedGlyph[];
   recordedCombinations:RecordedGlyph[];
   playing:string|null;
@@ -59,6 +62,7 @@ export default function Journey1Guide({steps,starterGroups,nextWordGroups,record
         </button>)}
       </div>}
     </div>}
+    <RecordedSentencePatterns patterns={sentencePatterns} playing={playing} onPlay={onPlayAudio}/>
     <div className="foundation-guide-list">
       {visible.map((step,index)=><button type="button" key={step.id}
         className="foundation-guide-step"
