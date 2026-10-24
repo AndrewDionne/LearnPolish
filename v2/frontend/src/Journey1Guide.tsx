@@ -1,13 +1,22 @@
 import {useState} from 'react';
 import type {Journey1GuideStep} from './journey1-guide';
 import type {StarterGroup} from './foundation-first-expressions';
+import type {RecordedGlyph} from './recorded-alphabet';
+import RecordedAlphabetExplorer from './RecordedAlphabetExplorer';
+import type {AudioRate} from './audio';
 
 /** A quiet source-backed guide, not another proficiency or stage label.
  * Only actual existing source lesson and tourist-unit launch actions are shown. */
-export default function Journey1Guide({steps,starterGroups,nextWordGroups,onStarter,onLesson,onUnit}:{
+export default function Journey1Guide({steps,starterGroups,nextWordGroups,recordedLetters,recordedCombinations,playing,speed,onSpeed,onPlayAudio,onStarter,onLesson,onUnit}:{
   steps:Journey1GuideStep[];
   starterGroups:StarterGroup[];
   nextWordGroups:StarterGroup[];
+  recordedLetters:RecordedGlyph[];
+  recordedCombinations:RecordedGlyph[];
+  playing:string|null;
+  speed:AudioRate;
+  onSpeed:(speed:AudioRate)=>void;
+  onPlayAudio:(path:string)=>void;
   onStarter:(groupId:string)=>void;
   onLesson:(lessonId:string)=>void;
   onUnit:(unitId:string)=>void;
@@ -24,6 +33,8 @@ export default function Journey1Guide({steps,starterGroups,nextWordGroups,onStar
         {expanded?'Show less':'See all 20 steps'} →
       </button>
     </div>
+    <RecordedAlphabetExplorer letters={recordedLetters} combinations={recordedCombinations}
+      playing={playing} speed={speed} onSpeed={onSpeed} onPlay={onPlayAudio}/>
     {starterGroups.length>0 && <div className="foundation-starter" role="group" aria-label="First expressions practice">
       <div className="foundation-starter-heading">Practice eight everyday expressions</div>
       <div className="foundation-starter-options">

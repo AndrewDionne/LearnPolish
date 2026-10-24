@@ -1,0 +1,54 @@
+import {expect,test} from '@playwright/test';
+
+test('C-10 Journey 1 teaches 32 Polish letters inside real recorded words and 13 spelling combinations',async({page,isMobile})=>{
+ await page.goto('/');
+ await page.getByRole('button',{name:'Explore lessons'}).click();
+ const guide=page.getByRole('region',{name:'Guided Polish foundations'});
+ const explorer=guide.getByRole('region',{name:'Polish letters in recorded words'});
+ const disclosure=explorer.getByRole('button',{name:'Explore the Polish alphabet'});
+ await expect(disclosure).toHaveAttribute('aria-expanded','false');
+ await disclosure.click();
+ await expect(disclosure).toHaveAttribute('aria-expanded','true');
+ const grid=explorer.getByRole('group',{name:'Choose a Polish letter'});
+ await expect(grid.getByRole('button')).toHaveCount(32);
+ await expect(explorer.locator('.alphabet-focus')).toHaveText('Autobus');
+ await expect(explorer.locator('.alphabet-focus strong')).toHaveText('A');
+ await expect(explorer.locator('.alphabet-english')).toHaveText('Bus');
+ await expect(explorer.getByRole('button',{name:'Hear word'})).toBeEnabled();
+ await grid.getByRole('button',{name:'Ą',exact:true}).click();
+ await expect(explorer.locator('.alphabet-focus')).toHaveText('Jakub Dąbrowski');
+ await expect(explorer.locator('.alphabet-focus strong')).toHaveText('ą');
+ await explorer.getByRole('button',{name:'Next letter'}).click();
+ await expect(explorer.locator('.alphabet-focus')).toHaveText('Bilet');
+ await explorer.getByRole('button',{name:'Letter combinations (13)'}).click();
+ const combinations=explorer.getByRole('group',{name:'Choose a Polish letter combination'});
+ await expect(combinations.getByRole('button')).toHaveCount(13);
+ await expect(explorer.locator('.alphabet-focus')).toHaveText('Cztery');
+ await expect(explorer.locator('.alphabet-focus strong')).toHaveText('Cz');
+ await combinations.getByRole('button',{name:'CH',exact:true}).click();
+ await expect(explorer.locator('.alphabet-focus')).toHaveText('Chiny');
+ await expect(explorer.locator('.alphabet-focus strong')).toHaveText('Ch');
+ await expect(explorer.getByRole('button',{name:'Hear word'})).toBeEnabled();
+ await explorer.getByRole('button',{name:'0.85×'}).click();
+ await expect(explorer.getByRole('button',{name:'0.85×'})).toHaveAttribute('aria-pressed','true');
+ const nav=page.getByRole('navigation',{name:isMobile?'Mobile navigation':'Main navigation'});
+ await nav.getByRole('button',{name:'Library'}).click();
+ await expect(page.locator('.lesson-tile')).toHaveCount(26);
+});
+
+test('C-10 full 32-letter alphabet remains usable at 320px without isolated sound controls',async({page})=>{
+ await page.setViewportSize({width:320,height:740});
+ await page.goto('/');
+ await page.getByRole('button',{name:'Explore lessons'}).click();
+ const guide=page.getByRole('region',{name:'Guided Polish foundations'});
+ const explorer=guide.getByRole('region',{name:'Polish letters in recorded words'});
+ await explorer.getByRole('button',{name:'Explore the Polish alphabet'}).click();
+ await explorer.getByRole('group',{name:'Choose a Polish letter'}).getByRole('button',{name:'Ż',exact:true}).click();
+ await expect(explorer.locator('.alphabet-focus')).toHaveText('Żoliborz');
+ await expect(explorer.locator('.alphabet-english')).toContainText('district');
+ await expect(explorer.getByRole('button',{name:'Hear word'})).toBeEnabled();
+ await expect(explorer.getByRole('button',{name:/Play syllable|Hear letter name|Play isolated sound/})).toHaveCount(0);
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(322);
+ await explorer.getByRole('button',{name:'Explore the Polish alphabet'}).click();
+ await expect(explorer.getByRole('group',{name:'Choose a Polish letter'})).toHaveCount(0);
+});

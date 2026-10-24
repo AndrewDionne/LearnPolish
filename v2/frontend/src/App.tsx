@@ -18,6 +18,7 @@ import JourneyMarker from './JourneyMarker';
 import TouristUnitCards from './TouristUnitCards';
 import Journey1Guide from './Journey1Guide';
 import {availableJourney1Guide} from './journey1-guide';
+import {availableRecordedAlphabet} from './recorded-alphabet';
 import {availableStarterGroups,starterSessionItems} from './foundation-first-expressions';
 import {availableNextWordGroups,nextWordSessionItems} from './foundation-next-words';
 import {availableTouristUnits,unitStepSource,unitStepItems} from './tourist-units';
@@ -243,6 +244,7 @@ export default function App() {
   const active = lessons.find(x => x.id === lessonId);
   const touristUnits=useMemo(()=>availableTouristUnits(builtIn),[builtIn]);
   const foundationGuide=useMemo(()=>availableJourney1Guide(builtIn,touristUnits),[builtIn,touristUnits]);
+  const recordedAlphabet=useMemo(()=>availableRecordedAlphabet(builtIn),[builtIn]);
   const starterGroups=useMemo(()=>availableStarterGroups(builtIn),[builtIn]);
   const nextWordGroups=useMemo(()=>availableNextWordGroups(builtIn),[builtIn]);
   const allFoundationGroups=[...starterGroups,...nextWordGroups];
@@ -840,6 +842,8 @@ export default function App() {
               <div className="curriculum-stage-heading"><h2>{section.heading}</h2></div>
               {section.id==='core' && filter==='all' && !query.trim() && <>
                 <Journey1Guide steps={foundationGuide} starterGroups={starterGroups} nextWordGroups={nextWordGroups}
+                  recordedLetters={recordedAlphabet.letters} recordedCombinations={recordedAlphabet.combinations}
+                  playing={audio.playing} speed={audio.rate} onSpeed={audio.setRate} onPlayAudio={play}
                   onStarter={openStarterGroup}
                   onLesson={id=>{const found=builtIn.find(x=>x.id===id);if(found)openLesson(found);}}
                   onUnit={id=>openTouristUnitStep(id,0)}/>

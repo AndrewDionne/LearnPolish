@@ -1,0 +1,369 @@
+{
+  "schemaVersion": 1,
+  "status": "inherited_whole_word_recordings_not_independently_native_certified",
+  "note": "Alphabet exemplars are audible WHOLE recorded source utterances showing focus graphemes. They are not separate spoken letter-name recordings, definitive context-free phoneme sounds or reviewed IPA. Some words are place/person names. Grouped spellings can change phonetic values by context.",
+  "letters": [
+    {
+      "label": "A",
+      "sourceLesson": "Transit_1",
+      "index": 6,
+      "polish": "Autobus",
+      "english": "Bus",
+      "focus": "A"
+    },
+    {
+      "label": "Ą",
+      "sourceLesson": "Names_of_Poland_1",
+      "index": 9,
+      "polish": "Jakub Dąbrowski",
+      "english": "Jakub Dabrowski",
+      "focus": "ą"
+    },
+    {
+      "label": "B",
+      "sourceLesson": "Transit_1",
+      "index": 2,
+      "polish": "Bilet",
+      "english": "Ticket",
+      "focus": "B"
+    },
+    {
+      "label": "C",
+      "sourceLesson": "Road_Terminology",
+      "index": 0,
+      "polish": "ulica",
+      "english": "Street",
+      "focus": "c"
+    },
+    {
+      "label": "Ć",
+      "sourceLesson": "numbers_1-20",
+      "index": 4,
+      "polish": "Pięć",
+      "english": "Five",
+      "focus": "ć"
+    },
+    {
+      "label": "D",
+      "sourceLesson": "Road_Terminology",
+      "index": 3,
+      "polish": "droga",
+      "english": "Road",
+      "focus": "d"
+    },
+    {
+      "label": "E",
+      "sourceLesson": "Transit_1",
+      "index": 5,
+      "polish": "Metro",
+      "english": "Metro / Subway",
+      "focus": "e"
+    },
+    {
+      "label": "Ę",
+      "sourceLesson": "numbers_1-20",
+      "index": 4,
+      "polish": "Pięć",
+      "english": "Five",
+      "focus": "ę"
+    },
+    {
+      "label": "F",
+      "sourceLesson": "Countries_of_the_World",
+      "index": 2,
+      "polish": "Francja",
+      "english": "France",
+      "focus": "F"
+    },
+    {
+      "label": "G",
+      "sourceLesson": "Road_Terminology",
+      "index": 3,
+      "polish": "droga",
+      "english": "Road",
+      "focus": "g"
+    },
+    {
+      "label": "H",
+      "sourceLesson": "Conversation_1",
+      "index": 3,
+      "polish": "Hej",
+      "english": "Hey",
+      "focus": "H"
+    },
+    {
+      "label": "I",
+      "sourceLesson": "Transit_1",
+      "index": 2,
+      "polish": "Bilet",
+      "english": "Ticket",
+      "focus": "i"
+    },
+    {
+      "label": "J",
+      "sourceLesson": "numbers_1-20",
+      "index": 0,
+      "polish": "Jeden",
+      "english": "One",
+      "focus": "J"
+    },
+    {
+      "label": "K",
+      "sourceLesson": "The_Cities_of_Poland",
+      "index": 17,
+      "polish": "Kielce",
+      "english": "Kielce",
+      "focus": "K"
+    },
+    {
+      "label": "L",
+      "sourceLesson": "The_Cities_of_Poland",
+      "index": 8,
+      "polish": "Lublin",
+      "english": "Lublin",
+      "focus": "L"
+    },
+    {
+      "label": "Ł",
+      "sourceLesson": "The_Cities_of_Poland",
+      "index": 2,
+      "polish": "Łódź",
+      "english": "Lodz",
+      "focus": "Ł"
+    },
+    {
+      "label": "M",
+      "sourceLesson": "Transit_1",
+      "index": 5,
+      "polish": "Metro",
+      "english": "Metro / Subway",
+      "focus": "M"
+    },
+    {
+      "label": "N",
+      "sourceLesson": "Conversation_1",
+      "index": 15,
+      "polish": "Nie",
+      "english": "No",
+      "focus": "N"
+    },
+    {
+      "label": "Ń",
+      "sourceLesson": "The_Cities_of_Poland",
+      "index": 4,
+      "polish": "Poznań",
+      "english": "Poznan",
+      "focus": "ń"
+    },
+    {
+      "label": "O",
+      "sourceLesson": "Road_Terminology",
+      "index": 8,
+      "polish": "most",
+      "english": "Bridge",
+      "focus": "o"
+    },
+    {
+      "label": "Ó",
+      "sourceLesson": "The_Cities_of_Poland",
+      "index": 1,
+      "polish": "Kraków",
+      "english": "Krakow",
+      "focus": "ó"
+    },
+    {
+      "label": "P",
+      "sourceLesson": "Conversation_1",
+      "index": 10,
+      "polish": "Proszę",
+      "english": "Please / Here you go",
+      "focus": "P"
+    },
+    {
+      "label": "R",
+      "sourceLesson": "Road_Terminology",
+      "index": 9,
+      "polish": "rondo",
+      "english": "Roundabout",
+      "focus": "r"
+    },
+    {
+      "label": "S",
+      "sourceLesson": "Numbers_20-100",
+      "index": 16,
+      "polish": "Sto",
+      "english": "One hundred",
+      "focus": "S"
+    },
+    {
+      "label": "Ś",
+      "sourceLesson": "Districts_of_Warszawa",
+      "index": 0,
+      "polish": "Śródmieście",
+      "english": "City Center / Downtown",
+      "focus": "Ś"
+    },
+    {
+      "label": "T",
+      "sourceLesson": "Conversation_1",
+      "index": 14,
+      "polish": "Tak",
+      "english": "Yes",
+      "focus": "T"
+    },
+    {
+      "label": "U",
+      "sourceLesson": "Road_Terminology",
+      "index": 0,
+      "polish": "ulica",
+      "english": "Street",
+      "focus": "u"
+    },
+    {
+      "label": "W",
+      "sourceLesson": "Districts_of_Warszawa",
+      "index": 2,
+      "polish": "Wola",
+      "english": "Wola district",
+      "focus": "W"
+    },
+    {
+      "label": "Y",
+      "sourceLesson": "numbers_1-20",
+      "index": 2,
+      "polish": "Trzy",
+      "english": "Three",
+      "focus": "y"
+    },
+    {
+      "label": "Z",
+      "sourceLesson": "Conversation_-_shopping",
+      "index": 13,
+      "polish": "Za małe",
+      "english": "Too small",
+      "focus": "Z"
+    },
+    {
+      "label": "Ź",
+      "sourceLesson": "Names_of_Poland_1",
+      "index": 8,
+      "polish": "Mateusz Woźniak",
+      "english": "Mateusz Wozniak",
+      "focus": "ź"
+    },
+    {
+      "label": "Ż",
+      "sourceLesson": "Districts_of_Warszawa",
+      "index": 5,
+      "polish": "Żoliborz",
+      "english": "Żoliborz district",
+      "focus": "Ż"
+    }
+  ],
+  "combinations": [
+    {
+      "label": "CZ",
+      "sourceLesson": "numbers_1-20",
+      "index": 3,
+      "polish": "Cztery",
+      "english": "Four",
+      "focus": "Cz"
+    },
+    {
+      "label": "SZ",
+      "sourceLesson": "Countries_of_the_World",
+      "index": 16,
+      "polish": "Szwecja",
+      "english": "Sweden",
+      "focus": "Sz"
+    },
+    {
+      "label": "RZ",
+      "sourceLesson": "The_Cities_of_Poland",
+      "index": 16,
+      "polish": "Rzeszów",
+      "english": "Rzeszow",
+      "focus": "Rz"
+    },
+    {
+      "label": "CH",
+      "sourceLesson": "Countries_of_the_World",
+      "index": 9,
+      "polish": "Chiny",
+      "english": "China",
+      "focus": "Ch"
+    },
+    {
+      "label": "SI",
+      "sourceLesson": "numbers_1-20",
+      "index": 6,
+      "polish": "Siedem",
+      "english": "Seven",
+      "focus": "Si"
+    },
+    {
+      "label": "ZI",
+      "sourceLesson": "The_Cities_of_Poland",
+      "index": 22,
+      "polish": "Zielona Góra",
+      "english": "Zielona Gora",
+      "focus": "Zi"
+    },
+    {
+      "label": "DZI",
+      "sourceLesson": "Conversation_1",
+      "index": 0,
+      "polish": "Dzień dobry",
+      "english": "Good morning / Good day",
+      "focus": "Dzi"
+    },
+    {
+      "label": "NI",
+      "sourceLesson": "Conversation_1",
+      "index": 15,
+      "polish": "Nie",
+      "english": "No",
+      "focus": "Ni"
+    },
+    {
+      "label": "SZCZ",
+      "sourceLesson": "The_Cities_of_Poland",
+      "index": 6,
+      "polish": "Szczecin",
+      "english": "Szczecin",
+      "focus": "Szcz"
+    },
+    {
+      "label": "TRZ",
+      "sourceLesson": "numbers_1-20",
+      "index": 2,
+      "polish": "Trzy",
+      "english": "Three",
+      "focus": "Trz"
+    },
+    {
+      "label": "PRZ",
+      "sourceLesson": "Transit_1",
+      "index": 8,
+      "polish": "Przystanek autobusowy",
+      "english": "Bus stop",
+      "focus": "Prz"
+    },
+    {
+      "label": "KRZ",
+      "sourceLesson": "Road_Terminology",
+      "index": 19,
+      "polish": "ulica Świętokrzyska",
+      "english": "Świętokrzyska Street",
+      "focus": "krz"
+    },
+    {
+      "label": "DZ",
+      "sourceLesson": "Emergencies_and_Health",
+      "index": 16,
+      "polish": "Dzwonię na pogotowie",
+      "english": "I am calling emergency services",
+      "focus": "Dz"
+    }
+  ]
+}
