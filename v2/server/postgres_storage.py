@@ -8,6 +8,7 @@ All user values remain bound parameters, never interpolated into SQL.
 from __future__ import annotations
 
 import re
+from pathlib import Path
 from urllib.parse import urlparse
 
 try:
@@ -104,9 +105,15 @@ def open_postgres(url: str) -> PgConnection:
     _validate_url(url)
     if psycopg is None:
         raise RuntimeError("psycopg is required for V2 Neon account persistence")
+    # Explicitly use the trusted CA bundle installed in the Render image.
+    # libpq's verify-full without sslrootcert otherwise expects a per-user
+    # ~/.postgresql/root.crt file, which isn't present in a slim container.
+    # Native clients (macOS) can use the OS trust store instead.
+    roots = Path("/etc/ssl/certs/ca-certificates.crt")
+    ca = str(roots) if roots.is_file() else "system"
     conn = psycopg.connect(
         url, autocommit=True, row_factory=dict_row,
-        sslmode="verify-full", connect_timeout=8,
+        sslmode="verify-full", sslrootcert=ca, connect_timeout=8,
         options="-c search_path=ptp_v2",
     )
     # Fail closed if the configured connection escaped the V2-only schema.
@@ -124,6 +131,16 @@ def _safe_connection_error_code(error: Exception) -> str:
     connection string, so map to a finite vocabulary instead of logging it.
     """
     message = str(error).lower()
+    if ("root certificate file" in message or "root.crt" in message or
+            "certificate authority file" in message or
+            "no such file or directory" in message and "ssl" in message):
+        return "tls_ca_bundle_unavailable"
+    if ("certificate verify failed" in message or
+            "unable to get local issuer certificate" in message):
+        return "tls_cert_chain_untrusted"
+    if ("certificate" in message and
+            ("does not match" in message or "hostname mismatch" in message)):
+        return "tls_hostname_mismatch"
     if "password authentication failed" in message or "invalid password" in message:
         return "authentication_rejected"
     if "no pg_hba.conf entry" in message or "permission denied" in message:
