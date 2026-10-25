@@ -91,7 +91,9 @@ class NeonAdapterTests(unittest.TestCase):
     def test_public_safe_startup_diagnostic_never_exposes_libpq_secrets(self):
         cases = {
             "password authentication failed for user ptp_v2_runtime": "authentication_rejected",
-            "certificate verify failed at db.example.com": "tls_verification_failed",
+            "certificate verify failed at db.example.com": "tls_cert_chain_untrusted",
+            "root certificate file missing from /root/.postgresql/root.crt": "tls_ca_bundle_unavailable",
+            "server certificate for db does not match host": "tls_hostname_mismatch",
             "could not translate host name private-host": "dns_resolution_failed",
             "connection refused at private-host": "network_unavailable",
             "database private_db does not exist": "database_not_found",
