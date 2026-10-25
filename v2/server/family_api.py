@@ -20,7 +20,7 @@ from typing import Callable
 from flask import Flask, g, jsonify, request
 from werkzeug.security import check_password_hash
 from private_storage import prepare_database
-from postgres_storage import PgIntegrityError, open_postgres, postgres_ready
+from postgres_storage import PgIntegrityError, open_postgres, postgres_readiness_status
 from recovery_mail import configured_sender
 from speech_assessment import InvalidAudio, checked_wav, assessment_from_sdk, azure_scripted_assess, MAX_WAV_BYTES
 from speech_blend import blend_assessment, groq_whisper_transcribe
@@ -237,8 +237,13 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
     if pg_url:
         # Fail closed: schema migration is a separate reviewed operator action.
         # Never create/overwrite V1 public tables or identities at app startup.
-        if not postgres_ready(pg_url):
-            raise RuntimeError("Required isolated ptp_v2 Neon schema is unavailable")
+        readiness = postgres_readiness_status(pg_url)
+        if readiness != "ready":
+            # A finite diagnostic code distinguishes incorrect Render URL,
+            # rejected credentials, TLS and schema issues. Raw psycopg/libpq
+            # exception strings can contain secrets and MUST NOT be logged.
+            raise RuntimeError("Required isolated ptp_v2 Neon schema is unavailable "
+                               "(diagnostic=" + readiness + ")")
     else:
         # SQLite remains for local development and existing hermetic CI.
         # Production Render Free must never persist accounts to its ephemeral disk.
