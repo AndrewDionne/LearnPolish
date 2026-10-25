@@ -25,6 +25,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PTP_RENDER_FAMILY_MODE=disabled \
     PTP_SPEECH_ENABLED=0
 WORKDIR /srv/ptp
+# libpq verify-full requires a CA trust source. Debian slim does not
+# guarantee ~/.postgresql/root.crt; install an explicit system bundle.
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
+    && update-ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+RUN test -s /etc/ssl/certs/ca-certificates.crt
 RUN pip install --no-cache-dir "Flask==3.1.1" "gunicorn>=23,<25" "psycopg[binary]>=3.2,<4"
 COPY v2/server/ /srv/ptp/v2/server/
 COPY --from=frontend /repo/v2/frontend/dist/ /srv/ptp/v2/frontend/dist/
