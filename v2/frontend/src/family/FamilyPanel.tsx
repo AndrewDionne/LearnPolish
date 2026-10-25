@@ -356,7 +356,7 @@ export default function FamilyPanel({onConnection,onSummary,syncMessage,syncVers
         </div>
         {authMode==='create'&&<small>Use a password of at least 12 characters. Verify the code in your email before joining a family.</small>}
         {!registrationAvailable&&<p className="family-note">{ownerDeliveredActivation
-          ?'Private tester accounts are set up by your group organizer. Sign in using your own email and temporary password.'
+          ?'Private tester accounts are set up by your group organizer. Sign in with your existing account password or the private temporary password you received.'
           :'New family accounts are not open yet. Existing verified adults may sign in when the service is connected.'}</p>}
         {registrationMode==='adult_pilot'&&<p className="family-note">Private adult-only test; registration requires an invitation for your email. Child accounts are not yet available.</p>}
         {recoveryAvailable&&<button type="button" className="family-recovery-link" disabled={busy} onClick={()=>{

@@ -55,7 +55,8 @@ def read_manifest(data: dict) -> tuple[str, str, list[dict]]:
     return name.strip(), owner.strip().lower(), cleaned
 
 
-def provision_test_group(connection, manifest: dict, now: int | None = None, before_commit=None) -> dict:
+def provision_test_group(connection, manifest: dict, now: int | None = None, before_commit=None,
+                         reuse_existing_organizer: bool = False) -> dict:
     """Atomically provision 1 group + unique pending accounts, no shared credentials.
 
     Caller commits and distributes the private returned receipt; never print it.
@@ -68,8 +69,22 @@ def provision_test_group(connection, manifest: dict, now: int | None = None, bef
         connection.execute("BEGIN IMMEDIATE")
         for person in people:
             email = person["email"]
-            if connection.execute("SELECT id FROM users WHERE email=?", (email,)).fetchone():
-                raise ValueError("An account already exists; no passwords or groups were replaced")
+            existing = connection.execute("SELECT id FROM users WHERE email=?", (email,)).fetchone()
+            if existing is not None:
+                # Reuse EXACTLY the intended organizer after privileged one-time
+                # legacy verifier import, never reissue a password or token.
+                if not reuse_existing_organizer or email != owner:
+                    raise ValueError("An account already exists; no passwords or groups were replaced")
+                verified = connection.execute(
+                    "SELECT 1 FROM email_verifications WHERE user_id=?",
+                    (existing["id"],)).fetchone()
+                if not verified:
+                    raise ValueError("Existing organizer is not verified")
+                packs.append({"name":person["name"],"email":email,
+                              "existing_account":True,"user_id":existing["id"]})
+                continue
+            if reuse_existing_organizer and email == owner:
+                raise ValueError("Expected existing verified organizer account was not migrated")
             pw = secrets.token_urlsafe(32)
             code = secrets.token_urlsafe(32)
             salt = secrets.token_hex(16)
@@ -82,6 +97,7 @@ def provision_test_group(connection, manifest: dict, now: int | None = None, bef
                 (_hash(code),user_id,epoch+ONE_WEEK),
             )
             packs.append({"name":person["name"],"email":email,
+                          "existing_account":False,
                           "temporary_password":pw,"activation_code":code,
                           "activation_expires_at":epoch+ONE_WEEK,
                           "user_id":user_id})
@@ -129,6 +145,8 @@ def main(argv=None):
     parser.add_argument("--manifest",required=True,help="Private local JSON with organizer and member addresses")
     parser.add_argument("--output",help="New private 0600 file of individual activation details")
     parser.add_argument("--apply",action="store_true",help="Actually create pending users in restricted Neon")
+    parser.add_argument("--reuse-existing-organizer",action="store_true",
+                        help="Reuse a pre-migrated verified organizer without changing their old password")
     args=parser.parse_args(argv)
     info=json.loads(Path(args.manifest).read_text(encoding="utf-8"))
     group,owner,people=read_manifest(info)
@@ -148,15 +166,19 @@ def main(argv=None):
     connection=open_postgres(url)
     try:
         try:
-            provision_test_group(connection,info,before_commit=lambda details:_private_write(out,details))
+            provision_test_group(connection,info,
+                before_commit=lambda details:_private_write(out,details),
+                reuse_existing_organizer=args.reuse_existing_organizer)
         except BaseException:
             out.unlink(missing_ok=True)
             raise
     finally:
         connection.close()
-    print(json.dumps({"status":"PENDING_MANUAL_ACTIVATION","accounts_created":len(people),
+    print(json.dumps({"status":"PENDING_MANUAL_ACTIVATION",
+                      "accounts_created":len(people)-(1 if args.reuse_existing_organizer else 0),
+                      "accounts_reused":1 if args.reuse_existing_organizer else 0,
                       "group_created":True,"private_file":str(out)}))
-    print("Deliver only each person's unique private login and activation code to their personal inbox.")
+    print("Deliver separate private credentials only to NEW testers. Reused organizer keeps their existing password.")
     print("No sender service required. Activation codes expire after 7 days.")
 
 
