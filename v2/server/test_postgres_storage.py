@@ -83,6 +83,49 @@ class NeonAdapterTests(unittest.TestCase):
             "postgresql://user:secret@db.eu-central-1.aws.neon.tech/family",
         )
 
+    def test_platform_ca_bundles_preserve_verified_tls_on_mac_and_render(self):
+        # Neon macOS workaround must NOT disable hostname or CA validation.
+        for platform_name, root in (
+            ("darwin", "/etc/ssl/cert.pem"),
+            ("linux", "/etc/ssl/certs/ca-certificates.crt"),
+        ):
+            with self.subTest(platform_name=platform_name):
+                with patch.object(pg, "host_platform", platform_name), \
+                     patch.object(pg.Path, "is_file", autospec=True,
+                                  side_effect=lambda p: str(p) == root):
+                    self.assertEqual(pg._trusted_sslrootcert(), root)
+
+        # Missing roots retain the existing strict libpq system trust path,
+        # never fall back to sslmode=require or unverified connections.
+        with patch.object(pg, "host_platform", "darwin"), \
+             patch.object(pg.Path, "is_file", return_value=False):
+            self.assertEqual(pg._trusted_sslrootcert(), "system")
+
+    def test_open_postgres_keeps_verify_full_with_explicit_macos_ca(self):
+        from unittest.mock import Mock
+
+        raw = StubConnection()
+
+        def probe_schema(sql):
+            self.assertEqual(sql, "SELECT current_schema() AS schema")
+            return StubCursor([{"schema": "ptp_v2"}])
+
+        raw.execute = probe_schema
+        client = Mock()
+        client.connect.return_value = raw
+        url = "postgresql://ptp_v2_runtime:secret@neon.example.com/family"
+        with patch.object(pg, "psycopg", client), \
+             patch.object(pg, "_trusted_sslrootcert",
+                          return_value="/etc/ssl/cert.pem"):
+            con = pg.open_postgres(url)
+        args, kwargs = client.connect.call_args
+        self.assertEqual(args, (url,))
+        self.assertEqual(kwargs["sslmode"], "verify-full")
+        self.assertEqual(kwargs["sslrootcert"], "/etc/ssl/cert.pem")
+        self.assertEqual(kwargs["options"], "-c search_path=ptp_v2")
+        con.close()
+        self.assertTrue(raw.closed)
+
     def test_unavailable_neon_fails_closed_without_exposing_credentials(self):
         self.assertFalse(pg.postgres_ready("postgresql://bad:secret@neon.example.com/neondb"))
         with patch.object(pg, "open_postgres", side_effect=RuntimeError("private secret password")):
