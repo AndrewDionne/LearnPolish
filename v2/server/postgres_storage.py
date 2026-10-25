@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
+from sys import platform as host_platform
 from urllib.parse import urlparse
 
 try:
@@ -101,19 +102,30 @@ def _validate_url(url: str) -> str:
     return url
 
 
+def _trusted_sslrootcert() -> str:
+    """Explicit platform CA bundle for libpq's verify-full, when installed.
+
+    Neon documents /etc/ssl/cert.pem for macOS. libpq's "system" option
+    resolves through its own OpenSSL build and may miss macOS trust roots,
+    even when Python/HTTPS verification succeeds. Keep the explicit Debian
+    bundle for the Render image; use libpq's system store elsewhere.
+    """
+    if host_platform == "darwin":
+        roots = Path("/etc/ssl/cert.pem")
+    else:
+        roots = Path("/etc/ssl/certs/ca-certificates.crt")
+    return str(roots) if roots.is_file() else "system"
+
+
 def open_postgres(url: str) -> PgConnection:
     _validate_url(url)
     if psycopg is None:
         raise RuntimeError("psycopg is required for V2 Neon account persistence")
-    # Explicitly use the trusted CA bundle installed in the Render image.
-    # libpq's verify-full without sslrootcert otherwise expects a per-user
-    # ~/.postgresql/root.crt file, which isn't present in a slim container.
-    # Native clients (macOS) can use the OS trust store instead.
-    roots = Path("/etc/ssl/certs/ca-certificates.crt")
-    ca = str(roots) if roots.is_file() else "system"
+    # Platform-specific CA roots without weakening TLS certificate or
+    # hostname verification. Never switch to sslmode=require/disable.
     conn = psycopg.connect(
         url, autocommit=True, row_factory=dict_row,
-        sslmode="verify-full", sslrootcert=ca, connect_timeout=8,
+        sslmode="verify-full", sslrootcert=_trusted_sslrootcert(), connect_timeout=8,
         options="-c search_path=ptp_v2",
     )
     # Fail closed if the configured connection escaped the V2-only schema.
