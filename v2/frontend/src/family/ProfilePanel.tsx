@@ -7,7 +7,7 @@ type PrivateProfile={user:Identity;families:FamilyGroup[]};
 
 /** Account information is private service data; browser XP stays on this device. */
 export default function ProfilePanel({onOpenGroups}:{onOpenGroups:()=>void}){
-  const [token]=useState(()=>{
+  const [token,setToken]=useState(()=>{
     try{return sessionStorage.getItem('ptp-v2-family-session')||'';}catch{return '';}
   });
   const [data,setData]=useState<PrivateProfile|null>(null);
@@ -16,6 +16,10 @@ export default function ProfilePanel({onOpenGroups}:{onOpenGroups:()=>void}){
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState('');
   const [message,setMessage]=useState('');
+  const [showPasswordChange,setShowPasswordChange]=useState(false);
+  const [currentPassword,setCurrentPassword]=useState('');
+  const [newPassword,setNewPassword]=useState('');
+  const [confirmPassword,setConfirmPassword]=useState('');
 
   useEffect(()=>{
     if(!FAMILY_API||!token)return;
@@ -46,6 +50,32 @@ export default function ProfilePanel({onOpenGroups}:{onOpenGroups:()=>void}){
     finally{setBusy(false);}
   };
 
+  const changePassword=async()=>{
+    if(!token||busy||!currentPassword||newPassword.length<12||
+       newPassword!==confirmPassword||newPassword===currentPassword)return;
+    setBusy(true);setError('');setMessage('');
+    try{
+      const result=await familyRequest<{changed:boolean;sign_in_again:boolean}>(
+        '/api/v2/family/account/password','POST',
+        {current_password:currentPassword,new_password:newPassword},token);
+      if(result.changed!==true||result.sign_in_again!==true)
+        throw new Error('Password change could not be confirmed.');
+      // The server revokes every active session after a password change.
+      // Clear local sharing immediately so stale credentials cannot contribute XP.
+      try{
+        sessionStorage.removeItem('ptp-v2-family-session');
+        sessionStorage.removeItem('ptp-v2-family-group');
+        sessionStorage.removeItem('ptp-v2-family-sharing');
+      }catch{/* private browsing */}
+      setToken('');setData(null);setShowPasswordChange(false);
+      setMessage('Password changed. Sign in again from Learning groups with your new password.');
+    }catch(e){setError(e instanceof Error?e.message:'Could not change password.');}
+    finally{
+      setCurrentPassword('');setNewPassword('');setConfirmPassword('');
+      setBusy(false);
+    }
+  };
+
   return <section className="learner-profile" aria-label="Learner account">
     <div className="learner-profile-heading"><div>
       <h2>Account</h2>
@@ -63,6 +93,27 @@ export default function ProfilePanel({onOpenGroups}:{onOpenGroups:()=>void}){
             <button type="button" disabled={busy||!displayName.trim()||displayName.trim()===data.user.name}
               onClick={()=>void saveName()}>Save display name</button>
             <span>{data.families.length} {data.families.length===1?'learning group':'learning groups'}</span>
+          </div>
+          <div className="learner-password-settings">
+            <button type="button" className="secondary-action" disabled={busy}
+              aria-expanded={showPasswordChange} onClick={()=>{
+                setShowPasswordChange(value=>!value);
+                setCurrentPassword('');setNewPassword('');setConfirmPassword('');
+                setError('');setMessage('');
+              }}>{showPasswordChange?'Cancel password change':'Change password'}</button>
+            {showPasswordChange&&<form aria-label="Change account password" onSubmit={event=>{
+              event.preventDefault();void changePassword();
+            }}>
+              <label>Current password<input type="password" autoComplete="current-password"
+                value={currentPassword} onChange={event=>setCurrentPassword(event.target.value)}/></label>
+              <label>New password<input type="password" autoComplete="new-password" minLength={12}
+                value={newPassword} onChange={event=>setNewPassword(event.target.value)}/></label>
+              <label>Confirm new password<input type="password" autoComplete="new-password"
+                value={confirmPassword} onChange={event=>setConfirmPassword(event.target.value)}/></label>
+              <button type="submit" disabled={busy||!currentPassword||newPassword.length<12||
+                newPassword===currentPassword||newPassword!==confirmPassword}>Save new password</button>
+              <small>At least 12 characters. All account sessions will be signed out.</small>
+            </form>}
           </div>
           {data.families.length>0&&<div className="learner-joined-groups">
             <h3>Your learning groups</h3>
