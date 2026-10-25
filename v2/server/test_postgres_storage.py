@@ -88,6 +88,35 @@ class NeonAdapterTests(unittest.TestCase):
         with patch.object(pg, "open_postgres", side_effect=RuntimeError("private secret password")):
             self.assertFalse(pg.postgres_ready("postgresql://u:p@neon.example.com/neondb"))
 
+    def test_public_safe_startup_diagnostic_never_exposes_libpq_secrets(self):
+        cases = {
+            "password authentication failed for user ptp_v2_runtime": "authentication_rejected",
+            "certificate verify failed at db.example.com": "tls_verification_failed",
+            "could not translate host name private-host": "dns_resolution_failed",
+            "connection refused at private-host": "network_unavailable",
+            "database private_db does not exist": "database_not_found",
+            "random unexpected text password=very-secret": "connection_unavailable",
+            "An explicit credentialled Postgres database URL is required":
+                "connection_url_invalid",
+        }
+        for error_text, expected_code in cases.items():
+            with self.subTest(code=expected_code):
+                with patch.object(pg, "open_postgres", side_effect=RuntimeError(error_text)):
+                    status = pg.postgres_readiness_status("postgresql://u:very-secret@host/db")
+                self.assertEqual(status, expected_code)
+                self.assertNotIn("very-secret", status)
+                self.assertNotIn("private-host", status)
+                self.assertNotIn("ptp_v2_runtime", status)
+
+    def test_safe_postgres_probe_preserves_boolean_contract(self):
+        db = StubConnection()
+        with patch.object(pg, "open_postgres", return_value=pg.PgConnection(db)):
+            self.assertFalse(pg.postgres_ready("postgresql://u:secret@host/db"))
+        with patch.object(pg, "open_postgres", side_effect=RuntimeError("password=secret")):
+            self.assertEqual(pg.postgres_readiness_status("postgresql://u:secret@host/db"),
+                             "connection_unavailable")
+
+
 
 if __name__ == "__main__":
     unittest.main()
