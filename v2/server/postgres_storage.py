@@ -117,17 +117,59 @@ def open_postgres(url: str) -> PgConnection:
     return PgConnection(conn)
 
 
-def postgres_ready(url: str) -> bool:
-    """No side-effects. Successful connectivity plus required V2 schema."""
+def _safe_connection_error_code(error: Exception) -> str:
+    """Return only a fixed category; NEVER print raw libpq errors or URLs.
+
+    libpq's exception text may include hostname, username, or the configured
+    connection string, so map to a finite vocabulary instead of logging it.
+    """
+    message = str(error).lower()
+    if "password authentication failed" in message or "invalid password" in message:
+        return "authentication_rejected"
+    if "no pg_hba.conf entry" in message or "permission denied" in message:
+        return "connection_denied"
+    if "database" in message and "does not exist" in message:
+        return "database_not_found"
+    if ("certificate" in message or "ssl" in message or
+            "tls" in message or "hostname mismatch" in message):
+        return "tls_verification_failed"
+    if ("could not translate host name" in message or "name or service not known" in message or
+            "nodename nor servname provided" in message):
+        return "dns_resolution_failed"
+    if ("connection refused" in message or "connection timed out" in message or
+            "timeout expired" in message or "network is unreachable" in message):
+        return "network_unavailable"
+    if ("invalid connection" in message or "invalid dsn" in message or
+            "missing \"=\"" in message or "keyword/value" in message):
+        return "connection_url_invalid"
+    if "search_path" in message and "invalid" in message:
+        return "connection_options_rejected"
+    if "schema" in message and ("permission denied" in message or "does not exist" in message):
+        return "schema_unavailable"
+    if "An explicit credentialled Postgres database URL" in str(error):
+        return "connection_url_invalid"
+    return "connection_unavailable"
+
+
+def postgres_readiness_status(url: str) -> str:
+    """Pure read-only probe. Return a public-safe code, never the exception."""
     try:
         con = open_postgres(url)
         try:
-            exists = con.execute(
+            row = con.execute(
                 "SELECT to_regclass('ptp_v2.users') IS NOT NULL AS ok"
-            ).fetchone()["ok"]
-            return bool(exists)
+            ).fetchone()
+            return "ready" if row and row["ok"] else "v2_table_missing"
         finally:
             con.close()
-    except Exception:
-        # Deliberately never log database URLs, credentials or exception text.
-        return False
+    except RuntimeError as error:
+        if "V2 Neon schema missing" in str(error):
+            return "schema_unavailable"
+        return _safe_connection_error_code(error)
+    except Exception as error:
+        return _safe_connection_error_code(error)
+
+
+def postgres_ready(url: str) -> bool:
+    """Retain boolean API, without disclosing connection credentials."""
+    return postgres_readiness_status(url) == "ready"
