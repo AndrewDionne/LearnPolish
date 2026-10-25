@@ -18,6 +18,7 @@ from functools import wraps
 from typing import Callable
 
 from flask import Flask, g, jsonify, request
+from werkzeug.security import check_password_hash
 from private_storage import prepare_database
 from postgres_storage import PgIntegrityError, open_postgres, postgres_ready
 from recovery_mail import configured_sender
@@ -104,6 +105,29 @@ def _hash(value: str) -> str:
 
 def _password(secret: str, salt: str) -> str:
     return hashlib.pbkdf2_hmac("sha256", secret.encode(), bytes.fromhex(salt), 390000).hex()
+
+
+# One-time V1 identity continuity: copy the old Werkzeug *verifier*, not
+# plaintext credentials, from public.users into the isolated V2 schema.
+# The V2 role cannot read public. First successful password check rotates it
+# to V2's native salted PBKDF2 so this compatibility path is temporary.
+LEGACY_SCRYPT_SALT = "legacy_werkzeug_scrypt_v1"
+
+
+def _password_matches(secret: str, salt: str, stored_hash: str) -> bool:
+    if not isinstance(secret, str) or not isinstance(salt, str) or not isinstance(stored_hash, str):
+        return False
+    if salt == LEGACY_SCRYPT_SALT:
+        if not stored_hash.startswith("scrypt:"):
+            return False
+        try:
+            return bool(check_password_hash(stored_hash, secret))
+        except (ValueError, TypeError):
+            return False
+    try:
+        return hmac.compare_digest(_password(secret, salt), stored_hash)
+    except (ValueError, TypeError):
+        return False
 
 
 def _now() -> int:
@@ -524,7 +548,7 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
                              FROM users u LEFT JOIN email_verifications v ON v.user_id=u.id
                              WHERE u.email=?""",(email,)).fetchone()
         if (not row or row["verified_at"] is not None or by_email or by_network or
-                not hmac.compare_digest(_password(password,row["salt"]),row["password_hash"])):
+                not _password_matches(password,row["salt"],row["password_hash"])):
             con.commit()
             return jsonify(accepted=True),202
         issue_verification(row["id"],email,now)
@@ -581,7 +605,7 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
                              v.verified_at FROM users u
                              LEFT JOIN email_verifications v ON v.user_id=u.id
                              WHERE u.email=?""", (email,)).fetchone()
-        valid = row is not None and hmac.compare_digest(_password(pw, row["salt"]), row["password_hash"])
+        valid = row is not None and _password_matches(pw, row["salt"], row["password_hash"])
         if not valid:
             fresh = not throttle or now-throttle["first_at"] >= 900
             first = now if fresh else throttle["first_at"]
@@ -592,6 +616,15 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
             return fail("invalid_credentials", 401)
         if row["verified_at"] is None:
             return fail("email_verification_required", 403)
+        if row["salt"] == LEGACY_SCRYPT_SALT:
+            # Rehash only AFTER the existing V1 password has proven identity;
+            # copy no old learning events, set XP to zero for all V2 users.
+            new_salt = secrets.token_hex(16)
+            con.execute("BEGIN IMMEDIATE")
+            con.execute("""UPDATE users SET salt=?, password_hash=?
+                WHERE id=? AND salt=? AND password_hash=?""",
+                (new_salt,_password(pw,new_salt),row["id"],LEGACY_SCRYPT_SALT,row["password_hash"]))
+            con.commit()
         con.execute("DELETE FROM login_throttle WHERE identity=?", (key,))
         token = secrets.token_urlsafe(32)
         con.execute("INSERT INTO sessions VALUES(?,?,?)", (_hash(token),row["id"],now+7*86400))
@@ -968,7 +1001,7 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
             return fail("invalid_password_change")
         con = db()
         row = con.execute("SELECT salt,password_hash FROM users WHERE id=?", (user["id"],)).fetchone()
-        if not row or not hmac.compare_digest(_password(current, row["salt"]), row["password_hash"]):
+        if not row or not _password_matches(current, row["salt"], row["password_hash"]):
             return fail("invalid_credentials", 401)
         salt = secrets.token_hex(16)
         con.execute("BEGIN IMMEDIATE")
@@ -988,7 +1021,7 @@ def create_app(database_path: str | None = None, catalog_path: str | None = None
             return fail("explicit_confirmation_required")
         con = db()
         row = con.execute("SELECT salt,password_hash FROM users WHERE id=?", (user["id"],)).fetchone()
-        if not row or not hmac.compare_digest(_password(password, row["salt"]), row["password_hash"]):
+        if not row or not _password_matches(password, row["salt"], row["password_hash"]):
             return fail("invalid_credentials", 401)
         con.execute("BEGIN IMMEDIATE")
         owned = con.execute("SELECT id FROM families WHERE owner_id=?", (user["id"],)).fetchall()
