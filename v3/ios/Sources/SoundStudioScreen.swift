@@ -112,10 +112,18 @@ struct SoundFocusedText: View {
 
 struct SoundContrastScreen: View {
     let lesson: NativeSoundLesson
+    @EnvironmentObject private var learner: LocalLearningStore
     @StateObject private var audio = NativeAudio()
     @State private var quiz = false
     @State private var position = 0
     @State private var choice: String?
+
+    private func originalGroupWords(_ group: SoundGroup) -> [LessonItem] {
+        guard let original = learner.lessons.first(where: { $0.id == lesson.lessonId }) else {
+            return []
+        }
+        return group.itemIds.compactMap { id in original.items.first(where: { $0.id == id }) }
+    }
 
     private var card: NativeSoundRecord { lesson.questions[position] }
     private var answer: SoundGroup? {
@@ -179,21 +187,26 @@ struct SoundContrastScreen: View {
                     ForEach(lesson.groups) { group in
                         Section {
                             Text(group.hint).font(.footnote).foregroundStyle(.secondary)
-                            ForEach(lesson.questions.filter { $0.groupId == group.id }) { item in
+                            // Compare ALL original V2 group examples; only the 25
+                            // source-audited ear questions enter the quiz.
+                            ForEach(originalGroupWords(group)) { item in
                                 HStack(spacing: 12) {
                                     VStack(alignment: .leading, spacing: 4) {
-                                        SoundFocusedText(polish: item.polish, focus: item.focus)
+                                        SoundFocusedText(polish: item.polish, focus: item.soundFocus ?? "")
                                             .font(.headline)
                                         Text(item.english).font(.caption)
                                             .foregroundStyle(.secondary)
                                     }
                                     Spacer()
                                     Button {
-                                        audio.playFile(item.audio, rate: 1)
+                                        if let source = item.audio {
+                                            audio.playFile(source, rate: 1)
+                                        }
                                     } label: {
                                         Image(systemName: "play.circle.fill")
                                     }
                                     .buttonStyle(.borderless)
+                                    .disabled(item.audio == nil)
                                     .accessibilityLabel("Hear \(item.polish)")
                                 }
                                 .padding(.vertical, 3)
