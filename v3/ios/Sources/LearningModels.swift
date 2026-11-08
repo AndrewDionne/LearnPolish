@@ -43,6 +43,7 @@ struct Lesson: Decodable, Identifiable {
     let description: String?
     let curriculum: CurriculumPlacement?
     let kind: String
+    let difficultyTier: Int?
     let source: String
     let items: [LessonItem]
     let intro: String?
