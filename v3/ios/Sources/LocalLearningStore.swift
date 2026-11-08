@@ -23,6 +23,8 @@ struct LocalLearner: Codable {
     var records: [String: PracticeRecord] = [:]
     // Optional for backward-compatible loading of V3 profiles created before XP.
     var expedition: LocalExpedition?
+    // Optional so earlier V3 local profiles continue decoding unchanged.
+    var tourist: LocalTouristProgress?
 }
 
 @MainActor final class LocalLearningStore: ObservableObject {
@@ -31,6 +33,7 @@ struct LocalLearner: Codable {
     @Published private(set) var guidedFoundations: [GuidedFoundationStep] = []
     @Published private(set) var soundStudio: NativeSoundStudio?
     @Published private(set) var sourceExposure: NativeSourceExposure?
+    @Published private(set) var touristCatalog: TouristCatalog?
     @Published private(set) var coreJourney: CoreJourney?
     @Published private(set) var regions: [PolandRegion] = []
     @Published private(set) var catalogError: String?
@@ -65,15 +68,122 @@ struct LocalLearner: Codable {
             let guided = try GuidedFoundationPath.load(lessons: source, bundle: bundle)
             let sourceSounds = try NativeSoundStudio.load(lessons: source, bundle: bundle)
             let sourceIntroductions = try NativeSourceExposure.load(lessons: source, bundle: bundle)
+            let tourists = try TouristCatalog.load(lessons: source, bundle: bundle)
             lessons = source
             coreJourney = journey
             regions = sourceRegions
             guidedFoundations = guided
             soundStudio = sourceSounds
             sourceExposure = sourceIntroductions
+            touristCatalog = tourists
         } catch {
             catalogError = error.localizedDescription
         }
+    }
+
+    // Tourist scenarios are metadata through the existing source cards, not
+    // a new XP ledger. Unit progress is stored separately from Core Continue.
+    var touristProgress: LocalTouristProgress { profile.tourist ?? LocalTouristProgress() }
+    var touristUnits: [TouristUnit] { touristCatalog?.units ?? [] }
+
+    var nextTouristUnit: TouristUnit? {
+        if let id = touristProgress.unitID,
+           let unit = touristUnits.first(where: { $0.id == id }) { return unit }
+        return touristUnits.first { unit in
+            unit.steps.indices.contains(where: {
+                !touristProgress.isComplete(unitID: unit.id, stepIndex: $0)
+            })
+        }
+    }
+
+    func touristStepAttemptCount(unit: TouristUnit, index: Int) -> Int {
+        touristProgress.attemptedCount(unitID: unit.id, stepIndex: index)
+    }
+
+    func touristStepComplete(unit: TouristUnit, index: Int) -> Bool {
+        touristProgress.isComplete(unitID: unit.id, stepIndex: index)
+    }
+
+    func originalTouristItem(_ id: String, unit: TouristUnit, stepIndex: Int) -> LessonItem? {
+        guard unit.steps.indices.contains(stepIndex),
+              let reference = unit.steps[stepIndex].items.first(where: { $0.id == id }),
+              let original = lessons.first(where: { $0.id == unit.steps[stepIndex].lessonId })?
+                .items.first(where: { $0.id == id }),
+              original.polish == reference.polish, original.english == reference.english,
+              original.audio == reference.audio, original.referenceReview != "practice_only" else {
+            return nil
+        }
+        return original
+    }
+
+    func rememberTouristPosition(unit: TouristUnit, stepIndex: Int, itemID: String) {
+        guard touristUnits.contains(where: { $0.id == unit.id }),
+              unit.steps.indices.contains(stepIndex),
+              unit.steps[stepIndex].items.contains(where: { $0.id == itemID }) else { return }
+        var progress = touristProgress
+        guard progress.unitID != unit.id || progress.stepIndex != stepIndex ||
+              progress.itemID != itemID else { return }
+        progress.unitID = unit.id
+        progress.stepIndex = stepIndex
+        progress.itemID = itemID
+        profile.tourist = progress
+        save()
+    }
+
+    // Only actual self-rated / answered / successfully recorded attempts count.
+    // Navigation, playback, previews and skipping do not earn duplicate XP.
+    func recordTouristAttempt(unit: TouristUnit, stepIndex: Int,
+                              itemID: String, understood: Bool?) {
+        guard let confirmed = touristUnits.first(where: { $0.id == unit.id }),
+              confirmed.steps.indices.contains(stepIndex),
+              let item = originalTouristItem(itemID, unit: confirmed, stepIndex: stepIndex) else {
+            return
+        }
+        let mode = confirmed.steps[stepIndex].mode
+        recordAttempt(item: item, mode: mode, understood: understood)
+        var progress = touristProgress
+        let key = LocalTouristProgress.key(unitID: unit.id, stepIndex: stepIndex)
+        progress.attemptedByStep[key, default: []].insert(itemID)
+        progress.unitID = unit.id
+        progress.stepIndex = stepIndex
+        progress.itemID = itemID
+        profile.tourist = progress
+        save()
+    }
+
+    // A skipped or partly answered step is NOT silently certified complete.
+    @discardableResult
+    func finishTouristStep(unit: TouristUnit, stepIndex: Int) -> Bool {
+        guard let confirmed = touristUnits.first(where: { $0.id == unit.id }),
+              confirmed.steps.indices.contains(stepIndex) else { return false }
+        var progress = touristProgress
+        let step = confirmed.steps[stepIndex]
+        let key = LocalTouristProgress.key(unitID: unit.id, stepIndex: stepIndex)
+        let attempted = progress.attemptedByStep[key] ?? []
+        let complete = step.items.allSatisfy { attempted.contains($0.id) }
+        if complete {
+            progress.completedSteps.insert(key)
+            if confirmed.steps.indices.contains(stepIndex + 1) {
+                progress.unitID = unit.id
+                progress.stepIndex = stepIndex + 1
+                progress.itemID = nil
+            } else if let next = touristUnits.first(where: { $0.order == unit.order + 1 }) {
+                progress.unitID = next.id
+                progress.stepIndex = 0
+                progress.itemID = nil
+            } else {
+                progress.unitID = nil
+                progress.stepIndex = 0
+                progress.itemID = nil
+            }
+        } else {
+            progress.unitID = unit.id
+            progress.stepIndex = stepIndex
+            progress.itemID = step.items.first(where: { !attempted.contains($0.id) })?.id
+        }
+        profile.tourist = progress
+        save()
+        return complete
     }
 
     var course: [Lesson] { coreJourney?.ordered ?? [] }
