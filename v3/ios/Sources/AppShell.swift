@@ -9,6 +9,8 @@ struct AppShell: View {
                 .tabItem { Label("Library", systemImage: "books.vertical") }
             NavigationStack { ReviewScreen() }
                 .tabItem { Label("Practice", systemImage: "rectangle.stack") }
+            NavigationStack { PolandExpeditionView() }
+                .tabItem { Label("Expedition", systemImage: "map") }
             NavigationStack { ProgressScreen() }
                 .tabItem { Label("Progress", systemImage: "chart.bar") }
         }
@@ -210,6 +212,7 @@ struct ProgressScreen: View {
                 LabeledContent("Items studied", value: "\(learner.completedItems)")
                 LabeledContent("Practice attempts", value: "\(learner.attempts)")
                 LabeledContent("Reviews due", value: "\(learner.dueReviews.count)")
+                LabeledContent("Personal XP", value: "\(learner.expedition.totalXP)")
             }
             Section("Storage") {
                 Label("Learning works offline", systemImage: "iphone")
