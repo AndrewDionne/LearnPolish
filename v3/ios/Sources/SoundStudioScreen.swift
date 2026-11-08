@@ -44,28 +44,29 @@ struct SoundStudioScreen: View {
 
 private struct AlphabetExamplesScreen: View {
     let sound: NativeSoundStudio
+    @StateObject private var audio = NativeAudio()
     var body: some View {
         List {
             Text("Hear the highlighted letter in a complete Polish word. These are original word recordings, not individual letter names.")
                 .font(.footnote).foregroundStyle(.secondary)
             Section("Polish alphabet") {
-                ForEach(sound.letters) { item in
-                    AlphabetExampleRow(item: item)
+                ForEach(sound.letters.indices, id: \.self) { index in
+                    AlphabetExampleRow(item: sound.letters[index], audio: audio)
                 }
             }
             Section("Common combinations") {
-                ForEach(sound.combinations) { item in
-                    AlphabetExampleRow(item: item)
+                ForEach(sound.combinations.indices, id: \.self) { index in
+                    AlphabetExampleRow(item: sound.combinations[index], audio: audio)
                 }
             }
         }
+        .onDisappear { audio.discard() }
     }
 }
 
 private struct AlphabetExampleRow: View {
     let item: NativeSoundRecord
-    @StateObject private var audio = NativeAudio()
-    @State private var speed: Float = 1
+    @ObservedObject var audio: NativeAudio
 
     var body: some View {
         HStack(spacing: 12) {
