@@ -359,6 +359,7 @@ struct LessonScreen: View {
                     advance()
                 }
                 .buttonStyle(.bordered)
+                .disabled(!audio.usableRecording)
             }
         }
     }
