@@ -76,7 +76,7 @@ enum AudioFiles {
 
     func requestRecord() {
         player?.stop()
-        AVAudioSession.sharedInstance().requestRecordPermission { [weak self] granted in
+        AVAudioApplication.requestRecordPermission { [weak self] granted in
             DispatchQueue.main.async {
                 guard let self else { return }
                 if granted { self.startRecording() }
