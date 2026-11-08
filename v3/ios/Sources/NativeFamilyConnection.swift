@@ -389,7 +389,7 @@ final class NativeFamilySession: ObservableObject {
         groups = []
         connectedAt = nil
         sharingKeys = []
-        shareResults = []
+        shareResults = [:]
         busy = false
         message = nil
         speech.disconnect() // immediate in-memory secret wipe
