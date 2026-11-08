@@ -6,13 +6,13 @@ import SwiftUI
 struct NativeSpeechPracticePanel: View {
     let item: LessonItem
     @ObservedObject var audio: NativeAudio
+    @Binding var feedback: NativeSpeechFeedback?
     @EnvironmentObject private var speech: NativeSpeechSession
 
     @State private var allowAzure = false
     @State private var allowGroq = false
     @State private var busy = false
     @State private var submittedGeneration: UUID?
-    @State private var feedback: NativeSpeechFeedback?
     @State private var message: String?
     @State private var request: Task<Void, Never>?
 
@@ -40,15 +40,10 @@ struct NativeSpeechPracticePanel: View {
 
                     if let feedback {
                         switch feedback {
-                        case .blend(let score, let parts):
-                            VStack(alignment: .leading, spacing: 8) {
-                                colouredWord(parts)
-                                    .font(.title2.weight(.semibold))
-                                    .accessibilityLabel(item.polish)
-                                Text("\(score)/100")
-                                    .font(.title3.monospacedDigit())
-                                    .accessibilityLabel("Experimental pronunciation estimate \(score) out of 100")
-                            }
+                        case .blend(let score, _):
+                            Text("\(score)/100")
+                                .font(.title3.monospacedDigit())
+                                .accessibilityLabel("Experimental pronunciation estimate \(score) out of 100")
                         case .inconclusive(let reason):
                             Text(reason)
                                 .font(.footnote).foregroundStyle(.secondary)
@@ -64,24 +59,6 @@ struct NativeSpeechPracticePanel: View {
                 .onDisappear { clearForNewTake() }
             }
         }
-    }
-
-    private func colouredWord(_ parts: [NativeColourPart]) -> Text {
-        var result = Text("")
-        for (index, part) in parts.enumerated() {
-            let tint: Color
-            switch part.hint {
-            case .close: tint = .green
-            case .review: tint = .orange
-            case .focus: tint = .red
-            case .uncertain: tint = .secondary
-            }
-            // Slight visual spacing is only presentation. The original
-            // Polish text and its source identity remain unchanged.
-            if index > 0 { result = result + Text("\u{2009}") }
-            result = result + Text(part.polish).foregroundColor(tint)
-        }
-        return result
     }
 
     private func checkPronunciation() {
