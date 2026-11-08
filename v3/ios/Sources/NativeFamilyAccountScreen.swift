@@ -105,7 +105,10 @@ private struct NativeFamilyGroupScreen: View {
 
     var body: some View {
         List {
-            if let summary {
+            if !family.isConnected {
+                Text("Family session closed. Offline learning is still available.")
+                    .foregroundStyle(.secondary)
+            } else if let summary {
                 Section("This week") {
                     LabeledContent("Group XP", value: String(summary.totals.weekly_xp))
                     LabeledContent("Regions unlocked", value: String(summary.totals.regions_unlocked))
@@ -137,11 +140,20 @@ private struct NativeFamilyGroupScreen: View {
         .refreshable {
             await refresh()
         }
+        .onChange(of: family.isConnected) { _, connected in
+            if !connected {
+                summary = nil
+                loading = false
+                errorMessage = nil
+            }
+        }
     }
 
     private func refresh() async {
         guard family.isConnected else {
             summary = nil
+            loading = false
+            errorMessage = nil
             return
         }
         loading = true
