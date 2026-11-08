@@ -98,10 +98,22 @@ struct NativeFamilyAccountScreen: View {
 private struct NativeFamilyGroupScreen: View {
     let group: NativeFamilyGroup
     @EnvironmentObject private var family: NativeFamilySession
+    @EnvironmentObject private var learner: LocalLearningStore
 
     @State private var summary: NativeFamilySummary?
     @State private var loading = false
     @State private var errorMessage: String?
+    @State private var shareMessage: String?
+    @State private var sharingID: String?
+
+    private var recentActivities: [LocalXPEvent] {
+        Array(family.recentShareCandidates(in: learner).prefix(8))
+    }
+
+    private func word(for event: LocalXPEvent) -> String {
+        learner.lessons.lazy.flatMap(\.items)
+            .first(where: { $0.id == event.itemID })?.polish ?? "Polish practice"
+    }
 
     var body: some View {
         List {
@@ -127,6 +139,45 @@ private struct NativeFamilyGroupScreen: View {
                         }
                     }
                 }
+                Section("Share practice") {
+                    Text("Optional: share a new practice activity with this group. Only its Polish lesson ID, practice type and region are sent. Your voice, answer and private learning history stay on the iPhone.")
+                        .font(.footnote).foregroundStyle(.secondary)
+                    if recentActivities.isEmpty {
+                        Text("Practise a lesson while connected to share a recent activity.")
+                            .font(.footnote).foregroundStyle(.secondary)
+                    } else {
+                        ForEach(recentActivities) { event in
+                            HStack(spacing: 12) {
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(word(for: event)).font(.subheadline)
+                                    Text(event.mode.label + " · " + event.at.formatted(date: .omitted, time: .shortened))
+                                        .font(.caption).foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                if let receipt = family.receipt(for: event, group: group) {
+                                    switch receipt {
+                                    case .credited:
+                                        Label("Credited", systemImage: "checkmark.circle")
+                                            .font(.caption).foregroundStyle(.secondary)
+                                    case .alreadyCredited:
+                                        Text("Already credited")
+                                            .font(.caption).foregroundStyle(.secondary)
+                                    }
+                                } else {
+                                    Button("Share") {
+                                        Task { await share(event) }
+                                    }
+                                    .buttonStyle(.bordered)
+                                    .disabled(sharingID != nil || family.isSharing(event: event, group: group))
+                                    .accessibilityHint("Send only this item, mode and region to the private family group")
+                                }
+                            }
+                        }
+                    }
+                    if let shareMessage {
+                        Text(shareMessage).font(.footnote).foregroundStyle(.secondary)
+                    }
+                }
             } else if loading {
                 ProgressView("Loading group")
             } else if let errorMessage {
@@ -145,8 +196,33 @@ private struct NativeFamilyGroupScreen: View {
                 summary = nil
                 loading = false
                 errorMessage = nil
+                shareMessage = nil
+                sharingID = nil
             }
         }
+    }
+
+    private func share(_ event: LocalXPEvent) async {
+        guard sharingID == nil, family.isConnected else { return }
+        sharingID = event.id
+        shareMessage = nil
+        do {
+            let result = try await family.share(eventID: event.id, group: group,
+                                                learner: learner)
+            guard family.isConnected, !Task.isCancelled else { return }
+            switch result {
+            case .credited:
+                shareMessage = "Practice credited by your family service."
+            case .alreadyCredited:
+                shareMessage = "This practice was already credited by your family service."
+            }
+            await refresh()
+        } catch {
+            guard family.isConnected, !Task.isCancelled else { return }
+            shareMessage = (error as? LocalizedError)?.errorDescription ??
+                NativeFamilyError.unavailable.errorDescription
+        }
+        sharingID = nil
     }
 
     private func refresh() async {
