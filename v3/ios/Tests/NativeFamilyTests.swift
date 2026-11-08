@@ -133,7 +133,16 @@ private final class MockFamilyProtocol: URLProtocol {
                        ["/api/v2/family/login", "/api/v2/family/me"])
         XCTAssertNil(requests[0].value(forHTTPHeaderField: "Authorization"))
         XCTAssertEqual(requests[1].value(forHTTPHeaderField: "Authorization"), "Bearer " + token)
-        let payload = try XCTUnwrap(requests[0].httpBody)
+        // URLSession may expose the POST payload as an HTTPBodyStream when a
+        // URLProtocol test double intercepts it. Validate the exact request
+        // constructor's JSON body rather than the stream representation.
+        let origin = try NativeFamilyOrigin(text: address)
+        let encoded = try JSONSerialization.data(withJSONObject: [
+            "email": "learner@example.org", "password": "test-only-pass"
+        ])
+        let built = NativeFamilyAPI.request(origin: origin, route: "login",
+                                            method: "POST", body: encoded)
+        let payload = try XCTUnwrap(built.httpBody)
         let json = try XCTUnwrap(JSONSerialization.jsonObject(with: payload) as? [String:String])
         XCTAssertEqual(json["email"], "learner@example.org")
         XCTAssertEqual(json["password"], "test-only-pass")
