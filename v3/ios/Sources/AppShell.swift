@@ -154,16 +154,22 @@ struct LessonRow: View {
     }
 }
 
+private struct DueReviewGroup: Identifiable {
+    let lesson: Lesson
+    let items: [LessonItem]
+    var id: String { lesson.id }
+}
+
 struct ReviewScreen: View {
     @EnvironmentObject private var learner: LocalLearningStore
 
-    private var dueGroups: [(lesson: Lesson, items: [LessonItem])] {
+    private var dueGroups: [DueReviewGroup] {
         learner.lessons.filter { $0.kind != "reading" }.compactMap { lesson in
             let due = lesson.items.filter { item in
                 guard let at = learner.record(for: item, mode: .learn).nextReview else { return false }
                 return at <= Date()
             }
-            return due.isEmpty ? nil : (lesson: lesson, items: due)
+            return due.isEmpty ? nil : DueReviewGroup(lesson: lesson, items: due)
         }
     }
 
@@ -174,7 +180,7 @@ struct ReviewScreen: View {
                                        description: Text("Practise a lesson to start your review schedule."))
             } else {
                 Section("Scheduled review") {
-                    ForEach(dueGroups, id: \.lesson.id) { group in
+                    ForEach(dueGroups) { group in
                         NavigationLink {
                             // Frozen list: failed items remain due later but never trap
                             // the learner in an endless same-session review loop.
