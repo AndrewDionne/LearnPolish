@@ -25,6 +25,8 @@ jobs:
         run: node v3/ios/scripts/prepare-assets.mjs
       - name: Verify native guided foundations and source-drift rejection
         run: node --test v3/ios/scripts/prepare-guided.test.mjs
+      - name: Verify original alphabet and sound-audio source integrity
+        run: node --test v3/ios/scripts/prepare-sounds.test.mjs
       - name: Generate project
         working-directory: v3/ios
         run: xcodegen generate --spec project.yml
