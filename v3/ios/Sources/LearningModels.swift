@@ -19,6 +19,8 @@ struct LessonItem: Decodable, Identifiable {
     let english: String
     let pronunciation: String?
     let audio: String?
+    let soundGroupId: String?
+    let soundFocus: String?
     let referenceReview: String?
     let comprehension: Comprehension?
     let pronunciationSegments: PronunciationSegments?
@@ -36,6 +38,14 @@ struct Comprehension: Decodable {
     let feedback: String
 }
 
+struct SoundGroup: Decodable, Identifiable {
+    let id: String
+    let label: String
+    let ipa: String
+    let hint: String
+    let itemIds: [String]
+}
+
 struct Lesson: Decodable, Identifiable {
     let schemaVersion: Int
     let id: String
@@ -47,6 +57,7 @@ struct Lesson: Decodable, Identifiable {
     let source: String
     let items: [LessonItem]
     let intro: String?
+    let soundGroups: [SoundGroup]?
     let needsReview: Bool?
 
     var hasAudio: Bool { items.contains { $0.audio != nil } }
