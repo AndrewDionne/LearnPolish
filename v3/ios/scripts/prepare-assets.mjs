@@ -5,6 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { compileGuidedFoundations, readGuidedSources } from './prepare-guided.mjs';
+import { compileSoundStudio, readSoundSources } from './prepare-sounds.mjs';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repo = path.resolve(scriptDir, '../../..');
@@ -63,5 +64,7 @@ fs.writeFileSync(path.join(dst, 'core-journey.json'), JSON.stringify(coreSource,
 const guided = compileGuidedFoundations(manifest, readGuidedSources(repo));
 fs.writeFileSync(path.join(dst, 'guided-foundations.json'),
   JSON.stringify(guided, null, 2) + '\n');
+const soundStudio = compileSoundStudio(manifest, readSoundSources(repo));
+fs.writeFileSync(path.join(dst, 'sound-studio.json'), JSON.stringify(soundStudio, null, 2) + '\n');
 fs.writeFileSync(path.join(dst, 'native-asset-report.json'), JSON.stringify({lessons:manifest.lessons.length,items,audioReferences:audio},null,2)+'\n');
 console.log('Native offline assets verified:', { lessons: manifest.lessons.length, items, audioReferences: audio });
