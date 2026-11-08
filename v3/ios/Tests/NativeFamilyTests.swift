@@ -310,8 +310,8 @@ private final class MockFamilyProtocol: URLProtocol {
         learner.recordAttempt(item: item, mode: .learn, understood: true)
         let event = try XCTUnwrap(family.recentShareCandidates(in: learner).first)
         let group = try XCTUnwrap(family.groups.first)
-        XCTAssertEqual(try await family.share(eventID: event.id, group: group, learner: learner),
-                       .alreadyCredited)
+        let result = try await family.share(eventID: event.id, group: group, learner: learner)
+        XCTAssertEqual(result, .alreadyCredited)
         XCTAssertEqual(MockFamilyProtocol.requests().count, 3)
         XCTAssertEqual(family.receipt(for: event, group: group), .alreadyCredited)
         await family.signOut(speech: speech)
