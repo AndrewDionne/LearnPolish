@@ -28,10 +28,10 @@ struct LocalLearner: Codable {
     private let storageURL: URL
     private let canSave: Bool
 
-    init() {
+    init(storageURL overrideURL: URL? = nil, bundle: Bundle = .main) {
         let directory = FileManager.default.urls(for: .applicationSupportDirectory,
                                                  in: .userDomainMask)[0]
-        storageURL = directory.appendingPathComponent("PathToPolish/local-learner.json")
+        storageURL = overrideURL ?? directory.appendingPathComponent("PathToPolish/local-learner.json")
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         if FileManager.default.fileExists(atPath: storageURL.path) {
@@ -48,7 +48,7 @@ struct LocalLearner: Codable {
             canSave = true
         }
         do {
-            lessons = try CatalogLoader.load()
+            lessons = try CatalogLoader.load(bundle: bundle)
         } catch {
             catalogError = error.localizedDescription
         }
