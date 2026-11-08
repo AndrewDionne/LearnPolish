@@ -118,4 +118,25 @@ import XCTest
         XCTAssertEqual(store.profile.records.count, 0)
         XCTAssertEqual(store.expedition.totalXP, 0)
     }
+
+    func testBrowsingCompletedScenarioCannotHijackContinueCursor() throws {
+        let (store, folder) = newStore()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let first = try XCTUnwrap(store.touristUnits.first)
+        let second = try XCTUnwrap(store.touristUnits.dropFirst().first)
+        for index in first.steps.indices {
+            for item in first.steps[index].items {
+                store.recordTouristAttempt(unit: first, stepIndex: index,
+                                           itemID: item.id, understood: index == 1 ? nil : true)
+            }
+            XCTAssertTrue(store.finishTouristStep(unit: first, stepIndex: index))
+        }
+        XCTAssertEqual(store.nextTouristUnit?.id, second.id)
+        store.rememberTouristPosition(unit: first, stepIndex: 0,
+                                      itemID: first.steps[0].items[0].id)
+        XCTAssertEqual(store.nextTouristUnit?.id, second.id)
+        let reopened = LocalLearningStore(storageURL: folder.appendingPathComponent("learner.json"))
+        XCTAssertEqual(reopened.nextTouristUnit?.id, second.id)
+        XCTAssertEqual(reopened.touristProgress.completedSteps.count, first.steps.count)
+    }
 }
