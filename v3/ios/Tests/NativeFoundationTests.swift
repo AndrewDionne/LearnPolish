@@ -67,4 +67,94 @@ import XCTest
             }
         }
     }
+
+    func testRealCourseSequenceMatchesV2WithoutInventingJourneyThree() throws {
+        let lessons = try CatalogLoader.load()
+        let journey = try CoreJourney(lessons: lessons)
+        XCTAssertEqual(journey.ordered.count, 21)
+        XCTAssertEqual(journey.explore.count, 5)
+        XCTAssertEqual(journey.ordered.first?.id, "Conversation_1")
+        XCTAssertEqual(journey.ordered[6].id, "numbers_1-20")
+        XCTAssertEqual(journey.ordered.last?.id, "H_M_clothes_shop_trying_on_a_T-shirt")
+        XCTAssertEqual(journey.next(after: "Conversation_1")?.id, "contrast_l_lstroked")
+        XCTAssertNil(journey.next(after: journey.ordered.last!.id))
+        XCTAssertFalse(journey.placements.values.contains(where: { $0.journey == 3 }))
+    }
+
+    func testExactNumbersBatchSectionsAndSourceItems() throws {
+        let lessons = try CatalogLoader.load()
+        let numbers = try XCTUnwrap(lessons.first { $0.id == "numbers_1-20" })
+        let sections = NativePracticeRules.sections(for: numbers, mode: .learn)
+        XCTAssertEqual(sections.map(\.title), ["Numbers 1–10", "Numbers 11–20"])
+        XCTAssertEqual(sections.map { $0.items.count }, [10, 10])
+        XCTAssertEqual(sections[0].items.first?.polish, "Jeden")
+        XCTAssertEqual(sections[0].items.last?.polish, "Dziesięć")
+        XCTAssertEqual(sections[1].items.first?.polish, "Jedenaście")
+        XCTAssertEqual(sections[1].items.last?.polish, "Dwadzieścia")
+        XCTAssertEqual(NativePracticeRules.firstUnvisitedBatch(for: numbers, progress: [:]), 0)
+        var progress: [String: PracticeRecord] = [:]
+        for item in numbers.items.prefix(10) { progress["learn:" + item.id] = PracticeRecord(attempts: 1) }
+        XCTAssertEqual(NativePracticeRules.firstUnvisitedBatch(for: numbers, progress: progress), 1)
+        XCTAssertEqual(NativePracticeRules.sections(for: numbers, mode: .listen).count, 2)
+        let other = try XCTUnwrap(lessons.first { $0.id == "Conversation_1" })
+        XCTAssertEqual(NativePracticeRules.sections(for: other, mode: .learn).count, 1)
+    }
+
+    func testRestrictedAudioNeverEntersListenAndNoInventedComprehension() throws {
+        let lessons = try CatalogLoader.load()
+        for lesson in lessons {
+            let listen = NativePracticeRules.items(for: lesson, mode: .listen)
+            XCTAssertTrue(listen.allSatisfy { $0.audio != nil && $0.referenceReview != "practice_only" })
+            XCTAssertEqual(lesson.availableModes.contains(.listen), !listen.isEmpty)
+            if lesson.kind == "reading" {
+                XCTAssertFalse(lesson.availableModes.contains(.speak))
+                XCTAssertFalse(lesson.availableModes.contains(.learn))
+                for (index, item) in lesson.items.enumerated() where item.comprehension == nil {
+                    XCTAssertTrue(NativePracticeRules.choices(for: lesson, item: item,
+                                                              itemIndex: index, reading: true).isEmpty)
+                }
+                for (index, item) in lesson.items.enumerated() where item.comprehension != nil {
+                    XCTAssertEqual(NativePracticeRules.choices(for: lesson, item: item,
+                                                               itemIndex: index, reading: true),
+                                   item.comprehension?.options)
+                }
+            } else {
+                XCTAssertTrue(lesson.availableModes.contains(.learn))
+                XCTAssertTrue(lesson.availableModes.contains(.speak))
+            }
+        }
+    }
+
+    func testLibraryBrowsingDoesNotRedirectCourseContinue() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let location = directory.appendingPathComponent("learner.json")
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let learner = LocalLearningStore(storageURL: location)
+        let first = try XCTUnwrap(learner.course.first)
+        XCTAssertEqual(learner.nextLesson?.id, first.id)
+        let item = try XCTUnwrap(first.items.first)
+        learner.rememberPosition(lesson: first, item: item, mode: .learn)
+        let explore = try XCTUnwrap(learner.explore.first)
+        learner.rememberPosition(lesson: explore, item: explore.items[0], mode: .learn)
+        XCTAssertEqual(learner.nextLesson?.id, first.id)
+        let reloaded = LocalLearningStore(storageURL: location)
+        XCTAssertEqual(reloaded.nextLesson?.id, first.id)
+        XCTAssertEqual(reloaded.profile.lastLessonID, explore.id)
+    }
+
+    func testV2ReviewUsesElapsedDaysAndMissedCardsRemainDue() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let location = directory.appendingPathComponent("learner.json")
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let learner = LocalLearningStore(storageURL: location)
+        let lesson = try XCTUnwrap(learner.course.first(where: { $0.kind == "vocabulary" }))
+        let item = try XCTUnwrap(lesson.items.first)
+        let start = Date()
+        learner.recordAttempt(item: item, mode: .learn, understood: true)
+        let first = try XCTUnwrap(learner.record(for: item, mode: .learn).nextReview)
+        XCTAssertEqual(first.timeIntervalSince(start), 86_400, accuracy: 2)
+        learner.recordAttempt(item: item, mode: .learn, understood: false)
+        XCTAssertEqual(learner.record(for: item, mode: .learn).reviewLevel, 0)
+        XCTAssertTrue(learner.dueReviews.contains { $0.1.id == item.id })
+    }
 }
