@@ -45,18 +45,29 @@ struct SoundStudioScreen: View {
 private struct AlphabetExamplesScreen: View {
     let sound: NativeSoundStudio
     @StateObject private var audio = NativeAudio()
+    @State private var playbackRate: Float = 1
     var body: some View {
         List {
             Text("Hear the highlighted letter in a complete Polish word. These are original word recordings, not individual letter names.")
                 .font(.footnote).foregroundStyle(.secondary)
+            HStack {
+                Text("Playback").font(.subheadline)
+                Spacer()
+                Picker("Speed", selection: $playbackRate) {
+                    Text("0.75×").tag(Float(0.75))
+                    Text("1×").tag(Float(1))
+                }
+                .pickerStyle(.segmented)
+                .frame(maxWidth: 150)
+            }
             Section("Polish alphabet") {
                 ForEach(sound.letters.indices, id: \.self) { index in
-                    AlphabetExampleRow(item: sound.letters[index], audio: audio)
+                    AlphabetExampleRow(item: sound.letters[index], audio: audio, playbackRate: playbackRate)
                 }
             }
             Section("Common combinations") {
                 ForEach(sound.combinations.indices, id: \.self) { index in
-                    AlphabetExampleRow(item: sound.combinations[index], audio: audio)
+                    AlphabetExampleRow(item: sound.combinations[index], audio: audio, playbackRate: playbackRate)
                 }
             }
         }
@@ -67,6 +78,7 @@ private struct AlphabetExamplesScreen: View {
 private struct AlphabetExampleRow: View {
     let item: NativeSoundRecord
     @ObservedObject var audio: NativeAudio
+    let playbackRate: Float
 
     var body: some View {
         HStack(spacing: 12) {
@@ -81,7 +93,7 @@ private struct AlphabetExampleRow: View {
             }
             Spacer(minLength: 8)
             Button {
-                audio.playFile(item.audio, rate: 1)
+                audio.playFile(item.audio, rate: playbackRate)
             } label: {
                 Image(systemName: "play.circle.fill").font(.title2)
             }
@@ -115,6 +127,7 @@ struct SoundContrastScreen: View {
     @EnvironmentObject private var learner: LocalLearningStore
     @StateObject private var audio = NativeAudio()
     @State private var quiz = false
+    @State private var playbackRate: Float = 1
     @State private var position = 0
     @State private var choice: String?
 
@@ -139,6 +152,17 @@ struct SoundContrastScreen: View {
             }
             .pickerStyle(.segmented)
             .padding(.horizontal)
+            HStack {
+                Text("Playback").font(.subheadline)
+                Spacer()
+                Picker("Speed", selection: $playbackRate) {
+                    Text("0.75×").tag(Float(0.75))
+                    Text("1×").tag(Float(1))
+                }
+                .pickerStyle(.segmented)
+                .frame(maxWidth: 150)
+            }
+            .padding(.horizontal)
             if quiz {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 18) {
@@ -149,7 +173,7 @@ struct SoundContrastScreen: View {
                         Text("Listen to the word. Which sound is highlighted?")
                             .font(.headline)
                         Button {
-                            audio.playFile(card.audio, rate: 1)
+                            audio.playFile(card.audio, rate: playbackRate)
                         } label: {
                             Label("Hear word", systemImage: "play.circle.fill")
                         }
@@ -200,7 +224,7 @@ struct SoundContrastScreen: View {
                                     Spacer()
                                     Button {
                                         if let source = item.audio {
-                                            audio.playFile(source, rate: 1)
+                                            audio.playFile(source, rate: playbackRate)
                                         }
                                     } label: {
                                         Image(systemName: "play.circle.fill")
