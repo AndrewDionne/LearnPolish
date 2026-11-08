@@ -61,7 +61,8 @@ export function compileExposure(manifest,source){
     if(item.id!==id||!row||row.sourceLesson!==lesson.id||
        row.sourceIndex!==index||row.id!==id||
        item.polish!==row.polish||item.english!==row.english||
-       item.audio!==audio||row.existingWholeRecording!==audio){
+       (item.referenceReview!=='practice_only' && item.audio!==audio)||
+       row.existingWholeRecording!==audio){
        fail('source text/audio drift: '+id);
     }
     return row;
