@@ -54,10 +54,10 @@ const regionsSource = JSON.parse(fs.readFileSync(path.join(repo, 'v2/frontend/sr
 if (!Array.isArray(regionsSource) || regionsSource.length !== 16 ||
     new Set(regionsSource.map(x => x.id)).size !== 16 ||
     !regionsSource.some(x => x.id === 'mazowieckie') ||
-    regionsSource.some(x => !x.name || !x.path || !/^[-0-9.MLZ\\s]+$/.test(x.path))) {
+    regionsSource.some(x => !x.name || !x.path || !/^[-0-9.MLZ\s]+$/.test(x.path))) {
   throw new Error('V2 region geometry invalid or incomplete');
 }
-fs.writeFileSync(path.join(dst, 'regions.json'), JSON.stringify(regionsSource, null, 2) + '\\n');
+fs.writeFileSync(path.join(dst, 'regions.json'), JSON.stringify(regionsSource, null, 2) + '\n');
 fs.writeFileSync(path.join(dst, 'core-journey.json'), JSON.stringify(coreSource, null, 2) + '\n');
 fs.writeFileSync(path.join(dst, 'native-asset-report.json'), JSON.stringify({lessons:manifest.lessons.length,items,audioReferences:audio},null,2)+'\n');
 console.log('Native offline assets verified:', { lessons: manifest.lessons.length, items, audioReferences: audio });
