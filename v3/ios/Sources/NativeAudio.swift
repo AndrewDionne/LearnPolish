@@ -21,16 +21,20 @@ enum AudioFiles {
 @MainActor final class NativeAudio: NSObject, ObservableObject, AVAudioRecorderDelegate {
     @Published private(set) var isRecording = false
     @Published private(set) var hasRecording = false
+    // A file existing is not proof of usable speech. Match the V2 acoustic
+    // quality gate BEFORE recording a Speak attempt or offering an upload.
+    @Published private(set) var usableRecording = false
     @Published private(set) var takeGeneration = UUID()
 
     // A take can only be submitted while present and no longer recording.
     var recordingURL: URL? {
-        hasRecording && !isRecording ? takeURL : nil
+        hasRecording && usableRecording && !isRecording ? takeURL : nil
     }
     @Published var message: String?
 
     private var player: AVAudioPlayer?
     private var recorder: AVAudioRecorder?
+    private var qualityTask: Task<Void, Never>?
     private let takeURL = FileManager.default.temporaryDirectory
         .appendingPathComponent("path-to-polish-private-take.m4a")
 
@@ -134,7 +138,8 @@ enum AudioFiles {
         recorder?.stop()
         isRecording = false
         hasRecording = FileManager.default.fileExists(atPath: takeURL.path)
-        if !hasRecording { message = "No usable recording was captured. Please try again." }
+        if hasRecording { inspectRecording() }
+        else { message = "No usable recording was captured. Please try again." }
     }
 
     nonisolated func audioRecorderDidFinishRecording(_ recorder: AVAudioRecorder,
@@ -143,16 +148,43 @@ enum AudioFiles {
             guard let self else { return }
             self.isRecording = false
             self.hasRecording = flag && FileManager.default.fileExists(atPath: self.takeURL.path)
-            if !self.hasRecording { self.message = "Recording ended without a usable take." }
+            if self.hasRecording { self.inspectRecording() }
+            else { self.message = "Recording ended without a usable take." }
+        }
+    }
+
+    private func inspectRecording() {
+        qualityTask?.cancel()
+        usableRecording = false
+        let expectedGeneration = takeGeneration
+        let file = takeURL
+        qualityTask = Task { @MainActor [weak self] in
+            let failure = await Task.detached(priority: .userInitiated) { () -> String? in
+                do {
+                    _ = try PronunciationWave.make(fromRecording: file)
+                    return nil
+                } catch {
+                    return (error as? LocalizedError)?.errorDescription
+                        ?? PronunciationAudioError.unavailable.errorDescription
+                }
+            }.value
+            guard let self, !Task.isCancelled,
+                  self.takeGeneration == expectedGeneration else { return }
+            self.usableRecording = failure == nil
+            self.message = failure
+            self.qualityTask = nil
         }
     }
 
     func discard() {
+        qualityTask?.cancel()
+        qualityTask = nil
         recorder?.stop()
         recorder = nil
         player?.stop()
         isRecording = false
         hasRecording = false
+        usableRecording = false
         takeGeneration = UUID()
         try? FileManager.default.removeItem(at: takeURL)
     }
