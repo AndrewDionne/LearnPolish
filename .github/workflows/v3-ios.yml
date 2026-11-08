@@ -27,3 +27,10 @@ jobs:
           xcodebuild -project v3/ios/PathToPolish.xcodeproj -scheme PathToPolish \
             -configuration Debug -sdk iphonesimulator \
             -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
+      - name: Run native curriculum and local persistence XCTest suite
+        run: |
+          SIM_ID="$(xcrun simctl list devices available -j | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>{const j=JSON.parse(s);const d=Object.values(j.devices).flat().find(x=>x.isAvailable && x.name.startsWith("iPhone")); if(d)process.stdout.write(d.udid);})')"
+          test -n "$SIM_ID" || { echo "No available iPhone simulator" >&2; exit 1; }
+          xcodebuild -project v3/ios/PathToPolish.xcodeproj -scheme PathToPolish \
+            -configuration Debug -destination "platform=iOS Simulator,id=$SIM_ID" \
+            CODE_SIGNING_ALLOWED=NO test
