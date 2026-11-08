@@ -27,6 +27,8 @@ jobs:
         run: node --test v3/ios/scripts/prepare-guided.test.mjs
       - name: Verify original alphabet and sound-audio source integrity
         run: node --test v3/ios/scripts/prepare-sounds.test.mjs
+      - name: Verify source-first reading and listening preparation
+        run: node --test v3/ios/scripts/prepare-exposure.test.mjs
       - name: Generate project
         working-directory: v3/ios
         run: xcodegen generate --spec project.yml
