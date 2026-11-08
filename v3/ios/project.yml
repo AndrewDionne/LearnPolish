@@ -25,4 +25,12 @@ targets:
         SWIFT_EMIT_LOC_STRINGS: YES
         SUPPORTS_MACCATALYST: NO
     scheme:
-      testTargets: []
+      testTargets:
+        - PathToPolishTests
+  PathToPolishTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Tests
+    dependencies:
+      - target: PathToPolish
