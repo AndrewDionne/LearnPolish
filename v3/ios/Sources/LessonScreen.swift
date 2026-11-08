@@ -4,10 +4,13 @@ struct LessonScreen: View {
     let lesson: Lesson
     var startItemID: String? = nil
     var preferredMode: PracticeMode? = nil
+    // Frozen review item IDs captured when the learner opens the review session.
+    var dueItemIDs: [String]? = nil
 
     @EnvironmentObject private var learner: LocalLearningStore
     @StateObject private var audio = NativeAudio()
     @State private var index = 0
+    @State private var batch = 0
     @State private var mode: PracticeMode = .learn
     @State private var revealed = false
     @State private var selectedOption: String?
@@ -15,13 +18,25 @@ struct LessonScreen: View {
     @State private var guideVisible = false
     @State private var finished = false
 
-    private var item: LessonItem { lesson.items[index] }
+    private var sections: [PracticeSection] {
+        NativePracticeRules.sections(for: lesson, mode: mode)
+    }
+
+    private var currentItems: [LessonItem] {
+        if let dueItemIDs {
+            let selected = Set(dueItemIDs)
+            return lesson.items.filter { selected.contains($0.id) }
+        }
+        return sections[min(batch, max(0, sections.count - 1))].items
+    }
+
+    private var item: LessonItem { currentItems[index] }
 
     var body: some View {
         VStack(spacing: 12) {
             if !finished {
                 HStack {
-                    Text("\(index + 1) / \(lesson.items.count)")
+                    Text("\(index + 1) / \(currentItems.count)")
                         .font(.subheadline.monospacedDigit())
                         .foregroundStyle(.secondary)
                     Spacer()
@@ -29,7 +44,7 @@ struct LessonScreen: View {
                         .font(.subheadline)
                         .lineLimit(1)
                 }
-                ProgressView(value: Double(index + 1), total: Double(lesson.items.count))
+                ProgressView(value: Double(index + 1), total: Double(currentItems.count))
 
                 Picker("Practice", selection: $mode) {
                     ForEach(lesson.availableModes) { option in
@@ -38,6 +53,15 @@ struct LessonScreen: View {
                 }
                 .pickerStyle(.segmented)
                 .padding(.vertical, 6)
+
+                if dueItemIDs == nil && sections.count > 1 {
+                    Picker("Numbers practice", selection: $batch) {
+                        ForEach(sections) { section in
+                            Text(section.title).tag(section.id)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                }
 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 22) {
@@ -73,7 +97,7 @@ struct LessonScreen: View {
                     Button {
                         advance()
                     } label: {
-                        Label(index + 1 == lesson.items.count ? "Finish" : "Next",
+                        Label(index + 1 == currentItems.count ? "Finish" : "Next",
                               systemImage: "chevron.right")
                     }
                     .buttonStyle(.borderedProminent)
@@ -85,6 +109,16 @@ struct LessonScreen: View {
                                        description: Text("Your progress is saved on this iPhone."))
                 Button("Practise again") { index = 0; finished = false; resetCard() }
                     .buttonStyle(.borderedProminent)
+                if dueItemIDs == nil && batch + 1 < sections.count {
+                    Button("Next section") {
+                        batch += 1
+                        index = 0
+                        finished = false
+                        resetCard()
+                        remember()
+                    }
+                    .buttonStyle(.bordered)
+                }
                 Spacer()
             }
         }
@@ -103,14 +137,42 @@ struct LessonScreen: View {
             }
             let resumeID = startItemID ?? (learner.profile.lastLessonID == lesson.id
                                            ? learner.profile.lastItemID : nil)
-            if let resumeID, let position = lesson.items.firstIndex(where: { $0.id == resumeID }) {
+            if dueItemIDs == nil {
+                batch = NativePracticeRules.firstUnvisitedBatch(for: lesson,
+                                                               progress: learner.profile.records)
+                if let resumeID,
+                   let section = sections.firstIndex(where: { section in
+                       section.items.contains(where: { $0.id == resumeID })
+                   }) {
+                    batch = section
+                }
+            }
+            let available = currentItems
+            if let resumeID,
+               let position = available.firstIndex(where: { $0.id == resumeID }) {
                 index = position
+            } else {
+                index = NativePracticeRules.nextUnseenIndex(items: available,
+                                                            progress: learner.profile.records,
+                                                            mode: mode)
             }
             remember()
         }
         .onDisappear { audio.discard() }
         .onChange(of: index) { _, _ in resetCard(); remember() }
-        .onChange(of: mode) { _, _ in resetCard(); remember() }
+        .onChange(of: mode) { _, _ in
+            batch = 0
+            index = 0
+            finished = false
+            resetCard()
+            remember()
+        }
+        .onChange(of: batch) { _, _ in
+            index = 0
+            finished = false
+            resetCard()
+            remember()
+        }
     }
 
     private var learnCard: some View {
@@ -144,20 +206,26 @@ struct LessonScreen: View {
                 .foregroundStyle(.secondary)
             referenceControls
             let choices = listenChoices
-            if choices.count >= 3 {
+            if choices.count >= 2 {
                 ForEach(choices, id: \.self) { choice in
                     Button {
                         guard selectedOption == nil else { return }
                         selectedOption = choice
                         learner.recordAttempt(item: item, mode: .listen,
-                                              understood: choice == item.english)
+                                              understood: choice == (item.comprehension.flatMap {
+                                                  $0.options.indices.contains($0.correctIndex)
+                                                    ? $0.options[$0.correctIndex] : nil
+                                              } ?? item.english))
                     } label: {
                         HStack {
                             Text(choice)
                                 .multilineTextAlignment(.leading)
                             Spacer()
                             if selectedOption == choice {
-                                Image(systemName: choice == item.english ? "checkmark.circle" : "xmark.circle")
+                                Image(systemName: choice == (item.comprehension.flatMap {
+                                    $0.options.indices.contains($0.correctIndex)
+                                        ? $0.options[$0.correctIndex] : nil
+                                } ?? item.english) ? "checkmark.circle" : "xmark.circle")
                             }
                         }
                         .padding(12)
@@ -290,12 +358,7 @@ struct LessonScreen: View {
     }
 
     private var listenChoices: [String] {
-        var choices = [item.english]
-        for candidate in lesson.items where candidate.id != item.id {
-            if !choices.contains(candidate.english) { choices.append(candidate.english) }
-            if choices.count == 3 { break }
-        }
-        return choices.sorted()
+        NativePracticeRules.choices(for: lesson, item: item, itemIndex: index)
     }
 
     private func ratingControls(for mode: PracticeMode) -> some View {
@@ -319,7 +382,7 @@ struct LessonScreen: View {
     }
 
     private func advance() {
-        if index < lesson.items.count - 1 {
+        if index < currentItems.count - 1 {
             index += 1
         } else {
             audio.discard()
