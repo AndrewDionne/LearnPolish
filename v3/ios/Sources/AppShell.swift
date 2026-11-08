@@ -53,9 +53,9 @@ struct HomeScreen: View {
                         .background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 18))
                     }
 
-                    Text("Your learning path")
+                    Text("Your path")
                         .font(.headline)
-                    ForEach(learner.course.prefix(8)) { lesson in
+                    ForEach(learner.course) { lesson in
                         NavigationLink {
                             LessonScreen(lesson: lesson)
                         } label: {
@@ -82,26 +82,40 @@ struct LibraryScreen: View {
     @EnvironmentObject private var learner: LocalLearningStore
     @State private var query = ""
 
-    var filtered: [Lesson] {
-        guard !query.isEmpty else { return learner.lessons }
-        return learner.lessons.filter {
+    private func matching(_ entries: [Lesson]) -> [Lesson] {
+        guard !query.isEmpty else { return entries }
+        return entries.filter {
             $0.title.localizedCaseInsensitiveContains(query) ||
             ($0.description?.localizedCaseInsensitiveContains(query) ?? false)
         }
     }
 
     var body: some View {
-        List(filtered) { lesson in
-            NavigationLink {
-                LessonScreen(lesson: lesson)
-            } label: {
-                LessonRow(lesson: lesson)
+        List {
+            if learner.catalogError != nil {
+                Text(learner.catalogError ?? "").foregroundStyle(.red)
             }
-        }
-        .overlay {
-            if filtered.isEmpty {
-                ContentUnavailableView("No lessons", systemImage: "text.book.closed",
-                                       description: Text(learner.catalogError ?? "Try another search."))
+            if !matching(learner.course).isEmpty {
+                Section("Your path") {
+                    ForEach(matching(learner.course)) { lesson in
+                        NavigationLink {
+                            LessonScreen(lesson: lesson)
+                        } label: {
+                            LessonRow(lesson: lesson)
+                        }
+                    }
+                }
+            }
+            if !matching(learner.explore).isEmpty {
+                Section("Explore more") {
+                    ForEach(matching(learner.explore)) { lesson in
+                        NavigationLink {
+                            LessonScreen(lesson: lesson)
+                        } label: {
+                            LessonRow(lesson: lesson)
+                        }
+                    }
+                }
             }
         }
         .searchable(text: $query, prompt: "Find a lesson")
@@ -143,20 +157,35 @@ struct LessonRow: View {
 struct ReviewScreen: View {
     @EnvironmentObject private var learner: LocalLearningStore
 
+    private var dueGroups: [(lesson: Lesson, items: [LessonItem])] {
+        learner.lessons.filter { $0.kind != "reading" }.compactMap { lesson in
+            let due = lesson.items.filter { item in
+                guard let at = learner.record(for: item, mode: .learn).nextReview else { return false }
+                return at <= Date()
+            }
+            return due.isEmpty ? nil : (lesson: lesson, items: due)
+        }
+    }
+
     var body: some View {
         List {
-            if learner.dueReviews.isEmpty {
+            if dueGroups.isEmpty {
                 ContentUnavailableView("Nothing due yet", systemImage: "checkmark.circle",
                                        description: Text("Practise a lesson to start your review schedule."))
             } else {
-                ForEach(learner.dueReviews, id: \.1.id) { pair in
-                    NavigationLink {
-                        LessonScreen(lesson: pair.0, startItemID: pair.1.id,
-                                     preferredMode: .learn)
-                    } label: {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(pair.1.polish).font(.headline)
-                            Text(pair.0.title).font(.caption).foregroundStyle(.secondary)
+                Section("Scheduled review") {
+                    ForEach(dueGroups, id: \.lesson.id) { group in
+                        NavigationLink {
+                            // Frozen list: failed items remain due later but never trap
+                            // the learner in an endless same-session review loop.
+                            LessonScreen(lesson: group.lesson, preferredMode: .learn,
+                                         dueItemIDs: group.items.map(\.id))
+                        } label: {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(group.lesson.title).font(.headline)
+                                Text("\(group.items.count) due")
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }
                         }
                     }
                 }
