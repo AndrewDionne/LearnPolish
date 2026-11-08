@@ -225,4 +225,151 @@ private final class MockFamilyProtocol: URLProtocol {
         XCTAssertEqual(requests.last?.value(forHTTPHeaderField: "Authorization"),
                        "Bearer " + token)
     }
+
+    func testFamilyActivityNeverUploadsOnLoginOrLocalPracticeWithoutShare() async throws {
+        var fixtures = try goodFixtures()
+        fixtures["/api/v2/family/groups/9/activity"] = try stub(status: 201, [
+            "accepted": true, "xp": 10, "expedition_xp": 10,
+            "region": "mazowieckie", "target": 300
+        ])
+        let (family, speech) = environment(fixtures)
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let learner = LocalLearningStore(storageURL: directory.appendingPathComponent("learner.json"))
+        let lesson = try XCTUnwrap(learner.lessons.first(where: { $0.kind == "vocabulary" }))
+        let item = try XCTUnwrap(lesson.items.first)
+        learner.recordAttempt(item: item, mode: .learn, understood: true)
+        XCTAssertTrue(family.recentShareCandidates(in: learner).isEmpty)
+        XCTAssertEqual(MockFamilyProtocol.requests().count, 0)
+        await connect(family, speech)
+        XCTAssertTrue(family.recentShareCandidates(in: learner).isEmpty,
+                      "Old local XP must never be uploaded when connecting")
+        learner.recordAttempt(item: item, mode: .listen, understood: true)
+        XCTAssertEqual(family.recentShareCandidates(in: learner).count, 1)
+        XCTAssertEqual(MockFamilyProtocol.requests().map { $0.url?.path ?? "" },
+                       ["/api/v2/family/login", "/api/v2/family/me"])
+    }
+
+    func testExplicitSingleShareUsesOnlyThreeBackendFieldsAndAcknowledgedServerXP() async throws {
+        var fixtures = try goodFixtures()
+        fixtures["/api/v2/family/groups/9/activity"] = try stub(status: 201, [
+            "accepted": true, "xp": 14, "expedition_xp": 7,
+            "region": "mazowieckie", "target": 310
+        ])
+        let (family, speech) = environment(fixtures)
+        await connect(family, speech)
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let learner = LocalLearningStore(storageURL: directory.appendingPathComponent("learner.json"))
+        let item = try XCTUnwrap(learner.lessons.first(where: { $0.kind == "vocabulary" })?.items.first)
+        learner.recordAttempt(item: item, mode: .learn, understood: false)
+        let event = try XCTUnwrap(family.recentShareCandidates(in: learner).first)
+        let group = try XCTUnwrap(family.groups.first)
+        let localXP = learner.expedition.totalXP
+        let result = try await family.share(eventID: event.id, group: group, learner: learner)
+        XCTAssertEqual(result, .credited(xp: 14, expeditionXP: 7))
+        XCTAssertEqual(learner.expedition.totalXP, localXP,
+                       "Server XP must never increase anonymous local XP")
+        XCTAssertEqual(family.receipt(for: event, group: group), result)
+        XCTAssertEqual(MockFamilyProtocol.requests().map { $0.url?.path ?? "" },
+                       ["/api/v2/family/login", "/api/v2/family/me",
+                        "/api/v2/family/groups/9/activity"])
+        let origin = try NativeFamilyOrigin(text: address)
+        let account = NativeFamilyAccount(origin: origin, token: token,
+              user: NativeFamilyIdentity(id: 17, name: "Existing Learner", email: "learner@example.org"),
+              groups: [group])
+        let req = try NativeFamilyAPI.activityRequest(account: account, group: group, event: event)
+        XCTAssertEqual(req.httpMethod, "POST")
+        XCTAssertEqual(req.value(forHTTPHeaderField: "Authorization"), "Bearer " + token)
+        let data = try XCTUnwrap(req.httpBody)
+        let body = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String:String])
+        XCTAssertEqual(Set(body.keys), Set(["item_id", "mode", "region"]))
+        XCTAssertEqual(body["item_id"], event.itemID)
+        XCTAssertEqual(body["mode"], event.mode.rawValue)
+        XCTAssertEqual(body["region"], event.regionID)
+        XCTAssertNil(body["xp"])
+        XCTAssertNil(body["date"])
+        XCTAssertNil(body["audio"])
+        // Explicit repeat click returns the in-memory receipt without a request.
+        let same = try await family.share(eventID: event.id, group: group, learner: learner)
+        XCTAssertEqual(same, result)
+        XCTAssertEqual(MockFamilyProtocol.requests().count, 3)
+    }
+
+    func testAlreadyCreditedIsAcknowledgedWithoutAwardingClientXPOrRetry() async throws {
+        var fixtures = try goodFixtures()
+        fixtures["/api/v2/family/groups/9/activity"] = try stub([
+            "accepted": false, "reason": "already_credited"
+        ])
+        let (family, speech) = environment(fixtures)
+        await connect(family, speech)
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let learner = LocalLearningStore(storageURL: directory.appendingPathComponent("learner.json"))
+        let item = try XCTUnwrap(learner.lessons.first(where: { $0.kind == "vocabulary" })?.items.first)
+        learner.recordAttempt(item: item, mode: .learn, understood: true)
+        let event = try XCTUnwrap(family.recentShareCandidates(in: learner).first)
+        let group = try XCTUnwrap(family.groups.first)
+        XCTAssertEqual(try await family.share(eventID: event.id, group: group, learner: learner),
+                       .alreadyCredited)
+        XCTAssertEqual(MockFamilyProtocol.requests().count, 3)
+        XCTAssertEqual(family.receipt(for: event, group: group), .alreadyCredited)
+        await family.signOut(speech: speech)
+        XCTAssertNil(family.receipt(for: event, group: group))
+        XCTAssertTrue(family.recentShareCandidates(in: learner).isEmpty)
+        XCTAssertFalse(speech.isConnected)
+    }
+
+    func testMissingMembershipAndMalformedReceiptFailClosed() async throws {
+        var fixtures = try goodFixtures()
+        fixtures["/api/v2/family/groups/9/activity"] = try stub([
+            "accepted": true, "xp": 9999, "expedition_xp": 9999,
+            "region": "unknown", "target": 0
+        ])
+        let (family, speech) = environment(fixtures)
+        await connect(family, speech)
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let learner = LocalLearningStore(storageURL: directory.appendingPathComponent("learner.json"))
+        let item = try XCTUnwrap(learner.lessons.first(where: { $0.kind == "vocabulary" })?.items.first)
+        learner.recordAttempt(item: item, mode: .learn, understood: false)
+        let event = try XCTUnwrap(family.recentShareCandidates(in: learner).first)
+        let stranger = NativeFamilyGroup(id: 500, name: "Stranger")
+        do {
+            _ = try await family.share(eventID: event.id, group: stranger, learner: learner)
+            XCTFail("Unknown group must never be submitted")
+        } catch let error as NativeFamilyError { XCTAssertEqual(error, .notAuthorized) }
+        XCTAssertEqual(MockFamilyProtocol.requests().count, 2)
+        let group = try XCTUnwrap(family.groups.first)
+        do {
+            _ = try await family.share(eventID: event.id, group: group, learner: learner)
+            XCTFail("Tampered server XP must not be displayed")
+        } catch let error as NativeFamilyError { XCTAssertEqual(error, .malformedResponse) }
+        XCTAssertEqual(MockFamilyProtocol.requests().count, 3)
+        XCTAssertNil(family.receipt(for: event, group: group))
+    }
+
+    func testUTCBoundaryAndNewlyConnectedSessionFilterHistoricalActivity() throws {
+        let lessons = try CatalogLoader.load()
+        let items = try XCTUnwrap(lessons.first(where: { $0.kind == "vocabulary" })?.items)
+        let regions = try PolandRegionCatalog.load()
+        let now = Date(timeIntervalSince1970: 1_760_000_100)
+        let start = now.addingTimeInterval(-120)
+        func make(_ date: Date, _ itemID: String) -> LocalXPEvent {
+            LocalXPEvent(id: "learn:" + itemID + ":2025-01-01", itemID: itemID,
+                         mode: .learn, at: date, xp: 10, baseXP: 10,
+                         expeditionXP: 10, tier: 1, regionID: "mazowieckie")
+        }
+        let valid = make(now.addingTimeInterval(-30), items[0].id)
+        let beforeLogin = make(start.addingTimeInterval(-1), items[1].id)
+        let future = make(now.addingTimeInterval(2), items[2].id)
+        let priorUTCday = make(Date(timeIntervalSince1970: 1_759_968_000), items[3].id)
+        let corrupt = LocalXPEvent(id: "corrupt", itemID: items[4].id, mode: .learn,
+                  at: now.addingTimeInterval(-10), xp: 100, baseXP: 100,
+                  expeditionXP: 10, tier: 1, regionID: "mazowieckie")
+        let candidates = NativeFamilyActivityGuard.candidates(
+            events: [valid, beforeLogin, future, priorUTCday, corrupt],
+            lessons: lessons, regions: regions, connectedAt: start, now: now)
+        XCTAssertEqual(candidates.map(\.itemID), [valid.itemID])
+    }
 }
