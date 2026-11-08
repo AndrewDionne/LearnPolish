@@ -17,6 +17,7 @@ struct LessonScreen: View {
     @State private var selectedOption: String?
     @State private var playbackRate: Float = 1
     @State private var guideVisible = false
+    @State private var speechFeedback: NativeSpeechFeedback?
     @State private var finished = false
     @State private var showingSourceIntroduction = false
 
@@ -311,9 +312,8 @@ struct LessonScreen: View {
 
     private var speakCard: some View {
         VStack(alignment: .leading, spacing: 20) {
-            Text(item.polish)
+            NativeSpeechWord(polish: item.polish, feedback: speechFeedback)
                 .font(.largeTitle.weight(.semibold))
-                .textSelection(.enabled)
             if item.audio != nil { referenceControls }
             if let pronunciation = item.pronunciation, !pronunciation.isEmpty {
                 Toggle("Pronunciation guide", isOn: $guideVisible)
@@ -352,7 +352,7 @@ struct LessonScreen: View {
                     .foregroundStyle(.secondary)
             }
             if audio.hasRecording && !audio.isRecording {
-                NativeSpeechPracticePanel(item: item, audio: audio)
+                NativeSpeechPracticePanel(item: item, audio: audio, feedback: $speechFeedback)
                     .id(item.id)
                 Button("Mark practised") {
                     learner.recordAttempt(item: item, mode: .speak, understood: nil)
@@ -420,6 +420,7 @@ struct LessonScreen: View {
     }
 
     private func resetCard() {
+        speechFeedback = nil
         revealed = false
         selectedOption = nil
         guideVisible = false
