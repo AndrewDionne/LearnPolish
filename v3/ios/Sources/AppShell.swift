@@ -7,8 +7,6 @@ struct AppShell: View {
                 .tabItem { Label("Home", systemImage: "house") }
             NavigationStack { LibraryScreen() }
                 .tabItem { Label("Library", systemImage: "books.vertical") }
-            NavigationStack { SoundStudioScreen() }
-                .tabItem { Label("Sounds", systemImage: "waveform") }
             NavigationStack { ReviewScreen() }
                 .tabItem { Label("Practice", systemImage: "rectangle.stack") }
             NavigationStack { PolandExpeditionView() }
@@ -63,6 +61,14 @@ struct HomeScreen: View {
                     } label: {
                         Label("First words, grammar and sentences",
                               systemImage: "text.book.closed")
+                    }
+                    .font(.headline)
+
+                    NavigationLink {
+                        SoundStudioScreen()
+                    } label: {
+                        Label("Polish alphabet and sound practice",
+                              systemImage: "waveform")
                     }
                     .font(.headline)
 
@@ -127,6 +133,18 @@ struct LibraryScreen: View {
 
     var body: some View {
         List {
+            Section("Foundations") {
+                NavigationLink {
+                    GuidedFoundationsScreen()
+                } label: {
+                    Label("First words and basic grammar", systemImage: "text.book.closed")
+                }
+                NavigationLink {
+                    SoundStudioScreen()
+                } label: {
+                    Label("Alphabet and Sound Lab", systemImage: "waveform")
+                }
+            }
             if learner.catalogError != nil {
                 Text(learner.catalogError ?? "").foregroundStyle(.red)
             }
