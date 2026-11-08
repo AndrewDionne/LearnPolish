@@ -7,6 +7,8 @@ struct AppShell: View {
                 .tabItem { Label("Home", systemImage: "house") }
             NavigationStack { LibraryScreen() }
                 .tabItem { Label("Library", systemImage: "books.vertical") }
+            NavigationStack { SoundStudioScreen() }
+                .tabItem { Label("Sounds", systemImage: "waveform") }
             NavigationStack { ReviewScreen() }
                 .tabItem { Label("Practice", systemImage: "rectangle.stack") }
             NavigationStack { PolandExpeditionView() }
