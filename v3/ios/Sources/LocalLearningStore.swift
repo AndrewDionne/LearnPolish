@@ -13,6 +13,9 @@ struct LocalLearner: Codable {
     // A device-local record identifier, never a login or API credential.
     var localID = UUID()
     var firstOpened = Date()
+    // Independent guided pathway cursor: never rewrites source lesson IDs.
+    var guidedStepID: String?
+    var guidedItemID: String?
     var lastCoreLessonID: String?
     var lastLessonID: String?
     var lastItemID: String?
@@ -25,6 +28,7 @@ struct LocalLearner: Codable {
 @MainActor final class LocalLearningStore: ObservableObject {
     @Published private(set) var profile: LocalLearner
     @Published private(set) var lessons: [Lesson] = []
+    @Published private(set) var guidedFoundations: [GuidedFoundationStep] = []
     @Published private(set) var coreJourney: CoreJourney?
     @Published private(set) var regions: [PolandRegion] = []
     @Published private(set) var catalogError: String?
@@ -56,9 +60,11 @@ struct LocalLearner: Codable {
             let source = try CatalogLoader.load(bundle: bundle)
             let journey = try CoreJourney(lessons: source, bundle: bundle)
             let sourceRegions = try PolandRegionCatalog.load(bundle: bundle)
+            let guided = try GuidedFoundationPath.load(lessons: source, bundle: bundle)
             lessons = source
             coreJourney = journey
             regions = sourceRegions
+            guidedFoundations = guided
         } catch {
             catalogError = error.localizedDescription
         }
@@ -66,6 +72,43 @@ struct LocalLearner: Codable {
 
     var course: [Lesson] { coreJourney?.ordered ?? [] }
     var explore: [Lesson] { coreJourney?.explore ?? [] }
+
+    var nextGuidedStep: GuidedFoundationStep? {
+        if let id = profile.guidedStepID,
+           let step = guidedFoundations.first(where: { $0.id == id }) {
+            return step
+        }
+        return guidedFoundations.first(where: { step in
+            step.items.contains { item in
+                (profile.records["learn:" + item.id]?.attempts ?? 0) == 0
+            }
+        })
+    }
+
+    func guidedPractisedCount(_ step: GuidedFoundationStep) -> Int {
+        step.items.filter { (profile.records["learn:" + $0.id]?.attempts ?? 0) > 0 }.count
+    }
+
+    func sourceItem(for reference: GuidedRecordedItem) -> LessonItem? {
+        lessons.lazy.flatMap(\.items).first { $0.id == reference.id }
+    }
+
+    func rememberGuidedPosition(stepID: String, itemID: String) {
+        guard let step = guidedFoundations.first(where: { $0.id == stepID }),
+              step.items.contains(where: { $0.id == itemID }) else { return }
+        guard profile.guidedStepID != stepID || profile.guidedItemID != itemID else { return }
+        profile.guidedStepID = stepID
+        profile.guidedItemID = itemID
+        save()
+    }
+
+    func finishedGuidedStep(_ stepID: String) {
+        guard let index = guidedFoundations.firstIndex(where: { $0.id == stepID }) else { return }
+        profile.guidedStepID = guidedFoundations.indices.contains(index + 1)
+            ? guidedFoundations[index + 1].id : nil
+        profile.guidedItemID = nil
+        save()
+    }
     var nextLesson: Lesson? {
         if let id = profile.lastCoreLessonID,
            let lesson = course.first(where: { $0.id == id }) { return lesson }
