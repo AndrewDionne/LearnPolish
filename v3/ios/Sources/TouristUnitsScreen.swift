@@ -328,6 +328,10 @@ struct TouristStepScreen: View {
                 }
             }
             if audio.hasRecording && !audio.isRecording {
+                if let original = learner.originalTouristItem(item.id, unit: unit, stepIndex: stepIndex) {
+                    NativeSpeechPracticePanel(item: original, audio: audio)
+                        .id(item.id)
+                }
                 Button("Mark practised") {
                     learner.recordTouristAttempt(unit: unit, stepIndex: stepIndex,
                                                 itemID: item.id, understood: nil)
@@ -335,7 +339,7 @@ struct TouristStepScreen: View {
                 }
                 .buttonStyle(.borderedProminent)
             }
-            Text("Recording and replay stay on this iPhone. Automated pronunciation assessment is not enabled.")
+            Text("Recordings stay on this iPhone unless you explicitly authorize a connected pronunciation check.")
                 .font(.footnote).foregroundStyle(.secondary)
         }
     }
