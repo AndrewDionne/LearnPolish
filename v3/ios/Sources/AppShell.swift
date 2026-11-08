@@ -41,7 +41,7 @@ struct HomeScreen: View {
                                 Text(description).foregroundStyle(.secondary)
                             }
                             NavigationLink {
-                                LessonScreen(lesson: lesson)
+                                LessonScreen(lesson: lesson, resumeAtNextUnseen: true)
                             } label: {
                                 Label("Continue", systemImage: "arrow.right")
                                     .frame(maxWidth: .infinity)
