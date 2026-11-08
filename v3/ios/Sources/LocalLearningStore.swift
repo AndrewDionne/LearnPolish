@@ -87,8 +87,13 @@ struct LocalLearner: Codable {
     var touristUnits: [TouristUnit] { touristCatalog?.units ?? [] }
 
     var nextTouristUnit: TouristUnit? {
+        // Browsing completed lessons must not replace the next unfinished
+        // scenario shown on Home.
         if let id = touristProgress.unitID,
-           let unit = touristUnits.first(where: { $0.id == id }) { return unit }
+           let unit = touristUnits.first(where: { $0.id == id }),
+           unit.steps.indices.contains(where: {
+               !touristProgress.isComplete(unitID: id, stepIndex: $0)
+           }) { return unit }
         return touristUnits.first { unit in
             unit.steps.indices.contains(where: {
                 !touristProgress.isComplete(unitID: unit.id, stepIndex: $0)
