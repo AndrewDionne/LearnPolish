@@ -71,6 +71,27 @@ struct HomeScreen: View {
                               systemImage: "waveform")
                     }
                     .font(.headline)
+                    NavigationLink {
+                        TouristUnitsScreen()
+                    } label: {
+                        Label("Everyday Polish scenarios",
+                              systemImage: "figure.walk")
+                    }
+                    .font(.headline)
+
+                    if let scenario = learner.nextTouristUnit {
+                        HStack {
+                            Text("Next scenario")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            NavigationLink(scenario.title) {
+                                TouristUnitScreen(unit: scenario)
+                            }
+                            .font(.subheadline.weight(.medium))
+                        }
+                    }
+
 
                     if let lesson = learner.nextLesson {
                         VStack(alignment: .leading, spacing: 12) {
@@ -143,6 +164,11 @@ struct LibraryScreen: View {
                     SoundStudioScreen()
                 } label: {
                     Label("Alphabet and Sound Lab", systemImage: "waveform")
+                }
+                NavigationLink {
+                    TouristUnitsScreen()
+                } label: {
+                    Label("Everyday scenarios", systemImage: "figure.walk")
                 }
             }
             if learner.catalogError != nil {
