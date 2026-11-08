@@ -112,8 +112,19 @@ enum NativeSpeechValidation {
 struct NativeSpeechClient {
     let urlSession: URLSession
 
-    init(urlSession: URLSession = .shared) {
-        self.urlSession = urlSession
+    init(urlSession: URLSession? = nil) {
+        if let urlSession {
+            self.urlSession = urlSession
+        } else {
+            // No persistent cookies, request cache, or disk-backed response
+            // cache for any private speech endpoint or provider timing data.
+            let config = URLSessionConfiguration.ephemeral
+            config.timeoutIntervalForRequest = 45
+            config.timeoutIntervalForResource = 45
+            config.httpCookieStorage = nil
+            config.urlCache = nil
+            self.urlSession = URLSession(configuration: config)
+        }
     }
 
     static func makeRequest(connection: NativeSpeechConnection,
@@ -147,6 +158,7 @@ struct NativeSpeechClient {
                                  cachePolicy: .reloadIgnoringLocalCacheData,
                                  timeoutInterval: 45)
         request.httpMethod = "POST"
+        request.httpShouldHandleCookies = false
         request.setValue("Bearer " + connection.sessionToken, forHTTPHeaderField: "Authorization")
         request.setValue("multipart/form-data; boundary=" + boundary,
                          forHTTPHeaderField: "Content-Type")
