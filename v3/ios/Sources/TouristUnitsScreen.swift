@@ -3,6 +3,10 @@ import SwiftUI
 struct TouristUnitsScreen: View {
     @EnvironmentObject private var learner: LocalLearningStore
 
+    private func completedCount(for unit: TouristUnit) -> Int {
+        unit.steps.indices.filter { learner.touristStepComplete(unit: unit, index: $0) }.count
+    }
+
     var body: some View {
         List {
             Section {
@@ -22,9 +26,7 @@ struct TouristUnitsScreen: View {
                             Text(unit.title).font(.headline)
                             Text(unit.outcome)
                                 .font(.subheadline).foregroundStyle(.secondary)
-                            Text("\(unit.steps.indices.filter {
-                                learner.touristStepComplete(unit: unit, index: $0)
-                            }.count) of \(unit.steps.count) stages practised")
+                            Text("\(completedCount(for: unit)) of \(unit.steps.count) stages practised")
                                 .font(.caption).foregroundStyle(.secondary)
                         }
                     }
