@@ -21,6 +21,12 @@ enum AudioFiles {
 @MainActor final class NativeAudio: NSObject, ObservableObject, AVAudioRecorderDelegate {
     @Published private(set) var isRecording = false
     @Published private(set) var hasRecording = false
+    @Published private(set) var takeGeneration = UUID()
+
+    // A take can only be submitted while present and no longer recording.
+    var recordingURL: URL? {
+        hasRecording && !isRecording ? takeURL : nil
+    }
     @Published var message: String?
 
     private var player: AVAudioPlayer?
@@ -147,6 +153,7 @@ enum AudioFiles {
         player?.stop()
         isRecording = false
         hasRecording = false
+        takeGeneration = UUID()
         try? FileManager.default.removeItem(at: takeURL)
     }
 }
