@@ -213,11 +213,23 @@ struct NativeFamilyAPI {
         let path = "groups/" + String(group.id) + "/summary"
         let data = try await perform(Self.request(origin: account.origin, route: path,
                                                   method: "GET", token: account.token))
+        let canonicalRegions = Set((try? PolandRegionCatalog.load())?.map(\.id) ?? [])
         guard let summary = try? JSONDecoder().decode(NativeFamilySummary.self, from: data),
               summary.group.id == group.id, summary.group.name == group.name,
-              summary.members.count <= 12,
-              summary.members.allSatisfy({ $0.id > 0 && $0.weekly_xp >= 0 && $0.team_xp >= 0 }),
-              summary.totals.weekly_xp >= 0 else {
+              (1...12).contains(summary.members.count),
+              Set(summary.members.map(\.id)).count == summary.members.count,
+              summary.members.allSatisfy({
+                  $0.id > 0 && !$0.name.isEmpty && $0.weekly_xp >= 0 &&
+                  $0.team_xp >= 0 && $0.active_days >= 0 && (0...5).contains($0.highest_tier)
+              }),
+              summary.regions.count <= canonicalRegions.count,
+              Set(summary.regions.map(\.region)).count == summary.regions.count,
+              summary.regions.allSatisfy({
+                  canonicalRegions.contains($0.region) && $0.earned >= 0 &&
+                  $0.target > 0 && $0.unlocked == ($0.earned >= $0.target)
+              }),
+              summary.totals.weekly_xp >= 0,
+              summary.totals.regions_unlocked == summary.regions.filter(\.unlocked).count else {
             throw NativeFamilyError.malformedResponse
         }
         return summary
