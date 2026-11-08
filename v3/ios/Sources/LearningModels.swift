@@ -51,11 +51,13 @@ struct Lesson: Decodable, Identifiable {
     var hasAudio: Bool { items.contains { $0.audio != nil } }
 
     var availableModes: [PracticeMode] {
-        switch kind {
-        case "reading": return hasAudio ? [.read, .listen] : [.read]
-        case "sounds": return hasAudio ? [.listen, .speak] : [.speak]
-        default: return hasAudio ? [.learn, .listen, .speak] : [.learn, .speak]
+        // Exact V2 contract: reading defaults to Read; other lessons allow
+        // Learn and Speak. Only verified source audio may offer Listen.
+        var modes: [PracticeMode] = kind == "reading" ? [.read] : [.learn, .speak]
+        if items.contains(where: { $0.audio != nil && $0.referenceReview != "practice_only" }) {
+            modes.append(.listen)
         }
+        return modes
     }
 
     var stageRank: Int {
