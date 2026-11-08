@@ -93,6 +93,61 @@ private final class MockFamilyProtocol: URLProtocol {
                             password: "test-only-pass", speech: speech)
     }
 
+
+    func testFamilyMapUsesOnlyVerifiedServerRegionGoals() async throws {
+        var fixtures = try goodFixtures()
+        fixtures["/api/v2/family/groups/9/summary"] = try stub([
+            "group": ["id":9, "name":"Household"],
+            "members": [
+                ["id":17, "name":"Existing Learner", "weekly_xp":60,
+                 "active_days":2, "highest_tier":1, "team_xp":50]
+            ],
+            "regions":[
+                ["region":"mazowieckie", "earned":320, "target":300, "unlocked":true],
+                ["region":"małopolskie", "earned":20, "target":350, "unlocked":false]
+            ],
+            "totals":["weekly_xp":60, "regions_unlocked":1]
+        ])
+        let (family, speech) = environment(fixtures)
+        await connect(family, speech)
+        let group = try XCTUnwrap(family.groups.first)
+        let summary = try await family.loadSummary(for: group)
+        XCTAssertEqual(summary.totals.regions_unlocked, 1)
+        XCTAssertTrue(summary.regions.first?.unlocked == true)
+        XCTAssertEqual(summary.regions.last?.earned, 20)
+        XCTAssertEqual(MockFamilyProtocol.requests().count, 3)
+    }
+
+    func testTamperedOrInconsistentServerRegionNeverRendersFamilyMap() async throws {
+        for invalid in [
+            ["region":"fake-region", "earned":10, "target":300, "unlocked":false],
+            ["region":"mazowieckie", "earned":310, "target":300, "unlocked":false],
+            ["region":"mazowieckie", "earned":-1, "target":300, "unlocked":false],
+            ["region":"mazowieckie", "earned":10, "target":0, "unlocked":false]
+        ] as [[String:Any]] {
+            var fixtures = try goodFixtures()
+            fixtures["/api/v2/family/groups/9/summary"] = try stub([
+                "group": ["id":9, "name":"Household"],
+                "members":[
+                    ["id":17, "name":"Existing Learner", "weekly_xp":10,
+                     "active_days":1, "highest_tier":1, "team_xp":10]
+                ],
+                "regions":[invalid],
+                "totals":["weekly_xp":10, "regions_unlocked":0]
+            ])
+            let (family, speech) = environment(fixtures)
+            await connect(family, speech)
+            let group = try XCTUnwrap(family.groups.first)
+            do {
+                _ = try await family.loadSummary(for: group)
+                XCTFail("Untrusted region data cannot appear in the family map")
+            } catch let error as NativeFamilyError {
+                XCTAssertEqual(error, .malformedResponse)
+            }
+            XCTAssertEqual(MockFamilyProtocol.requests().count, 3)
+        }
+    }
+
     func testFirstLaunchRequiresNoLoginAndMakesNoNetworkRequests() throws {
         let (family, speech) = environment(try goodFixtures())
         XCTAssertFalse(family.isConnected)
