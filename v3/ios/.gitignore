@@ -1,0 +1,7 @@
+# Assets are generated from existing canonical V2 content.
+Resources/generated/
+PathToPolish.xcodeproj/
+*.xcworkspace/
+DerivedData/
+*.xcuserstate
+.DS_Store
