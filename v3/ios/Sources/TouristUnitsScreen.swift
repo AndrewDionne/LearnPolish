@@ -44,7 +44,9 @@ struct TouristUnitScreen: View {
 
     private var nextStep: Int {
         if learner.touristProgress.unitID == unit.id,
-           unit.steps.indices.contains(learner.touristProgress.stepIndex) {
+           unit.steps.indices.contains(learner.touristProgress.stepIndex),
+           !learner.touristStepComplete(unit: unit,
+                                        index: learner.touristProgress.stepIndex) {
             return learner.touristProgress.stepIndex
         }
         return unit.steps.indices.first {
@@ -87,13 +89,6 @@ struct TouristUnitScreen: View {
                             }
                         }
                         .padding(.vertical, 5)
-                    }
-                }
-            }
-            if let gaps = unit.gaps, !gaps.isEmpty {
-                Section("Material still being developed") {
-                    ForEach(gaps, id: \.self) { gap in
-                        Text(gap).font(.footnote).foregroundStyle(.secondary)
                     }
                 }
             }
