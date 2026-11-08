@@ -50,6 +50,6 @@ if (coreSource.schemaVersion !== 1 || coreSource.editorialStatus !== 'source-map
     coreSource.placements.some(x => !manifest.lessons.some(lesson => lesson.id === x.lessonId))) {
   throw new Error('V2 core-journey manifest does not match native lesson inventory');
 }
-fs.writeFileSync(path.join(dst, 'core-journey.json'), JSON.stringify(coreSource, null, 2) + '\\n');
+fs.writeFileSync(path.join(dst, 'core-journey.json'), JSON.stringify(coreSource, null, 2) + '\n');
 fs.writeFileSync(path.join(dst, 'native-asset-report.json'), JSON.stringify({lessons:manifest.lessons.length,items,audioReferences:audio},null,2)+'\n');
 console.log('Native offline assets verified:', { lessons: manifest.lessons.length, items, audioReferences: audio });
