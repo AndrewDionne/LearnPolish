@@ -29,6 +29,7 @@ struct LocalLearner: Codable {
     @Published private(set) var profile: LocalLearner
     @Published private(set) var lessons: [Lesson] = []
     @Published private(set) var guidedFoundations: [GuidedFoundationStep] = []
+    @Published private(set) var soundStudio: NativeSoundStudio?
     @Published private(set) var coreJourney: CoreJourney?
     @Published private(set) var regions: [PolandRegion] = []
     @Published private(set) var catalogError: String?
@@ -61,10 +62,12 @@ struct LocalLearner: Codable {
             let journey = try CoreJourney(lessons: source, bundle: bundle)
             let sourceRegions = try PolandRegionCatalog.load(bundle: bundle)
             let guided = try GuidedFoundationPath.load(lessons: source, bundle: bundle)
+            let sourceSounds = try NativeSoundStudio.load(lessons: source, bundle: bundle)
             lessons = source
             coreJourney = journey
             regions = sourceRegions
             guidedFoundations = guided
+            soundStudio = sourceSounds
         } catch {
             catalogError = error.localizedDescription
         }
