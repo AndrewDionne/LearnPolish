@@ -71,7 +71,7 @@ struct CoreJourney {
             if $0.rank != $1.rank { return $0.rank < $1.rank }
             return $0.order < $1.order
         }.compactMap { byLesson[$0.lessonId] }
-        explore = lessons.filter { placements[$0.id] == nil && $0.source != "personal" }
+        explore = lessons.filter { !seen.contains($0.id) && $0.source != "personal" }
             .sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
     }
 
