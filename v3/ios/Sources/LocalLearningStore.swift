@@ -18,12 +18,15 @@ struct LocalLearner: Codable {
     var lastItemID: String?
     var lastMode: PracticeMode?
     var records: [String: PracticeRecord] = [:]
+    // Optional for backward-compatible loading of V3 profiles created before XP.
+    var expedition: LocalExpedition?
 }
 
 @MainActor final class LocalLearningStore: ObservableObject {
     @Published private(set) var profile: LocalLearner
     @Published private(set) var lessons: [Lesson] = []
     @Published private(set) var coreJourney: CoreJourney?
+    @Published private(set) var regions: [PolandRegion] = []
     @Published private(set) var catalogError: String?
     @Published private(set) var saveError: String?
 
@@ -52,8 +55,10 @@ struct LocalLearner: Codable {
         do {
             let source = try CatalogLoader.load(bundle: bundle)
             let journey = try CoreJourney(lessons: source, bundle: bundle)
+            let sourceRegions = try PolandRegionCatalog.load(bundle: bundle)
             lessons = source
             coreJourney = journey
+            regions = sourceRegions
         } catch {
             catalogError = error.localizedDescription
         }
@@ -75,6 +80,16 @@ struct LocalLearner: Codable {
     }
 
     var attempts: Int { profile.records.values.reduce(0) { $0 + $1.attempts } }
+
+    var expedition: LocalExpedition { profile.expedition ?? LocalExpedition() }
+
+    func chooseRegion(_ id: String) {
+        guard regions.contains(where: { $0.id == id }) else { return }
+        var map = expedition
+        map.choose(id, validRegions: Set(regions.map(\.id)))
+        profile.expedition = map
+        save()
+    }
 
     var dueReviews: [(Lesson, LessonItem)] {
         let now = Date()
@@ -123,6 +138,16 @@ struct LocalLearner: Codable {
             }
         }
         profile.records[key] = record
+        // Each actual answered/rated card or finished usable Speak take earns
+        // base effort XP once per mode/item/local-day, never on reveal/skip.
+        if let owner = lessons.first(where: { lesson in
+            lesson.items.contains(where: { $0.id == item.id })
+        }) {
+            var map = expedition
+            _ = map.award(itemID: item.id, mode: mode,
+                          tier: owner.difficultyTier.flatMap { (1...5).contains($0) ? $0 : nil } ?? 1)
+            profile.expedition = map
+        }
         save()
     }
 
