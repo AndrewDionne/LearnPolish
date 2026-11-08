@@ -2,6 +2,10 @@
 
 **First-run principle:** Open the app and start studying. No app login, email, phone number, registration or iCloud prompt. Native local study runs offline; no remote assessment or implicit network upload.
 
+## Owner Xcode build deferred until complete
+
+The owner requested continued development and no partial-version phone installs. Run GitHub native iOS compilation and automated simulator tests during development, but **do not request a local Xcode build or physical acceptance until the full agreed feature set is implemented**. The steps below are retained for final integration and release testing.
+
 ## Build with Xcode on macOS
 
 Requires Xcode with the iOS 17+ SDK, Node.js 22+, XcodeGen (`brew install xcodegen`). From the repository root:
@@ -26,12 +30,13 @@ xcodebuild -project v3/ios/PathToPolish.xcodeproj -scheme PathToPolish \
 
 ## Current V3 tranche
 
-- Real catalog-backed home, library and lesson playback; first lesson selected from V2 ordered curriculum.
-- Native Learn, Listen, Read, Speak; no fake speech results or remote microphone upload.
-- App Support JSON store with atomic writes and stable `lesson:item:mode` identities; independent Learn/Listen/Read/Speak progress.
-- Native audio playback and local record/replay. No Azure/Groq credentials bundled.
+- Real catalog-backed Home, Library, Practice, Expedition and Progress with the exact V2 21-step core journey plus five optional exploratory lessons. Home Continue and Library browsing have independent cursors.
+- V2-parity Learn, Listen, Read, local Speak; original authored comprehension questions and two optional 10-number practice sections. No fake speech results or remote microphone upload.
+- App Support JSON store with atomic writes and stable mode-qualified item IDs, 24h spaced review, frozen due-only sessions and anonymous profile. Records persist offline.
+- Native audio playback at 0.75× / 1× and local record/replay; no Azure/Groq credentials bundled.
+- Native interactive sixteen-voivodeship Poland map with original V2 geometry, region selection and personal XP ledger, daily deduplication and repeat taper. This ledger is **not** family leaderboard data.
 - No login, no CloudKit or Neon calls in this tranche. Former group identities and database are untouched.
 
 ## Not yet certified
 
-A GitHub commit is not proof of Xcode compilation, iPhone microphone functionality, parental compliance, CloudKit conflict handling, or V2 scoring/XP parity. Complete simulator compile, physical testing and longitudinal learner parity before merging to `main`. These are tracked in `../DECISIONS.md` and the draft PR.
+GitHub CI exercises native simulator compilation and focused XCTest suites. This is **not** proof of real iPhone microphone functionality, complete V2 content-teaching/pronunciation parity, family integration, parental compliance or CloudKit conflict handling. Do not merge to `main` or ask owner for local Xcode testing until the full agreed feature set and integration tests are ready. The durable gap list is [`../BUILD_PROGRESS.md`](../BUILD_PROGRESS.md), and the PR remains draft.
