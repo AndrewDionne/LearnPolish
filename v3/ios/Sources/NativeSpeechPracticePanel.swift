@@ -18,7 +18,7 @@ struct NativeSpeechPracticePanel: View {
 
     var body: some View {
         Group {
-            if speech.isConnected && audio.hasRecording && !audio.isRecording {
+            if speech.isConnected && audio.usableRecording && !audio.isRecording {
                 VStack(alignment: .leading, spacing: 12) {
                     Toggle("Send this take to Azure Speech", isOn: $allowAzure)
                     Toggle("Send this take to Groq Whisper", isOn: $allowGroq)
