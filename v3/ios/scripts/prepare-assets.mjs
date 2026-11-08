@@ -7,6 +7,7 @@ import { execFileSync } from 'node:child_process';
 import { compileGuidedFoundations, readGuidedSources } from './prepare-guided.mjs';
 import { compileSoundStudio, readSoundSources } from './prepare-sounds.mjs';
 import { compileExposure, readExposureSources } from './prepare-exposure.mjs';
+import { compileTouristUnits, readTouristSource } from './prepare-tourist.mjs';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repo = path.resolve(scriptDir, '../../..');
@@ -70,5 +71,8 @@ fs.writeFileSync(path.join(dst, 'sound-studio.json'), JSON.stringify(soundStudio
 const exposures = compileExposure(manifest, readExposureSources(repo));
 fs.writeFileSync(path.join(dst, 'source-exposure.json'),
   JSON.stringify(exposures, null, 2) + '\n');
+const tourist = compileTouristUnits(manifest, readTouristSource(repo));
+fs.writeFileSync(path.join(dst, 'tourist-units.json'),
+  JSON.stringify(tourist, null, 2) + '\n');
 fs.writeFileSync(path.join(dst, 'native-asset-report.json'), JSON.stringify({lessons:manifest.lessons.length,items,audioReferences:audio},null,2)+'\n');
 console.log('Native offline assets verified:', { lessons: manifest.lessons.length, items, audioReferences: audio });
