@@ -43,5 +43,13 @@ if (items < 482 || audio < 455) throw new Error('V2 content/audio regression: ' 
 fs.rmSync(dst, { recursive: true, force: true });
 fs.mkdirSync(path.dirname(dst), { recursive: true });
 fs.cpSync(src, dst, { recursive: true });
+const coreSource = JSON.parse(fs.readFileSync(path.join(repo, 'v2/content/core-journey-v1.json'), 'utf8'));
+if (coreSource.schemaVersion !== 1 || coreSource.editorialStatus !== 'source-mapped-pilot_not_native-audio-certified' ||
+    !Array.isArray(coreSource.placements) || coreSource.placements.length !== 21 ||
+    new Set(coreSource.placements.map(x => x.lessonId)).size !== coreSource.placements.length ||
+    coreSource.placements.some(x => !manifest.lessons.some(lesson => lesson.id === x.lessonId))) {
+  throw new Error('V2 core-journey manifest does not match native lesson inventory');
+}
+fs.writeFileSync(path.join(dst, 'core-journey.json'), JSON.stringify(coreSource, null, 2) + '\\n');
 fs.writeFileSync(path.join(dst, 'native-asset-report.json'), JSON.stringify({lessons:manifest.lessons.length,items,audioReferences:audio},null,2)+'\n');
 console.log('Native offline assets verified:', { lessons: manifest.lessons.length, items, audioReferences: audio });
