@@ -33,6 +33,37 @@ struct HomeScreen: View {
                     ContentUnavailableView("Lessons unavailable", systemImage: "exclamationmark.triangle",
                                            description: Text(message))
                 } else {
+                    if let guided = learner.nextGuidedStep {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Continue guided learning")
+                                .font(.headline)
+                            Text(guided.title)
+                                .font(.title2.weight(.semibold))
+                            Text(guided.stage)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                            NavigationLink {
+                                GuidedPracticeScreen(step: guided)
+                            } label: {
+                                Label("Continue", systemImage: "arrow.right")
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(.borderedProminent)
+                        }
+                        .padding(18)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(.quaternary.opacity(0.4),
+                                    in: RoundedRectangle(cornerRadius: 18))
+                    }
+
+                    NavigationLink {
+                        GuidedFoundationsScreen()
+                    } label: {
+                        Label("First words, grammar and sentences",
+                              systemImage: "text.book.closed")
+                    }
+                    .font(.headline)
+
                     if let lesson = learner.nextLesson {
                         VStack(alignment: .leading, spacing: 12) {
                             Text("Continue learning")
