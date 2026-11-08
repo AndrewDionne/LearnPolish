@@ -6,6 +6,7 @@ struct LessonScreen: View {
     var preferredMode: PracticeMode? = nil
     // Frozen review item IDs captured when the learner opens the review session.
     var dueItemIDs: [String]? = nil
+    var resumeAtNextUnseen: Bool = false
 
     @EnvironmentObject private var learner: LocalLearningStore
     @StateObject private var audio = NativeAudio()
@@ -47,7 +48,7 @@ struct LessonScreen: View {
                 ProgressView(value: Double(index + 1), total: Double(currentItems.count))
 
                 Picker("Practice", selection: $mode) {
-                    ForEach(lesson.availableModes) { option in
+                    ForEach(dueItemIDs == nil ? lesson.availableModes : [.learn]) { option in
                         Text(option.label).tag(option)
                     }
                 }
@@ -119,6 +120,14 @@ struct LessonScreen: View {
                     }
                     .buttonStyle(.bordered)
                 }
+                if let following = learner.coreJourney?.next(after: lesson.id), dueItemIDs == nil {
+                    NavigationLink {
+                        LessonScreen(lesson: following, resumeAtNextUnseen: true)
+                    } label: {
+                        Label("Next lesson", systemImage: "arrow.right")
+                    }
+                    .buttonStyle(.bordered)
+                }
                 Spacer()
             }
         }
@@ -126,7 +135,11 @@ struct LessonScreen: View {
         .navigationTitle(lesson.title)
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
-            if let preferredMode, lesson.availableModes.contains(preferredMode) {
+            if dueItemIDs != nil {
+                mode = .learn
+            } else if resumeAtNextUnseen {
+                mode = lesson.kind == "reading" ? .read : .learn
+            } else if let preferredMode, lesson.availableModes.contains(preferredMode) {
                 mode = preferredMode
             } else if learner.profile.lastLessonID == lesson.id,
                       let recentMode = learner.profile.lastMode,
@@ -148,7 +161,7 @@ struct LessonScreen: View {
                 }
             }
             let available = currentItems
-            if let resumeID,
+            if !resumeAtNextUnseen, let resumeID,
                let position = available.firstIndex(where: { $0.id == resumeID }) {
                 index = position
             } else {
