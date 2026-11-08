@@ -34,6 +34,16 @@ enum AudioFiles {
         try? FileManager.default.removeItem(at: takeURL)
     }
 
+    /// Play an already-bundled, validated original V2 recording by its path.
+    /// Sound Lab never requests isolated letter audio or remote synthesis.
+    func playFile(_ path: String, rate: Float = 1) {
+        guard let file = AudioFiles.referenceURL(for: path) else {
+            message = "The original Polish recording is unavailable."
+            return
+        }
+        play(file, rate: rate)
+    }
+
     func playReference(_ item: LessonItem) {
         guard let path = item.audio, let file = AudioFiles.referenceURL(for: path) else {
             message = "This lesson has no reference recording."
