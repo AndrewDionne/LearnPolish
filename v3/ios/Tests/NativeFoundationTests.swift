@@ -157,4 +157,65 @@ import XCTest
         XCTAssertEqual(learner.record(for: item, mode: .learn).reviewLevel, 0)
         XCTAssertTrue(learner.dueReviews.contains { $0.1.id == item.id })
     }
+
+    func testOriginalSixteenPolandRegionsDrawAndRemainSelectable() throws {
+        let regions = try PolandRegionCatalog.load()
+        XCTAssertEqual(regions.count, 16)
+        XCTAssertEqual(Set(regions.map(\.id)).count, 16)
+        XCTAssertTrue(regions.contains { $0.id == "mazowieckie" })
+        for region in regions {
+            XCTAssertFalse(RegionOutline(definition: region.path)
+                .path(in: CGRect(x: 0, y: 0, width: 585, height: 555)).isEmpty,
+                "Empty original region polygon: \(region.id)")
+        }
+        var state = LocalExpedition()
+        let available = Set(regions.map(\.id))
+        state.choose("małopolskie", validRegions: available)
+        XCTAssertEqual(state.selectedRegion, "małopolskie")
+        state.choose("invalid-region", validRegions: available)
+        XCTAssertEqual(state.selectedRegion, "małopolskie")
+    }
+
+    func testOriginalDailyXPAndRegionProgressTaperWithoutInventedImprovement() throws {
+        var state = LocalExpedition()
+        let dayOne = Date(timeIntervalSince1970: 1_750_000_000)
+        XCTAssertEqual(state.selectedRegion, "mazowieckie")
+        let first = try XCTUnwrap(state.award(itemID: "numbers_1-20:0", mode: .learn,
+                                              tier: 1, at: dayOne))
+        XCTAssertEqual(first.xp, 10)
+        XCTAssertEqual(first.expeditionXP, 10)
+        XCTAssertEqual(state.regionGoals["mazowieckie"], 300)
+        XCTAssertNil(state.award(itemID: "numbers_1-20:0", mode: .learn,
+                                 tier: 1, at: dayOne.addingTimeInterval(30)))
+        let secondDay = try XCTUnwrap(Calendar.current.date(byAdding: .day, value: 1, to: dayOne))
+        let second = try XCTUnwrap(state.award(itemID: "numbers_1-20:0", mode: .learn,
+                                               tier: 1, at: secondDay))
+        XCTAssertEqual(second.expeditionXP, 5)
+        let thirdDay = try XCTUnwrap(Calendar.current.date(byAdding: .day, value: 2, to: dayOne))
+        let third = try XCTUnwrap(state.award(itemID: "numbers_1-20:0", mode: .learn,
+                                              tier: 1, at: thirdDay))
+        XCTAssertEqual(third.expeditionXP, 0)
+        XCTAssertEqual(state.totalXP, 30)
+        XCTAssertEqual(state.regionTotal("mazowieckie"), 15)
+        XCTAssertTrue(state.unlocked.isEmpty)
+    }
+
+    func testLocalExpeditionPersistsAndDoesNotRequireAccount() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let location = directory.appendingPathComponent("learner.json")
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let first = LocalLearningStore(storageURL: location)
+        XCTAssertNil(first.catalogError)
+        let word = try XCTUnwrap(first.course.first(where: { $0.kind == "vocabulary" }))
+        first.chooseRegion("małopolskie")
+        first.recordAttempt(item: word.items[0], mode: .learn, understood: false)
+        XCTAssertEqual(first.expedition.totalXP, 10)
+        XCTAssertEqual(first.expedition.selectedRegion, "małopolskie")
+        let reopened = LocalLearningStore(storageURL: location)
+        XCTAssertNil(reopened.catalogError)
+        XCTAssertEqual(reopened.expedition.selectedRegion, "małopolskie")
+        XCTAssertEqual(reopened.expedition.totalXP, 10)
+        XCTAssertEqual(reopened.expedition.regionTotal("małopolskie"), 10)
+        XCTAssertNil(reopened.profile.lastCoreLessonID)
+    }
 }
