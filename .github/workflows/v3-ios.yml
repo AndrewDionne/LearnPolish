@@ -1,0 +1,29 @@
+name: V3 native iPhone build
+on:
+  pull_request:
+    paths:
+      - "v3/**"
+      - ".github/workflows/v3-ios.yml"
+  workflow_dispatch:
+
+jobs:
+  native-build:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Compile source-locked curriculum and audit bundled MP3s
+        run: node v3/ios/scripts/prepare-assets.mjs
+      - name: Generate project
+        working-directory: v3/ios
+        run: xcodegen generate --spec project.yml
+      - name: Build iPhone Simulator app
+        run: |
+          xcodebuild -project v3/ios/PathToPolish.xcodeproj -scheme PathToPolish \
+            -configuration Debug -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
