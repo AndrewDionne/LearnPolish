@@ -60,7 +60,7 @@ struct CoreJourney {
                 let sequence = data.placements.filter {
                     $0.journey == journey && $0.position == position
                 }.map(\.order).sorted()
-                guard sequence == Array(1...sequence.count) || sequence.isEmpty else {
+                guard sequence.isEmpty || sequence == Array(1...sequence.count) else {
                     throw CatalogLoadError.invalid("Journey step order is not contiguous")
                 }
             }
