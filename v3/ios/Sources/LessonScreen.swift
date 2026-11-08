@@ -18,6 +18,11 @@ struct LessonScreen: View {
     @State private var playbackRate: Float = 1
     @State private var guideVisible = false
     @State private var finished = false
+    @State private var showingSourceIntroduction = false
+
+    private var sourceIntroduction: NativeSourceIntroLesson? {
+        learner.sourceExposure?.preparation(for: lesson, mode: mode)
+    }
 
     private var sections: [PracticeSection] {
         NativePracticeRules.sections(for: lesson, mode: mode)
@@ -35,7 +40,11 @@ struct LessonScreen: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            if !finished {
+            if showingSourceIntroduction, let original = sourceIntroduction, dueItemIDs == nil {
+                SourceFirstIntroductionView(introduction: original) {
+                    showingSourceIntroduction = false
+                }
+            } else if !finished {
                 HStack {
                     Text("\(index + 1) / \(currentItems.count)")
                         .font(.subheadline.monospacedDigit())
@@ -169,11 +178,13 @@ struct LessonScreen: View {
                                                             progress: learner.profile.records,
                                                             mode: mode)
             }
+            showingSourceIntroduction = dueItemIDs == nil && sourceIntroduction != nil
             remember()
         }
         .onDisappear { audio.discard() }
         .onChange(of: index) { _, _ in resetCard(); remember() }
         .onChange(of: mode) { _, _ in
+            showingSourceIntroduction = dueItemIDs == nil && sourceIntroduction != nil
             batch = 0
             index = 0
             finished = false
