@@ -352,9 +352,8 @@ struct LessonScreen: View {
                     .foregroundStyle(.secondary)
             }
             if audio.hasRecording && !audio.isRecording {
-                Text("Your take stays on this device. Automatic pronunciation scoring is not enabled.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+                NativeSpeechPracticePanel(item: item, audio: audio)
+                    .id(item.id)
                 Button("Mark practised") {
                     learner.recordAttempt(item: item, mode: .speak, understood: nil)
                     advance()
