@@ -62,6 +62,8 @@ enum NativeFamilyError: Error, LocalizedError, Equatable {
     case unavailable
     case malformedResponse
     case cancelled
+    case notShareable
+    case alreadySharing
 
     var errorDescription: String? {
         switch self {
@@ -73,6 +75,8 @@ enum NativeFamilyError: Error, LocalizedError, Equatable {
         case .unavailable: return "The optional family service is unavailable. Offline learning still works."
         case .malformedResponse: return "The family service returned an unexpected response."
         case .cancelled: return "Connection was cancelled."
+        case .notShareable: return "Only a new practice activity from this connected session can be shared."
+        case .alreadySharing: return "This activity is already being shared."
         }
     }
 }
@@ -219,6 +223,36 @@ struct NativeFamilyAPI {
         return summary
     }
 
+    /// V2 is the ONLY authority that computes group XP; callers cannot send
+    /// client XP, dates, score, recording or result content.
+    static func activityRequest(account: NativeFamilyAccount,
+                                group: NativeFamilyGroup, event: LocalXPEvent) throws -> URLRequest {
+        guard account.groups.contains(group), event.regionID.count <= 40,
+              event.itemID.count <= 180, (1...5).contains(event.tier) else {
+            throw NativeFamilyError.notAuthorized
+        }
+        let payload = try JSONSerialization.data(withJSONObject: [
+            "item_id": event.itemID, "mode": event.mode.rawValue, "region": event.regionID
+        ])
+        return request(origin: account.origin,
+                       route: "groups/" + String(group.id) + "/activity",
+                       method: "POST", token: account.token, body: payload)
+    }
+
+    func shareActivity(event: LocalXPEvent, to group: NativeFamilyGroup,
+                       account: NativeFamilyAccount) async throws -> NativeFamilyActivityReceipt {
+        let req = try Self.activityRequest(account: account, group: group, event: event)
+        let data: Data
+        do {
+            data = try await perform(req)
+        } catch NativeFamilyError.invalidCredentials {
+            throw NativeFamilyError.notAuthorized
+        } catch NativeFamilyError.verificationRequired {
+            throw NativeFamilyError.notAuthorized
+        }
+        return try NativeFamilyActivityGuard.receipt(data, source: event)
+    }
+
     func logOut(account: NativeFamilyAccount) async {
         let request = Self.request(origin: account.origin, route: "logout",
                                    method: "POST", token: account.token)
@@ -233,6 +267,9 @@ final class NativeFamilySession: ObservableObject {
     @Published private(set) var groups: [NativeFamilyGroup] = []
     @Published private(set) var busy = false
     @Published private(set) var message: String?
+    @Published private(set) var shareResults: [String: NativeFamilyActivityReceipt] = [:]
+    @Published private(set) var sharingKeys: Set<String> = []
+    @Published private(set) var connectedAt: Date?
 
     private var currentAccount: NativeFamilyAccount?
     private let api: NativeFamilyAPI
@@ -259,12 +296,18 @@ final class NativeFamilySession: ObservableObject {
             currentAccount = account
             connectedUser = account.user
             groups = account.groups
+            connectedAt = Date()
+            shareResults = [:]
+            sharingKeys = []
         } catch {
             if token == generation {
                 speech.disconnect()
                 currentAccount = nil
                 connectedUser = nil
                 groups = []
+                connectedAt = nil
+                shareResults = [:]
+                sharingKeys = []
                 message = (error as? LocalizedError)?.errorDescription ??
                     NativeFamilyError.unavailable.errorDescription
             }
@@ -278,12 +321,63 @@ final class NativeFamilySession: ObservableObject {
         return try await api.summary(for: group, account: account)
     }
 
+    /// Explicit user click only. Never auto-upload history after login,
+    /// app startup, reconnect or offline return.
+    func recentShareCandidates(in learner: LocalLearningStore) -> [LocalXPEvent] {
+        guard currentAccount != nil, let connectedAt else { return [] }
+        return NativeFamilyActivityGuard.candidates(
+            events: learner.expedition.events, lessons: learner.lessons,
+            regions: learner.regions, connectedAt: connectedAt)
+    }
+
+    func receipt(for event: LocalXPEvent, group: NativeFamilyGroup) -> NativeFamilyActivityReceipt? {
+        shareResults[Self.shareKey(for: event, group: group)]
+    }
+
+    func isSharing(event: LocalXPEvent, group: NativeFamilyGroup) -> Bool {
+        sharingKeys.contains(Self.shareKey(for: event, group: group))
+    }
+
+    static func shareKey(for event: LocalXPEvent, group: NativeFamilyGroup) -> String {
+        String(group.id) + "|" + event.id
+    }
+
+    @discardableResult
+    func share(eventID: String, group: NativeFamilyGroup,
+               learner: LocalLearningStore) async throws -> NativeFamilyActivityReceipt {
+        guard let account = currentAccount, let connectedAt,
+              account.groups.contains(group) else {
+            throw NativeFamilyError.notAuthorized
+        }
+        let candidates = NativeFamilyActivityGuard.candidates(
+            events: learner.expedition.events, lessons: learner.lessons,
+            regions: learner.regions, connectedAt: connectedAt)
+        guard let selected = candidates.first(where: { $0.id == eventID }) else {
+            throw NativeFamilyError.notShareable
+        }
+        let key = Self.shareKey(for: selected, group: group)
+        if let existing = shareResults[key] { return existing }
+        guard !sharingKeys.contains(key) else { throw NativeFamilyError.alreadySharing }
+        let started = generation
+        sharingKeys.insert(key)
+        defer { sharingKeys.remove(key) }
+        let result = try await api.shareActivity(event: selected, to: group, account: account)
+        guard started == generation, !Task.isCancelled else {
+            throw NativeFamilyError.cancelled
+        }
+        shareResults[key] = result
+        return result
+    }
+
     func signOut(speech: NativeSpeechSession) async {
         let account = currentAccount
         generation = UUID()  // invalidates any in-flight sign-in
         currentAccount = nil
         connectedUser = nil
         groups = []
+        connectedAt = nil
+        sharingKeys = []
+        shareResults = []
         busy = false
         message = nil
         speech.disconnect() // immediate in-memory secret wipe
