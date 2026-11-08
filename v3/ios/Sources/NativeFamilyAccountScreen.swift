@@ -125,6 +125,11 @@ private struct NativeFamilyGroupScreen: View {
                     LabeledContent("Group XP", value: String(summary.totals.weekly_xp))
                     LabeledContent("Regions unlocked", value: String(summary.totals.regions_unlocked))
                 }
+                Section("Family expedition") {
+                    NativeFamilyGroupMap(sourceRegions: learner.regions,
+                                         contributions: summary.regions)
+                        .padding(.vertical, 8)
+                }
                 Section("Group members") {
                     ForEach(summary.members) { member in
                         HStack {
