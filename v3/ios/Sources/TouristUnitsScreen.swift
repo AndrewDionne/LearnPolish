@@ -109,6 +109,7 @@ struct TouristStepScreen: View {
     @State private var playbackRate: Float = 1
     @State private var showingIntroduction = false
     @State private var revealed = false
+    @State private var speechFeedback: NativeSpeechFeedback?
     @State private var selected: String?
     @State private var finished = false
     @State private var completed = false
@@ -298,7 +299,8 @@ struct TouristStepScreen: View {
 
     private var speakActivity: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text(item.polish).font(.title2.bold()).textSelection(.enabled)
+            NativeSpeechWord(polish: item.polish, feedback: speechFeedback)
+                .font(.title2.bold())
             Text(item.english).font(.body).foregroundStyle(.secondary)
             playback
             HStack {
@@ -329,7 +331,8 @@ struct TouristStepScreen: View {
             }
             if audio.hasRecording && !audio.isRecording {
                 if let original = learner.originalTouristItem(item.id, unit: unit, stepIndex: stepIndex) {
-                    NativeSpeechPracticePanel(item: original, audio: audio)
+                    NativeSpeechPracticePanel(item: original, audio: audio,
+                                              feedback: $speechFeedback)
                         .id(item.id)
                 }
                 Button("Mark practised") {
@@ -410,6 +413,7 @@ struct TouristStepScreen: View {
     }
 
     private func resetCard() {
+        speechFeedback = nil
         audio.discard()
         revealed = false
         selected = nil
