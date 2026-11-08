@@ -293,16 +293,20 @@ struct ProgressScreen: View {
             }
             Section("Storage") {
                 Label("Learning works offline", systemImage: "iphone")
-                Text("Progress is saved privately on this device. Cloud backup and family groups are not yet connected in V3.")
+                Text("Progress is saved privately on this device. CloudKit backup and automatic family sharing are not enabled.")
                     .foregroundStyle(.secondary)
                 if let error = learner.saveError {
                     Text(error).foregroundStyle(.red)
                 }
             }
-            Section("Account") {
-                Text("No account is needed to learn.")
-                Text("Optional sync and group invitations will be added after privacy and sharing tests.")
-                    .foregroundStyle(.secondary)
+            Section("Optional family") {
+                NavigationLink {
+                    NativeFamilyAccountScreen()
+                } label: {
+                    Label("Family connection and weekly scores", systemImage: "person.2")
+                }
+                Text("An account is not needed to learn. Family connection is voluntary; personal progress stays on this iPhone.")
+                    .font(.footnote).foregroundStyle(.secondary)
             }
         }
         .navigationTitle("My progress")
