@@ -13,6 +13,7 @@ struct LocalLearner: Codable {
     // A device-local record identifier, never a login or API credential.
     var localID = UUID()
     var firstOpened = Date()
+    var lastCoreLessonID: String?
     var lastLessonID: String?
     var lastItemID: String?
     var lastMode: PracticeMode?
@@ -22,6 +23,7 @@ struct LocalLearner: Codable {
 @MainActor final class LocalLearningStore: ObservableObject {
     @Published private(set) var profile: LocalLearner
     @Published private(set) var lessons: [Lesson] = []
+    @Published private(set) var coreJourney: CoreJourney?
     @Published private(set) var catalogError: String?
     @Published private(set) var saveError: String?
 
@@ -48,17 +50,22 @@ struct LocalLearner: Codable {
             canSave = true
         }
         do {
-            lessons = try CatalogLoader.load(bundle: bundle)
+            let source = try CatalogLoader.load(bundle: bundle)
+            let journey = try CoreJourney(lessons: source, bundle: bundle)
+            lessons = source
+            coreJourney = journey
         } catch {
             catalogError = error.localizedDescription
         }
     }
 
-    var course: [Lesson] { lessons.filter { $0.curriculum?.stage != "practice" } }
+    var course: [Lesson] { coreJourney?.ordered ?? [] }
+    var explore: [Lesson] { coreJourney?.explore ?? [] }
     var nextLesson: Lesson? {
-        if let id = profile.lastLessonID, let lesson = lessons.first(where: { $0.id == id }) {
-            return lesson
-        }
+        if let id = profile.lastCoreLessonID,
+           let lesson = course.first(where: { $0.id == id }) { return lesson }
+        if let id = profile.lastLessonID,
+           let lesson = course.first(where: { $0.id == id }) { return lesson }
         return course.first
     }
 
@@ -71,7 +78,7 @@ struct LocalLearner: Codable {
 
     var dueReviews: [(Lesson, LessonItem)] {
         let now = Date()
-        return course.flatMap { lesson in
+        return lessons.filter { $0.kind != "reading" }.flatMap { lesson in
             lesson.items.compactMap { item -> (Lesson, LessonItem)? in
                 guard let record = profile.records["learn:" + item.id],
                       let due = record.nextReview, due <= now else { return nil }
@@ -89,6 +96,9 @@ struct LocalLearner: Codable {
               profile.lastItemID != item.id ||
               profile.lastMode != mode else { return }
         profile.lastLessonID = lesson.id
+        if coreJourney?.placements[lesson.id] != nil {
+            profile.lastCoreLessonID = lesson.id
+        }
         profile.lastItemID = item.id
         profile.lastMode = mode
         save()
@@ -105,7 +115,8 @@ struct LocalLearner: Codable {
             if understood {
                 record.reviewLevel = min(record.reviewLevel + 1, 7)
                 let days = [1, 3, 7, 14, 30, 60, 90][record.reviewLevel - 1]
-                record.nextReview = Calendar.current.date(byAdding: .day, value: days, to: Date())
+                // V2 review.ts uses elapsed 24-hour days, not calendar-day DST shifts.
+                record.nextReview = Date().addingTimeInterval(TimeInterval(days) * 86_400)
             } else {
                 record.reviewLevel = 0
                 record.nextReview = Date()
