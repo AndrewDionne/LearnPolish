@@ -338,6 +338,7 @@ struct TouristStepScreen: View {
                     advance()
                 }
                 .buttonStyle(.borderedProminent)
+                .disabled(!audio.usableRecording)
             }
             Text("Recordings stay on this iPhone unless you explicitly authorize a connected pronunciation check.")
                 .font(.footnote).foregroundStyle(.secondary)
