@@ -6,6 +6,10 @@ on:
       - ".github/workflows/v3-ios.yml"
   workflow_dispatch:
 
+concurrency:
+  group: v3-native-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   native-build:
     runs-on: macos-15
