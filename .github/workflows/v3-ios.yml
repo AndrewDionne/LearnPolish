@@ -29,6 +29,8 @@ jobs:
         run: node --test v3/ios/scripts/prepare-sounds.test.mjs
       - name: Verify source-first reading and listening preparation
         run: node --test v3/ios/scripts/prepare-exposure.test.mjs
+      - name: Verify tourist scenarios and original audio identities
+        run: node --test v3/ios/scripts/prepare-tourist.test.mjs
       - name: Generate project
         working-directory: v3/ios
         run: xcodegen generate --spec project.yml
