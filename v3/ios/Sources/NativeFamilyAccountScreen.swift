@@ -43,6 +43,10 @@ struct NativeFamilyAccountScreen: View {
                 }
                 Section {
                     Button("Sign out") {
+                        // Never carry an adult declaration into another login
+                        // from the same visible settings screen.
+                        adultPilotConfirmed = false
+                        password = ""
                         Task { await family.signOut(speech: speech) }
                     }
                 }
