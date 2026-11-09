@@ -107,7 +107,7 @@ import XCTest
         let third = event(item, id: UUID(), actor: actorA,
                           at: date("2026-11-11T10:00:00Z"))
         let candidate = try NativeXPReconciliation.candidate(
-            journal([third, first, second], start: start), lessons: lessons)
+            journal: journal([third, first, second], start: start), lessons: lessons)
         XCTAssertEqual(candidate.awards.count, 3)
         XCTAssertEqual(candidate.totalEffortXP, 3 * baseXP)
         XCTAssertEqual(candidate.awards.map(\.expeditionXP),
@@ -165,7 +165,7 @@ import XCTest
         let speaking = event(item, id: secondID, actor: actorA, at: time,
                              mode: .speak, outcome: .recorded)
         let candidate = try NativeXPReconciliation.candidate(
-            journal([speaking, learning], start: start), lessons: lessons)
+            journal: journal([speaking, learning], start: start), lessons: lessons)
         XCTAssertEqual(candidate.awards.count, 2)
         XCTAssertEqual(candidate.totalEffortXP, 2 * baseXP)
         XCTAssertEqual(candidate.totalExpeditionXP, 2 * baseXP)
@@ -281,7 +281,7 @@ import XCTest
         let second = event(item, id: secondID, actor: actorB,
                            at: date("2026-11-09T11:00:00Z"), regionID: regions[1].id)
         let candidate = try NativeXPReconciliation.candidate(
-            journal([second, first], start: date("2026-11-08T00:00:00Z")),
+            journal: journal([second, first], start: date("2026-11-08T00:00:00Z")),
             lessons: lessons)
         XCTAssertEqual(candidate.awards.count, 1)
         XCTAssertEqual(candidate.awards.first?.regionID, regions[0].id)
