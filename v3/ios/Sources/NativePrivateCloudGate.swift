@@ -206,6 +206,22 @@ struct NativePrivateCloudGate: Codable {
         }
     }
 
+    /// Commit only a server-verified revision, never a local guessed
+    /// generation. A future adapter must persist this checkpoint after
+    /// successfully saving an atomic CloudKit record.
+    mutating func observeVerifiedServerRevision(
+        _ confirmed: NativePrivateCloudSnapshot
+    ) throws {
+        guard phase == .active,
+              let scope,
+              confirmed.scope == scope,
+              confirmed.generation >= knownGeneration,
+              confirmed.generation > 0 else {
+            throw NativePrivateCloudGateError.staleRemoteRevision
+        }
+        knownGeneration = confirmed.generation
+    }
+
     /// This is a tombstone *proposal*, not a deletion claim. The future
     /// adapter must publish it via server-checked conditional change and
     /// verify the remote acknowledgement before clearing anything.
