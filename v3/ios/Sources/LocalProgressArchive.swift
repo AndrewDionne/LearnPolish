@@ -29,6 +29,8 @@ struct LocalProgressArchive: Codable {
               Set(sourceLessonIDs).count == sourceLessonIDs.count,
               profile.records.count <= 100_000,
               (profile.expedition?.events.count ?? 0) <= 20_000,
+              (profile.practiceJournal?.schemaVersion ?? 1) == NativePracticeJournal.currentSchema,
+              (profile.practiceJournal?.events.count ?? 0) <= NativePracticeJournal.maximumEvents,
               profile.records.allSatisfy({
                   !$0.key.isEmpty && $0.value.attempts >= 0 &&
                   $0.value.completed >= 0 &&
