@@ -328,7 +328,10 @@ struct LocalProgressBackup: Identifiable {
         regions.contains(where: { $0.id == expedition.selectedRegion }) else {
             return false
         }
-        let now = Date()
+        // The existing JSON codec preserves whole-second ISO8601 dates.
+        // Canonicalize new source events before persistence so two exported
+        // copies have bit-identical timestamps and UUID payloads.
+        let now = Date(timeIntervalSince1970: floor(Date().timeIntervalSince1970))
         var next = profile
         var journal = next.practiceJournal ?? NativePracticeJournal(
             startedAt: now,
