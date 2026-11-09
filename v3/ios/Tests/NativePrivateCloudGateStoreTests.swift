@@ -48,7 +48,6 @@ import XCTest
         defer { try? FileManager.default.removeItem(at: folder) }
         let learner = linked()
         let store = try NativePrivateCloudGateStore(storageURL: file)
-        activateSuccess:
         try activate(store, learner: learner)
         XCTAssertEqual(store.gate.phase, .active)
         let recovered = try NativePrivateCloudGateStore(storageURL: file)
