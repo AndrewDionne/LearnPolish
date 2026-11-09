@@ -278,4 +278,87 @@ import XCTest
             core: original.coreJourney))
         XCTAssertEqual(try Data(contentsOf: path), before)
     }
+
+    func testSameSecondRatingsFollowRecordedActorSequenceNotRandomUUID() throws {
+        let original = try item()
+        let actor = UUID(uuidString: "aaaaaaaa-0000-0000-0000-000000000001")!
+        let second = Date(timeIntervalSince1970: 1_760_000_001)
+        // The first action's UUID sorts LAST to prove we never reorder
+        // two fast ratings of the same flashcard by random UUID.
+        let first = NativePracticeEvent(
+            id: UUID(uuidString: "ffffffff-0000-0000-0000-000000000001")!,
+            actorID: actor, itemID: original.id, mode: .learn,
+            at: second, outcome: .needsPractice,
+            regionID: "mazowieckie", actorSequence: 1)
+        let last = NativePracticeEvent(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
+            actorID: actor, itemID: original.id, mode: .learn,
+            at: second, outcome: .understood,
+            regionID: "mazowieckie", actorSequence: 2)
+        let journal = NativePracticeJournal(
+            startedAt: second, hasLegacyHistory: false, events: [last, first])
+        try journal.validateSource(lessons: catalog())
+        let projected = try journal.projectedRecords(lessons: catalog())
+        XCTAssertEqual(projected["learn:" + original.id]?.attempts, 2)
+        XCTAssertEqual(projected["learn:" + original.id]?.completed, 1)
+        XCTAssertEqual(projected["learn:" + original.id]?.reviewLevel, 1)
+        XCTAssertEqual(projected["learn:" + original.id]?.nextReview,
+                       second.addingTimeInterval(86_400))
+        let awards = try NativeXPReconciliation.candidate(
+            journal: journal, lessons: catalog())
+        XCTAssertEqual(awards.awards.count, 1)
+        XCTAssertEqual(awards.awards.first?.eventID, first.id,
+                       "First recorded answer owns the single daily XP award")
+    }
+
+    func testDuplicateOrForgedActorSequenceFailsSourceValidation() throws {
+        let original = try item()
+        let actor = UUID()
+        let moment = Date(timeIntervalSince1970: 1_760_000_000)
+        func entry(_ id: UUID, _ position: Int) -> NativePracticeEvent {
+            NativePracticeEvent(id: id, actorID: actor,
+                                itemID: original.id, mode: .learn,
+                                at: moment, outcome: .understood,
+                                regionID: "mazowieckie", actorSequence: position)
+        }
+        let duplicate = NativePracticeJournal(startedAt: moment,
+            hasLegacyHistory: false, events: [entry(UUID(), 1), entry(UUID(), 1)])
+        XCTAssertThrowsError(try duplicate.validateSource(lessons: catalog()))
+        let zero = NativePracticeJournal(startedAt: moment,
+            hasLegacyHistory: false, events: [entry(UUID(), 0)])
+        XCTAssertThrowsError(try zero.validateSource(lessons: catalog()))
+    }
+
+    func testPreviousExportWithoutActorSequenceIsReadable() throws {
+        let original = try item()
+        let time = Date(timeIntervalSince1970: 1_760_000_000)
+        let historical = NativePracticeEvent(id: UUID(), actorID: UUID(),
+            itemID: original.id, mode: .learn, at: time,
+            outcome: .understood, regionID: "mazowieckie")
+        let data = try JSONEncoder().encode(historical)
+        var json = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String:Any])
+        json.removeValue(forKey: "actorSequence")
+        let decoded = try JSONDecoder().decode(NativePracticeEvent.self,
+            from: JSONSerialization.data(withJSONObject: json))
+        XCTAssertNil(decoded.actorSequence)
+        let journal = NativePracticeJournal(startedAt: time,
+            hasLegacyHistory: false, events: [decoded])
+        XCTAssertNoThrow(try journal.validateSource(lessons: catalog()))
+    }
+
+    func testRealLocalAttemptsPersistIncreasingPerActorSequence() throws {
+        let (dir, url) = storage()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let learner = LocalLearningStore(storageURL: url)
+        let source = try item()
+        XCTAssertTrue(learner.recordAttempt(item: source, mode: .learn, understood: false))
+        XCTAssertTrue(learner.recordAttempt(item: source, mode: .learn, understood: true))
+        XCTAssertEqual(learner.profile.practiceJournal?.events.map(\.actorSequence), [1, 2])
+        let reloaded = LocalLearningStore(storageURL: url)
+        XCTAssertNil(reloaded.catalogError)
+        XCTAssertEqual(reloaded.profile.practiceJournal?.events.map(\.actorSequence), [1, 2])
+        XCTAssertEqual(reloaded.record(for: source, mode: .learn).reviewLevel, 1)
+        XCTAssertNoThrow(try reloaded.profile.practiceJournal?.projectedRecords(
+            lessons: reloaded.lessons))
+    }
 }
