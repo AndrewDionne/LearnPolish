@@ -13,6 +13,32 @@ progress without provider audio, family credentials or sessions. Local erase
 must be separately confirmed, replace the learner atomically and never touch
 server-held family contributions or a prior export. Neither action uses iCloud.
 
+## Current verified implementation boundary (2026-11-09)
+
+- `NativeCloudKitPrivateTransport.swift` now compiles as a real **manually invoked**
+  private-CloudKit adapter with `CKDatabase.modifyRecords` using
+  `ifServerRecordUnchanged`. The app has **not activated** the capability:
+  no CloudKit entitlement/CKContainer provisioning, app-start call, Apple ID
+  connection, automatic background work or user-facing "Sync on" control.
+- The server record stores only a bounded, source-validated journal or a
+  retained tombstone. Manual uploads fail when another phone has events that
+  were not merged into the current journal; a newer server change tag is a
+  conflict, never an invitation to overwrite. Remote deletion writes a
+  generation-bound tombstone to the existing record, not a record/zone delete.
+  A private locally persisted policy file protects account-switch, pending
+  deletion, and verified revision state across app restarts.
+- **156 XCTest green** on [Actions #42691929108](https://github.com/AndrewDionne/LearnPolish/actions/runs/42691929108)
+  confirms code compatibility and pure offline boundary tests, **not live
+  CloudKit behavior**. The initial single-record v1 payload is capped at
+  450 KB; chunking/versioned pagination will be needed for larger journals.
+- Before any feature activation: owner-authorized Apple Developer iCloud
+  container and entitlements, explicit account-status and ownership UX,
+  independent guardian permissions for minors, actual two-device races and
+  deletion tombstone verification, cloud quota/offline/kill tests, and
+  conflict-safe signed-device end-to-end results. No blanket iCloud data
+  deletion is represented as completed until CloudKit acknowledges it.
+  CloudKit remains separate from the existing Neon family service.
+
 ## Apple platform contract
 
 - Use the user's CloudKit *private database*, never a public roster; account
