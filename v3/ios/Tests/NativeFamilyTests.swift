@@ -418,7 +418,7 @@ private final class MockFamilyProtocol: URLProtocol {
         let valid = make(now.addingTimeInterval(-30), items[0].id)
         let beforeLogin = make(start.addingTimeInterval(-1), items[1].id)
         let future = make(now.addingTimeInterval(2), items[2].id)
-        let priorUTCday = make(Date(timeIntervalSince1970: 1_759_968_000), items[3].id)
+        let priorUTCday = make(now.addingTimeInterval(-86_430), items[3].id)
         let corrupt = LocalXPEvent(id: "corrupt", itemID: items[4].id, mode: .learn,
                   at: now.addingTimeInterval(-10), xp: 100, baseXP: 100,
                   expeditionXP: 10, tier: 1, regionID: "mazowieckie")
