@@ -30,6 +30,23 @@ struct LocalLearner: Codable {
     var practiceJournal: NativePracticeJournal?
 }
 
+struct LocalRestorePreview: Identifiable {
+    let id = UUID()
+    let archive: LocalProgressArchive
+    let expectedLocalProfile: Data
+    let source: String
+    var importedAttempts: Int {
+        archive.profile.records.values.reduce(0) { $0 + $1.attempts }
+    }
+    var importedXP: Int { archive.profile.expedition?.totalXP ?? 0 }
+}
+
+struct LocalProgressBackup: Identifiable {
+    let url: URL
+    let savedAt: Date
+    var id: URL { url }
+}
+
 @MainActor final class LocalLearningStore: ObservableObject {
     @Published private(set) var profile: LocalLearner
     @Published private(set) var lessons: [Lesson] = []
@@ -353,6 +370,144 @@ struct LocalLearner: Codable {
             saveError = "Progress could not be saved. No new attempt or XP was recorded."
             return false
         }
+    }
+
+    private var localBackupDirectory: URL {
+        storageURL.deletingLastPathComponent()
+            .appendingPathComponent("RestoreBackups", isDirectory: true)
+    }
+
+    private func encodedProfile(_ candidate: LocalLearner) throws -> Data {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = [.sortedKeys]
+        return try encoder.encode(candidate)
+    }
+
+    /// UI-controlled file access. A maliciously large document is rejected
+    /// *before* decoding or opening a confirmation dialog.
+    private func readBoundedData(from file: URL) throws -> Data {
+        let handle = try FileHandle(forReadingFrom: file)
+        defer { try? handle.close() }
+        var data = Data()
+        while data.count <= 16_000_000 {
+            let available = min(65_536, 16_000_001 - data.count)
+            let chunk = try handle.read(upToCount: available) ?? Data()
+            if chunk.isEmpty { break }
+            data.append(chunk)
+        }
+        guard data.count <= 16_000_000 else {
+            throw LocalProgressArchiveError.invalid
+        }
+        return data
+    }
+
+    private func verifyRestoreArchive(_ archive: LocalProgressArchive) throws {
+        guard canSave, catalogError == nil, saveError == nil else {
+            throw LocalProgressArchiveError.unavailable
+        }
+        try LocalRestoreValidation.validate(archive,
+            lessons: lessons, regions: regions,
+            guided: guidedFoundations, touristUnits: touristUnits,
+            core: coreJourney)
+    }
+
+    private func preview(_ archive: LocalProgressArchive,
+                         source: String) throws -> LocalRestorePreview {
+        try verifyRestoreArchive(archive)
+        return LocalRestorePreview(archive: archive,
+                                   expectedLocalProfile: try encodedProfile(profile),
+                                   source: source)
+    }
+
+    func previewImportedProgress(from file: URL) throws -> LocalRestorePreview {
+        let accessed = file.startAccessingSecurityScopedResource()
+        defer { if accessed { file.stopAccessingSecurityScopedResource() } }
+        let archive = try LocalProgressArchive.decode(readBoundedData(from: file))
+        return try preview(archive, source: "Selected progress file")
+    }
+
+    /// RestoreBackups are private internal JSON archives, not CloudKit
+    /// records. No automatic restore or deletion ever occurs.
+    var localRestoreBackups: [LocalProgressBackup] {
+        let manager = FileManager.default
+        guard let urls = try? manager.contentsOfDirectory(
+            at: localBackupDirectory,
+            includingPropertiesForKeys: [.isRegularFileKey, .isSymbolicLinkKey,
+                                         .creationDateKey],
+            options: [.skipsHiddenFiles]) else { return [] }
+        return urls.compactMap { file -> LocalProgressBackup? in
+            guard file.lastPathComponent.hasPrefix("local-backup-"),
+                  file.pathExtension == "json",
+                  let values = try? file.resourceValues(forKeys:
+                      [.isRegularFileKey, .isSymbolicLinkKey, .creationDateKey]),
+                  values.isRegularFile == true, values.isSymbolicLink != true else { return nil }
+            return LocalProgressBackup(url: file, savedAt: values.creationDate ?? .distantPast)
+        }
+        .sorted { $0.savedAt > $1.savedAt }
+        .prefix(20)
+        .map { $0 }
+    }
+
+    func previewLocalBackup(_ backup: LocalProgressBackup) throws -> LocalRestorePreview {
+        // File-system scope is restricted to the private app-owned directory;
+        // a symbolic link to an arbitrary user document is never accepted.
+        guard backup.url.deletingLastPathComponent().standardizedFileURL ==
+                  localBackupDirectory.standardizedFileURL,
+              localRestoreBackups.contains(where: { $0.url == backup.url }) else {
+            throw LocalProgressArchiveError.invalid
+        }
+        let archive = try LocalProgressArchive.decode(readBoundedData(from: backup.url))
+        return try preview(archive, source: "Earlier local backup")
+    }
+
+    /// User-confirmed FULL REPLACEMENT only. This deliberately cannot merge
+    /// XP, account identity, tourist state or a CloudKit sync epoch.
+    /// A recoverable verified backup is written BEFORE any replacement.
+    @discardableResult
+    func restoreLocalProgress(_ candidate: LocalRestorePreview) throws -> URL {
+        try verifyRestoreArchive(candidate.archive)
+        guard try encodedProfile(profile) == candidate.expectedLocalProfile else {
+            throw LocalProgressArchiveError.changedSincePreview
+        }
+        if FileManager.default.fileExists(atPath: storageURL.path) {
+            let diskBytes = try readBoundedData(from: storageURL)
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            guard let diskProfile = try? decoder.decode(LocalLearner.self, from: diskBytes),
+                  try encodedProfile(diskProfile) == candidate.expectedLocalProfile else {
+                throw LocalProgressArchiveError.changedSincePreview
+            }
+        }
+        // Refuse to replace an invalid existing profile with a seemingly good
+        // incoming file. An archive must always be exportable for recovery.
+        let current = LocalProgressArchive(profile: profile,
+            sourceLessonIDs: lessons.map(\.id))
+        try LocalRestoreValidation.validate(current, lessons: lessons, regions: regions,
+            guided: guidedFoundations, touristUnits: touristUnits, core: coreJourney)
+        let priorBytes = try current.encoded()
+        let backupURL = localBackupDirectory.appendingPathComponent(
+            "local-backup-" + UUID().uuidString + ".json")
+        do {
+            try FileManager.default.createDirectory(at: localBackupDirectory,
+                                                    withIntermediateDirectories: true)
+            try priorBytes.write(to: backupURL,
+                                 options: [.atomic, .completeFileProtectionUnlessOpen])
+            guard try readBoundedData(from: backupURL) == priorBytes else {
+                throw LocalProgressArchiveError.backupFailed
+            }
+        } catch {
+            throw LocalProgressArchiveError.backupFailed
+        }
+        do {
+            try persist(candidate.archive.profile)
+        } catch {
+            // The backup remains available even if an atomic replacement fails.
+            throw LocalProgressArchiveError.restoreFailed
+        }
+        profile = candidate.archive.profile
+        saveError = nil
+        return backupURL
     }
 
     /// A file export is a user-controlled plaintext copy of *local* learning
