@@ -64,10 +64,12 @@ struct LocalExpedition: Codable {
     }
 
     @discardableResult
-    mutating func award(itemID: String, mode: PracticeMode, tier: Int, at: Date = Date()) -> LocalXPEvent? {
+    mutating func award(itemID: String, mode: PracticeMode, tier: Int, at: Date = Date(),
+                        useUTCDay: Bool = false) -> LocalXPEvent? {
         guard (1...5).contains(tier), events.count < 20_000,
               !itemID.isEmpty, itemID.count < 181 else { return nil }
-        let calendar = Calendar.current
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = useUTCDay ? TimeZone(secondsFromGMT: 0)! : .current
         let date = calendar.dateComponents([.year, .month, .day], from: at)
         guard let year = date.year, let month = date.month, let day = date.day else { return nil }
         let dayKey = String(format: "%04d-%02d-%02d", year, month, day)
