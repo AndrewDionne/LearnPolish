@@ -12,6 +12,10 @@ struct PracticeRecord: Codable {
 struct LocalLearner: Codable {
     // A device-local record identifier, never a login or API credential.
     var localID = UUID()
+    // The anonymous learner follows a deliberately restored profile. This
+    // separate actor stays specific to the receiving device and must never
+    // be copied from another phone's archive.
+    var deviceActorID: UUID?
     var firstOpened = Date()
     // Independent guided pathway cursor: never rewrites source lesson IDs.
     var guidedStepID: String?
@@ -331,7 +335,8 @@ struct LocalProgressBackup: Identifiable {
                 !(next.expedition?.events.isEmpty ?? true))
         let outcome: NativePracticeEvent.Outcome = mode == .speak ? .recorded :
             (understood == true ? .understood : .needsPractice)
-        let entry = NativePracticeEvent(id: UUID(), actorID: next.localID,
+        let entry = NativePracticeEvent(id: UUID(),
+            actorID: next.deviceActorID ?? next.localID,
             itemID: item.id, mode: mode, at: now, outcome: outcome,
             regionID: (next.expedition ?? LocalExpedition()).selectedRegion)
         do {
@@ -530,13 +535,18 @@ struct LocalProgressBackup: Identifiable {
         } catch {
             throw LocalProgressArchiveError.backupFailed
         }
+        // The imported learner identity and journal epoch are owner-chosen,
+        // but never import the source phone's actor identity. The receiving
+        // device keeps its own actor across all future attempts.
+        var restored = candidate.archive.profile
+        restored.deviceActorID = profile.deviceActorID ?? profile.localID
         do {
-            try persist(candidate.archive.profile)
+            try persist(restored)
         } catch {
             // The backup remains available even if an atomic replacement fails.
             throw LocalProgressArchiveError.restoreFailed
         }
-        profile = candidate.archive.profile
+        profile = restored
         saveError = nil
         return backupURL
     }
