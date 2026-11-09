@@ -2,6 +2,20 @@
 
 **2026-11-08. Owner direction: continue developing the full native application; defer owner Xcode install/physical testing until substantially feature-complete.** Automated macOS Xcode builds and iPhone Simulator tests remain required on every tranche. The native PR stays draft until release gates are satisfied.
 
+## V3-07C — real CloudKit private-record transport, manually invoked and not yet activated (2026-11-09)
+
+**Exact verified implementation code head:** `791e3ae7af044b8e503baaa1efff89b9a13154b8`. [Actions #42691929108](https://github.com/AndrewDionne/LearnPolish/actions/runs/42691929108) **SUCCESS** — native iPhone Simulator **BUILD SUCCEEDED**, **156 XCTest passed, 0 failures**, original V2 media/source integrity and Node tests passed.
+
+- Previous code at `9d56b2a014b46e145e5bb4538f3ab616339af1e1` [CI #42683775128](https://github.com/AndrewDionne/LearnPolish/actions/runs/42683775128) was fully green: 144 native XCTest passed, establishing safe offline account-pause/remote-delete-policy persistence across restarts.
+- `NativePrivateCloudGate.observeVerifiedServerRevision` tracks server-verified, monotonic revisions and refuses unrelated scopes or unverified generations.
+- New `NativeCloudKitPrivateTransport.swift` compiles against Apple's real CloudKit SDK. It uses the **private** database, verifies the active iCloud account only on explicitly invoked operations, stores a bounded original-source-valid `NativePracticeJournal` in a stable record, and uses CloudKit's `ifServerRecordUnchanged` **server change-tag compare-and-swap**. On a race it refuses to overwrite the newer record rather than silently retrying. Existing remote attempts not present on the device must be manually merged first.
+- Remote erase retains an authenticated generation-bound **tombstone in the same record** rather than deleting the record/zone, and the pending deletion remains locked by `NativePrivateCloudGateStore` until CloudKit returns a verified server acknowledgement. Source-constrained payload contains **no family account, microphone audio, speech-provider transcript, or client-computed XP**; v1 payload max 450 KB and rejects oversized journals rather than truncating.
+- New `NativeCloudKitPrivateTransportTests.swift` adds **12** native tests: source-bound encoded round-trip, epoch and original region integrity, refusal of legacy/unsupported/forged history, retained tombstone semantics, future schema rejection, size limit, generation check, privacy fields, and stale remote candidate constraints.
+- **Important release boundary:** This transport is **not referenced from first launch or the SwiftUI Progress screen** and **no CloudKit entitlement or container provisioning was added**. GitHub simulator compilation is NOT a real CloudKit account, network, concurrent private record, signed device, or deletion witness. Do not claim production iCloud sync is enabled. CKSyncEngine/push/background sync, conflict user experience, large journal chunking, quota handling and multi-device live service verification remain open. Existing opt-in private-family pilot, anonymous offline app, V2/Neon/Render and 4 family tester identities are untouched.
+- **Next:** signed account/entitlement provisioning and isolated CloudKit functional tests, two-device stale CAS/tombstone recovery, user-visible sync review/enable controls ONLY after the signed tests pass, independent guardian-authorized child features and real speech/editorial/hardware acceptance. Keep PR #169 draft.
+
+---
+
 ## V3-06B — immutable practice journal and offline merge candidate (2026-11-09)
 
 **Exact implementation code head:** `78173bacf33821ca629ae0dea4d9704e14265536`. **Native CI [#42608744715](https://github.com/AndrewDionne/LearnPolish/actions/runs/42608744715) PASS:** original source/audio checks and Node guard tests, iPhone Simulator **BUILD SUCCEEDED**, **78 XCTest passed, 0 failed**.
