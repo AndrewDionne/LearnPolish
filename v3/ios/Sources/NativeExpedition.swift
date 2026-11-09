@@ -68,8 +68,10 @@ struct LocalExpedition: Codable {
                         useUTCDay: Bool = false) -> LocalXPEvent? {
         guard (1...5).contains(tier), events.count < 20_000,
               !itemID.isEmpty, itemID.count < 181 else { return nil }
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = useUTCDay ? TimeZone(secondsFromGMT: 0)! : .current
+        // Preserve original single-device Calendar.current behavior until
+        // the owner explicitly confirms cross-device UTC reconciliation.
+        var calendar = useUTCDay ? Calendar(identifier: .gregorian) : Calendar.current
+        if useUTCDay { calendar.timeZone = TimeZone(secondsFromGMT: 0)! }
         let date = calendar.dateComponents([.year, .month, .day], from: at)
         guard let year = date.year, let month = date.month, let day = date.day else { return nil }
         let dayKey = String(format: "%04d-%02d-%02d", year, month, day)
