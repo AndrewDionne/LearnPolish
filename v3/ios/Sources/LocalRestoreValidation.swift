@@ -138,7 +138,7 @@ enum LocalRestoreValidation {
         }
 
         if let journal = profile.practiceJournal {
-            try journal.validateSource(lessons: lessons)
+            try journal.validateSource(lessons: lessons, regions: regions)
             guard journal.startedAt.timeIntervalSince1970.isFinite,
                   journal.events.allSatisfy({ $0.at <= archive.exportedAt.addingTimeInterval(300) }) else {
                 throw LocalProgressArchiveError.invalid
