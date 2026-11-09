@@ -239,4 +239,48 @@ import XCTest
         XCTAssertTrue(store.profile.practiceJournal?.hasLegacyHistory == true)
         XCTAssertEqual(store.profile.practiceJournal?.events.count, 1)
     }
+
+    func testExplicitBackupDeletionDoesNotDeleteCurrentProgressOrExportedCopy() throws {
+        let (store, folder, currentFile) = fresh()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let (_, original) = try source(store)
+        XCTAssertTrue(store.recordAttempt(item: original, mode: .learn, understood: true))
+        let externalExport = try saveArchive(try store.makeLocalExport().archive,
+                                             in: folder, name: "my-export.json")
+        let importedFile = try saveArchive(archive(LocalLearner(), on: store),
+                                           in: folder, name: "fresh-profile.json")
+        let pending = try store.previewImportedProgress(from: importedFile)
+        let backupURL = try store.restoreLocalProgress(pending)
+        XCTAssertEqual(store.localRestoreBackups.count, 1)
+        let savedCurrent = try Data(contentsOf: currentFile)
+        let beforeID = store.profile.localID
+        XCTAssertTrue(FileManager.default.fileExists(atPath: externalExport.path))
+
+        XCTAssertEqual(try store.deleteLocalRestoreBackups(), 1)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: backupURL.path))
+        XCTAssertTrue(store.localRestoreBackups.isEmpty)
+        XCTAssertEqual(try store.deleteLocalRestoreBackups(), 0)
+        XCTAssertEqual(store.profile.localID, beforeID)
+        XCTAssertEqual(try Data(contentsOf: currentFile), savedCurrent)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: externalExport.path))
+        XCTAssertEqual(try LocalProgressArchive.decode(Data(contentsOf: externalExport))
+                           .profile.expedition?.totalXP, 10)
+    }
+
+    func testCorruptedBackupCannotBePresentedOrUsedToChangeCurrentProgress() throws {
+        let (store, folder, currentFile) = fresh()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let (_, item) = try source(store)
+        XCTAssertTrue(store.recordAttempt(item: item, mode: .learn, understood: true))
+        let clean = try saveArchive(archive(LocalLearner(), on: store), in: folder)
+        _ = try store.restoreLocalProgress(store.previewImportedProgress(from: clean))
+        let prior = try XCTUnwrap(store.localRestoreBackups.first)
+        try Data("{broken backup".utf8).write(to: prior.url)
+        let saved = try Data(contentsOf: currentFile)
+        XCTAssertThrowsError(try store.previewLocalBackup(prior))
+        XCTAssertEqual(try Data(contentsOf: currentFile), saved)
+        XCTAssertEqual(store.profile.records.count, 0)
+        XCTAssertEqual(store.localRestoreBackups.count, 1,
+                       "Corrupt backup remains visible for diagnosis, not silently discarded")
+    }
 }
