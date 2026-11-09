@@ -65,6 +65,45 @@ struct NativePrivateCloudGate: Codable {
     private(set) var knownGeneration: UInt64 = 0
     private(set) var requestedTombstone: NativePrivateCloudTombstone?
 
+    /// Defensive decoding contract for the *separate*, device-local
+    /// synchronization policy file. A corrupt file must never make the
+    /// application resume remote writes or forget a pending tombstone.
+    func validatePersistedState() throws {
+        let empty = UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
+        if let scope {
+            guard (8...200).contains(scope.accountKey.count),
+                  !scope.accountKey.contains("@"),
+                  !scope.accountKey.contains(" "),
+                  scope.learnerID != empty,
+                  scope.journalEpoch != empty else {
+                throw NativePrivateCloudGateError.invalidTransition
+            }
+        }
+        switch phase {
+        case .off:
+            guard requestedTombstone == nil,
+                  scope != nil || knownGeneration == 0 else {
+                throw NativePrivateCloudGateError.invalidTransition
+            }
+        case .active, .pausedAccountChange:
+            guard scope != nil, requestedTombstone == nil else {
+                throw NativePrivateCloudGateError.invalidTransition
+            }
+        case .deletionPending:
+            guard let scope, let requestedTombstone,
+                  requestedTombstone.scope == scope,
+                  knownGeneration < UInt64.max,
+                  requestedTombstone.generation == knownGeneration + 1 else {
+                throw NativePrivateCloudGateError.invalidTransition
+            }
+        case .remotelyDeleted:
+            guard scope != nil, requestedTombstone == nil,
+                  knownGeneration > 0 else {
+                throw NativePrivateCloudGateError.invalidTransition
+            }
+        }
+    }
+
     /// Only a fully source-verified, complete journal with an explicitly
     /// accepted UTC linked epoch is eligible even to PROPOSE CloudKit opt-in.
     /// No account request occurs here and no child consent is implied.
