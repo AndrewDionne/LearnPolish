@@ -137,11 +137,42 @@ enum LocalRestoreValidation {
             }
         }
 
+        if profile.linkedUTCEpoch != nil && profile.practiceJournal == nil {
+            throw LocalProgressArchiveError.invalid
+        }
         if let journal = profile.practiceJournal {
             try journal.validateSource(lessons: lessons, regions: regions)
             guard journal.startedAt.timeIntervalSince1970.isFinite,
                   journal.events.allSatisfy({ $0.at <= archive.exportedAt.addingTimeInterval(300) }) else {
                 throw LocalProgressArchiveError.invalid
+            }
+            if let linkedEpoch = profile.linkedUTCEpoch {
+                guard linkedEpoch == journal.epochID,
+                      !journal.hasLegacyHistory else {
+                    throw LocalProgressArchiveError.invalid
+                }
+                let candidate = try NativeXPReconciliation.candidate(
+                    journal: journal, lessons: lessons)
+                let regionsProposal = try candidate.projectedRegions(
+                    verifiedSourceRegions: regions)
+                guard let map = profile.expedition,
+                      map.regionGoals == regionsProposal.goals,
+                      map.events.count == candidate.awards.count else {
+                    throw LocalProgressArchiveError.invalid
+                }
+                for (award, earned) in zip(candidate.awards, map.events) {
+                    guard let region = award.regionID,
+                          earned.id == award.mode.rawValue + ":" +
+                              award.itemID + ":" + award.utcDay,
+                          earned.at == award.at, earned.itemID == award.itemID,
+                          earned.mode == award.mode, earned.tier == award.tier,
+                          earned.regionID == region,
+                          earned.xp == award.effortXP,
+                          earned.baseXP == award.effortXP,
+                          earned.expeditionXP == award.expeditionXP else {
+                        throw LocalProgressArchiveError.invalid
+                    }
+                }
             }
             // Only a fully journalled history can be checked against aggregates;
             // older profiles remain valid without fabricated past events.
