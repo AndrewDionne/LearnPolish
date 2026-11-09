@@ -89,8 +89,11 @@ struct LocalProgressBackup: Identifiable {
             let sourceSounds = try NativeSoundStudio.load(lessons: source, bundle: bundle)
             let sourceIntroductions = try NativeSourceExposure.load(lessons: source, bundle: bundle)
             let tourists = try TouristCatalog.load(lessons: source, bundle: bundle)
-            // Source-drifted or malformed journals must not be saved over.
-            try profile.practiceJournal?.validateSource(lessons: source)
+            // Source-drifted or malformed journals must not be saved over,
+            // including unknown newer event region IDs. Old nil-region
+            // snapshots are compatible but not cloud-map eligible.
+            try profile.practiceJournal?.validateSource(
+                lessons: source, regions: sourceRegions)
             lessons = source
             coreJourney = journey
             regions = sourceRegions
@@ -314,7 +317,8 @@ struct LocalProgressBackup: Identifiable {
         guard canSave, let owner = lessons.first(where: { lesson in
             lesson.items.contains(where: { $0.id == item.id })
         }), owner.availableModes.contains(mode),
-        mode != .listen || (item.audio != nil && item.referenceReview != "practice_only") else {
+        mode != .listen || (item.audio != nil && item.referenceReview != "practice_only"),
+        regions.contains(where: { $0.id == expedition.selectedRegion }) else {
             return false
         }
         let now = Date()
@@ -328,7 +332,8 @@ struct LocalProgressBackup: Identifiable {
         let outcome: NativePracticeEvent.Outcome = mode == .speak ? .recorded :
             (understood == true ? .understood : .needsPractice)
         let entry = NativePracticeEvent(id: UUID(), actorID: next.localID,
-            itemID: item.id, mode: mode, at: now, outcome: outcome)
+            itemID: item.id, mode: mode, at: now, outcome: outcome,
+            regionID: (next.expedition ?? LocalExpedition()).selectedRegion)
         do {
             try journal.append(entry)
         } catch {
@@ -543,7 +548,8 @@ struct LocalProgressBackup: Identifiable {
         guard canSave, catalogError == nil, saveError == nil else {
             throw LocalProgressArchiveError.unavailable
         }
-        try profile.practiceJournal?.validateSource(lessons: lessons)
+        try profile.practiceJournal?.validateSource(
+            lessons: lessons, regions: regions)
         let snapshot = LocalProgressArchive(profile: profile,
             sourceLessonIDs: lessons.map(\.id))
         return try LocalProgressArchiveDocument(archive: snapshot)
