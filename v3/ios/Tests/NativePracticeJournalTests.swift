@@ -184,4 +184,44 @@ import XCTest
         XCTAssertNotEqual(prior.events.first?.actorID, after.events.first?.actorID)
         XCTAssertEqual(store.expedition.totalXP, 10)
     }
+
+    func testStorageFailureCannotPublishAttemptEventReviewOrXP() throws {
+        let (directory, _) = storage()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try FileManager.default.createDirectory(at: directory,
+                                                withIntermediateDirectories: true)
+        let parent = directory.appendingPathComponent("not-a-folder")
+        try Data("preserve".utf8).write(to: parent)
+        let learner = LocalLearningStore(storageURL: parent.appendingPathComponent("profile.json"))
+        let source = try item()
+        let initial = learner.profile.localID
+        XCTAssertFalse(learner.recordAttempt(item: source, mode: .learn, understood: true))
+        XCTAssertEqual(learner.profile.localID, initial)
+        XCTAssertTrue(learner.profile.records.isEmpty)
+        XCTAssertNil(learner.profile.practiceJournal)
+        XCTAssertEqual(learner.expedition.totalXP, 0)
+        XCTAssertNotNil(learner.saveError)
+        XCTAssertEqual(try Data(contentsOf: parent), Data("preserve".utf8))
+    }
+
+    func testOldXPOnlyProfileDoesNotClaimCompleteEventHistory() throws {
+        let (directory, path) = storage()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try FileManager.default.createDirectory(at: directory,
+                                                withIntermediateDirectories: true)
+        let source = try item()
+        var profile = LocalLearner()
+        var map = LocalExpedition()
+        _ = map.award(itemID: source.id, mode: .learn, tier: 1)
+        profile.expedition = map
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        try encoder.encode(profile).write(to: path)
+        let learner = LocalLearningStore(storageURL: path)
+        XCTAssertTrue(learner.profile.records.isEmpty)
+        XCTAssertEqual(learner.expedition.totalXP, 10)
+        XCTAssertTrue(learner.recordAttempt(item: source, mode: .speak, understood: nil))
+        XCTAssertTrue(learner.profile.practiceJournal?.hasLegacyHistory == true)
+        XCTAssertEqual(learner.profile.practiceJournal?.events.count, 1)
+    }
 }
