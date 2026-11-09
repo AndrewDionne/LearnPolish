@@ -224,4 +224,58 @@ import XCTest
         XCTAssertTrue(learner.profile.practiceJournal?.hasLegacyHistory == true)
         XCTAssertEqual(learner.profile.practiceJournal?.events.count, 1)
     }
+
+    func testRecordedRegionSnapshotIsAtomicAndSurvivesRegionSwitchRestartAndExport() throws {
+        let (folder, path) = storage()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let learner = LocalLearningStore(storageURL: path)
+        let item = try item()
+        let otherRegion = try XCTUnwrap(learner.regions.first { $0.id != "mazowieckie" })
+        learner.chooseRegion(otherRegion.id)
+        XCTAssertTrue(learner.recordAttempt(item: item, mode: .learn, understood: true))
+        let event = try XCTUnwrap(learner.profile.practiceJournal?.events.first)
+        XCTAssertEqual(event.regionID, otherRegion.id)
+        XCTAssertEqual(learner.expedition.events.first?.regionID, otherRegion.id)
+
+        learner.chooseRegion("mazowieckie")
+        XCTAssertEqual(learner.profile.practiceJournal?.events.first?.regionID, otherRegion.id,
+                       "A later map selection must not rewrite past source metadata")
+        let reopened = LocalLearningStore(storageURL: path)
+        XCTAssertNil(reopened.catalogError)
+        XCTAssertEqual(reopened.profile.practiceJournal?.events.first?.regionID, otherRegion.id)
+        let json = try reopened.makeLocalExport().archive.encoded()
+        let restored = try LocalProgressArchive.decode(json)
+        XCTAssertEqual(restored.profile.practiceJournal?.events.first?.regionID, otherRegion.id)
+        XCTAssertNoThrow(try reopened.profile.practiceJournal?.validateSource(
+            lessons: reopened.lessons, regions: reopened.regions))
+    }
+
+    func testUnknownRegionInJournalCannotBeUsedByArchivedOrLoadedProgress() throws {
+        let (folder, path) = storage()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let original = LocalLearningStore(storageURL: path)
+        let item = try item()
+        XCTAssertTrue(original.recordAttempt(item: item, mode: .learn, understood: true))
+        var altered = original.profile
+        var journal = try XCTUnwrap(altered.practiceJournal)
+        let old = try XCTUnwrap(journal.events.first)
+        journal.events[0] = NativePracticeEvent(
+            id: old.id, actorID: old.actorID, itemID: old.itemID,
+            mode: old.mode, at: old.at, outcome: old.outcome,
+            regionID: "invented-region")
+        altered.practiceJournal = journal
+        XCTAssertThrowsError(try journal.validateSource(
+            lessons: original.lessons, regions: original.regions))
+        let before = try Data(contentsOf: path)
+        let invalidArchive = LocalProgressArchive(
+            profile: altered, sourceLessonIDs: original.lessons.map(\.id))
+        let restored = LocalProgressArchive(profile: original.profile,
+                                           sourceLessonIDs: original.lessons.map(\.id))
+        XCTAssertNoThrow(try restored.encoded())
+        XCTAssertThrowsError(try LocalRestoreValidation.validate(
+            invalidArchive, lessons: original.lessons, regions: original.regions,
+            guided: original.guidedFoundations, touristUnits: original.touristUnits,
+            core: original.coreJourney))
+        XCTAssertEqual(try Data(contentsOf: path), before)
+    }
 }
