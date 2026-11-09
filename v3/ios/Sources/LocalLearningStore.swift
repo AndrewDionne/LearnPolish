@@ -331,7 +331,8 @@ struct LocalProgressBackup: Identifiable {
         // The existing JSON codec preserves whole-second ISO8601 dates.
         // Canonicalize new source events before persistence so two exported
         // copies have bit-identical timestamps and UUID payloads.
-        let now = Date(timeIntervalSince1970: floor(Date().timeIntervalSince1970))
+        let actualTime = Date()
+        let now = Date(timeIntervalSince1970: floor(actualTime.timeIntervalSince1970))
         var next = profile
         var journal = next.practiceJournal ?? NativePracticeJournal(
             startedAt: now,
@@ -375,7 +376,10 @@ struct LocalProgressBackup: Identifiable {
         var map = next.expedition ?? LocalExpedition()
         _ = map.award(itemID: item.id, mode: mode,
                       tier: owner.difficultyTier.flatMap { (1...5).contains($0) ? $0 : nil } ?? 1,
-                      at: now,
+                      // Preserve full event time for strict post-login
+                      // family eligibility within the current live session.
+                      // The journal remains whole-second for JSON portability.
+                      at: actualTime,
                       useUTCDay: next.linkedUTCEpoch == journal.epochID)
         next.expedition = map
         do {
