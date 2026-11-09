@@ -315,16 +315,54 @@ struct LocalLearner: Codable {
         save()
     }
 
+    /// A file export is a user-controlled plaintext copy of *local* learning
+    /// only, not a CloudKit upload. An unreadable saved file is never silently
+    /// replaced by a new anonymous profile.
+    func makeLocalExport() throws -> LocalProgressArchiveDocument {
+        guard canSave, catalogError == nil, saveError == nil else {
+            throw LocalProgressArchiveError.unavailable
+        }
+        let snapshot = LocalProgressArchive(profile: profile,
+            sourceLessonIDs: lessons.map(\.id))
+        return try LocalProgressArchiveDocument(archive: snapshot)
+    }
+
+    /// Explicit local-only reset. A new, empty profile is published ONLY
+    /// after atomic replacement of the existing JSON has succeeded.
+    /// A corrupt existing file is never overwritten by this operation.
+    /// It does not delete any server-held family data or a user-exported copy.
+    @discardableResult
+    func resetLocalProgress() -> Bool {
+        guard canSave else {
+            saveError = "Saved progress needs recovery and has not been erased."
+            return false
+        }
+        let fresh = LocalLearner()
+        do {
+            try persist(fresh)
+            profile = fresh
+            saveError = nil
+            return true
+        } catch {
+            saveError = "Local progress could not be erased. The original saved file was left untouched."
+            return false
+        }
+    }
+
+    private func persist(_ value: LocalLearner) throws {
+        let folder = storageURL.deletingLastPathComponent()
+        try FileManager.default.createDirectory(at: folder,
+                                                withIntermediateDirectories: true)
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let bytes = try encoder.encode(value)
+        try bytes.write(to: storageURL, options: [.atomic, .completeFileProtectionUnlessOpen])
+    }
+
     private func save() {
         guard canSave else { return }
         do {
-            let folder = storageURL.deletingLastPathComponent()
-            try FileManager.default.createDirectory(at: folder,
-                                                    withIntermediateDirectories: true)
-            let encoder = JSONEncoder()
-            encoder.dateEncodingStrategy = .iso8601
-            let bytes = try encoder.encode(profile)
-            try bytes.write(to: storageURL, options: [.atomic, .completeFileProtectionUnlessOpen])
+            try persist(profile)
             saveError = nil
         } catch {
             saveError = "Progress could not be saved on this device. Check available storage."
