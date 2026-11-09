@@ -57,7 +57,9 @@ enum NativeLinkedDeviceMerge {
                         lessons: [Lesson], regions: [PolandRegion])
         throws -> NativeLinkedDevicePlan {
         guard local.localID == incoming.localID,
-              local.firstOpened == incoming.firstOpened,
+              // Exports encode Date at whole-second precision.
+              floor(local.firstOpened.timeIntervalSince1970) ==
+                  floor(incoming.firstOpened.timeIntervalSince1970),
               local.localID != UUID(uuidString: "00000000-0000-0000-0000-000000000000")! else {
             throw NativeLinkedDeviceMergeError.unlinkedIdentity
         }
