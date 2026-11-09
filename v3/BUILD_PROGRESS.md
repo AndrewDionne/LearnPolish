@@ -2,6 +2,21 @@
 
 **2026-11-08. Owner direction: continue developing the full native application; defer owner Xcode install/physical testing until substantially feature-complete.** Automated macOS Xcode builds and iPhone Simulator tests remain required on every tranche. The native PR stays draft until release gates are satisfied.
 
+## V3-06B — immutable practice journal and offline merge candidate (2026-11-09)
+
+**Exact implementation code head:** `78173bacf33821ca629ae0dea4d9704e14265536`. **Native CI [#42608744715](https://github.com/AndrewDionne/LearnPolish/actions/runs/42608744715) PASS:** original source/audio checks and Node guard tests, iPhone Simulator **BUILD SUCCEEDED**, **78 XCTest passed, 0 failed**.
+
+- `v3/ios/Sources/NativePracticeJournal.swift` adds a bounded, source-verified, immutable UUID-per-attempt journal containing only actor-local anonymous UUID, original lesson:item ID, mode, timestamp and an understood/needs-practice/recorded outcome. It carries no audio, transcript, remote score, identity token or family XP. Source mode, restricted Listen items, invalid outcomes, duplicate UUIDs, journal version and event cap are checked before considering remote application.
+- `LocalLearner.practiceJournal` is an optional Codable field so older saved profiles load unchanged. A journal started **after** old progress marks `hasLegacyHistory=true`; no invented events or unearned XP are synthesized for old aggregates, including old XP-only records. Legacy histories are **ineligible** for automatic candidate merge.
+- The central `recordAttempt` now commits one real event, the existing PracticeRecord review update and the original device-local daily-deduplicated XP **together in one atomic file replacement before publishing the profile**. Failed writes publish no attempt, review or XP. Tourist practice cannot advance its completion counter if the underlying attempt fails to persist.
+- A **pure offline candidate merge**, not invoked by UI/cloud, is deterministic/idempotent by event UUID; identical repeated events deduplicate, same-ID payload conflicts hard-fail, different anonymous epochs or incomplete legacy histories reject, and original V2 source IDs/modes must validate. The projected review reducer matches current 1/3/7/14/30/60/90-day spacing on complete journals only. **It does not apply merged history or award merged XP.**
+- `NativePracticeJournalTests.swift`: 10 additional native tests cover live event journal/XP parity, restart/export, legacy aggregates, two-device commutative/idempotent merger, foreign epoch rejection, conflicting UUID, bad source/outcome, local reset/ID rotation, bad storage atomicity, and legacy XP-only case.
+- **CloudKit still OFF**: no entitlements or account prompt, no sync writes or network calls. Formal merge-to-profile and cross-timezone XP reducers, explicit owner linking/restore UX, cloud tombstones and Apple signed two-device tests remain open. V2/family account services unchanged.
+
+**Next:** build an authenticated or user-confirmed safe archive import/restore with rigorous source/identity validation and an automatic pre-restore backup; then a tested pure XP reconciliation policy before opt-in CloudKit. No owner Xcode install until full application acceptance; PR #169 remains draft.
+
+---
+
 ## V3-06A — local privacy export/reset and CloudKit-safe groundwork (2026-11-09)
 
 **Exact native code head:** `5aa02c5162f765935c0604982140e3db1fbd6155`. **CI [#42598104496](https://github.com/AndrewDionne/LearnPolish/actions/runs/42598104496) PASS:** original source-locked curriculum/media validation, iPhone Simulator **BUILD SUCCEEDED**, **68 native XCTest passed, 0 failures**. The earlier V3-05B mislabelled UTC-day fixture was corrected; family-source XP now rejects out-of-scale values.
