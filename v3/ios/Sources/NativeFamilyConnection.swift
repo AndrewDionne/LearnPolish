@@ -64,6 +64,7 @@ enum NativeFamilyError: Error, LocalizedError, Equatable {
     case cancelled
     case notShareable
     case alreadySharing
+    case adultPilotOnly
 
     var errorDescription: String? {
         switch self {
@@ -77,6 +78,7 @@ enum NativeFamilyError: Error, LocalizedError, Equatable {
         case .cancelled: return "Connection was cancelled."
         case .notShareable: return "Only a new practice activity from this connected session can be shared."
         case .alreadySharing: return "This activity is already being shared."
+        case .adultPilotOnly: return "Connected family and cloud pronunciation are currently restricted to adults. Offline lessons remain available to everyone."
         }
     }
 }
@@ -282,6 +284,9 @@ final class NativeFamilySession: ObservableObject {
     @Published private(set) var shareResults: [String: NativeFamilyActivityReceipt] = [:]
     @Published private(set) var sharingKeys: Set<String> = []
     @Published private(set) var connectedAt: Date?
+    // A self-declared adult-only pilot gate, NOT proof of guardian authority.
+    // This has no persistence and cannot authorize minor/guardian participation.
+    @Published private(set) var adultPilotAcknowledged = false
 
     private var currentAccount: NativeFamilyAccount?
     private let api: NativeFamilyAPI
@@ -294,8 +299,14 @@ final class NativeFamilySession: ObservableObject {
     /// A real login is voluntary, never part of AppShell.onAppear. In-memory
     /// credentials are not written to learner progress, UserDefaults or files.
     func signIn(server: String, email: String, password: String,
-                speech: NativeSpeechSession) async {
-        guard !busy else { return }
+                adultPilotConfirmed: Bool, speech: NativeSpeechSession) async {
+        guard !busy && !isConnected else { return }
+        // Age is self-attested, not verified. Until a backend-authoritative
+        // guardian relationship exists, do not support connected minor use.
+        guard adultPilotConfirmed else {
+            message = NativeFamilyError.adultPilotOnly.errorDescription
+            return
+        }
         let token = generation
         busy = true
         message = nil
@@ -309,6 +320,7 @@ final class NativeFamilySession: ObservableObject {
             connectedUser = account.user
             groups = account.groups
             connectedAt = Date()
+            adultPilotAcknowledged = true
             shareResults = [:]
             sharingKeys = []
         } catch {
@@ -318,6 +330,7 @@ final class NativeFamilySession: ObservableObject {
                 connectedUser = nil
                 groups = []
                 connectedAt = nil
+                adultPilotAcknowledged = false
                 shareResults = [:]
                 sharingKeys = []
                 message = (error as? LocalizedError)?.errorDescription ??
@@ -328,7 +341,7 @@ final class NativeFamilySession: ObservableObject {
     }
 
     func loadSummary(for group: NativeFamilyGroup) async throws -> NativeFamilySummary {
-        guard let account = currentAccount,
+        guard adultPilotAcknowledged, let account = currentAccount,
               account.groups.contains(group) else { throw NativeFamilyError.notAuthorized }
         return try await api.summary(for: group, account: account)
     }
@@ -336,7 +349,7 @@ final class NativeFamilySession: ObservableObject {
     /// Explicit user click only. Never auto-upload history after login,
     /// app startup, reconnect or offline return.
     func recentShareCandidates(in learner: LocalLearningStore) -> [LocalXPEvent] {
-        guard currentAccount != nil, let connectedAt else { return [] }
+        guard adultPilotAcknowledged, currentAccount != nil, let connectedAt else { return [] }
         return NativeFamilyActivityGuard.candidates(
             events: learner.expedition.events, lessons: learner.lessons,
             regions: learner.regions, connectedAt: connectedAt)
@@ -357,7 +370,7 @@ final class NativeFamilySession: ObservableObject {
     @discardableResult
     func share(eventID: String, group: NativeFamilyGroup,
                learner: LocalLearningStore) async throws -> NativeFamilyActivityReceipt {
-        guard let account = currentAccount, let connectedAt,
+        guard adultPilotAcknowledged, let account = currentAccount, let connectedAt,
               account.groups.contains(group) else {
             throw NativeFamilyError.notAuthorized
         }
@@ -388,6 +401,7 @@ final class NativeFamilySession: ObservableObject {
         connectedUser = nil
         groups = []
         connectedAt = nil
+        adultPilotAcknowledged = false
         sharingKeys = []
         shareResults = [:]
         busy = false
