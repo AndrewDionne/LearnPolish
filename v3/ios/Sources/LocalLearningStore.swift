@@ -301,7 +301,11 @@ struct LocalLearner: Codable {
         }
         let now = Date()
         var journal = profile.practiceJournal ?? NativePracticeJournal(
-            startedAt: now, hasLegacyHistory: !profile.records.isEmpty)
+            startedAt: now,
+            // Older XP-only data is also history, even if record counters are
+            // absent. It cannot be silently attributed to new journal events.
+            hasLegacyHistory: !profile.records.isEmpty ||
+                !(profile.expedition?.events.isEmpty ?? true))
         let outcome: NativePracticeEvent.Outcome = mode == .speak ? .recorded :
             (understood == true ? .understood : .needsPractice)
         let entry = NativePracticeEvent(id: UUID(), actorID: profile.localID,
