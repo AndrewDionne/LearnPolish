@@ -90,10 +90,14 @@ A local reset must also remain distinct from cloud deletion.
 ## Implementation sequence
 
 A. Certify native local export and atomic local reset.
-B. Introduce immutable practice event journaling without altering current
-   review/XP behavior, with migration tests for legacy records.
-C. Build offline deterministic two-device merge tests. Block all ambiguous
-   combinations and preserve both histories on conflict.
+B. **Implemented and native-tested 2026-11-09:** a bounded immutable
+   per-attempt journal, preserving legacy aggregates without inventing old
+   events. Individual attempt, review and XP updates commit atomically.
+C. **Offline candidate merge implemented and tested, not applied:** source-
+   verified UUID deduplication, stable order, explicit shared-epoch requirement
+   and hard conflict rejection. Projecting complete journals reproduces
+   single-device spaced review; cross-device XP and restoration need further
+   validation before merged data can change a real profile.
 D. Add opt-in CKSyncEngine only after Apple entitlement, signed-device and
    conflict-resolution acceptance; never claim GitHub unsigned CI proves
    iCloud functionality.
