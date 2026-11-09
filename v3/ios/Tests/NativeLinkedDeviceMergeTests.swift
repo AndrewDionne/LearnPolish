@@ -176,10 +176,18 @@ import XCTest
         let review = try one.previewLinkedDeviceMerge(from: incoming)
         _ = try one.applyLinkedDeviceMerge(review)
         XCTAssertEqual(one.expedition.selectedRegion, "mazowieckie")
-        XCTAssertEqual(one.expedition.regionGoals["mazowieckie"], 300)
-        XCTAssertNotNil(one.expedition.regionGoals[otherRegion.id])
+        // Both phones may record attempts within the same second. In that
+        // case the immutable UUID tie-break, not device ownership or the
+        // order of two exported files, decides the first region goal.
+        let orderedRegions = one.expedition.events.map(\.regionID)
+        XCTAssertEqual(Set(orderedRegions), Set(["mazowieckie", otherRegion.id]))
+        XCTAssertEqual(one.expedition.regionGoals[orderedRegions[0]], 300)
+        let secondGoal = Int((300.0 * pow(1 + 0.22, 1.35) / 10).rounded()) * 10
+        XCTAssertEqual(one.expedition.regionGoals[orderedRegions[1]], secondGoal)
         XCTAssertEqual(one.expedition.regionTotal(otherRegion.id), 10)
-        XCTAssertEqual(one.profile.practiceJournal?.events.last?.regionID, otherRegion.id)
+        XCTAssertTrue(one.profile.practiceJournal?.events.contains(where: {
+            $0.regionID == otherRegion.id
+        }) == true)
     }
 
     func testProfileAfterMergeUsesUTCRewardDatesForNewAttempts() throws {
