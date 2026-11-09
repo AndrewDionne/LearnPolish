@@ -19,9 +19,14 @@ struct NativePracticeEvent: Codable, Identifiable, Equatable {
     /// attempt predates region snapshots and MUST NOT be assigned a region
     /// during a future cross-device merge.
     let regionID: String?
+    // Device-local monotonic attempt position. Older V3 exports omit it;
+    // those attempts remain readable but cannot claim precise same-second
+    // ordering that was never recorded.
+    let actorSequence: Int?
 
     init(id: UUID, actorID: UUID, itemID: String, mode: PracticeMode,
-         at: Date, outcome: Outcome, regionID: String? = nil) {
+         at: Date, outcome: Outcome, regionID: String? = nil,
+         actorSequence: Int? = nil) {
         self.id = id
         self.actorID = actorID
         self.itemID = itemID
@@ -29,6 +34,7 @@ struct NativePracticeEvent: Codable, Identifiable, Equatable {
         self.at = at
         self.outcome = outcome
         self.regionID = regionID
+        self.actorSequence = actorSequence
     }
 }
 
@@ -75,11 +81,17 @@ struct NativePracticeJournal: Codable {
         // a nil snapshot remain valid but cannot project a complete map.
         let permittedRegions = regions.map { Set($0.map(\.id)) }
         var identities = Set<UUID>()
+        var actorPositions = Set<String>()
         for event in events {
             guard identities.insert(event.id).inserted,
                   event.itemID.count > 0, event.itemID.count <= 180,
                   event.at.isFiniteDate,
                   event.at >= startedAt.addingTimeInterval(-1),
+                  event.actorSequence.map { (1...Self.maximumEvents).contains($0) } ?? true,
+                  event.actorSequence.map { position in
+                      actorPositions.insert(event.actorID.uuidString + ":" +
+                                            String(position)).inserted
+                  } ?? true,
                   event.regionID.map { !$0.isEmpty && $0.count <= 60 } ?? true,
                   event.regionID.map { region in
                       permittedRegions?.contains(region) ?? true
@@ -155,9 +167,19 @@ struct NativePracticeJournal: Codable {
         return records
     }
 
-    private static func eventOrder(_ a: NativePracticeEvent,
-                                   _ b: NativePracticeEvent) -> Bool {
+    /// Stable strict total ordering: UTC instant, immutable recording actor,
+    /// then that actor's persisted attempt position and event UUID.
+    /// A per-actor sequence prevents two fast self-ratings in the same
+    /// encoded second from reversing their review outcome on restoration.
+    static func eventOrder(_ a: NativePracticeEvent,
+                           _ b: NativePracticeEvent) -> Bool {
         if a.at != b.at { return a.at < b.at }
+        if a.actorID != b.actorID {
+            return a.actorID.uuidString < b.actorID.uuidString
+        }
+        if a.actorSequence != b.actorSequence {
+            return (a.actorSequence ?? 0) < (b.actorSequence ?? 0)
+        }
         return a.id.uuidString < b.id.uuidString
     }
 }
