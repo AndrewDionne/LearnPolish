@@ -23,10 +23,12 @@ import XCTest
 
     private func event(_ item: LessonItem, id: UUID, actor: UUID,
                        at: Date, mode: PracticeMode = .learn,
-                       outcome: NativePracticeEvent.Outcome = .understood)
+                       outcome: NativePracticeEvent.Outcome = .understood,
+                       regionID: String? = nil)
         -> NativePracticeEvent {
         NativePracticeEvent(id: id, actorID: actor, itemID: item.id,
-                            mode: mode, at: at, outcome: outcome)
+                            mode: mode, at: at, outcome: outcome,
+                            regionID: regionID)
     }
 
     private func journal(_ events: [NativePracticeEvent],
@@ -245,5 +247,117 @@ import XCTest
         XCTAssertTrue(candidate.awards.isEmpty)
         XCTAssertEqual(candidate.totalEffortXP, 0)
         XCTAssertEqual(candidate.totalExpeditionXP, 0)
+    }
+
+    func testNewEventRegionsRebuildOriginalMapGoalsAndUnlocksInChronologicalOrder() throws {
+        let (lessons, item, baseXP) = try source()
+        let regions = try PolandRegionCatalog.load()
+        let regionA = regions[0].id
+        let regionB = regions[1].id
+        let start = date("2026-11-08T00:00:00Z")
+        let a = event(item, id: firstID, actor: actorA,
+                      at: date("2026-11-09T10:00:00Z"), regionID: regionA)
+        let b = event(item, id: secondID, actor: actorB,
+                      at: date("2026-11-10T10:00:00Z"), regionID: regionB)
+        let candidate = try NativeXPReconciliation.mergedCandidate(
+            journal([b], start: start), journal([a], start: start), lessons: lessons)
+        XCTAssertFalse(candidate.requiresRegionReconciliation)
+        let map = try candidate.projectedRegions(verifiedSourceRegions: regions)
+        XCTAssertEqual(map.goals[regionA], 300)
+        let expectedNext = Int((300 * pow(1 + 0.22, 1.35) / 10).rounded()) * 10
+        XCTAssertEqual(map.goals[regionB], expectedNext)
+        XCTAssertEqual(map.earned[regionA], baseXP)
+        XCTAssertEqual(map.earned[regionB], Int((Double(baseXP) / 2).rounded()))
+        XCTAssertEqual(map.unlocked.count, 0)
+        XCTAssertEqual(candidate.totalExpeditionXP,
+                       map.earned.values.reduce(0, +))
+    }
+
+    func testSameUTCDayAwardsEarlierRegionOnlyAndCannotDoubleCountOtherRegion() throws {
+        let (lessons, item, baseXP) = try source()
+        let regions = try PolandRegionCatalog.load()
+        let first = event(item, id: firstID, actor: actorA,
+                          at: date("2026-11-09T10:00:00Z"), regionID: regions[0].id)
+        let second = event(item, id: secondID, actor: actorB,
+                           at: date("2026-11-09T11:00:00Z"), regionID: regions[1].id)
+        let candidate = try NativeXPReconciliation.candidate(
+            journal([second, first], start: date("2026-11-08T00:00:00Z")),
+            lessons: lessons)
+        XCTAssertEqual(candidate.awards.count, 1)
+        XCTAssertEqual(candidate.awards.first?.regionID, regions[0].id)
+        let projection = try candidate.projectedRegions(verifiedSourceRegions: regions)
+        XCTAssertEqual(projection.earned, [regions[0].id: baseXP])
+        XCTAssertNil(projection.goals[regions[1].id])
+    }
+
+    func testHistoricalMissingRegionPreservesEffortXPButCannotBuildMap() throws {
+        let (lessons, item, baseXP) = try source()
+        let regions = try PolandRegionCatalog.load()
+        let start = date("2026-11-08T00:00:00Z")
+        let earlier = event(item, id: firstID, actor: actorA,
+                            at: date("2026-11-09T10:00:00Z"))
+        let newer = event(item, id: secondID, actor: actorB,
+                          at: date("2026-11-10T10:00:00Z"), regionID: regions[0].id)
+        let candidate = try NativeXPReconciliation.mergedCandidate(
+            journal([earlier], start: start), journal([newer], start: start),
+            lessons: lessons)
+        XCTAssertTrue(candidate.requiresRegionReconciliation)
+        XCTAssertEqual(candidate.totalEffortXP, 2 * baseXP)
+        XCTAssertThrowsError(try candidate.projectedRegions(verifiedSourceRegions: regions))
+        XCTAssertEqual(candidate.awards.first?.regionID, nil)
+        XCTAssertEqual(candidate.awards.last?.regionID, regions[0].id)
+    }
+
+    func testForgedSourceRegionCannotAppearInReconstructedMap() throws {
+        let (lessons, item, _) = try source()
+        let regions = try PolandRegionCatalog.load()
+        let at = date("2026-11-09T10:00:00Z")
+        let falsified = event(item, id: firstID, actor: actorA, at: at,
+                              regionID: "invented-voivodeship")
+        let local = journal([falsified], start: date("2026-11-08T00:00:00Z"))
+        XCTAssertThrowsError(try local.validateSource(lessons: lessons, regions: regions))
+        let proposal = try NativeXPReconciliation.candidate(journal: local, lessons: lessons)
+        XCTAssertThrowsError(try proposal.projectedRegions(verifiedSourceRegions: regions))
+        XCTAssertFalse(proposal.requiresRegionReconciliation,
+                       "An invalid nonempty region must be REJECTED rather than treated as missing")
+    }
+
+    func testRegionProjectionIsIndependentOfMergeDeviceOrderAndNeverWritesLocalXP() throws {
+        let (lessons, item, _) = try source()
+        let regions = try PolandRegionCatalog.load()
+        let start = date("2026-11-08T00:00:00Z")
+        let one = event(item, id: firstID, actor: actorA,
+                        at: date("2026-11-09T10:00:00Z"), regionID: regions[0].id)
+        let two = event(item, id: secondID, actor: actorB,
+                        at: date("2026-11-10T10:00:00Z"), regionID: regions[1].id)
+        let journalA = journal([one], start: start)
+        let journalB = journal([two], start: start)
+        let ab = try NativeXPReconciliation.mergedCandidate(
+            journalA, journalB, lessons: lessons)
+        let ba = try NativeXPReconciliation.mergedCandidate(
+            journalB, journalA, lessons: lessons)
+        let mapAB = try ab.projectedRegions(verifiedSourceRegions: regions)
+        let mapBA = try ba.projectedRegions(verifiedSourceRegions: regions)
+        XCTAssertEqual(mapAB.goals, mapBA.goals)
+        XCTAssertEqual(mapAB.earned, mapBA.earned)
+        XCTAssertEqual(mapAB.unlocked, mapBA.unlocked)
+        XCTAssertEqual(journalA.events.count, 1)
+        XCTAssertEqual(journalB.events.count, 1)
+    }
+
+    func testLegacyMissingRegionFieldDecodesAsNilNotAsCurrentSelection() throws {
+        let (lessons, item, _) = try source()
+        let at = date("2026-11-09T10:00:00Z")
+        let older = event(item, id: firstID, actor: actorA, at: at)
+        let encoded = try JSONEncoder().encode(older)
+        var json = try XCTUnwrap(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        json.removeValue(forKey: "regionID")
+        let oldBytes = try JSONSerialization.data(withJSONObject: json)
+        let decoded = try JSONDecoder().decode(NativePracticeEvent.self, from: oldBytes)
+        XCTAssertNil(decoded.regionID)
+        let proposal = try NativeXPReconciliation.candidate(
+            journal: journal([decoded], start: date("2026-11-08T00:00:00Z")),
+            lessons: lessons)
+        XCTAssertTrue(proposal.requiresRegionReconciliation)
     }
 }
