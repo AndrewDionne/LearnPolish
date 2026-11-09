@@ -33,9 +33,17 @@ xcodebuild -project v3/ios/PathToPolish.xcodeproj -scheme PathToPolish \
 - Real catalog-backed Home, Library, Practice, Expedition and Progress with the exact V2 21-step core journey plus five optional exploratory lessons. Home Continue and Library browsing have independent cursors.
 - V2-parity Learn, Listen, Read, local Speak; original authored comprehension questions and two optional 10-number practice sections. No fake speech results or remote microphone upload.
 - App Support JSON store with atomic writes and stable mode-qualified item IDs, 24h spaced review, frozen due-only sessions and anonymous profile. Records persist offline.
-- Native audio playback at 0.75× / 1× and local record/replay; no Azure/Groq credentials bundled.
+- Native audio playback at 0.75× / 1× and quality-gated local record/replay. The private assessment transport has no Azure/Groq keys bundled and is inaccessible without separate adult-pilot sign-in and dual per-take provider consent.
 - Native interactive sixteen-voivodeship Poland map with original V2 geometry, region selection and personal XP ledger, daily deduplication and repeat taper. This ledger is **not** family leaderboard data.
-- No login, no CloudKit or Neon calls in this tranche. Former group identities and database are untouched.
+- No mandatory login. Optional adult-only, voluntary existing V2 family session supports private leaderboard, regional map and explicit recent-activity sharing. Server remains group-XP authority; no automatic history upload.
+- Optional source-bound Azure/Whisper pronunciation transport requires an authenticated verified adult pilot session and affirmative consent for each provider per take; real provider scoring is not enabled/certified.
+- Native source-locked guided Foundations, recorded alphabet, sound lab, first-exposure Read/Listen, eight applied tourist scenarios and local tutorial-less progress flows.
+- Progress can be exported to a versioned JSON file or explicitly erased on-device without affecting the private family server. A corrupt local learner file is preserved, not overwritten. JSON import/restore remains future work.
+- CloudKit is still **OFF**: original aggregate counters and daily XP events need an event-journal migration and two-device conflict testing before any opt-in private sync. No live Neon/Render or family-account data is changed.
+
+## Native CI witness
+
+[GitHub Actions #42598104496](https://github.com/AndrewDionne/LearnPolish/actions/runs/42598104496): source/media integrity checks, iPhone Simulator BUILD SUCCEEDED, 68 native XCTest passed with zero failures (exact V3-06A code head). Documentation-only changes afterward do not imply new feature execution.
 
 ## Not yet certified
 
