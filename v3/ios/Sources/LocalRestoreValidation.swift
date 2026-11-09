@@ -164,7 +164,12 @@ enum LocalRestoreValidation {
                     guard let region = award.regionID,
                           earned.id == award.mode.rawValue + ":" +
                               award.itemID + ":" + award.utcDay,
-                          earned.at == award.at, earned.itemID == award.itemID,
+                          // XP event retains subsecond time for live
+                          // post-login eligibility; journal export timestamps
+                          // are intentionally ISO8601 whole seconds.
+                          floor(earned.at.timeIntervalSince1970) ==
+                              floor(award.at.timeIntervalSince1970),
+                          earned.itemID == award.itemID,
                           earned.mode == award.mode, earned.tier == award.tier,
                           earned.regionID == region,
                           earned.xp == award.effortXP,
