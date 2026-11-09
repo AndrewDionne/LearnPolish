@@ -67,6 +67,7 @@ struct LocalProgressArchive: Codable {
 
 enum LocalProgressArchiveError: Error, LocalizedError {
     case unavailable, invalid, resetFailed
+    case incompatibleCatalog, changedSincePreview, backupFailed, restoreFailed
 
     var errorDescription: String? {
         switch self {
@@ -76,12 +77,21 @@ enum LocalProgressArchiveError: Error, LocalizedError {
             return "The progress export is incomplete or is not a supported Path to Polish archive."
         case .resetFailed:
             return "Local progress could not be erased. No reset was applied."
+        case .incompatibleCatalog:
+            return "This progress file belongs to a different or unsupported Polish lesson catalog."
+        case .changedSincePreview:
+            return "Current progress changed after the preview. Import the file again before replacing it."
+        case .backupFailed:
+            return "A recoverable copy of the current progress could not be saved. Nothing was replaced."
+        case .restoreFailed:
+            return "The new progress could not be written. The original local progress was kept."
         }
     }
 }
 
-/// Export-only UI. FileDocument's read initializer validates the file, but
-/// V3 does not yet expose Import, CloudKit merge or silent backup restoration.
+/// Local JSON import/export only. FileDocument decoding checks the archive
+/// envelope; the store then validates against the exact bundled V2 sources.
+//// There is no CloudKit merge or silent restoration.
 struct LocalProgressArchiveDocument: FileDocument {
     static var readableContentTypes: [UTType] { [.json] }
     let archive: LocalProgressArchive
