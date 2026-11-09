@@ -286,6 +286,7 @@ struct ProgressScreen: View {
     @State private var showExporter = false
     @State private var exportDocument: LocalProgressArchiveDocument?
     @State private var confirmLocalErase = false
+    @State private var confirmDeleteBackups = false
     @State private var showImporter = false
     @State private var pendingRestore: LocalRestorePreview?
     @State private var storageMessage: String?
@@ -339,6 +340,13 @@ struct ProgressScreen: View {
                 }
                 Text("Restore always replaces on-device progress after your approval; it never merges personal XP or automatically connects accounts. A backup of current progress is saved first.")
                     .font(.footnote).foregroundStyle(.secondary)
+                if !learner.localRestoreBackups.isEmpty {
+                    Button(role: .destructive) {
+                        confirmDeleteBackups = true
+                    } label: {
+                        Label("Delete saved restore backups", systemImage: "trash.slash")
+                    }
+                }
                 Button(role: .destructive) {
                     confirmLocalErase = true
                 } label: {
@@ -403,7 +411,21 @@ struct ProgressScreen: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("This permanently clears local lesson attempts, review schedules, personal XP and learning positions. It does not delete exported copies or server-held family activity. This cannot be undone.")
+            Text("This clears the active local learning profile. Previously saved restore backups remain recoverable until you delete them separately. Exported files and family-server records are not affected.")
+        }
+        .confirmationDialog("Delete saved local restore backups?",
+            isPresented: $confirmDeleteBackups, titleVisibility: .visible) {
+            Button("Delete restore backups", role: .destructive) {
+                do {
+                    let count = try learner.deleteLocalRestoreBackups()
+                    storageMessage = "\(count) local restore backup(s) deleted. Current progress and exported files were not changed."
+                } catch {
+                    storageMessage = "Some backups could not be deleted: " + error.localizedDescription
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("These private recovery copies will not be recoverable after deletion. This does not erase your current learner profile or exports stored outside the app.")
         }
     }
 }
