@@ -2,6 +2,19 @@
 
 **2026-11-08. Owner direction: continue developing the full native application; defer owner Xcode install/physical testing until substantially feature-complete.** Automated macOS Xcode builds and iPhone Simulator tests remain required on every tranche. The native PR stays draft until release gates are satisfied.
 
+## V3-05B adult pilot privacy boundary — implemented, simulator regression verification in progress (2026-11-09)
+
+- The prior native V3-05A integrated run [#42491145355](https://github.com/AndrewDionne/LearnPolish/actions/runs/42491145355) compiled, with **60/61 native XCTest passing**. Its sole failure came from a test timestamp labelled prior UTC day that was actually midnight on the same UTC day. The UTC-day fixture is corrected.
+- Source-backed V3 now contains 32 recorded alphabet examples, 13 combinations, 5 sound lessons / 25 ear questions, six Read dialogues / 51 lines, seven source-first Listen sets, and eight original tourist scenarios / 22 mode stages. These are native functional screens, not separate toy apps.
+- Optional verified V2 family login, 16-region server-only group expedition and weekly leaderboard, same-UTC-day opt-in source-item activity sharing, and original Azure+Whisper source-bound assessment transport are on the draft branch. Private V2 provider deployment remains **disabled** and live calibration/physical tests are not claimed.
+- **V3-05B gate:** all connected features are an **explicitly acknowledged, in-memory adult-only pilot** (18+ using their own account). Without acknowledgement there is no optional family authentication request or speech connection. Offline language study is available to everyone. This is **only self-attestation**, not verified guardian authority, and does not authorize children to use connected features.
+- The server's existing pilot signup and identity endpoints do not expose a verified guardian relationship or per-purpose child consent. Child family participation and remote voice uploads remain **blocked** until server-authoritative guardian grants, revoke/delete controls and acceptance tests are approved. See [v3/FAMILY_PRIVACY_GATE.md](FAMILY_PRIVACY_GATE.md).
+- **Exact-head CI:** [#42589284869](https://github.com/AndrewDionne/LearnPolish/actions/runs/42589284869) iPhone Simulator **BUILD SUCCEEDED**; new expanded XCTest checks are not yet certified at this note's creation.
+
+**Owner instructions remain:** keep PR #169 draft, V2/Neon/Render and the four tester records unchanged, defer owner Xcode phone build until the complete functional surface.
+
+---
+
 ## V3-03a guided Foundations / first grammar — implemented and simulator-certified (2026-11-08)
 
 **Commit head:** `b51f243cb0fb864d4395c275e3c61b35b8709792`  
@@ -25,15 +38,15 @@
 - Library browsing no longer replaces selected core course Continue. Home explicitly resumes first unvisited source item; optional two original Numbers 1–10/11–20 sections use strict source and audio checks.
 - V2 Learn, Read, Listen and local Speak practice foundation. Listen excludes source-blocked speech recordings, uses original authored comprehension checks where supplied and V2 choice ordering otherwise; Read does not invent assessments for lines without authored questions.
 - Original V2 1/3/7/14/30/60/90-day 24h spaced review; frozen due-item session, optional repeat and no forced pass threshold. Local records remain anonymous and written atomically.
-- Native AVFoundation 0.75x/1x reference audio and local microphone capture/replay. Remote pronunciation is still **OFF**; no fabricated syllable accuracy or score.
-- Local original V2 effort XP ledger, same once-per-mode/item/local-calendar-day deduplication and personal map taper; native interactive map uses original 16 V2 region polygon definitions. Family XP stays server-authoritative, separate and untouched.
+- Native AVFoundation 0.75x/1x reference audio and quality-gated local microphone capture/replay. Optional authenticated Azure+Whisper adapter is source-bound and double-consented, but the hosted scoring feature stays **OFF** pending acoustic/provider acceptance; no invented syllable accuracy.
+- Local original V2 effort XP ledger, same once-per-mode/item/local-calendar-day deduplication and personal map taper; original 16 V2 region outlines drive distinct native personal and family maps. Family XP stays server-authoritative and does not backfill or overwrite local records.
 - Native source and asset XcodeGen project, GitHub macOS iOS Simulator CI, regression tests for journey/source geometry/selection/XP/persistence.
 
 ## Still substantially incomplete (do not call full app)
 
-1. **Guided teaching inside Journey 1:** the source-only C-13 16-step first words, basic vocabulary and seven grammar introductions now have native guided practice. **Still missing**: separate recorded alphabet/sounds activities, source-first Read/Listen instruction, tourist applied units and end-to-end prerequisite/linguistic audit. Content remains editor-review gated.
-2. **Speak production:** secure optional API connection, canonical recording conversion for Azure/Whisper, explicit per-provider consent, rate limits, real latency, calibrated score and subtle segmented text/pronunciation guide; physical acoustic validation.
-3. **Family:** optional connection only, existing 4 tester accounts protected, authenticated groups, leaderboard, family map/XP sharing with server-acknowledged events, guardian privacy. No mandatory sign-in.
+1. **Guided teaching inside Journey 1:** native guided 16-step foundations, recorded alphabet, sound lab, source-first Read/Listen and eight tourist scenarios are implemented. **Still missing**: complete independent linguistic/prerequisite audit, content authoring for unsupported gaps and real bilingual editorial sign-off. Content remains editor-review gated.
+2. **Speak production:** optional private API contract, WAV conversion, double per-take consent and in-place segmented-colour overall estimate are coded. **Still missing**: real authorized provider deployment, acoustic validation, calibrated/blind rating study, reliable latency and independent guardian policy; never claim syllable-level acoustic certification.
+3. **Family:** optional verified connection, adult-pilot acknowledgement, original server leaderboard/map and explicit source-only family XP submission implemented. **Still missing**: authoritative guardian relationship/consent and minor-safe backend; existing 4 tester accounts preserved. No mandatory sign-in.
 4. **iCloud:** independent feasibility spike for private progress sync, optional sharing, Apple entitlements, collision/merge semantics and offline return. Do not automatically switch backend.
 5. **Complete content and editorial QA:** missing fundamentals, conversational practice, reading/listening instruction, rights-cleared audio/native acoustic validation. Migration itself does not certify missing content.
 6. **App completeness:** settings, offline assets management, account/privacy/export/delete, complete course and content authoring, robust navigation and review session flows, polish/performance/accessibility and application icon/release packaging.
