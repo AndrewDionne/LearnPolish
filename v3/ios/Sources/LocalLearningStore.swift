@@ -25,6 +25,9 @@ struct LocalLearner: Codable {
     var expedition: LocalExpedition?
     // Optional so earlier V3 local profiles continue decoding unchanged.
     var tourist: LocalTouristProgress?
+    // Optional keeps prior local V3 files byte-compatible. A journal opened
+    // after existing attempts explicitly flags historical aggregates as legacy.
+    var practiceJournal: NativePracticeJournal?
 }
 
 @MainActor final class LocalLearningStore: ObservableObject {
@@ -284,34 +287,55 @@ struct LocalLearner: Codable {
     }
 
     /// nil = ungraded Speak attempt; never claims pronunciation success.
+    /// Each actual card attempt has one immutable UUID in the local journal.
+    /// The existing aggregate review and daily XP logic remains authoritative
+    /// for this device until safe cross-device reconciliation is certified.
     func recordAttempt(item: LessonItem, mode: PracticeMode, understood: Bool?) {
+        guard let owner = lessons.first(where: { lesson in
+            lesson.items.contains(where: { $0.id == item.id })
+        }), owner.availableModes.contains(mode),
+        mode != .listen || (item.audio != nil && item.referenceReview != "practice_only") else {
+            return
+        }
+        let now = Date()
+        var journal = profile.practiceJournal ?? NativePracticeJournal(
+            startedAt: now, hasLegacyHistory: !profile.records.isEmpty)
+        let outcome: NativePracticeEvent.Outcome = mode == .speak ? .recorded :
+            (understood == true ? .understood : .needsPractice)
+        let entry = NativePracticeEvent(id: UUID(), actorID: profile.localID,
+            itemID: item.id, mode: mode, at: now, outcome: outcome)
+        do {
+            try journal.append(entry)
+        } catch {
+            saveError = "Practice journal is full or unavailable. No new attempt was recorded."
+            return
+        }
+
         let key = mode.rawValue + ":" + item.id
         var record = profile.records[key] ?? PracticeRecord()
         record.attempts += 1
-        record.lastAttempt = Date()
+        record.lastAttempt = now
         if understood == true { record.completed += 1 }
         if mode == .learn, let understood {
             if understood {
                 record.reviewLevel = min(record.reviewLevel + 1, 7)
                 let days = [1, 3, 7, 14, 30, 60, 90][record.reviewLevel - 1]
                 // V2 review.ts uses elapsed 24-hour days, not calendar-day DST shifts.
-                record.nextReview = Date().addingTimeInterval(TimeInterval(days) * 86_400)
+                record.nextReview = now.addingTimeInterval(TimeInterval(days) * 86_400)
             } else {
                 record.reviewLevel = 0
-                record.nextReview = Date()
+                record.nextReview = now
             }
         }
         profile.records[key] = record
-        // Each actual answered/rated card or finished usable Speak take earns
-        // base effort XP once per mode/item/local-day, never on reveal/skip.
-        if let owner = lessons.first(where: { lesson in
-            lesson.items.contains(where: { $0.id == item.id })
-        }) {
-            var map = expedition
-            _ = map.award(itemID: item.id, mode: mode,
-                          tier: owner.difficultyTier.flatMap { (1...5).contains($0) ? $0 : nil } ?? 1)
-            profile.expedition = map
-        }
+        profile.practiceJournal = journal
+        // Journal writes do not create extra XP. Original local daily dedup
+        // remains unchanged and never turns family/server XP into personal XP.
+        var map = expedition
+        _ = map.award(itemID: item.id, mode: mode,
+                      tier: owner.difficultyTier.flatMap { (1...5).contains($0) ? $0 : nil } ?? 1,
+                      at: now)
+        profile.expedition = map
         save()
     }
 
