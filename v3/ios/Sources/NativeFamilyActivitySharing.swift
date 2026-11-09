@@ -40,7 +40,10 @@ enum NativeFamilyActivityGuard {
             knownItems.contains(event.itemID) &&
             knownRegions.contains(event.regionID) &&
             (1...5).contains(event.tier) &&
-            event.xp > 0 && event.xp == event.baseXP &&
+            // Never share forged progress with arbitrary client XP.
+            // Validate against the canonical V2 effort scale for its tier.
+            event.xp == [10, 14, 19, 26, 35][event.tier - 1] &&
+            event.baseXP == event.xp &&
             event.expeditionXP >= 0 && event.expeditionXP <= event.xp
         }
         .sorted { $0.at > $1.at }
