@@ -501,6 +501,49 @@ struct LocalProgressBackup: Identifiable {
         return try preview(archive, source: "Earlier local backup")
     }
 
+    /// Only owners who first explicitly transferred the SAME anonymous
+    /// profile can combine its divergent phone histories. Foreign profile
+    /// identities or incomplete older histories are refused, not guessed.
+    func previewLinkedDeviceMerge(from file: URL) throws -> NativeLinkedDevicePreview {
+        let restore = try previewImportedProgress(from: file)
+        let plan = try NativeLinkedDeviceMerge.propose(
+            local: profile, incoming: restore.archive.profile,
+            lessons: lessons, regions: regions)
+        let candidateArchive = LocalProgressArchive(
+            profile: plan.candidate, sourceLessonIDs: lessons.map(\.id))
+        try verifyRestoreArchive(candidateArchive)
+        return NativeLinkedDevicePreview(incoming: restore.archive,
+                                         expectedLocalProfile: restore.expectedLocalProfile,
+                                         source: "Linked device progress file",
+                                         plan: plan)
+    }
+
+    /// Recomputes all original-source review, XP and region data from the two
+    /// complete journals before applying ANY updates. The existing confirmed
+    /// restore routine provides the private recoverable backup, disk-change
+    /// checks and atomic replacement. No automatic CloudKit link is created.
+    @discardableResult
+    func applyLinkedDeviceMerge(_ preview: NativeLinkedDevicePreview) throws -> URL {
+        try verifyRestoreArchive(preview.incoming)
+        guard try encodedProfile(profile) == preview.expectedLocalProfile else {
+            throw LocalProgressArchiveError.changedSincePreview
+        }
+        let updated = try NativeLinkedDeviceMerge.propose(
+            local: profile, incoming: preview.incoming.profile,
+            lessons: lessons, regions: regions)
+        guard try encodedProfile(updated.candidate) ==
+                encodedProfile(preview.plan.candidate) else {
+            throw LocalProgressArchiveError.changedSincePreview
+        }
+        let archive = LocalProgressArchive(profile: updated.candidate,
+                                           sourceLessonIDs: lessons.map(\.id))
+        try verifyRestoreArchive(archive)
+        let restore = LocalRestorePreview(archive: archive,
+                                          expectedLocalProfile: preview.expectedLocalProfile,
+                                          source: "Reviewed linked-device merge")
+        return try restoreLocalProgress(restore)
+    }
+
     /// User-confirmed FULL REPLACEMENT only. This deliberately cannot merge
     /// XP, account identity, tourist state or a CloudKit sync epoch.
     /// A recoverable verified backup is written BEFORE any replacement.
