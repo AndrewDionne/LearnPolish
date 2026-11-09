@@ -9,6 +9,7 @@ struct NativeFamilyAccountScreen: View {
     @State private var server = ""
     @State private var email = ""
     @State private var password = ""
+    @State private var adultPilotConfirmed = false
 
     var body: some View {
         Form {
@@ -48,6 +49,10 @@ struct NativeFamilyAccountScreen: View {
             } else {
                 Section {
                     Text("Learning does not require an account. Connect only if you want to use your existing private family group or optional speech assessment.")
+                    Toggle("I confirm I am 18 or older and this is my own account",
+                           isOn: $adultPilotConfirmed)
+                    Text("Connected features are currently an adult-only pilot. An age confirmation is not guardian verification; children can continue learning offline.")
+                        .font(.footnote).foregroundStyle(.secondary)
                         .foregroundStyle(.secondary)
                     TextField("Private family service URL", text: $server)
                         .textContentType(.URL)
@@ -66,7 +71,9 @@ struct NativeFamilyAccountScreen: View {
                         password = ""
                         Task {
                             await family.signIn(server: server, email: email,
-                                                password: attemptedPassword, speech: speech)
+                                                password: attemptedPassword,
+                                                adultPilotConfirmed: adultPilotConfirmed,
+                                                speech: speech)
                         }
                     } label: {
                         if family.busy {
@@ -75,11 +82,12 @@ struct NativeFamilyAccountScreen: View {
                             Text("Connect existing account")
                         }
                     }
-                    .disabled(family.busy || server.isEmpty || email.isEmpty || password.isEmpty)
+                    .disabled(family.busy || !adultPilotConfirmed ||
+                              server.isEmpty || email.isEmpty || password.isEmpty)
                 } header: {
                     Text("Optional family connection")
                 } footer: {
-                    Text("Only existing verified accounts are supported. A secure HTTPS family service is required. Sign-in does not upload practice or microphone audio.")
+                    Text("Only adult pilot members with existing verified accounts are supported. A secure HTTPS family service is required. Sign-in does not upload practice or microphone audio.")
                 }
                 if let message = family.message {
                     Section {
