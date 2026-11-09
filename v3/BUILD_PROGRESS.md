@@ -2,6 +2,19 @@
 
 **2026-11-08. Owner direction: continue developing the full native application; defer owner Xcode install/physical testing until substantially feature-complete.** Automated macOS Xcode builds and iPhone Simulator tests remain required on every tranche. The native PR stays draft until release gates are satisfied.
 
+## V3-06A — local privacy export/reset and CloudKit-safe groundwork (2026-11-09)
+
+**Exact native code head:** `5aa02c5162f765935c0604982140e3db1fbd6155`. **CI [#42598104496](https://github.com/AndrewDionne/LearnPolish/actions/runs/42598104496) PASS:** original source-locked curriculum/media validation, iPhone Simulator **BUILD SUCCEEDED**, **68 native XCTest passed, 0 failures**. The earlier V3-05B mislabelled UTC-day fixture was corrected; family-source XP now rejects out-of-scale values.
+
+- `LocalProgressArchive.swift` introduces an explicit user-exported, versioned, bounded JSON document for the **local learning profile only** (course positions, review, anonymous local ID, tourist history and personal XP). It includes no family session, account credentials, provider scores/transcripts, cloud identifier or microphone recording. User chooses the export destination with the native document exporter; exported JSON is not encrypted, and UI warns to keep it private.
+- `LocalLearningStore.swift` has a separately confirmed **local-only erase**, which writes a new profile with a fresh anonymous local ID atomically **before** publishing it. On an unreadable saved profile or storage failure, reset refuses and leaves the original file untouched. The lesson/audio bundle is not deleted, and the operation does not touch family-server contributions or any previously exported copy.
+- The Progress screen exposes the export and erase actions; new native `LocalProgressArchiveTests.swift` cover source-bound archive decode, sensitive-field exclusion, unchanged source file after export, restart after reset, corrupted-file preservation, atomic-write failure and forward schema rejection.
+- `v3/CLOUDKIT_SYNC_DESIGN.md` locks the **user-opt-in private iCloud** design and exact conflict/identity/migration acceptance. CloudKit is **not enabled**: current LocalLearner aggregates cannot be safely merged across devices, and automatic whole-file upload could lose reviews/double-award daily XP. No Apple/iCloud account prompt on app launch, no entitlements, and no CloudKit network calls. Future event-journal migration and two-device tests precede signed-device iCloud activation.
+
+**Outstanding:** import/restore of owner-exported JSON, bounded per-attempt journal for safe cross-device conflict resolution, production CloudKit account/entitlement and multi-device testing, guardian-authorized connected use for minors, provider speech calibration, complete curriculum/editorial certification and integrated physical iPhone acceptance. Maintain draft PR #169; do not modify main or V2/Neon/Render.
+
+---
+
 ## V3-05B adult pilot privacy boundary — implemented, simulator regression verification in progress (2026-11-09)
 
 - The prior native V3-05A integrated run [#42491145355](https://github.com/AndrewDionne/LearnPolish/actions/runs/42491145355) compiled, with **60/61 native XCTest passing**. Its sole failure came from a test timestamp labelled prior UTC day that was actually midnight on the same UTC day. The UTC-day fixture is corrected.
