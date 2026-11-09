@@ -10,6 +10,8 @@ struct NativeUTCAward: Equatable {
     let mode: PracticeMode
     let at: Date
     let utcDay: String
+    // nil means this journal event predates source-verified region snapshots.
+    let regionID: String?
     let tier: Int
     let effortXP: Int
     let expeditionXP: Int
@@ -22,10 +24,69 @@ struct NativeXPReconciliationCandidate {
     var totalEffortXP: Int { awards.reduce(0) { $0 + $1.effortXP } }
     var totalExpeditionXP: Int { awards.reduce(0) { $0 + $1.expeditionXP } }
 
-    /// v1 practice events have NO per-attempt region snapshot. This candidate
-    /// MUST NOT be applied to a Poland map: region assignment, goals and
-    /// selected-region state cannot be reconstructed from the source log.
-    var requiresRegionReconciliation: Bool { true }
+    /// Older events have no region snapshot. A candidate containing even
+    /// one such awarded event cannot safely reconstruct a complete map.
+    var requiresRegionReconciliation: Bool {
+        awards.contains { $0.regionID == nil }
+    }
+
+    /// Pure forward projection of *awarded* original regions only. It cannot
+    /// invent the selected-region cursor or reconstruct a historical region
+    /// from an older event lacking a snapshot.
+    func projectedRegions(verifiedSourceRegions: [PolandRegion]) throws
+        -> NativeProjectedRegionLedger {
+        let sourceIDs = Set(verifiedSourceRegions.map(\.id))
+        guard verifiedSourceRegions.count == 16, sourceIDs.count == 16 else {
+            throw NativeRegionProjectionError.invalidSourceRegions
+        }
+        var goals: [String: Int] = [:]
+        var earned: [String: Int] = [:]
+        for award in awards {
+            guard let region = award.regionID else {
+                throw NativeRegionProjectionError.missingHistoricalRegion
+            }
+            guard sourceIDs.contains(region) else {
+                throw NativeRegionProjectionError.invalidSourceRegions
+            }
+            if goals[region] == nil {
+                // Exact LocalExpedition source rule: each newly entered
+                // region establishes its target by its first XP award.
+                let count = goals.count
+                let raw = 300.0 * pow(1 + 0.22 * Double(count), 1.35)
+                goals[region] = Int((raw / 10).rounded()) * 10
+            }
+            earned[region, default: 0] += award.expeditionXP
+        }
+        return NativeProjectedRegionLedger(epochID: epochID,
+                                            goals: goals,
+                                            earned: earned)
+    }
+}
+
+/// No personal map or V2 family server state is mutated by this value.
+struct NativeProjectedRegionLedger {
+    let epochID: UUID
+    let goals: [String: Int]
+    let earned: [String: Int]
+
+    var unlocked: Set<String> {
+        Set(goals.keys.filter { region in
+            earned[region, default: 0] >= goals[region, default: Int.max]
+        })
+    }
+}
+
+enum NativeRegionProjectionError: LocalizedError, Equatable {
+    case missingHistoricalRegion, invalidSourceRegions
+
+    var errorDescription: String? {
+        switch self {
+        case .missingHistoricalRegion:
+            return "Older attempts do not record a selected region. Map progress cannot be reconstructed."
+        case .invalidSourceRegions:
+            return "A region snapshot does not match the original Poland map."
+        }
+    }
 }
 
 enum NativeXPReconciliation {
@@ -96,7 +157,7 @@ enum NativeXPReconciliation {
             awards.append(NativeUTCAward(
                 eventID: event.id, actorID: event.actorID,
                 itemID: event.itemID, mode: event.mode, at: event.at,
-                utcDay: dateKey.day, tier: tier,
+                utcDay: dateKey.day, regionID: event.regionID, tier: tier,
                 effortXP: baseXP, expeditionXP: expeditionXP))
         }
         return NativeXPReconciliationCandidate(
