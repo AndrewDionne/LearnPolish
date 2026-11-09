@@ -150,7 +150,7 @@ struct LocalLearner: Codable {
             return
         }
         let mode = confirmed.steps[stepIndex].mode
-        recordAttempt(item: item, mode: mode, understood: understood)
+        guard recordAttempt(item: item, mode: mode, understood: understood) else { return }
         var progress = touristProgress
         let key = LocalTouristProgress.key(unitID: unit.id, stepIndex: stepIndex)
         progress.attemptedByStep[key, default: []].insert(itemID)
@@ -292,33 +292,35 @@ struct LocalLearner: Codable {
     /// Each actual card attempt has one immutable UUID in the local journal.
     /// The existing aggregate review and daily XP logic remains authoritative
     /// for this device until safe cross-device reconciliation is certified.
-    func recordAttempt(item: LessonItem, mode: PracticeMode, understood: Bool?) {
-        guard let owner = lessons.first(where: { lesson in
+    @discardableResult
+    func recordAttempt(item: LessonItem, mode: PracticeMode, understood: Bool?) -> Bool {
+        guard canSave, let owner = lessons.first(where: { lesson in
             lesson.items.contains(where: { $0.id == item.id })
         }), owner.availableModes.contains(mode),
         mode != .listen || (item.audio != nil && item.referenceReview != "practice_only") else {
-            return
+            return false
         }
         let now = Date()
-        var journal = profile.practiceJournal ?? NativePracticeJournal(
+        var next = profile
+        var journal = next.practiceJournal ?? NativePracticeJournal(
             startedAt: now,
             // Older XP-only data is also history, even if record counters are
             // absent. It cannot be silently attributed to new journal events.
-            hasLegacyHistory: !profile.records.isEmpty ||
-                !(profile.expedition?.events.isEmpty ?? true))
+            hasLegacyHistory: !next.records.isEmpty ||
+                !(next.expedition?.events.isEmpty ?? true))
         let outcome: NativePracticeEvent.Outcome = mode == .speak ? .recorded :
             (understood == true ? .understood : .needsPractice)
-        let entry = NativePracticeEvent(id: UUID(), actorID: profile.localID,
+        let entry = NativePracticeEvent(id: UUID(), actorID: next.localID,
             itemID: item.id, mode: mode, at: now, outcome: outcome)
         do {
             try journal.append(entry)
         } catch {
             saveError = "Practice journal is full or unavailable. No new attempt was recorded."
-            return
+            return false
         }
 
         let key = mode.rawValue + ":" + item.id
-        var record = profile.records[key] ?? PracticeRecord()
+        var record = next.records[key] ?? PracticeRecord()
         record.attempts += 1
         record.lastAttempt = now
         if understood == true { record.completed += 1 }
@@ -333,16 +335,24 @@ struct LocalLearner: Codable {
                 record.nextReview = now
             }
         }
-        profile.records[key] = record
-        profile.practiceJournal = journal
-        // Journal writes do not create extra XP. Original local daily dedup
-        // remains unchanged and never turns family/server XP into personal XP.
-        var map = expedition
+        next.records[key] = record
+        next.practiceJournal = journal
+        // The same atomic profile snapshot includes XP, review and the event.
+        // Local daily dedup remains unchanged; family XP remains independent.
+        var map = next.expedition ?? LocalExpedition()
         _ = map.award(itemID: item.id, mode: mode,
                       tier: owner.difficultyTier.flatMap { (1...5).contains($0) ? $0 : nil } ?? 1,
                       at: now)
-        profile.expedition = map
-        save()
+        next.expedition = map
+        do {
+            try persist(next)
+            profile = next
+            saveError = nil
+            return true
+        } catch {
+            saveError = "Progress could not be saved. No new attempt or XP was recorded."
+            return false
+        }
     }
 
     /// A file export is a user-controlled plaintext copy of *local* learning
