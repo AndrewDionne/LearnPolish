@@ -128,9 +128,7 @@ enum NativeXPReconciliation {
         var rewardedDays = Set<DayKey>()
         var repeats: [ItemMode: Int] = [:]
         var awards: [NativeUTCAward] = []
-        let ordered = journal.events.sorted {
-            $0.at == $1.at ? $0.id.uuidString < $1.id.uuidString : $0.at < $1.at
-        }
+        let ordered = journal.events.sorted(by: NativePracticeJournal.eventOrder)
         for event in ordered {
             guard let lesson = lessonByItem[event.itemID] else {
                 throw NativePracticeJournalError.invalidSource
