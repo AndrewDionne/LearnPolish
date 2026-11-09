@@ -1,3 +1,4 @@
+import Foundation
 import XCTest
 @testable import PathToPolish
 
@@ -75,7 +76,8 @@ import XCTest
     func testUnverifiedAccountStringsAndAppleEmailAreRejected() throws {
         let (lessons, regions) = try sources()
         let learner = linkedLearner()
-        for wrongKey: String? in [nil, "", "a", "person@example.com", "account with spaces"] {
+        let wrongKeys: [String?] = [nil, "", "a", "person@example.com", "account with spaces"]
+        for wrongKey in wrongKeys {
             var gate = NativePrivateCloudGate()
             XCTAssertThrowsError(try gate.proposeExplicitOptIn(
                 approved: true, verifiedOpaqueAccountKey: wrongKey,
