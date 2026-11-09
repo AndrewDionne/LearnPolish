@@ -90,7 +90,8 @@ private final class MockFamilyProtocol: URLProtocol {
     }
     private func connect(_ family: NativeFamilySession, _ speech: NativeSpeechSession) async {
         await family.signIn(server: address, email: "learner@example.org",
-                            password: "test-only-pass", speech: speech)
+                            password: "test-only-pass",
+                            adultPilotConfirmed: true, speech: speech)
     }
 
 
@@ -146,6 +147,34 @@ private final class MockFamilyProtocol: URLProtocol {
             }
             XCTAssertEqual(MockFamilyProtocol.requests().count, 3)
         }
+    }
+
+
+    func testMinorOrUnconfirmedAdultHasNoFamilyLoginOrRemoteSpeech() async throws {
+        let (family, speech) = environment(try goodFixtures())
+        await family.signIn(server: address, email: "learner@example.org",
+                            password: "test-only-pass",
+                            adultPilotConfirmed: false, speech: speech)
+        XCTAssertFalse(family.isConnected)
+        XCTAssertFalse(family.adultPilotAcknowledged)
+        XCTAssertFalse(speech.isConnected)
+        XCTAssertTrue(family.groups.isEmpty)
+        XCTAssertEqual(MockFamilyProtocol.requests().count, 0)
+        XCTAssertEqual(family.message, NativeFamilyError.adultPilotOnly.errorDescription)
+    }
+
+    func testAdultPilotAcknowledgementIsSessionOnlyAndRevokedOnLogout() async throws {
+        let (family, speech) = environment(try goodFixtures())
+        XCTAssertFalse(family.adultPilotAcknowledged)
+        await connect(family, speech)
+        XCTAssertTrue(family.adultPilotAcknowledged)
+        XCTAssertTrue(speech.isConnected)
+        await family.signOut(speech: speech)
+        XCTAssertFalse(family.adultPilotAcknowledged)
+        XCTAssertFalse(family.isConnected)
+        XCTAssertFalse(speech.isConnected)
+        XCTAssertTrue(family.groups.isEmpty)
+        XCTAssertTrue(family.shareResults.isEmpty)
     }
 
     func testFirstLaunchRequiresNoLoginAndMakesNoNetworkRequests() throws {
