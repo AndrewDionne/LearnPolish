@@ -282,6 +282,10 @@ struct ReviewScreen: View {
 
 struct ProgressScreen: View {
     @EnvironmentObject private var learner: LocalLearningStore
+    @State private var showExporter = false
+    @State private var exportDocument: LocalProgressArchiveDocument?
+    @State private var confirmLocalErase = false
+    @State private var storageMessage: String?
 
     var body: some View {
         Form {
@@ -295,8 +299,29 @@ struct ProgressScreen: View {
                 Label("Learning works offline", systemImage: "iphone")
                 Text("Progress is saved privately on this device. CloudKit backup and automatic family sharing are not enabled.")
                     .foregroundStyle(.secondary)
+                Button {
+                    do {
+                        exportDocument = try learner.makeLocalExport()
+                        storageMessage = nil
+                        showExporter = true
+                    } catch {
+                        storageMessage = error.localizedDescription
+                    }
+                } label: {
+                    Label("Export local progress", systemImage: "square.and.arrow.up")
+                }
+                Text("The exported JSON contains your local learning record and history, not your password, microphone recordings or family account. Keep the file private.")
+                    .font(.footnote).foregroundStyle(.secondary)
+                Button(role: .destructive) {
+                    confirmLocalErase = true
+                } label: {
+                    Label("Erase local learning progress", systemImage: "trash")
+                }
                 if let error = learner.saveError {
                     Text(error).foregroundStyle(.red)
+                }
+                if let storageMessage {
+                    Text(storageMessage).font(.footnote).foregroundStyle(.secondary)
                 }
             }
             Section("Optional family") {
@@ -310,5 +335,26 @@ struct ProgressScreen: View {
             }
         }
         .navigationTitle("My progress")
+        .fileExporter(isPresented: $showExporter, document: exportDocument,
+                      contentType: .json, defaultFilename: "PathToPolish-Progress") { result in
+            switch result {
+            case .success:
+                storageMessage = "Export saved to the location you selected."
+            case .failure(let error):
+                storageMessage = "Export could not be saved: " + error.localizedDescription
+            }
+            exportDocument = nil
+        }
+        .alert("Erase learning progress from this iPhone?",
+               isPresented: $confirmLocalErase) {
+            Button("Erase local progress", role: .destructive) {
+                if learner.resetLocalProgress() {
+                    storageMessage = "Local learning progress was erased on this iPhone."
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This permanently clears local lesson attempts, review schedules, personal XP and learning positions. It does not delete exported copies or server-held family activity. This cannot be undone.")
+        }
     }
 }
