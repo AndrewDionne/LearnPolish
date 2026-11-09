@@ -15,6 +15,21 @@ struct NativePracticeEvent: Codable, Identifiable, Equatable {
     let mode: PracticeMode
     let at: Date
     let outcome: Outcome
+    /// Added after journal v1 adoption; nil means the original recorded
+    /// attempt predates region snapshots and MUST NOT be assigned a region
+    /// during a future cross-device merge.
+    let regionID: String?
+
+    init(id: UUID, actorID: UUID, itemID: String, mode: PracticeMode,
+         at: Date, outcome: Outcome, regionID: String? = nil) {
+        self.id = id
+        self.actorID = actorID
+        self.itemID = itemID
+        self.mode = mode
+        self.at = at
+        self.outcome = outcome
+        self.regionID = regionID
+    }
 }
 
 struct NativePracticeJournal: Codable {
@@ -46,7 +61,8 @@ struct NativePracticeJournal: Codable {
         events.append(event)
     }
 
-    func validateSource(lessons: [Lesson]) throws {
+    func validateSource(lessons: [Lesson],
+                        regions: [PolandRegion]? = nil) throws {
         guard schemaVersion == Self.currentSchema,
               events.count <= Self.maximumEvents else {
             throw NativePracticeJournalError.invalidSource
@@ -54,12 +70,20 @@ struct NativePracticeJournal: Codable {
         let byItem = Dictionary(uniqueKeysWithValues: lessons.flatMap { lesson in
             lesson.items.map { ($0.id, (lesson, $0)) }
         })
+        // Every new region ID must be checked against the source-backed 16
+        // regions whenever those resources are available. Older events with
+        // a nil snapshot remain valid but cannot project a complete map.
+        let permittedRegions = regions.map { Set($0.map(\.id)) }
         var identities = Set<UUID>()
         for event in events {
             guard identities.insert(event.id).inserted,
                   event.itemID.count > 0, event.itemID.count <= 180,
                   event.at.isFiniteDate,
                   event.at >= startedAt.addingTimeInterval(-1),
+                  event.regionID.map { !$0.isEmpty && $0.count <= 60 } ?? true,
+                  event.regionID.map { region in
+                      permittedRegions?.contains(region) ?? true
+                  } ?? true,
                   let (lesson, item) = byItem[event.itemID],
                   lesson.availableModes.contains(event.mode),
                   (event.mode != .listen ||
