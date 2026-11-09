@@ -449,6 +449,32 @@ struct LocalProgressBackup: Identifiable {
         .map { $0 }
     }
 
+    /// Explicitly deletes app-owned restore backups ONLY. The current local
+    /// learner and user-exported files outside the app remain untouched.
+    /// The delete action is separate from resetting active learning progress.
+    @discardableResult
+    func deleteLocalRestoreBackups() throws -> Int {
+        let dir = localBackupDirectory
+        let manager = FileManager.default
+        guard manager.fileExists(atPath: dir.path) else { return 0 }
+        let candidates = try manager.contentsOfDirectory(
+            at: dir, includingPropertiesForKeys: [.isRegularFileKey, .isSymbolicLinkKey],
+            options: [.skipsHiddenFiles])
+        var deleted = 0
+        for file in candidates {
+            guard file.deletingLastPathComponent().standardizedFileURL ==
+                      dir.standardizedFileURL,
+                  file.lastPathComponent.hasPrefix("local-backup-"),
+                  file.pathExtension == "json",
+                  let values = try? file.resourceValues(forKeys:
+                      [.isRegularFileKey, .isSymbolicLinkKey]),
+                  values.isRegularFile == true, values.isSymbolicLink != true else { continue }
+            try manager.removeItem(at: file)
+            deleted += 1
+        }
+        return deleted
+    }
+
     func previewLocalBackup(_ backup: LocalProgressBackup) throws -> LocalRestorePreview {
         // File-system scope is restricted to the private app-owned directory;
         // a symbolic link to an arbitrary user document is never accepted.
