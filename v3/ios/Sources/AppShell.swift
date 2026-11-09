@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct AppShell: View {
     var body: some View {
@@ -285,6 +286,8 @@ struct ProgressScreen: View {
     @State private var showExporter = false
     @State private var exportDocument: LocalProgressArchiveDocument?
     @State private var confirmLocalErase = false
+    @State private var showImporter = false
+    @State private var pendingRestore: LocalRestorePreview?
     @State private var storageMessage: String?
 
     var body: some View {
@@ -311,6 +314,30 @@ struct ProgressScreen: View {
                     Label("Export local progress", systemImage: "square.and.arrow.up")
                 }
                 Text("The exported JSON contains your local learning record and history, not your password, microphone recordings or family account. Keep the file private.")
+                    .font(.footnote).foregroundStyle(.secondary)
+                Button {
+                    storageMessage = nil
+                    showImporter = true
+                } label: {
+                    Label("Restore progress from a file", systemImage: "square.and.arrow.down")
+                }
+                if !learner.localRestoreBackups.isEmpty {
+                    ForEach(Array(learner.localRestoreBackups.prefix(5))) { backup in
+                        Button {
+                            do {
+                                pendingRestore = try learner.previewLocalBackup(backup)
+                                storageMessage = nil
+                            } catch {
+                                storageMessage = error.localizedDescription
+                            }
+                        } label: {
+                            Label("Earlier backup · " + backup.savedAt.formatted(
+                                date: .abbreviated, time: .shortened),
+                                systemImage: "clock.arrow.circlepath")
+                        }
+                    }
+                }
+                Text("Restore always replaces on-device progress after your approval; it never merges personal XP or automatically connects accounts. A backup of current progress is saved first.")
                     .font(.footnote).foregroundStyle(.secondary)
                 Button(role: .destructive) {
                     confirmLocalErase = true
@@ -344,6 +371,28 @@ struct ProgressScreen: View {
                 storageMessage = "Export could not be saved: " + error.localizedDescription
             }
             exportDocument = nil
+        }
+        .fileImporter(isPresented: $showImporter, allowedContentTypes: [.json],
+                      allowsMultipleSelection: false) { result in
+            do {
+                let files = try result.get()
+                guard let file = files.first else {
+                    throw LocalProgressArchiveError.invalid
+                }
+                pendingRestore = try learner.previewImportedProgress(from: file)
+                storageMessage = nil
+            } catch {
+                storageMessage = error.localizedDescription
+            }
+        }
+        .sheet(item: $pendingRestore) { candidate in
+            LocalRestoreReviewSheet(candidate: candidate,
+                currentAttempts: learner.attempts,
+                currentXP: learner.expedition.totalXP) {
+                    let backup = try learner.restoreLocalProgress(candidate)
+                    storageMessage = "Progress restored. Previous progress saved to a local backup."
+                    return backup
+                }
         }
         .alert("Erase learning progress from this iPhone?",
                isPresented: $confirmLocalErase) {
