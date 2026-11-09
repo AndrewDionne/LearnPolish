@@ -16,6 +16,9 @@ struct LocalLearner: Codable {
     // separate actor stays specific to the receiving device and must never
     // be copied from another phone's archive.
     var deviceActorID: UUID?
+    // Set only after an explicit validated two-device merge. From then on,
+    // daily XP uses a canonical UTC day rather than each phone's timezone.
+    var linkedUTCEpoch: UUID?
     var firstOpened = Date()
     // Independent guided pathway cursor: never rewrites source lesson IDs.
     var guidedStepID: String?
@@ -369,7 +372,8 @@ struct LocalProgressBackup: Identifiable {
         var map = next.expedition ?? LocalExpedition()
         _ = map.award(itemID: item.id, mode: mode,
                       tier: owner.difficultyTier.flatMap { (1...5).contains($0) ? $0 : nil } ?? 1,
-                      at: now)
+                      at: now,
+                      useUTCDay: next.linkedUTCEpoch == journal.epochID)
         next.expedition = map
         do {
             try persist(next)
