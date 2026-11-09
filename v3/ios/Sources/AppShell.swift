@@ -288,7 +288,9 @@ struct ProgressScreen: View {
     @State private var confirmLocalErase = false
     @State private var confirmDeleteBackups = false
     @State private var showImporter = false
+    @State private var combineLinkedImport = false
     @State private var pendingRestore: LocalRestorePreview?
+    @State private var pendingLinkedMerge: NativeLinkedDevicePreview?
     @State private var storageMessage: String?
 
     var body: some View {
@@ -318,10 +320,20 @@ struct ProgressScreen: View {
                     .font(.footnote).foregroundStyle(.secondary)
                 Button {
                     storageMessage = nil
+                    combineLinkedImport = false
                     showImporter = true
                 } label: {
                     Label("Restore progress from a file", systemImage: "square.and.arrow.down")
                 }
+                Button {
+                    storageMessage = nil
+                    combineLinkedImport = true
+                    showImporter = true
+                } label: {
+                    Label("Combine linked-device progress", systemImage: "arrow.triangle.merge")
+                }
+                Text("To link a second iPhone, first explicitly Restore a copy of this learner's exported file there. After each phone has practised, exchange an export and choose Combine. Different anonymous learners cannot be combined.")
+                    .font(.footnote).foregroundStyle(.secondary)
                 if !learner.localRestoreBackups.isEmpty {
                     ForEach(Array(learner.localRestoreBackups.prefix(5))) { backup in
                         Button {
@@ -338,7 +350,8 @@ struct ProgressScreen: View {
                         }
                     }
                 }
-                Text("Restore always replaces on-device progress after your approval; it never merges personal XP or automatically connects accounts. A backup of current progress is saved first.")
+                Text("Restore replaces local progress, while Combine merges only two verified copies of the same explicitly transferred learner. Both require confirmation and first save a recoverable local backup; neither connects an account or iCloud.")
+                    .font(.footnote).foregroundStyle(.secondary)
                     .font(.footnote).foregroundStyle(.secondary)
                 if !learner.localRestoreBackups.isEmpty {
                     Button(role: .destructive) {
@@ -387,7 +400,11 @@ struct ProgressScreen: View {
                 guard let file = files.first else {
                     throw LocalProgressArchiveError.invalid
                 }
-                pendingRestore = try learner.previewImportedProgress(from: file)
+                if combineLinkedImport {
+                    pendingLinkedMerge = try learner.previewLinkedDeviceMerge(from: file)
+                } else {
+                    pendingRestore = try learner.previewImportedProgress(from: file)
+                }
                 storageMessage = nil
             } catch {
                 storageMessage = error.localizedDescription
@@ -399,6 +416,14 @@ struct ProgressScreen: View {
                 currentXP: learner.expedition.totalXP) {
                     let backup = try learner.restoreLocalProgress(candidate)
                     storageMessage = "Progress restored. Previous progress saved to a local backup."
+                    return backup
+                }
+        }
+        .sheet(item: $pendingLinkedMerge) { candidate in
+            NativeLinkedMergeReviewSheet(review: candidate,
+                currentXP: learner.expedition.totalXP) {
+                    let backup = try learner.applyLinkedDeviceMerge(candidate)
+                    storageMessage = "Linked-device history combined. Your earlier on-device progress is preserved as a private restore backup."
                     return backup
                 }
         }
