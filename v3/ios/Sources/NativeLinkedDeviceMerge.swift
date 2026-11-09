@@ -1,5 +1,15 @@
 import Foundation
 
+/// Review-only candidate created from an owner-selected exported archive.
+/// No action is taken until an explicit, destructive-confirmation step.
+struct NativeLinkedDevicePreview: Identifiable {
+    let id = UUID()
+    let incoming: LocalProgressArchive
+    let expectedLocalProfile: Data
+    let source: String
+    let plan: NativeLinkedDevicePlan
+}
+
 /// A local, manual owner-directed merge. This has NO cloud adapter, account
 /// connection, network operation or implicit link to another anonymous person.
 enum NativeLinkedDeviceMergeError: LocalizedError, Equatable {
