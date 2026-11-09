@@ -342,10 +342,15 @@ struct LocalProgressBackup: Identifiable {
                 !(next.expedition?.events.isEmpty ?? true))
         let outcome: NativePracticeEvent.Outcome = mode == .speak ? .recorded :
             (understood == true ? .understood : .needsPractice)
-        let entry = NativePracticeEvent(id: UUID(),
-            actorID: next.deviceActorID ?? next.localID,
+        let actorID = next.deviceActorID ?? next.localID
+        let actorCount = journal.events.filter { $0.actorID == actorID }.count
+        let lastPosition = journal.events.compactMap {
+            $0.actorID == actorID ? $0.actorSequence : nil
+        }.max() ?? 0
+        let entry = NativePracticeEvent(id: UUID(), actorID: actorID,
             itemID: item.id, mode: mode, at: now, outcome: outcome,
-            regionID: (next.expedition ?? LocalExpedition()).selectedRegion)
+            regionID: (next.expedition ?? LocalExpedition()).selectedRegion,
+            actorSequence: max(actorCount, lastPosition) + 1)
         do {
             try journal.append(entry)
         } catch {
