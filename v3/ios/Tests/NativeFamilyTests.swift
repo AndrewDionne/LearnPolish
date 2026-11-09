@@ -433,6 +433,28 @@ private final class MockFamilyProtocol: URLProtocol {
         XCTAssertNil(family.receipt(for: event, group: group))
     }
 
+
+    func testFamilySharingPreservesPrecisePostLoginEligibilityWithinOneSecond() throws {
+        let lessons = try CatalogLoader.load()
+        let item = try XCTUnwrap(lessons.first(where: { $0.kind == "vocabulary" })?.items.first)
+        let regions = try PolandRegionCatalog.load()
+        let whole = Date(timeIntervalSince1970: 1_760_000_000)
+        let signedIn = whole.addingTimeInterval(0.35)
+        func activity(_ when: Date, _ mode: PracticeMode) -> LocalXPEvent {
+            LocalXPEvent(id: mode.rawValue + ":" + item.id + ":2025-10-09",
+                itemID: item.id, mode: mode, at: when,
+                xp: 10, baseXP: 10, expeditionXP: 10,
+                tier: 1, regionID: "mazowieckie")
+        }
+        let before = activity(whole.addingTimeInterval(0.20), .learn)
+        let after = activity(whole.addingTimeInterval(0.60), .speak)
+        let candidates = NativeFamilyActivityGuard.candidates(
+            events: [before, after], lessons: lessons, regions: regions,
+            connectedAt: signedIn, now: whole.addingTimeInterval(0.9))
+        XCTAssertEqual(candidates.map(\.id), [after.id],
+                       "A prior activity from the same second must never leak")
+    }
+
     func testUTCBoundaryAndNewlyConnectedSessionFilterHistoricalActivity() throws {
         let lessons = try CatalogLoader.load()
         let items = try XCTUnwrap(lessons.first(where: { $0.kind == "vocabulary" })?.items)
