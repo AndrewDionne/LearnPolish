@@ -72,6 +72,8 @@ struct LocalLearner: Codable {
             let sourceSounds = try NativeSoundStudio.load(lessons: source, bundle: bundle)
             let sourceIntroductions = try NativeSourceExposure.load(lessons: source, bundle: bundle)
             let tourists = try TouristCatalog.load(lessons: source, bundle: bundle)
+            // Source-drifted or malformed journals must not be saved over.
+            try profile.practiceJournal?.validateSource(lessons: source)
             lessons = source
             coreJourney = journey
             regions = sourceRegions
@@ -346,6 +348,7 @@ struct LocalLearner: Codable {
         guard canSave, catalogError == nil, saveError == nil else {
             throw LocalProgressArchiveError.unavailable
         }
+        try profile.practiceJournal?.validateSource(lessons: lessons)
         let snapshot = LocalProgressArchive(profile: profile,
             sourceLessonIDs: lessons.map(\.id))
         return try LocalProgressArchiveDocument(archive: snapshot)
