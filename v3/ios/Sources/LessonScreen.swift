@@ -158,8 +158,11 @@ struct LessonScreen: View {
             } else {
                 mode = lesson.availableModes.first ?? .learn
             }
-            let resumeID = startItemID ?? (learner.profile.lastLessonID == lesson.id
-                                           ? learner.profile.lastItemID : nil)
+            // Continue must start at the next unattempted original source item;
+            // an exploratory saved position must not override it.
+            let resumeID = startItemID ?? (resumeAtNextUnseen ? nil :
+                (learner.profile.lastLessonID == lesson.id
+                 ? learner.profile.lastItemID : nil))
             if dueItemIDs == nil {
                 batch = NativePracticeRules.firstUnvisitedBatch(for: lesson,
                                                                progress: learner.profile.records)

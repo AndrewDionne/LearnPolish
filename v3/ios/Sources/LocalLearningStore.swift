@@ -1,6 +1,11 @@
 import Foundation
 import Combine
 
+enum NativeHomeLearningRoute {
+    case guided(GuidedFoundationStep)
+    case core(Lesson)
+}
+
 struct PracticeRecord: Codable {
     var attempts: Int = 0
     var completed: Int = 0
@@ -236,6 +241,15 @@ struct LocalProgressBackup: Identifiable {
                 (profile.records["learn:" + item.id]?.attempts ?? 0) == 0
             }
         })
+    }
+
+    /// One primary entry: existing first words and grammar before the source
+    /// V2 core course. Library access remains unrestricted. Both routes use
+    /// the same original Learn records so familiar words are not re-awarded.
+    var homeLearningRoute: NativeHomeLearningRoute? {
+        if let guided = nextGuidedStep { return .guided(guided) }
+        if let lesson = nextLesson { return .core(lesson) }
+        return nil
     }
 
     func guidedPractisedCount(_ step: GuidedFoundationStep) -> Int {

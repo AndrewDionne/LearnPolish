@@ -1,5 +1,30 @@
 # V3 execution ledger — GitHub is durable continuity
 
+## V3-08F — one Home Continue path and iPhone device acceptance handoff (2026-11-10)
+
+**Implementation:** Native Home now has a **single** prominent Continue entry
+using existing guided vocabulary/grammar progress, then the original core
+course when every existing guided reference has at least one actual saved
+Learn attempt. Browsing Library and optional sound/scenario activities remains
+unrestricted. Original source item IDs and shared Learn/XP/review records are
+not duplicated. Core "resume next unseen" ignores stale item position after
+a voluntary Library visit, without replacing V2 course IDs or inventing any
+unapproved dependency. Two native XCTest cases cover anonymous first-run,
+all-skipped progression, 55 source-backed original-record attempts and restart
+without a login.
+
+**Device gate:** [first Xcode/iPhone acceptance checklist](IOS_DEVICE_SMOKE.md)
+provides an isolated Git worktree launch and exact offline/voice/review/restart
+observations. An initial physical functional-beta test is now recommended
+after exact-head Simulator CI, **before** full curricular editorial/cloud
+release completion. No credentials, Apple cloud entitlements or backend
+changes. Prior V3-08E [CI #42820424132](https://github.com/AndrewDionne/LearnPolish/actions/runs/42820424132)
+**SUCCESS** — original audio/source checks, Simulator build, XCTest. The
+new V3-08F exact-head CI is pending at commit creation; PR #169 stays draft.
+
+---
+
+
 ## V3-08E — guided lesson cursor integrity and unpractised completion feedback (2026-11-10)
 
 **Implementation:** Revisiting earlier prerequisites or exploring future foundation groups no longer overwrites the active guided Continue cursor. A guided item/step cursor is now persisted atomically **before** in-memory mutation; failed writes leave the original cursor intact and surface the existing storage error. Completing a group is navigation-only: it does not mark skipped phrases as learned or issue XP. The final screen reports the actual **N of M phrases practised** rather than claiming saved practice when all items were skipped, and offers **Revisit unpractised** to jump to the first original source phrase without manufacturing completion state. Voluntary free exploration and source-item identity are preserved.

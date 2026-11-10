@@ -34,17 +34,31 @@ struct HomeScreen: View {
                     ContentUnavailableView("Lessons unavailable", systemImage: "exclamationmark.triangle",
                                            description: Text(message))
                 } else {
-                    if let guided = learner.nextGuidedStep {
+                    if let route = learner.homeLearningRoute {
                         VStack(alignment: .leading, spacing: 12) {
-                            Text("Continue guided learning")
+                            Text("Continue learning")
                                 .font(.headline)
-                            Text(guided.title)
-                                .font(.title2.weight(.semibold))
-                            Text(guided.stage)
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
+                            switch route {
+                            case .guided(let guided):
+                                Text(guided.title)
+                                    .font(.title2.weight(.semibold))
+                                Text(guided.stage)
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                            case .core(let lesson):
+                                Text(lesson.title)
+                                    .font(.title2.weight(.semibold))
+                                if let description = lesson.description {
+                                    Text(description).foregroundStyle(.secondary)
+                                }
+                            }
                             NavigationLink {
-                                GuidedPracticeScreen(step: guided)
+                                switch route {
+                                case .guided(let guided):
+                                    GuidedPracticeScreen(step: guided)
+                                case .core(let lesson):
+                                    LessonScreen(lesson: lesson, resumeAtNextUnseen: true)
+                                }
                             } label: {
                                 Label("Continue", systemImage: "arrow.right")
                                     .frame(maxWidth: .infinity)
@@ -106,28 +120,6 @@ struct HomeScreen: View {
                         }
                     }
 
-
-                    if let lesson = learner.nextLesson {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Continue learning")
-                                .font(.headline)
-                            Text(lesson.title)
-                                .font(.title2.weight(.semibold))
-                            if let description = lesson.description {
-                                Text(description).foregroundStyle(.secondary)
-                            }
-                            NavigationLink {
-                                LessonScreen(lesson: lesson, resumeAtNextUnseen: true)
-                            } label: {
-                                Label("Continue", systemImage: "arrow.right")
-                                    .frame(maxWidth: .infinity)
-                            }
-                            .buttonStyle(.borderedProminent)
-                        }
-                        .padding(18)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 18))
-                    }
 
                     Text("Your path")
                         .font(.headline)

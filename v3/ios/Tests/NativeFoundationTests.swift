@@ -218,4 +218,58 @@ import XCTest
         XCTAssertEqual(reopened.expedition.regionTotal("małopolskie"), 10)
         XCTAssertNil(reopened.profile.lastCoreLessonID)
     }
+
+    func testHomeHasOneGuidedPrimaryRouteAndSkipNeverSuggestsCore() throws {
+        let folder = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let learner = LocalLearningStore(storageURL: folder.appendingPathComponent("profile.json"))
+        guard case .guided(let first)? = learner.homeLearningRoute else {
+            return XCTFail("First launch must recommend recorded first words")
+        }
+        XCTAssertEqual(first.id, "simple-replies")
+        XCTAssertEqual(learner.expedition.totalXP, 0)
+        for step in learner.guidedFoundations {
+            XCTAssertTrue(learner.finishedGuidedStep(step.id))
+        }
+        guard case .guided(let revisit)? = learner.homeLearningRoute else {
+            return XCTFail("A fully skipped guided path cannot redirect to the core course")
+        }
+        XCTAssertEqual(revisit.id, first.id)
+        XCTAssertEqual(learner.profile.records.count, 0)
+        let reopened = LocalLearningStore(storageURL: folder.appendingPathComponent("profile.json"))
+        guard case .guided(let resumed)? = reopened.homeLearningRoute else {
+            return XCTFail("Anonymous guided resume must survive device restart")
+        }
+        XCTAssertEqual(resumed.id, "simple-replies")
+    }
+
+    func testHomeUsesOriginalLearnRecordsToTransitionFromGuidedToCore() throws {
+        let folder = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let learner = LocalLearningStore(storageURL: folder.appendingPathComponent("profile.json"))
+        var uniqueReferences = Set<String>()
+        for guided in learner.guidedFoundations {
+            for reference in guided.items where uniqueReferences.insert(reference.id).inserted {
+                let original = try XCTUnwrap(learner.sourceItem(for: reference))
+                XCTAssertTrue(learner.recordAttempt(item: original, mode: .learn,
+                                                    understood: false))
+            }
+        }
+        XCTAssertEqual(uniqueReferences.count, 55)
+        XCTAssertNil(learner.nextGuidedStep)
+        guard case .core(let lesson)? = learner.homeLearningRoute else {
+            return XCTFail("After source-backed practice, offer the existing V2 core course")
+        }
+        XCTAssertEqual(lesson.id, "Conversation_1")
+        let reopened = LocalLearningStore(storageURL: folder.appendingPathComponent("profile.json"))
+        guard case .core(let persistent)? = reopened.homeLearningRoute else {
+            return XCTFail("Transition must persist without a login")
+        }
+        XCTAssertEqual(persistent.id, lesson.id)
+        XCTAssertEqual(reopened.profile.records["learn:Conversation_1:14"]?.attempts, 1,
+                       "The same recorded source is reused, not copied as a new lesson ID")
+    }
+
 }
