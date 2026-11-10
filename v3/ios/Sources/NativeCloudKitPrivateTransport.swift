@@ -114,12 +114,46 @@ struct NativeCloudKitEnvelope: Codable {
         try envelope.validate(lessons: lessons, regions: regions)
         return envelope
     }
+
+    /// An acknowledgement must contain the exact journal/tombstone bytes
+    /// submitted, not merely the same record generation and deleted flag.
+    static func verifyAcknowledgement(_ saved: Self, submittedPayload: Data,
+                                      lessons: [Lesson],
+                                      regions: [PolandRegion]) throws {
+        guard try saved.encoded(lessons: lessons, regions: regions) ==
+                submittedPayload else {
+            throw NativeCloudKitError.invalidAcknowledgement
+        }
+    }
 }
 
 struct NativeCloudKitRemoteCopy {
     let envelope: NativeCloudKitEnvelope
     /// The *server* record's change tag, not an app-computed revision.
     let changeTag: String
+}
+
+/// A synchronous, zero-network guard invoked immediately before *each*
+/// CloudKit write dispatch, not just when an operation initially starts.
+/// MainActor can be re-entered during an await: opt-out, account pause,
+/// learner reset or a later server revision must cancel an in-flight upload.
+@MainActor
+enum NativeCloudWritePreflight {
+    static func authorize(gate: NativePrivateCloudGate, learner: LocalLearner,
+                          scope: NativePrivateCloudScope, accountKey: String,
+                          expectedGeneration: UInt64) throws {
+        let currentScope = try gate.requireActiveLocalLearner(learner)
+        guard currentScope == scope else {
+            throw NativePrivateCloudGateError.unexpectedOwner
+        }
+        guard gate.knownGeneration == expectedGeneration else {
+            throw NativeCloudKitError.staleChangeTag
+        }
+        try gate.authorizeRemoteOperation(
+            verifiedOpaqueAccountKey: accountKey, learner: learner,
+            snapshot: NativePrivateCloudSnapshot(
+                scope: scope, generation: expectedGeneration))
+    }
 }
 
 /// The iOS 17 CloudKit APIs are compiled in unsigned Simulator CI, but no
@@ -249,7 +283,8 @@ final class NativeCloudKitPrivateTransport {
     /// changedKeys overwrite mode is permitted.
     private func compareAndSwap(_ envelope: NativeCloudKitEnvelope,
                                 expected: NativeCloudKitRemoteCopy?,
-                                lessons: [Lesson], regions: [PolandRegion])
+                                lessons: [Lesson], regions: [PolandRegion],
+                                beforeWrite: () throws -> Void)
         async throws -> NativeCloudKitRemoteCopy {
         let payload = try envelope.encoded(lessons: lessons, regions: regions)
         let current = try await readVerified(
@@ -257,6 +292,8 @@ final class NativeCloudKitPrivateTransport {
         guard current?.copy.changeTag == expected?.changeTag else {
             throw NativeCloudKitError.staleChangeTag
         }
+        // An awaited remote read can outlive the user's consent.
+        try beforeWrite()
         let record: CKRecord
         if let current {
             record = current.record
@@ -267,6 +304,8 @@ final class NativeCloudKitPrivateTransport {
             record = CKRecord(recordType: recordType,
                               recordID: recordID(envelope.scope))
         }
+        // Zone creation also suspends; check again before the actual write.
+        try beforeWrite()
         record["payload"] = payload as NSData
         // The real remote change tag is rechecked by the server even if it
         // changes after our read; do not silently retry on conflict.
@@ -294,6 +333,9 @@ final class NativeCloudKitPrivateTransport {
               acknowledgement.envelope.deleted == envelope.deleted else {
             throw NativeCloudKitError.invalidAcknowledgement
         }
+        try NativeCloudKitEnvelope.verifyAcknowledgement(
+            acknowledgement.envelope, submittedPayload: payload,
+            lessons: lessons, regions: regions)
         return acknowledgement
     }
 
@@ -317,7 +359,12 @@ final class NativeCloudKitPrivateTransport {
         let current = try await readManually(
             learner: learner, gateStore: gateStore,
             lessons: lessons, regions: regions)
+        let acceptedGeneration = gateStore.gate.knownGeneration
         let account = try await authenticatedAccountKey()
+        // User can opt out or switch the account while a read is in flight.
+        try NativeCloudWritePreflight.authorize(
+            gate: gateStore.gate, learner: learner, scope: scope,
+            accountKey: account, expectedGeneration: acceptedGeneration)
         let decision = try NativeCloudSyncPlanner.decide(
             local: learner, scope: scope, remote: current?.envelope,
             knownGeneration: gateStore.gate.knownGeneration,
@@ -343,7 +390,12 @@ final class NativeCloudKitPrivateTransport {
             scope: scope, generation: oldRevision + 1,
             deleted: false, journal: journal)
         let saved = try await compareAndSwap(
-            envelope, expected: current, lessons: lessons, regions: regions)
+            envelope, expected: current, lessons: lessons, regions: regions,
+            beforeWrite: {
+                try NativeCloudWritePreflight.authorize(
+                    gate: gateStore.gate, learner: learner, scope: scope,
+                    accountKey: account, expectedGeneration: acceptedGeneration)
+            })
         guard try await authenticatedAccountKey() == scope.accountKey else {
             throw NativeCloudKitError.wrongAccount
         }
@@ -391,7 +443,16 @@ final class NativeCloudKitPrivateTransport {
             scope: request.scope, generation: request.generation,
             deleted: true, journal: nil)
         let saved = try await compareAndSwap(
-            tombstone, expected: current, lessons: lessons, regions: regions)
+            tombstone, expected: current, lessons: lessons, regions: regions,
+            beforeWrite: {
+                guard gateStore.gate.phase == .deletionPending,
+                      gateStore.gate.scope == request.scope,
+                      gateStore.gate.requestedTombstone == request,
+                      gateStore.gate.knownGeneration < UInt64.max,
+                      gateStore.gate.knownGeneration + 1 == request.generation else {
+                    throw NativePrivateCloudGateError.invalidTransition
+                }
+            })
         try await confirm(request.scope)
         let verified = NativePrivateCloudTombstone(
             scope: request.scope, generation: saved.envelope.generation)

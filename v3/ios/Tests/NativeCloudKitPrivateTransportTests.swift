@@ -198,4 +198,82 @@ import XCTest
         XCTAssertGreaterThan(combined.events.count, local.events.count,
             "The live adapter must refuse this stale local upload")
     }
+
+    func testCloudWritePreflightRechecksConsentAndAccountAtDispatch() throws {
+        let (lessons, regions, _) = try sources()
+        let envelope = try sourceEnvelope()
+        var learner = LocalLearner()
+        learner.localID = envelope.scope.learnerID
+        learner.practiceJournal = envelope.journal
+        learner.linkedUTCEpoch = envelope.scope.journalEpoch
+        var gate = NativePrivateCloudGate()
+        try gate.proposeExplicitOptIn(
+            approved: true, verifiedOpaqueAccountKey: envelope.scope.accountKey,
+            learner: learner, lessons: lessons, regions: regions)
+        func check(_ current: NativePrivateCloudGate,
+                   _ profile: LocalLearner = learner,
+                   account: String? = nil, revision: UInt64 = 0) throws {
+            try NativeCloudWritePreflight.authorize(
+                gate: current, learner: profile, scope: envelope.scope,
+                accountKey: account ?? envelope.scope.accountKey,
+                expectedGeneration: revision)
+        }
+        XCTAssertNoThrow(try check(gate))
+        XCTAssertThrowsError(try check(gate, account: "changed-account-key"))
+        try gate.optOutKeepLocalData()
+        XCTAssertThrowsError(try check(gate),
+            "Consent withdrawal during an await must cancel the upload")
+        try gate.resumeSameAccount(
+            approved: true, verifiedOpaqueAccountKey: envelope.scope.accountKey)
+        XCTAssertNoThrow(try check(gate))
+        gate.observeAccount("changed-account-key")
+        XCTAssertThrowsError(try check(gate),
+            "Paused iCloud account must never be used for a pending write")
+    }
+
+    func testCloudWritePreflightRejectsNewServerGenerationAndLearnerReset() throws {
+        let (lessons, regions, _) = try sources()
+        let envelope = try sourceEnvelope()
+        var learner = LocalLearner()
+        learner.localID = envelope.scope.learnerID
+        learner.practiceJournal = envelope.journal
+        learner.linkedUTCEpoch = envelope.scope.journalEpoch
+        var gate = NativePrivateCloudGate()
+        try gate.proposeExplicitOptIn(
+            approved: true, verifiedOpaqueAccountKey: envelope.scope.accountKey,
+            learner: learner, lessons: lessons, regions: regions)
+        try gate.observeVerifiedServerRevision(
+            NativePrivateCloudSnapshot(scope: envelope.scope, generation: 3))
+        XCTAssertThrowsError(try NativeCloudWritePreflight.authorize(
+            gate: gate, learner: learner, scope: envelope.scope,
+            accountKey: envelope.scope.accountKey, expectedGeneration: 0))
+        XCTAssertNoThrow(try NativeCloudWritePreflight.authorize(
+            gate: gate, learner: learner, scope: envelope.scope,
+            accountKey: envelope.scope.accountKey, expectedGeneration: 3))
+        learner.localID = UUID()
+        XCTAssertThrowsError(try NativeCloudWritePreflight.authorize(
+            gate: gate, learner: learner, scope: envelope.scope,
+            accountKey: envelope.scope.accountKey, expectedGeneration: 3))
+    }
+
+    func testCloudServerAckMustEchoExactSavedPayloadNotJustRevision() throws {
+        let (lessons, regions, item) = try sources()
+        let envelope = try sourceEnvelope()
+        let submitted = try envelope.encoded(lessons: lessons, regions: regions)
+        XCTAssertNoThrow(try NativeCloudKitEnvelope.verifyAcknowledgement(
+            envelope, submittedPayload: submitted,
+            lessons: lessons, regions: regions))
+        var altered = try XCTUnwrap(envelope.journal)
+        try altered.append(NativePracticeEvent(
+            id: UUID(), actorID: UUID(), itemID: item.id, mode: .learn,
+            at: Date(timeIntervalSince1970: 1_760_000_001),
+            outcome: .understood, regionID: regions[0].id,
+            actorSequence: 2))
+        let sameRevisionDifferentHistory = NativeCloudKitEnvelope(
+            scope: envelope.scope, generation: envelope.generation,
+            deleted: false, journal: altered)
+        XCTAssertThrowsError(try NativeCloudKitEnvelope.verifyAcknowledgement(
+            sameRevisionDifferentHistory, submittedPayload: submitted,
+            lessons: lessons, regions: regions))
+    }
 }
