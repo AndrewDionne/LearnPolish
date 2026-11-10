@@ -99,6 +99,14 @@ struct HomeScreen: View {
                               systemImage: "waveform")
                     }
                     .font(.headline)
+                    #if DEBUG
+                    NavigationLink {
+                        NativeAudioChannelProbeScreen()
+                    } label: {
+                        Label("Audio check (developer build)", systemImage: "headphones")
+                    }
+                    .font(.footnote)
+                    #endif
                     NavigationLink {
                         TouristUnitsScreen()
                     } label: {

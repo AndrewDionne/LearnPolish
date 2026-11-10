@@ -65,10 +65,23 @@ final class NativeAudioEngine {
                 let candidate = try AVAudioPlayer(contentsOf: file)
                 candidate.enableRate = true
                 candidate.rate = min(1, max(0.75, rate))
+                // Explicitly centre original mono recordings in the stereo field.
+                candidate.pan = 0
                 guard candidate.prepareToPlay(), candidate.play() else {
                     throw NSError(domain: "NativeAudio", code: 1)
                 }
                 self.player = candidate
+                #if DEBUG
+                // Only non-identifying route and channel metadata, for Xcode's
+                // console while diagnosing the owner-reported right-ear issue.
+                let session = AVAudioSession.sharedInstance()
+                let output = session.currentRoute.outputs
+                    .map { $0.portType.rawValue }.joined(separator: ",")
+                print("[PTP audio] sourceChannels=\(candidate.numberOfChannels) "
+                      + "pan=\(candidate.pan) route=\(output) "
+                      + "outputChannels=\(session.outputNumberOfChannels) "
+                      + "category=\(session.category.rawValue)")
+                #endif
                 success = true
             } catch {
                 success = false

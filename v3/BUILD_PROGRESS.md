@@ -1,5 +1,18 @@
 # V3 execution ledger — GitHub is durable continuity
 
+## V3-09C — isolated on-device channel probe following source MP3 analysis (2026-11-11)
+
+**Hard result from [V3-09B Actions #42923919256](https://github.com/AndrewDionne/LearnPolish/actions/runs/42923919256):** CI **SUCCESS**. The read-only AVFoundation source check found 455 available original MP3s and decoded 84 representative files (including first-guided examples): **84/84 mono, 0 stereo, 0 decoding failures**. These clips have NO source right-only stereo channel to fix by rewriting MP3s. Owner independently found normal two-ear playback in other iPhone apps, and the iPhone's Mono Audio accessibility switch did not change the one-ear behavior in Path to Polish. Therefore source stereo downmix/transcoding is **not justified** until real output routing is measured.
+
+**Native diagnostic:** A `#if DEBUG` only Home → **Audio check (developer build)** view now sends generated stereo PCM with known Left-only, Right-only and identical Both signals through the **same serialized NativeAudioEngine as lesson recordings**. It shows only the active `AVAudioSession` output **port type**, channel count and category—no device or person names, network, recording or server. The normal playback debug console logs original `AVAudioPlayer.numberOfChannels`, centred `pan = 0`, route type and active output channels. Three pure PCM XCTest cases assert left/right isolation and identical dual-channel test data. Production interface is unchanged; no original MP3, phonetic score, learner data or server altered.
+
+**Owner retest:** Disable iPhone **Mono Audio** (temporarily, to make left/right probes meaningful). In new DEBUG Xcode build open Home → Audio check. Play Left only, Right only and Both using the same earphones. Return to a Polish lesson and listen once. Report which ear(s) respond per probe plus the visible output route/active channel count (and Xcode `[PTP audio]` line if convenient). If Both is right-only, investigate actual output routing; if Both bilateral but original words right-only, inspect AVAudioPlayer mono→stereo mapping; if left/right probes are reversed or merged, investigate the selected audio output port. Hold any resampling or category changes until this direct evidence.
+
+**Verification gate:** Exact-head simulator compilation and XCTest must pass for this DEBUG diagnostic before a phone retest. PR #169 stays draft; GitHub is durable continuity.
+
+---
+
+
 ## V3-09B — device headphone right-channel report: source-channel investigation (2026-11-11)
 
 **Owner hardware observation:** With the native audio thread fix installed, the Polish reference sounds appear to come from the **right earphone only**. This is a separate defect from the previous main-thread AVAudioSession warning. The current native AVAudioPlayer uses the normal centred stereo pan (no assignment to .pan), and playback requests the .playback output category; neither by itself explains a deliberately right-panned voice. Source MP3 channel content, phone Accessibility audio balance and Bluetooth output routing have not yet been independently isolated.

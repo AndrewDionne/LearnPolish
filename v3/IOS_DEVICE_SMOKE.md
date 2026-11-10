@@ -38,6 +38,11 @@ family entitlements to get this offline test working.
   Continue button showing **Yes and no**, no signup, login or iCloud prompt
 - [ ] Switch to Airplane Mode: guided Polish words and full original audio
   play locally at **1×** and **0.75×**; no network needed
+- [ ] On the Xcode DEBUG build, temporarily turn iPhone Mono Audio OFF. From
+  Home → **Audio check (developer build)**, play **Left only**, **Right only**
+  and **Both** tones in the same earphones. Record which ear(s) you hear
+  for each plus the visible route type and hardware channel count.
+  This diagnostic is not displayed in production builds and transmits nothing.
 - [ ] Rapidly tap Play Polish, switch between two lessons, and alternate
   0.75×/1×. Playback should start promptly, buttons should not freeze,
   and Xcode's Main Thread Performance Checker should show no
