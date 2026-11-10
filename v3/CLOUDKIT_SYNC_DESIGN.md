@@ -13,6 +13,14 @@ progress without provider audio, family credentials or sessions. Local erase
 must be separately confirmed, replace the learner atomically and never touch
 server-held family contributions or a prior export. Neither action uses iCloud.
 
+## Recovery and consent verification (2026-11-10)
+
+- **171 native XCTest passed** at [Actions #42798542713](https://github.com/AndrewDionne/LearnPolish/actions/runs/42798542713). The tested adapter remains manually invoked and **not enabled** in the running application.
+- `NativeCloudSyncPlanner.decide` prevents an upload when the remote has unseen source events, disallows recreating a missing record after a known prior generation, and declines to rewrite already-identical history. It never applies its calculation to personal XP.
+- `NativeCloudKitPrivateTransport.readManually` checks a durable, explicit opt-in and learner/epoch before remote reads. Remote tombstones are recorded in the device policy to stop stale resurrection; pending-delete recovery still reads server tombstones to complete interrupted acknowledgements.
+- `NativePrivateCloudGate.requireActiveLocalLearner` runs **before any Apple account-status request** and refuses opt-out, account pause, pending delete, confirmed delete, unrelated learner and unlinked journal. Server account and change-tag checks must still succeed after this preflight.
+- **Not yet live:** signed iCloud container/entitlements, conditional record CAS with two actual Apple devices, deletion/identity reconciliation, network interruption and quota trials, longer histories, independent guardian permissions and a user-enabled sync interface. Simulator unit results must not be described as live iCloud verification.
+
 ## Current verified implementation boundary (2026-11-09)
 
 - `NativeCloudKitPrivateTransport.swift` now compiles as a real **manually invoked**
