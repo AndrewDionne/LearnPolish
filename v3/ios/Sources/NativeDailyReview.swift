@@ -20,23 +20,22 @@ enum NativeDailyReviewQueue {
                          now: Date, limit: Int = batchLimit)
         -> [NativeDailyReviewCard] {
         guard limit > 0 else { return [] }
-        let entries: [(lessonIndex: Int, itemIndex: Int,
-                       card: NativeDailyReviewCard)] = lessons.enumerated()
-            .flatMap { lessonIndex, lesson in
-                guard lesson.kind != "reading",
-                      lesson.availableModes.contains(.learn) else {
-                    return [(Int, Int, NativeDailyReviewCard)]()
-                }
-                return lesson.items.enumerated().compactMap { itemIndex, item in
-                    guard let record = records["learn:" + item.id],
-                          let dueAt = record.nextReview,
-                          dueAt.timeIntervalSince1970.isFinite,
-                          record.attempts > 0, dueAt <= now else { return nil }
-                    return (lessonIndex, itemIndex,
-                            NativeDailyReviewCard(lesson: lesson, item: item,
-                                                  dueAt: dueAt))
-                }
+        var entries: [(lessonIndex: Int, itemIndex: Int,
+                       card: NativeDailyReviewCard)] = []
+        for (lessonIndex, lesson) in lessons.enumerated() {
+            guard lesson.kind != "reading",
+                  lesson.availableModes.contains(.learn) else { continue }
+            for (itemIndex, item) in lesson.items.enumerated() {
+                guard let record = records["learn:" + item.id],
+                      let dueAt = record.nextReview,
+                      dueAt.timeIntervalSince1970.isFinite,
+                      record.attempts > 0, dueAt <= now else { continue }
+                entries.append((
+                    lessonIndex: lessonIndex, itemIndex: itemIndex,
+                    card: NativeDailyReviewCard(
+                        lesson: lesson, item: item, dueAt: dueAt)))
             }
+        }
         return entries.sorted {
             if $0.card.dueAt != $1.card.dueAt {
                 return $0.card.dueAt < $1.card.dueAt
@@ -45,7 +44,7 @@ enum NativeDailyReviewQueue {
                 return $0.lessonIndex < $1.lessonIndex
             }
             return $0.itemIndex < $1.itemIndex
-        }.prefix(min(limit, batchLimit)).map(\.card)
+        }.prefix(min(limit, batchLimit)).map { $0.card }
     }
 }
 
