@@ -179,6 +179,30 @@ struct NativePrivateCloudGate: Codable {
         phase = .off
     }
 
+    /// Zero-network local preflight. Call this BEFORE requesting even the
+    /// opaque Apple account ID, especially after user opt-out or a paused
+    /// account change. The later remote check must still verify the *actual*
+    /// Apple account and the authenticated server generation.
+    func requireActiveLocalLearner(_ learner: LocalLearner) throws
+        -> NativePrivateCloudScope {
+        if phase == .remotelyDeleted {
+            throw NativePrivateCloudGateError.deletedRemoteHistory
+        }
+        if phase == .deletionPending {
+            throw NativePrivateCloudGateError.deletionPending
+        }
+        guard phase == .active, let scope else {
+            throw NativePrivateCloudGateError.explicitConsentRequired
+        }
+        guard learner.localID == scope.learnerID,
+              learner.linkedUTCEpoch == scope.journalEpoch,
+              learner.practiceJournal?.epochID == scope.journalEpoch,
+              learner.practiceJournal?.hasLegacyHistory == false else {
+            throw NativePrivateCloudGateError.unexpectedOwner
+        }
+        return scope
+    }
+
     /// An adapter may consider reading/writing only while the verified
     /// original account, anonymous learner and journal epoch still match.
     func authorizeRemoteOperation(verifiedOpaqueAccountKey: String?,
