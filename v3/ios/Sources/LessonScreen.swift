@@ -235,12 +235,14 @@ struct LessonScreen: View {
                 ForEach(choices, id: \.self) { choice in
                     Button {
                         guard selectedOption == nil else { return }
-                        selectedOption = choice
-                        learner.recordAttempt(item: item, mode: .listen,
-                                              understood: choice == (item.comprehension.flatMap {
-                                                  $0.options.indices.contains($0.correctIndex)
-                                                    ? $0.options[$0.correctIndex] : nil
-                                              } ?? item.english))
+                        NativePracticeSubmission.commit(
+                            store: learner, item: item, mode: .listen,
+                            understood: choice == (item.comprehension.flatMap {
+                                $0.options.indices.contains($0.correctIndex)
+                                    ? $0.options[$0.correctIndex] : nil
+                            } ?? item.english)) {
+                                selectedOption = choice
+                            }
                     } label: {
                         HStack {
                             Text(choice)
@@ -289,9 +291,11 @@ struct LessonScreen: View {
                 ForEach(check.options, id: \.self) { option in
                     Button(option) {
                         guard selectedOption == nil else { return }
-                        selectedOption = option
-                        learner.recordAttempt(item: item, mode: .read,
-                                              understood: option == check.options[check.correctIndex])
+                        NativePracticeSubmission.commit(
+                            store: learner, item: item, mode: .read,
+                            understood: option == check.options[check.correctIndex]) {
+                                selectedOption = option
+                            }
                     }
                     .buttonStyle(.bordered)
                     .disabled(selectedOption != nil)
@@ -355,8 +359,10 @@ struct LessonScreen: View {
                 NativeSpeechPracticePanel(item: item, audio: audio, feedback: $speechFeedback)
                     .id(item.id)
                 Button("Mark practised") {
-                    learner.recordAttempt(item: item, mode: .speak, understood: nil)
-                    advance()
+                    NativePracticeSubmission.commit(
+                        store: learner, item: item, mode: .speak, understood: nil) {
+                            advance()
+                        }
                 }
                 .buttonStyle(.bordered)
                 .disabled(!audio.usableRecording)
@@ -388,21 +394,27 @@ struct LessonScreen: View {
     private func ratingControls(for mode: PracticeMode) -> some View {
         HStack(spacing: 12) {
             Button("Needs practice") {
-                learner.recordAttempt(item: item, mode: mode, understood: false)
-                advance()
+                NativePracticeSubmission.commit(
+                    store: learner, item: item, mode: mode, understood: false) {
+                        advance()
+                    }
             }
             .buttonStyle(.bordered)
             Button("Understood") {
-                learner.recordAttempt(item: item, mode: mode, understood: true)
-                advance()
+                NativePracticeSubmission.commit(
+                    store: learner, item: item, mode: mode, understood: true) {
+                        advance()
+                    }
             }
             .buttonStyle(.borderedProminent)
         }
     }
 
     private func rate(_ success: Bool) {
-        learner.recordAttempt(item: item, mode: .learn, understood: success)
-        advance()
+        NativePracticeSubmission.commit(
+            store: learner, item: item, mode: .learn, understood: success) {
+                advance()
+            }
     }
 
     private func advance() {

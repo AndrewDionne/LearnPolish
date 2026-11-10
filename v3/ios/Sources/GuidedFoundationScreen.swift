@@ -219,8 +219,10 @@ struct GuidedPracticeScreen: View {
 
     private func submit(_ remembered: Bool) {
         guard let original = learner.sourceItem(for: current) else { return }
-        learner.recordAttempt(item: original, mode: .learn, understood: remembered)
-        advance()
+        NativePracticeSubmission.commit(
+            store: learner, item: original, mode: .learn, understood: remembered) {
+                advance()
+            }
     }
 
     private func advance() {

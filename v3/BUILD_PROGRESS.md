@@ -1,5 +1,16 @@
 # V3 execution ledger — GitHub is durable continuity
 
+## V3-08A — answer submission and lesson navigation durability (2026-11-10)
+
+**Implementation:** Across Learn, Listen, Read, Speak and Guided Foundations, a submitted answer now advances or locks in a selected choice **only after** `LocalLearningStore.recordAttempt` returns success. `NativePracticeSubmission.commit` is the single persist-before-UI boundary. Failed storage writes leave the same card and choices available for retry and show the existing storage error; deliberate Next/Skip remains non-awarding navigation. Both native multiple-choice modes defer their selected-answer state until after a successful write. No scoring, content, account, audio, Neon or Render changes.
+
+**Regression coverage:** `NativePracticeSubmissionTests` exercises all four native practice modes with blocked storage (no callback, no journal/XP/review, original bytes preserved), plus accepted answers verified from reloaded disk **inside** the navigation callback. Guided Foundations shares the exact same submission method.
+
+**Verification:** Prior V3-07E [Actions #42802763331](https://github.com/AndrewDionne/LearnPolish/actions/runs/42802763331) completed **SUCCESS**, iPhone Simulator compiled and XCTest phase passed. New V3-08A source awaits its own exact-head GitHub iPhone Simulator CI result. V3 remains a draft PR; owner phone testing is intentionally deferred. Live CloudKit, guardian-safe family features, real speech calibration and bilingual curriculum review are still separate unverified release gates.
+
+---
+
+
 **2026-11-08. Owner direction: continue developing the full native application; defer owner Xcode install/physical testing until substantially feature-complete.** Automated macOS Xcode builds and iPhone Simulator tests remain required on every tranche. The native PR stays draft until release gates are satisfied.
 
 ## V3-07D — manual private-CloudKit recovery, conflict preflight and no-network consent guard (2026-11-10)

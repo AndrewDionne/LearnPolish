@@ -163,3 +163,21 @@ enum NativePracticeRules {
         items.firstIndex { (progress[mode.rawValue + ":" + $0.id]?.attempts ?? 0) == 0 } ?? 0
     }
 }
+
+ 
+/// Native answer submission must persist the actual practice journal, review
+/// record and daily XP atomically before the UI marks an option answered or
+/// moves to another card. A failed write keeps the current card actionable.
+/// This is separate from the explicit Skip/Next navigation (no reward).
+@MainActor
+enum NativePracticeSubmission {
+    @discardableResult
+    static func commit(store: LocalLearningStore,
+                       item: LessonItem, mode: PracticeMode,
+                       understood: Bool?, onSaved: () -> Void) -> Bool {
+        guard store.recordAttempt(item: item, mode: mode,
+                                  understood: understood) else { return false }
+        onSaved()
+        return true
+    }
+}
