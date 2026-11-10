@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- Approved square Path to Polish icon. Do not pre-round: iOS masks corners. -->
+  <rect width="1024" height="1024" fill="#FFFFFF"/>
+  <g transform="translate(12 138) scale(1.46 1.22)" fill="#102333">
+    <path fill-rule="evenodd" d="M126 67 H305 C438 67 507 120 507 212 C507 310 438 352 305 352 H192 V502 H560 V560 H126 V352 H60 V291 H126 Z M192 125 V292 H303 C397 292 440 266 440 213 C440 156 397 125 303 125 Z"/>
+  </g>
+  <circle cx="902.6" cy="778.5" r="47" fill="#56CFAE"/>
+</svg>

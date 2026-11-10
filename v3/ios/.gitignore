@@ -1,5 +1,7 @@
 # Assets are generated from existing canonical V2 content.
 Resources/generated/
+# Generated opaque RGB app icon; canonical vector lives in Brand/AppIcon.svg.
+Resources/AppIcon.xcassets/AppIcon.appiconset/AppIcon.png
 PathToPolish.xcodeproj/
 *.xcworkspace/
 DerivedData/

@@ -23,6 +23,8 @@ jobs:
         run: brew install xcodegen
       - name: Compile source-locked curriculum and audit bundled MP3s
         run: node v3/ios/scripts/prepare-assets.mjs
+      - name: Verify square branded iPhone icon and Xcode asset registration
+        run: node --test v3/ios/scripts/verify-app-icon.test.mjs
       - name: Verify native guided foundations and source-drift rejection
         run: node --test v3/ios/scripts/prepare-guided.test.mjs
       - name: Verify source-backed Journey 1 lexical first-use report

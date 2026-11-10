@@ -31,6 +31,9 @@ family entitlements to get this offline test working.
 
 ## Device smoke checklist
 
+- [ ] Home screen shows the approved **white-square Path to Polish P and mint-dot**
+  icon on the iPhone Home Screen; iOS rounds the square itself, with no
+  pre-rounded corners or placeholder graphic
 - [ ] On clean install, app opens directly to Home, with **one** primary
   Continue button showing **Yes and no**, no signup, login or iCloud prompt
 - [ ] Switch to Airplane Mode: guided Polish words and full original audio

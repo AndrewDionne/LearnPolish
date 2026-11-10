@@ -1,5 +1,29 @@
 # V3 execution ledger — GitHub is durable continuity
 
+## V3-08G — white-square branded iPhone app icon (2026-11-10)
+
+**Implementation:** Locked the owner-approved Path to Polish geometric navy
+P, horizontal path and mint endpoint on a **full white square**, no pre-rounded
+corners or transparency. The source vector is versioned at
+`v3/ios/Brand/AppIcon.svg`; a dependency-free macOS Swift/AppKit renderer
+creates an **opaque 1024×1024 RGB PNG** during the existing source/media
+preparation. The single-size iOS asset catalog is named `AppIcon` and
+XcodeGen now explicitly registers it. The generated PNG is ignored in Git
+to avoid a second mutable copy of the branding. CI asserts PNG IHDR,
+asset catalog, source vector and Xcode setting before compiling the Simulator.
+
+**First owner device gate:** The phone icon is now part of the
+[isolated iPhone functional-beta checklist](IOS_DEVICE_SMOKE.md). The real
+iPhone still must show actual native rounding and correct brand visibility;
+a CI compile is not a physical phone witness. No legacy/V2 original audio,
+course source ID, account, service, cloud entitlement or production setting
+is changed. Previous V3-08F [CI #42822803571](https://github.com/AndrewDionne/LearnPolish/actions/runs/42822803571)
+**SUCCESS** including iPhone Simulator and XCTest; V3-08G exact-head
+verification pending at commit creation. PR #169 remains draft.
+
+---
+
+
 ## V3-08F — one Home Continue path and iPhone device acceptance handoff (2026-11-10)
 
 **Implementation:** Native Home now has a **single** prominent Continue entry

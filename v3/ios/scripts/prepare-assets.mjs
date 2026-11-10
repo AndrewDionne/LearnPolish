@@ -76,3 +76,10 @@ fs.writeFileSync(path.join(dst, 'tourist-units.json'),
   JSON.stringify(tourist, null, 2) + '\n');
 fs.writeFileSync(path.join(dst, 'native-asset-report.json'), JSON.stringify({lessons:manifest.lessons.length,items,audioReferences:audio},null,2)+'\n');
 console.log('Native offline assets verified:', { lessons: manifest.lessons.length, items, audioReferences: audio });
+
+if (process.platform !== 'darwin') {
+  throw new Error('Native iPhone app icon rendering requires macOS (AppKit)');
+}
+const iconPath = path.join(ios, 'Resources/AppIcon.xcassets/AppIcon.appiconset/AppIcon.png');
+execFileSync('swift', [path.join(scriptDir, 'render-app-icon.swift'), iconPath],
+  { cwd: repo, stdio: 'inherit' });

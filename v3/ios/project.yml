@@ -14,11 +14,13 @@ targets:
     platform: iOS
     sources:
       - path: Sources
+      - path: Resources/AppIcon.xcassets
       - path: Resources/generated
         type: folder
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.pathtopolish.learning
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_NSMicrophoneUsageDescription: "Record your pronunciation for private practice."
         INFOPLIST_KEY_UILaunchScreen_Generation: YES

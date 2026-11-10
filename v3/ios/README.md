@@ -2,9 +2,13 @@
 
 **First-run principle:** Open the app and start studying. No app login, email, phone number, registration or iCloud prompt. Native local study runs offline; no remote assessment or implicit network upload.
 
-## Owner Xcode build deferred until complete
+## Owner physical iPhone beta
 
-The owner requested continued development and no partial-version phone installs. Run GitHub native iOS compilation and automated simulator tests during development, but **do not request a local Xcode build or physical acceptance until the full agreed feature set is implemented**. The steps below are retained for final integration and release testing.
+The owner approved first on-device functional testing now that the offline SwiftUI experience
+has passed native iPhone Simulator CI. This is **not** a production release or sign-off for
+CloudKit, hosted family access, calibrated remote pronunciation, or editorial Polish accuracy.
+See [the current device acceptance checklist](../IOS_DEVICE_SMOKE.md).
+GitHub must pass the exact V3 branch-head build and XCTest before testing that head.
 
 ## Build with Xcode on macOS
 
@@ -19,6 +23,14 @@ bash v3/ios/scripts/open-ios.sh
 Select your iPhone or simulator and run the **PathToPolish** scheme. The script regenerates **actual** `v2/frontend/public/generated/lessons.json` and reference MP3s, verifies original IDs/audio and places them under an ignored native resource folder. No generated copies are committed or authored independently. XcodeGen creates an ignored `.xcodeproj` from version-controlled `project.yml`.
 
 Without running the preparation script, the Xcode project cannot include the current curriculum/audio; this is deliberate rather than showing dummy content.
+
+The same script renders the approved **white-square geometric P and mint dot** icon
+from the checked-in native brand geometry at `Brand/AppIcon.svg` into
+`Resources/AppIcon.xcassets/AppIcon.appiconset/AppIcon.png`. The PNG is 1024×1024,
+opaque RGB, with **no baked-in rounded corners**; iOS applies its own icon mask.
+XcodeGen includes the `AppIcon` asset catalog, and CI checks the generated image's
+format before building. The raster is generated/ignored, while the brand vector,
+renderer, asset metadata and project configuration remain versioned.
 
 To build from Terminal after preparing resources and generating the project:
 
@@ -47,4 +59,4 @@ xcodebuild -project v3/ios/PathToPolish.xcodeproj -scheme PathToPolish \
 
 ## Not yet certified
 
-GitHub CI exercises native simulator compilation and focused XCTest suites. This is **not** proof of real iPhone microphone functionality, complete V2 content-teaching/pronunciation parity, family integration, parental compliance or CloudKit conflict handling. Do not merge to `main` or ask owner for local Xcode testing until the full agreed feature set and integration tests are ready. The durable gap list is [`../BUILD_PROGRESS.md`](../BUILD_PROGRESS.md), and the PR remains draft.
+GitHub CI exercises native simulator compilation and focused XCTest suites. This is **not** proof of real iPhone microphone functionality, complete V2 content-teaching/pronunciation parity, family integration, parental compliance or CloudKit conflict handling. Keep V3 PR #169 draft until hardware observations and the separate release gates are accepted. The first owner iPhone functional-beta test is now explicitly approved once exact-head Simulator CI passes. The durable gap list is [`../BUILD_PROGRESS.md`](../BUILD_PROGRESS.md), and the PR remains draft.
