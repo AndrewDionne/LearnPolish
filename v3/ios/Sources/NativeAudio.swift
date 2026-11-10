@@ -18,34 +18,32 @@ enum AudioFiles {
     }
 }
 
-@MainActor final class NativeAudio: NSObject, ObservableObject, AVAudioRecorderDelegate {
+/// MainActor owns UI state only; blocking AVAudioSession and audio hardware
+/// calls live exclusively in NativeAudioEngine's private serial queue.
+@MainActor final class NativeAudio: ObservableObject {
     @Published private(set) var isRecording = false
+    @Published private(set) var isStarting = false
     @Published private(set) var hasRecording = false
-    // A file existing is not proof of usable speech. Match the V2 acoustic
-    // quality gate BEFORE recording a Speak attempt or offering an upload.
     @Published private(set) var usableRecording = false
     @Published private(set) var takeGeneration = UUID()
-
-    // A take can only be submitted while present and no longer recording.
-    var recordingURL: URL? {
-        hasRecording && usableRecording && !isRecording ? takeURL : nil
-    }
     @Published var message: String?
 
-    private var player: AVAudioPlayer?
-    private var recorder: AVAudioRecorder?
-    private var qualityTask: Task<Void, Never>?
-    private let takeURL = FileManager.default.temporaryDirectory
-        .appendingPathComponent("path-to-polish-private-take.m4a")
-
-    override init() {
-        super.init()
-        // A previous interrupted session must not leave a take lying around.
-        try? FileManager.default.removeItem(at: takeURL)
+    var recordingURL: URL? {
+        hasRecording && usableRecording && !isRecording && !isStarting ? takeURL : nil
     }
 
-    /// Play an already-bundled, validated original V2 recording by its path.
-    /// Sound Lab never requests isolated letter audio or remote synthesis.
+    private let engine = NativeAudioEngine()
+    private var qualityTask: Task<Void, Never>?
+    private var playbackGeneration = UUID()
+    // Every screen owns its own private take: leaving one lesson cannot
+    // silently delete or replay another lesson's microphone file.
+    private let takeURL = FileManager.default.temporaryDirectory
+        .appendingPathComponent("path-to-polish-\(UUID().uuidString).m4a")
+
+    deinit {
+        engine.discard(file: takeURL)
+    }
+
     func playFile(_ path: String, rate: Float = 1) {
         guard let file = AudioFiles.referenceURL(for: path) else {
             message = "The original Polish recording is unavailable."
@@ -55,11 +53,7 @@ enum AudioFiles {
     }
 
     func playReference(_ item: LessonItem) {
-        guard let path = item.audio, let file = AudioFiles.referenceURL(for: path) else {
-            message = "This lesson has no reference recording."
-            return
-        }
-        play(file, rate: 1)
+        playReference(item, rate: 1)
     }
 
     func playReference(_ item: LessonItem, rate: Float) {
@@ -71,85 +65,80 @@ enum AudioFiles {
     }
 
     func playRecording() {
-        guard hasRecording else { return }
+        guard hasRecording && !isRecording && !isStarting else { return }
         play(takeURL, rate: 1)
     }
 
-    private func play(_ url: URL, rate: Float) {
-        do {
-            player?.stop()
-            let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.playAndRecord, mode: .default,
-                                    options: [.defaultToSpeaker, .allowBluetooth])
-            try session.setActive(true)
-            let playback = try AVAudioPlayer(contentsOf: url)
-            playback.enableRate = true
-            playback.rate = rate
-            playback.prepareToPlay()
-            if !playback.play() { throw NSError(domain: "Audio", code: 1) }
-            player = playback
-            message = nil
-        } catch {
-            message = "Audio could not play. Check output and audio permissions."
+    private func play(_ file: URL, rate: Float) {
+        guard !isRecording && !isStarting else { return }
+        playbackGeneration = UUID()
+        let expected = playbackGeneration
+        message = nil
+        engine.play(file, rate: rate) { [weak self] success in
+            guard let self, self.playbackGeneration == expected else { return }
+            self.message = success ? nil :
+                "Audio could not play. Check your output device and try again."
         }
     }
 
     func requestRecord() {
-        player?.stop()
-        AVAudioApplication.requestRecordPermission { [weak self] granted in
-            DispatchQueue.main.async {
-                guard let self else { return }
-                if granted { self.startRecording() }
-                else { self.message = "Microphone access is off. Enable it in Settings to practise speaking." }
-            }
-        }
-    }
+        guard !isRecording && !isStarting else { return }
+        // Cancel old playback feedback and prevent a double-tap while iOS
+        // presents the microphone permission dialog or prepares hardware.
+        playbackGeneration = UUID()
+        isStarting = true
+        isRecording = false
+        hasRecording = false
+        usableRecording = false
+        message = nil
+        qualityTask?.cancel()
+        qualityTask = nil
+        takeGeneration = UUID()
+        let expected = takeGeneration
+        engine.discard(file: takeURL)
 
-    private func startRecording() {
-        do {
-            discard()
-            let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.playAndRecord, mode: .default,
-                                    options: [.defaultToSpeaker, .allowBluetooth])
-            try session.setActive(true)
-            let settings: [String: Any] = [
-                AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
-                AVSampleRateKey: 44_100,
-                AVNumberOfChannelsKey: 1,
-                AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
-            ]
-            let recording = try AVAudioRecorder(url: takeURL, settings: settings)
-            recording.delegate = self
-            recording.prepareToRecord()
-            guard recording.record(forDuration: 10) else {
-                throw NSError(domain: "Audio", code: 2)
+        AVAudioApplication.requestRecordPermission { [weak self] granted in
+            Task { @MainActor [weak self] in
+                guard let self, self.takeGeneration == expected else { return }
+                guard granted else {
+                    self.isStarting = false
+                    self.message = "Microphone access is off. Enable it in Settings to practise speaking."
+                    return
+                }
+                self.engine.startRecording(to: self.takeURL,
+                    started: { [weak self] success in
+                        guard let self, self.takeGeneration == expected else { return }
+                        self.isStarting = false
+                        self.isRecording = success
+                        self.message = success ? nil :
+                            "Recording could not start. Check microphone access and try again."
+                    },
+                    stoppedAutomatically: { [weak self] success in
+                        guard let self, self.takeGeneration == expected else { return }
+                        self.recordingFinished(success)
+                    })
             }
-            recorder = recording
-            isRecording = true
-            message = nil
-        } catch {
-            isRecording = false
-            message = "Recording could not start. Check microphone access and try again."
         }
     }
 
     func stopRecording() {
         guard isRecording else { return }
-        recorder?.stop()
         isRecording = false
-        hasRecording = FileManager.default.fileExists(atPath: takeURL.path)
-        if hasRecording { inspectRecording() }
-        else { message = "No usable recording was captured. Please try again." }
+        let expected = takeGeneration
+        engine.stopRecording(file: takeURL) { [weak self] success in
+            guard let self, self.takeGeneration == expected else { return }
+            self.recordingFinished(success)
+        }
     }
 
-    nonisolated func audioRecorderDidFinishRecording(_ recorder: AVAudioRecorder,
-                                                      successfully flag: Bool) {
-        Task { @MainActor [weak self] in
-            guard let self else { return }
-            self.isRecording = false
-            self.hasRecording = flag && FileManager.default.fileExists(atPath: self.takeURL.path)
-            if self.hasRecording { self.inspectRecording() }
-            else { self.message = "Recording ended without a usable take." }
+    private func recordingFinished(_ success: Bool) {
+        isStarting = false
+        isRecording = false
+        hasRecording = success
+        if success {
+            inspectRecording()
+        } else {
+            message = "No usable recording was captured. Please try again."
         }
     }
 
@@ -177,15 +166,15 @@ enum AudioFiles {
     }
 
     func discard() {
+        playbackGeneration = UUID()
+        takeGeneration = UUID()
         qualityTask?.cancel()
         qualityTask = nil
-        recorder?.stop()
-        recorder = nil
-        player?.stop()
         isRecording = false
+        isStarting = false
         hasRecording = false
         usableRecording = false
-        takeGeneration = UUID()
-        try? FileManager.default.removeItem(at: takeURL)
+        message = nil
+        engine.discard(file: takeURL)
     }
 }

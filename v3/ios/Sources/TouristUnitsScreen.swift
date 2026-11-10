@@ -319,6 +319,7 @@ struct TouristStepScreen: View {
                         Label(audio.hasRecording ? "Record again" : "Record", systemImage: "mic")
                     }
                     .buttonStyle(.borderedProminent)
+                    .disabled(audio.isStarting)
                 }
                 if audio.hasRecording && !audio.isRecording {
                     Button {
@@ -328,6 +329,9 @@ struct TouristStepScreen: View {
                     }
                     .buttonStyle(.bordered)
                 }
+            }
+            if audio.isStarting {
+                ProgressView("Preparing microphone…")
             }
             if audio.hasRecording && !audio.isRecording {
                 if let original = learner.originalTouristItem(item.id, unit: unit, stepIndex: stepIndex) {

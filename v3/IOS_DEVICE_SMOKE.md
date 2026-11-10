@@ -38,6 +38,14 @@ family entitlements to get this offline test working.
   Continue button showing **Yes and no**, no signup, login or iCloud prompt
 - [ ] Switch to Airplane Mode: guided Polish words and full original audio
   play locally at **1×** and **0.75×**; no network needed
+- [ ] Rapidly tap Play Polish, switch between two lessons, and alternate
+  0.75×/1×. Playback should start promptly, buttons should not freeze,
+  and Xcode's Main Thread Performance Checker should show no
+  AVAudioSession setCategory/setActive/prepareToPlay hang-risk warnings.
+- [ ] Deliberately Record, Stop and Replay, then immediately navigate
+  away and back. No older audio should restart; microphone capture and
+  the 10-second maximum should remain reliable. Test speaker and Bluetooth
+  output where available.
 - [ ] Hear a word, reveal meaning, mark **Needs practice**; verify source
   count increments and review due while not inventing pronunciation feedback
 - [ ] **Skip** a phrase: does **not** award XP or mark it practised; end

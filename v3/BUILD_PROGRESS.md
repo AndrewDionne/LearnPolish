@@ -1,5 +1,45 @@
 # V3 execution ledger — GitHub is durable continuity
 
+## V3-09A — first physical iPhone finding: nonblocking audio hardware (2026-11-11)
+
+**Owner hardware evidence:** First V3 iPhone install succeeded, but original reference
+audio was not smooth. Xcode Main Thread Performance Checker showed
+`AVAudioSession.setCategory`, `setActive(true)` and
+`AVAudioPlayer.prepareToPlay` running synchronously from
+`LessonScreen.referenceControls` on Thread 1, with repeated hang-risk warnings.
+
+**Correction:** Original source-only MP3 identity and 0.75×/1× controls are
+unchanged. All audio-session configuration, playback preparation/start,
+recording setup/stop, and background teardown now run on one dedicated
+serial queue across screen controllers (AVAudioSession is process-global).
+Reference playback uses `playback` category without microphone activation;
+recording requests `playAndRecord` only after explicit microphone consent.
+The engine caches the configured mode and never waits for the audio system on
+the SwiftUI main thread. A playback generation rejects stale callbacks,
+and a take generation prevents old permission, recording or quality callbacks
+from resurrecting deleted sound. Source-recorded 10-second capture stops on
+the audio queue, independent of delegate run loop. A published
+`isStarting` state prevents rapid-tap duplicate microphone setup and gives
+visible progress while the hardware prepares; each screen's take file has
+its own private UUID. No automatic upload, scoring change, network
+requirement, or V2/server modification.
+
+**Regression:** Three native XCTest cases cover playback preparation
+and main-thread callbacks, recording-activation failure, and deliberately
+blocked hardware initialization that must never block the button handler.
+Physical retest: rapid Play/0.75×/1×, lesson switches, start/stop/replay,
+10-second auto-stop, iOS output routes and no Thread-1 audio warnings.
+[Device checklist](IOS_DEVICE_SMOKE.md) updated. This is a functional
+correction, not proof of acoustic/speaker quality until owner replay.
+
+**CI:** Previous branded app head
+[run #42914827203](https://github.com/AndrewDionne/LearnPolish/actions/runs/42914827203)
+was in XCTest at prior observation; exact V3-09A CI must pass before
+retesting. PR #169 remains draft and GitHub is source of truth.
+
+---
+
+
 ## V3-08G — white-square branded iPhone app icon (2026-11-10)
 
 **CI correction:** Initial V3-08G run [#42914468893](https://github.com/AndrewDionne/LearnPolish/actions/runs/42914468893) failed during macOS icon preparation: a 24-bit AppKit bitmap allocation returned nil. The renderer now uses a four-byte aligned Core Graphics bitmap with the fourth byte explicitly unused, exported via ImageIO to an opaque PNG. This is a build-time fix, not a source-image change. Exact-head CI revalidation is required.

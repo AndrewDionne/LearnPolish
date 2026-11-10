@@ -344,6 +344,7 @@ struct LessonScreen: View {
                         Label(audio.hasRecording ? "Record again" : "Record", systemImage: "mic")
                     }
                     .buttonStyle(.borderedProminent)
+                    .disabled(audio.isStarting)
                 }
                 if audio.hasRecording && !audio.isRecording {
                     Button {
@@ -354,7 +355,9 @@ struct LessonScreen: View {
                     .buttonStyle(.bordered)
                 }
             }
-            if audio.isRecording {
+            if audio.isStarting {
+                ProgressView("Preparing microphone…")
+            } else if audio.isRecording {
                 Text("Recording… up to 10 seconds")
                     .foregroundStyle(.secondary)
             }
