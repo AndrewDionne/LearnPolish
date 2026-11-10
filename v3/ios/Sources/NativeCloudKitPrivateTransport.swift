@@ -364,8 +364,11 @@ final class NativeCloudKitPrivateTransport {
             throw NativePrivateCloudGateError.invalidTransition
         }
         try await confirm(request.scope)
-        let current = try await read(scope: request.scope,
-                                     lessons: lessons, regions: regions)
+        // A pre-authorized pending-delete operation is the sole exception
+        // to ordinary active-session reads. It must remain possible to
+        // recover an acknowledged tombstone after an interrupted request.
+        let current = try await readVerified(scope: request.scope,
+                                             lessons: lessons, regions: regions)?.copy
         if let current, current.envelope.deleted {
             // Idempotent retry only after reading a real server tombstone.
             guard current.envelope.generation >= request.generation else {
