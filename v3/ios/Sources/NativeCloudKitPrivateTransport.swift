@@ -206,9 +206,10 @@ final class NativeCloudKitPrivateTransport {
                       gateStore: NativePrivateCloudGateStore,
                       lessons: [Lesson], regions: [PolandRegion])
         async throws -> NativeCloudKitRemoteCopy? {
-        guard let scope = gateStore.gate.scope else {
-            throw NativePrivateCloudGateError.explicitConsentRequired
-        }
+        // No Apple-account lookup on opt-out, account pause, pending
+        // deletion, or foreign learner. The native policy makes this
+        // decision synchronously without initiating any cloud request.
+        let scope = try gateStore.gate.requireActiveLocalLearner(learner)
         let account = try await authenticatedAccountKey()
         try gateStore.gate.authorizeRemoteOperation(
             verifiedOpaqueAccountKey: account, learner: learner,
