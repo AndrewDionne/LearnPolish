@@ -198,12 +198,49 @@ final class NativeCloudKitPrivateTransport {
         }
     }
 
-    /// Private remote reads are never performed during app initialization.
-    func read(scope: NativePrivateCloudScope,
-              lessons: [Lesson], regions: [PolandRegion])
+    /// User-initiated private read. The persisted, separately approved
+    /// policy and anonymous learner identity are checked BEFORE *any*
+    /// CloudKit network request, including reads. A tombstone found on this
+    /// device is durably recorded before reporting deletion to the UI.
+    func readManually(learner: LocalLearner,
+                      gateStore: NativePrivateCloudGateStore,
+                      lessons: [Lesson], regions: [PolandRegion])
         async throws -> NativeCloudKitRemoteCopy? {
-        try await readVerified(scope: scope, lessons: lessons,
-                               regions: regions)?.copy
+        guard let scope = gateStore.gate.scope else {
+            throw NativePrivateCloudGateError.explicitConsentRequired
+        }
+        let account = try await authenticatedAccountKey()
+        try gateStore.gate.authorizeRemoteOperation(
+            verifiedOpaqueAccountKey: account, learner: learner,
+            snapshot: NativePrivateCloudSnapshot(
+                scope: scope, generation: gateStore.gate.knownGeneration))
+        let found = try await readVerified(
+            scope: scope, lessons: lessons, regions: regions)?.copy
+        guard try await authenticatedAccountKey() == scope.accountKey else {
+            throw NativeCloudKitError.wrongAccount
+        }
+        if let found {
+            if found.envelope.deleted {
+                try gateStore.commit { try $0.observeVerifiedServerDeletion(
+                    NativePrivateCloudTombstone(
+                        scope: scope, generation: found.envelope.generation))
+                }
+                throw NativeCloudKitError.deleted
+            }
+            try gateStore.gate.authorizeRemoteOperation(
+                verifiedOpaqueAccountKey: account, learner: learner,
+                snapshot: NativePrivateCloudSnapshot(
+                    scope: scope, generation: found.envelope.generation))
+            try gateStore.commit { try $0.observeVerifiedServerRevision(
+                NativePrivateCloudSnapshot(
+                    scope: scope, generation: found.envelope.generation))
+            }
+        } else if gateStore.gate.knownGeneration != 0 {
+            // Missing record after a previously verified generation must
+            // not be treated as a fresh learner or recreated implicitly.
+            throw NativeCloudKitError.staleChangeTag
+        }
+        return found
     }
 
     /// CloudKit's ifServerRecordUnchanged CAS rejects a stale change tag,
@@ -275,28 +312,27 @@ final class NativeCloudKitPrivateTransport {
             throw NativeCloudKitError.unsupportedHistory
         }
         let account = try await authenticatedAccountKey()
-        guard scope.accountKey == account else {
+        // readManually enforces durable consent, account, generation and
+        // remotely-deleted history before performing the network read.
+        let current = try await readManually(
+            learner: learner, gateStore: gateStore,
+            lessons: lessons, regions: regions)
+        let decision = try NativeCloudSyncPlanner.decide(
+            local: learner, scope: scope, remote: current?.envelope,
+            knownGeneration: gateStore.gate.knownGeneration,
+            lessons: lessons, regions: regions)
+        switch decision {
+        case .reviewRemoteAdditions:
+            throw NativeCloudKitError.remoteAhead
+        case .alreadyCurrent:
+            guard let current else { throw NativeCloudKitError.invalidAcknowledgement }
+            return current
+        case .create, .uploadLocalAdditions:
+            break
+        }
+        // Account might have changed while remote was being fetched.
+        guard try await authenticatedAccountKey() == account else {
             throw NativeCloudKitError.wrongAccount
-        }
-        let current = try await read(scope: scope, lessons: lessons,
-                                     regions: regions)
-        if current?.envelope.deleted == true {
-            throw NativeCloudKitError.deleted
-        }
-        let snapshot = NativePrivateCloudSnapshot(
-            scope: scope, generation: current?.envelope.generation ??
-                gateStore.gate.knownGeneration)
-        try gateStore.gate.authorizeRemoteOperation(
-            verifiedOpaqueAccountKey: account, learner: learner,
-            snapshot: snapshot)
-        if let remoteJournal = current?.envelope.journal {
-            let combined = try NativePracticeJournal.mergeCandidate(
-                remoteJournal, journal, lessons: lessons)
-            let localIDs = Set(journal.events.map(\.id))
-            guard combined.events.count == journal.events.count,
-                  Set(combined.events.map(\.id)) == localIDs else {
-                throw NativeCloudKitError.remoteAhead
-            }
         }
         let oldRevision = current?.envelope.generation ?? 0
         guard oldRevision < UInt64.max else {
