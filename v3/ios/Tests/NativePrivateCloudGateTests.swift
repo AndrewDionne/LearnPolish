@@ -222,4 +222,49 @@ import XCTest
         XCTAssertFalse(text.contains("requestedTombstone"))
         XCTAssertEqual(gate.phase, .active)
     }
+
+    func testLocalPreflightRefusesOffAndPausedBeforeAppleAccountLookup() throws {
+        let learner = linkedLearner()
+        var gate = NativePrivateCloudGate()
+        XCTAssertThrowsError(try gate.requireActiveLocalLearner(learner))
+        try activate(&gate, learner: learner)
+        XCTAssertEqual(try gate.requireActiveLocalLearner(learner),
+                       gate.scope)
+        gate.observeAccount(keyB)
+        XCTAssertEqual(gate.phase, .pausedAccountChange)
+        XCTAssertThrowsError(try gate.requireActiveLocalLearner(learner))
+        try gate.resumeSameAccount(approved: true,
+                                   verifiedOpaqueAccountKey: keyA)
+        try gate.optOutKeepLocalData()
+        XCTAssertThrowsError(try gate.requireActiveLocalLearner(learner))
+    }
+
+    func testLocalPreflightRejectsForeignLearnerAndEpochWithoutCloudCall() throws {
+        let learner = linkedLearner()
+        var gate = NativePrivateCloudGate()
+        try activate(&gate, learner: learner)
+        var another = learner
+        another.localID = UUID()
+        XCTAssertThrowsError(try gate.requireActiveLocalLearner(another))
+        another = learner
+        another.linkedUTCEpoch = UUID()
+        XCTAssertThrowsError(try gate.requireActiveLocalLearner(another))
+        another = learner
+        another.practiceJournal = nil
+        XCTAssertThrowsError(try gate.requireActiveLocalLearner(another))
+        XCTAssertEqual(try gate.requireActiveLocalLearner(learner),
+                       gate.scope)
+    }
+
+    func testLocalPreflightPreservesDeletionAndConfirmedTombstoneLockout() throws {
+        let learner = linkedLearner()
+        var gate = NativePrivateCloudGate()
+        try activate(&gate, learner: learner)
+        let deletion = try gate.requestRemoteErase(
+            approved: true, verifiedOpaqueAccountKey: keyA)
+        XCTAssertThrowsError(try gate.requireActiveLocalLearner(learner))
+        try gate.acknowledgeServerTombstone(deletion)
+        XCTAssertThrowsError(try gate.requireActiveLocalLearner(learner))
+        XCTAssertEqual(gate.phase, .remotelyDeleted)
+    }
 }
