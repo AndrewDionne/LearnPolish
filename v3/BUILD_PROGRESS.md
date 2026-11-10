@@ -1,5 +1,18 @@
 # V3 execution ledger — GitHub is durable continuity
 
+## V3-09B — device headphone right-channel report: source-channel investigation (2026-11-11)
+
+**Owner hardware observation:** With the native audio thread fix installed, the Polish reference sounds appear to come from the **right earphone only**. This is a separate defect from the previous main-thread AVAudioSession warning. The current native AVAudioPlayer uses the normal centred stereo pan (no assignment to .pan), and playback requests the .playback output category; neither by itself explains a deliberately right-panned voice. Source MP3 channel content, phone Accessibility audio balance and Bluetooth output routing have not yet been independently isolated.
+
+**Read-only automated audit:** `v3/ios/scripts/audit-reference-channels.swift` now decodes a bounded representative sample of original-source MP3 assets on the macOS GitHub runner, including the first guided recordings. It reports original channel counts, left/right sample RMS and >12 dB imbalance outliers. No source MP3 is modified, no new recordings or generated audio are introduced, and no new production setting changes. This is diagnostic evidence, not a completed phone-audio fix.
+
+**Owner quick check:** On the physical iPhone with the same earphones, verify other media plays in both ears, centre **Settings → Accessibility → Audio & Visual → Balance** and temporarily enable **Mono Audio**; compare the same Path to Polish clip. This identifies a hardware/output setting versus original stereo imbalance without permanently changing the app. Do not claim a code/audio repair until the decoded source audit and owner playback observation agree.
+
+**Next:** If original MP3s are right-channel-only, prepare a *derived*, opt-in/native-only dual-mono playback copy or downmix with a regression gate while preserving the V2 originals and source IDs. If they are mono or balanced, investigate device output routing before adding unnecessary conversions. PR #169 remains draft.
+
+---
+
+
 ## V3-09A — first physical iPhone finding: nonblocking audio hardware (2026-11-11)
 
 **Owner hardware evidence:** First V3 iPhone install succeeded, but original reference
