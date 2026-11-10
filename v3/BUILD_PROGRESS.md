@@ -1,5 +1,16 @@
 # V3 execution ledger — GitHub is durable continuity
 
+## V3-08E — guided lesson cursor integrity and unpractised completion feedback (2026-11-10)
+
+**Implementation:** Revisiting earlier prerequisites or exploring future foundation groups no longer overwrites the active guided Continue cursor. A guided item/step cursor is now persisted atomically **before** in-memory mutation; failed writes leave the original cursor intact and surface the existing storage error. Completing a group is navigation-only: it does not mark skipped phrases as learned or issue XP. The final screen reports the actual **N of M phrases practised** rather than claiming saved practice when all items were skipped, and offers **Revisit unpractised** to jump to the first original source phrase without manufacturing completion state. Voluntary free exploration and source-item identity are preserved.
+
+**Regression:** Four new XCTest cases for backward/forward excursions and persisted resume across restart; skipping the full 16-group sequence without learning leaves all 68 items unpractised and returns to the first step rather than declaring proficiency; blocked-write storage preserves previous bytes and cursors; partial source practice finds the next unattempted phrase. Existing graded practice and XP remain the sole completion evidence.
+
+**Verification:** Prior V3-08D [Actions #42815951980](https://github.com/AndrewDionne/LearnPolish/actions/runs/42815951980) **SUCCESS** (lexical audit, Simulator build and native XCTest). V3-08E exact-head GitHub CI pending at commit creation; no physical device or linguistic certification is inferred. Draft PR #169 remains open. V2 source/audio, Neon/Render, family testers, optional CloudKit and speech scoring unchanged.
+
+---
+
+
 ## V3-08D — reproducible Journey 1 word-form first-use inventory (2026-11-10)
 
 **Implementation:** `v3/ios/scripts/audit-guided-lexicon.mjs` inventories all

@@ -71,8 +71,8 @@ struct GuidedPracticeScreen: View {
         VStack(spacing: 14) {
             if finished {
                 Spacer()
-                ContentUnavailableView("Practice finished", systemImage: "checkmark.circle",
-                                       description: Text("Your learning activity was saved on this iPhone."))
+                ContentUnavailableView("End of activity", systemImage: "checkmark.circle",
+                                       description: Text("\(learner.guidedPractisedCount(step)) of \(step.items.count) phrases practised. Unpractised phrases remain available."))
                 if let following {
                     NavigationLink {
                         GuidedPracticeScreen(step: following)
@@ -82,6 +82,15 @@ struct GuidedPracticeScreen: View {
                     }
                     .buttonStyle(.borderedProminent)
                 }
+                if let missed = learner.firstUnpractisedGuidedIndex(step) {
+                    Button("Revisit unpractised") {
+                        itemIndex = missed
+                        finished = false
+                        resetPresentation()
+                        rememberPosition()
+                    }
+                    .buttonStyle(.bordered)
+                }
                 Button("Practice again") {
                     itemIndex = 0
                     finished = false
@@ -89,6 +98,11 @@ struct GuidedPracticeScreen: View {
                     rememberPosition()
                 }
                 .buttonStyle(.bordered)
+                if let error = learner.saveError {
+                    Label(error, systemImage: "exclamationmark.triangle")
+                        .font(.footnote)
+                        .foregroundStyle(.red)
+                }
                 Spacer()
             } else {
                 HStack {
@@ -248,10 +262,9 @@ struct GuidedPracticeScreen: View {
     private func advance() {
         if itemIndex + 1 < step.items.count {
             itemIndex += 1
-        } else {
+        } else if learner.finishedGuidedStep(step.id) {
             audio.discard()
             finished = true
-            learner.finishedGuidedStep(step.id)
         }
     }
 

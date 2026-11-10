@@ -155,4 +155,85 @@ import XCTest
             for: steps[0], in: steps, records: [:]).isEmpty)
     }
 
+
+    func testEarlierPrerequisiteAndFutureExplorationDoNotHijackResumeCursor() throws {
+        let (learner, folder) = makeStore()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let steps = learner.guidedFoundations
+        let active = steps[7]
+        let earlier = steps[1]
+        let future = steps[14]
+
+        learner.rememberGuidedPosition(stepID: active.id, itemID: active.items.last!.id)
+        XCTAssertEqual(learner.nextGuidedStep?.id, active.id)
+        XCTAssertEqual(learner.profile.guidedItemID, active.items.last?.id)
+
+        learner.rememberGuidedPosition(stepID: earlier.id, itemID: earlier.items[0].id)
+        learner.finishedGuidedStep(earlier.id)
+        learner.rememberGuidedPosition(stepID: future.id, itemID: future.items[0].id)
+        learner.finishedGuidedStep(future.id)
+        XCTAssertEqual(learner.nextGuidedStep?.id, active.id)
+        XCTAssertEqual(learner.profile.guidedItemID, active.items.last?.id)
+
+        let reopened = LocalLearningStore(storageURL: folder.appendingPathComponent("learner.json"))
+        XCTAssertEqual(reopened.nextGuidedStep?.id, active.id)
+        XCTAssertEqual(reopened.profile.guidedItemID, active.items.last?.id)
+        XCTAssertTrue(reopened.finishedGuidedStep(active.id))
+        XCTAssertEqual(reopened.nextGuidedStep?.id, steps[8].id)
+    }
+
+    func testSkippedGuidedPathRemainsEntirelyUnpractisedAndReappearsAfterFinalStep() throws {
+        let (learner, folder) = makeStore()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let steps = learner.guidedFoundations
+        XCTAssertEqual(learner.firstUnpractisedGuidedIndex(steps[0]), 0)
+        for step in steps {
+            XCTAssertTrue(learner.finishedGuidedStep(step.id))
+            XCTAssertEqual(learner.guidedPractisedCount(step), 0)
+            XCTAssertEqual(learner.firstUnpractisedGuidedIndex(step), 0)
+        }
+        XCTAssertEqual(learner.profile.records.count, 0)
+        XCTAssertEqual(learner.expedition.totalXP, 0)
+        XCTAssertNil(learner.profile.guidedStepID)
+        XCTAssertEqual(learner.nextGuidedStep?.id, steps.first?.id,
+                       "Skipping every phrase must not report a finished curriculum")
+
+        let reopened = LocalLearningStore(storageURL: folder.appendingPathComponent("learner.json"))
+        XCTAssertEqual(reopened.nextGuidedStep?.id, steps.first?.id)
+    }
+
+    func testGuidedCursorNeverChangesInMemoryWhenPositionCannotBeSaved() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let blocker = root.appendingPathComponent("not-a-directory")
+        try Data("keep existing file".utf8).write(to: blocker)
+        let store = LocalLearningStore(storageURL: blocker.appendingPathComponent("learner.json"))
+        XCTAssertNil(store.catalogError)
+        let first = try XCTUnwrap(store.guidedFoundations.first)
+        XCTAssertNil(store.profile.guidedStepID)
+        store.rememberGuidedPosition(stepID: first.id, itemID: first.items[0].id)
+        XCTAssertNil(store.profile.guidedStepID)
+        XCTAssertNil(store.profile.guidedItemID)
+        XCTAssertNotNil(store.saveError)
+        XCTAssertFalse(store.finishedGuidedStep(first.id))
+        XCTAssertNil(store.profile.guidedStepID)
+        XCTAssertNil(store.profile.guidedItemID)
+        XCTAssertEqual(try Data(contentsOf: blocker), Data("keep existing file".utf8))
+    }
+
+    func testRecordedGuidedPracticeFindsFirstMissedOriginalItem() throws {
+        let (learner, folder) = makeStore()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let step = try XCTUnwrap(learner.guidedFoundations.first)
+        let first = try XCTUnwrap(learner.sourceItem(for: step.items[0]))
+        learner.recordAttempt(item: first, mode: .learn, understood: false)
+        XCTAssertEqual(learner.guidedPractisedCount(step), 1)
+        XCTAssertEqual(learner.firstUnpractisedGuidedIndex(step), 1)
+        let second = try XCTUnwrap(learner.sourceItem(for: step.items[1]))
+        learner.recordAttempt(item: second, mode: .learn, understood: true)
+        XCTAssertEqual(learner.firstUnpractisedGuidedIndex(step), nil)
+    }
+
 }

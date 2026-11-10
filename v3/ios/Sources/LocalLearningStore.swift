@@ -246,21 +246,57 @@ struct LocalProgressBackup: Identifiable {
         lessons.lazy.flatMap(\.items).first { $0.id == reference.id }
     }
 
+    /// The cursor belongs to the main sequential journey, not temporary
+    /// excursions to earlier prerequisites or future lessons in the Library.
+    /// Unlike an attempt, navigating never awards XP or proves comprehension.
     func rememberGuidedPosition(stepID: String, itemID: String) {
         guard let step = guidedFoundations.first(where: { $0.id == stepID }),
-              step.items.contains(where: { $0.id == itemID }) else { return }
-        guard profile.guidedStepID != stepID || profile.guidedItemID != itemID else { return }
-        profile.guidedStepID = stepID
-        profile.guidedItemID = itemID
-        save()
+              step.items.contains(where: { $0.id == itemID }),
+              profile.guidedStepID == nil || profile.guidedStepID == stepID,
+              profile.guidedStepID != stepID || profile.guidedItemID != itemID,
+              canSave else { return }
+        var next = profile
+        next.guidedStepID = stepID
+        next.guidedItemID = itemID
+        do {
+            try persist(next)
+            profile = next
+            saveError = nil
+        } catch {
+            saveError = "Guided lesson position could not be saved. Check available storage."
+        }
     }
 
-    func finishedGuidedStep(_ stepID: String) {
-        guard let index = guidedFoundations.firstIndex(where: { $0.id == stepID }) else { return }
-        profile.guidedStepID = guidedFoundations.indices.contains(index + 1)
+    /// Reaching the end advances the *navigation cursor* only. It does not
+    /// mark a skipped item practised or grant XP. Side excursions cannot
+    /// overwrite an active step's cursor.
+    @discardableResult
+    func finishedGuidedStep(_ stepID: String) -> Bool {
+        guard let index = guidedFoundations.firstIndex(where: { $0.id == stepID })
+        else { return false }
+        if let active = profile.guidedStepID, active != stepID {
+            return true
+        }
+        guard canSave else { return false }
+        var next = profile
+        next.guidedStepID = guidedFoundations.indices.contains(index + 1)
             ? guidedFoundations[index + 1].id : nil
-        profile.guidedItemID = nil
-        save()
+        next.guidedItemID = nil
+        do {
+            try persist(next)
+            profile = next
+            saveError = nil
+            return true
+        } catch {
+            saveError = "Guided lesson position could not be saved. Check available storage."
+            return false
+        }
+    }
+
+    func firstUnpractisedGuidedIndex(_ step: GuidedFoundationStep) -> Int? {
+        step.items.firstIndex {
+            (profile.records["learn:" + $0.id]?.attempts ?? 0) == 0
+        }
     }
     var nextLesson: Lesson? {
         if let id = profile.lastCoreLessonID,
