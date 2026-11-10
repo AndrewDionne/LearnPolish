@@ -311,12 +311,12 @@ final class NativeCloudKitPrivateTransport {
               learner.linkedUTCEpoch == journal.epochID else {
             throw NativeCloudKitError.unsupportedHistory
         }
-        let account = try await authenticatedAccountKey()
         // readManually enforces durable consent, account, generation and
         // remotely-deleted history before performing the network read.
         let current = try await readManually(
             learner: learner, gateStore: gateStore,
             lessons: lessons, regions: regions)
+        let account = try await authenticatedAccountKey()
         let decision = try NativeCloudSyncPlanner.decide(
             local: learner, scope: scope, remote: current?.envelope,
             knownGeneration: gateStore.gate.knownGeneration,
