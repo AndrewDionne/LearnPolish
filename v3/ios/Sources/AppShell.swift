@@ -57,6 +57,19 @@ struct HomeScreen: View {
                                     in: RoundedRectangle(cornerRadius: 18))
                     }
 
+                    if !learner.dueReviews.isEmpty {
+                        NavigationLink {
+                            NativeDailyReviewSessionScreen(cards:
+                                NativeDailyReviewQueue.snapshot(
+                                    lessons: learner.lessons,
+                                    records: learner.profile.records, now: Date()))
+                        } label: {
+                            Label("Review \(min(learner.dueReviews.count, NativeDailyReviewQueue.batchLimit)) due",
+                                  systemImage: "rectangle.stack")
+                        }
+                        .font(.headline)
+                    }
+
                     NavigationLink {
                         GuidedFoundationsScreen()
                     } label: {
@@ -259,7 +272,18 @@ struct ReviewScreen: View {
                 ContentUnavailableView("Nothing due yet", systemImage: "checkmark.circle",
                                        description: Text("Practise a lesson to start your review schedule."))
             } else {
-                Section("Scheduled review") {
+                Section {
+                    NavigationLink {
+                        NativeDailyReviewSessionScreen(cards:
+                            NativeDailyReviewQueue.snapshot(
+                                lessons: learner.lessons,
+                                records: learner.profile.records, now: Date()))
+                    } label: {
+                        Label("Review up to \(min(learner.dueReviews.count, NativeDailyReviewQueue.batchLimit)) due",
+                              systemImage: "rectangle.stack.fill")
+                    }
+                }
+                Section("Scheduled review by lesson") {
                     ForEach(dueGroups) { group in
                         NavigationLink {
                             // Frozen list: failed items remain due later but never trap

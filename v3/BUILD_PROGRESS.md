@@ -1,5 +1,16 @@
 # V3 execution ledger — GitHub is durable continuity
 
+## V3-08B — single offline daily review across lessons (2026-11-10)
+
+**Implementation:** Adds a compact **Daily review** entry on Home (only when items are due) and a primary **Review up to 20 due** action in Practice. `NativeDailyReviewQueue.snapshot` selects a bounded batch of actual V2 Learn cards across different lessons, oldest due first with deterministic source-order ties. The queue freezes on entry: an incorrect answer remains due in the normal 1/3/7/14/30/60/90-day schedule but never loops inside the same short session. Review displays original Polish, approved audio at 0.75×/1× where present, then meaning and Got it/Needs practice; Skip is non-awarding. Every graded answer uses the V3-08A atomic persist-before-advance boundary. Existing by-lesson review remains available.
+
+**Regression:** Four `NativeDailyReviewQueueTests` validate oldest-first cross-lesson selection, stable 20-card cap, exclusion of unseen/future/reading-only entries and frozen snapshots after progress updates, plus real persisted wrong-answer due and next-day successful recall. No fabricated words, XP, automatic account, new backend or speech scoring.
+
+**Verification:** V3-08A [Actions #42804252300](https://github.com/AndrewDionne/LearnPolish/actions/runs/42804252300) **SUCCESS**: original-source/media checks, iPhone Simulator build and XCTest. V3-08B exact-head CI **pending** at creation; no claim of full validation until run completes. Keep V3 PR #169 draft; the owner explicitly deferred physical Xcode testing until full app surface.
+
+---
+
+
 ## V3-08A — answer submission and lesson navigation durability (2026-11-10)
 
 **Implementation:** Across Learn, Listen, Read, Speak and Guided Foundations, a submitted answer now advances or locks in a selected choice **only after** `LocalLearningStore.recordAttempt` returns success. `NativePracticeSubmission.commit` is the single persist-before-UI boundary. Failed storage writes leave the same card and choices available for retry and show the existing storage error; deliberate Next/Skip remains non-awarding navigation. Both native multiple-choice modes defer their selected-answer state until after a successful write. No scoring, content, account, audio, Neon or Render changes.
