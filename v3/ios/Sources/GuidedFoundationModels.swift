@@ -40,6 +40,30 @@ enum GuidedFoundationPath {
     ]
     private static let counts = [2,3,3,6,6,5,4,5,4,3,4,4,4,5,5,5]
 
+
+    /// Earlier source-authored groups that introduced the exact concepts
+    /// declared by this step. Never infer lexical or grammar mastery.
+    static func prerequisiteSteps(for step: GuidedFoundationStep,
+                                  in path: [GuidedFoundationStep]) -> [GuidedFoundationStep] {
+        guard let index = path.firstIndex(where: { $0.id == step.id }) else { return [] }
+        let required = Set(step.requires)
+        return path.prefix(index).filter { earlier in
+            !required.isDisjoint(with: earlier.introduces)
+        }
+    }
+
+    /// Recommendation only, never a learner lock. Listening, skipping or
+    /// revealing a translation does not count as recorded practice.
+    static func prerequisitesToReview(for step: GuidedFoundationStep,
+                                      in path: [GuidedFoundationStep],
+                                      records: [String: PracticeRecord]) -> [GuidedFoundationStep] {
+        prerequisiteSteps(for: step, in: path).filter { earlier in
+            earlier.items.contains { source in
+                (records["learn:" + source.id]?.attempts ?? 0) == 0
+            }
+        }
+    }
+
     static func load(lessons: [Lesson], bundle: Bundle = .main) throws -> [GuidedFoundationStep] {
         guard let url = bundle.url(forResource: "guided-foundations", withExtension: "json",
                                    subdirectory: "generated") else {

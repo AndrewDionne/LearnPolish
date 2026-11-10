@@ -55,6 +55,12 @@ struct GuidedPracticeScreen: View {
 
     private var current: GuidedRecordedItem { step.items[itemIndex] }
 
+    private var earlierPractice: [GuidedFoundationStep] {
+        GuidedFoundationPath.prerequisitesToReview(
+            for: step, in: learner.guidedFoundations,
+            records: learner.profile.records)
+    }
+
     private var following: GuidedFoundationStep? {
         guard let position = learner.guidedFoundations.firstIndex(where: { $0.id == step.id }),
               learner.guidedFoundations.indices.contains(position + 1) else { return nil }
@@ -98,6 +104,20 @@ struct GuidedPracticeScreen: View {
 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
+                        if !earlierPractice.isEmpty {
+                            DisclosureGroup("Earlier learning to revisit (\(earlierPractice.count))") {
+                                ForEach(earlierPractice) { earlier in
+                                    NavigationLink {
+                                        GuidedPracticeScreen(step: earlier)
+                                    } label: {
+                                        Label(earlier.title, systemImage: "arrow.uturn.backward")
+                                    }
+                                    .padding(.vertical, 4)
+                                }
+                            }
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                        }
                         if step.isGrammar {
                             Text(step.cue ?? "")
                                 .font(.headline)

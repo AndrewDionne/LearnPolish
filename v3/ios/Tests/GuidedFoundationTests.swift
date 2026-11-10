@@ -102,4 +102,57 @@ import XCTest
         XCTAssertEqual(reopened.guidedPractisedCount(step), 1)
         XCTAssertEqual(reopened.record(for: original, mode: .learn).attempts, 2)
     }
+
+    func testDeclaredConceptPrerequisitesResolveToEarlierSourceLessons() throws {
+        let steps = try GuidedFoundationPath.load(lessons: CatalogLoader.load())
+        for (index, step) in steps.enumerated() {
+            let previous = GuidedFoundationPath.prerequisiteSteps(for: step, in: steps)
+            let provided = Set(previous.flatMap { $0.introduces })
+            XCTAssertTrue(Set(step.requires).isSubset(of: provided),
+                          "Unintroduced concept in \(step.id)")
+            XCTAssertTrue(previous.allSatisfy { dependency in
+                guard let position = steps.firstIndex(where: { $0.id == dependency.id }) else {
+                    return false
+                }
+                return position < index &&
+                    !Set(step.requires).isDisjoint(with: dependency.introduces)
+            })
+        }
+        let requests = try XCTUnwrap(steps.first { $0.id == "grammar:requests" })
+        XCTAssertEqual(GuidedFoundationPath.prerequisiteSteps(
+            for: requests, in: steps).map { $0.id }, ["politeness"])
+        let shopping = try XCTUnwrap(steps.first { $0.id == "shopping-questions" })
+        XCTAssertEqual(GuidedFoundationPath.prerequisiteSteps(
+            for: shopping, in: steps).map { $0.id },
+            ["grammar:requests", "grammar:where", "grammar:permission",
+             "grammar:prices", "grammar:yes-no-questions"])
+    }
+
+    func testPrerequisiteReviewReflectsSavedAttemptsNotSkipsOrPartialPractice() throws {
+        let steps = try GuidedFoundationPath.load(lessons: CatalogLoader.load())
+        let shopping = try XCTUnwrap(steps.first { $0.id == "shopping-questions" })
+        XCTAssertEqual(GuidedFoundationPath.prerequisitesToReview(
+            for: shopping, in: steps, records: [:]).count, 5)
+        var records: [String: PracticeRecord] = [:]
+        let requests = try XCTUnwrap(steps.first { $0.id == "grammar:requests" })
+        for item in requests.items {
+            records["learn:" + item.id] = PracticeRecord(attempts: 1)
+        }
+        XCTAssertEqual(GuidedFoundationPath.prerequisitesToReview(
+            for: shopping, in: steps, records: records).count, 4)
+        let whereLesson = try XCTUnwrap(steps.first { $0.id == "grammar:where" })
+        for item in whereLesson.items.dropLast() {
+            records["learn:" + item.id] = PracticeRecord(attempts: 1)
+        }
+        XCTAssertTrue(GuidedFoundationPath.prerequisitesToReview(
+            for: shopping, in: steps, records: records).contains { $0.id == whereLesson.id })
+        for item in whereLesson.items {
+            records["learn:" + item.id] = PracticeRecord(attempts: 1)
+        }
+        XCTAssertEqual(GuidedFoundationPath.prerequisitesToReview(
+            for: shopping, in: steps, records: records).count, 3)
+        XCTAssertTrue(GuidedFoundationPath.prerequisitesToReview(
+            for: steps[0], in: steps, records: [:]).isEmpty)
+    }
+
 }

@@ -1,5 +1,16 @@
 # V3 execution ledger — GitHub is durable continuity
 
+## V3-08C — source-derived prerequisite links and Journey 1 continuity (2026-11-10)
+
+Native Guided Practice offers an optional, collapsed **Earlier learning to revisit** section when a declared prerequisite was introduced in an earlier recorded source group with source examples not yet saved as Learn attempts. Source IDs/order are unchanged; no lesson lock, fabricated mastery, new text/audio, gamification or account requirement. Two new XCTest cases check real concept predecessors and partially practised dependencies.
+
+Curriculum audit: [Journey 1 continuity audit](JOURNEY1_AUDIT.md). The 16 guided steps, 68 original audio references and seven grammar introductions are not a complete lexical/phonetic certification. Core Journey 1's 19 lessons remain a separate native progress path awaiting independent editorial integration.
+
+**Verification:** Previous V3-08B [Actions #42809006255](https://github.com/AndrewDionne/LearnPolish/actions/runs/42809006255) has a passed iPhone Simulator build; its XCTest step was in progress at this observation. V3-08C exact-head CI pending. PR #169 remains draft; physical device and real speech/cloud/guardian acceptance are still open. Production V2, Neon, Render and four tester identities unchanged.
+
+---
+
+
 ## V3-08B — single offline daily review across lessons (2026-11-10)
 
 **Implementation:** Adds a compact **Daily review** entry on Home (only when items are due) and a primary **Review up to 20 due** action in Practice. `NativeDailyReviewQueue.snapshot` selects a bounded batch of actual V2 Learn cards across different lessons, oldest due first with deterministic source-order ties. The queue freezes on entry: an incorrect answer remains due in the normal 1/3/7/14/30/60/90-day schedule but never loops inside the same short session. Review displays original Polish, approved audio at 0.75×/1× where present, then meaning and Got it/Needs practice; Skip is non-awarding. Every graded answer uses the V3-08A atomic persist-before-advance boundary. Existing by-lesson review remains available.
