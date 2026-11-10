@@ -19,6 +19,22 @@ The original source dependency manifest checks named concepts, NOT a complete fi
 
 Native guided exercises now offer a collapsed, optional **Earlier learning to revisit** section. Each linked lesson is the exact earlier source group that introduced an explicitly required concept and still contains original recorded items without a saved Learn attempt. A Skip, audio play or translation reveal is not mastery. A missing attempt prompts review but does not lock advancement or impose an 80-percent threshold. Tests verify cross-step dependencies and partial-practice behaviour.
 
+## Reproducible first-use vocabulary inventory
+
+The [full 68-row source-derived first-use inventory](JOURNEY1_FIRST_USE.md)
+now records the exact original Polish phrase, full English meaning, source
+reference, existing MP3, optional author-marked grammar focus, and all written
+word forms first encountered by a learner at that point. The inventory contains
+**74 distinct case-folded written forms across 55 unique original audio
+recording IDs** (68 appearances including intentional reuse).
+
+This is a surface-spelling audit, **not** morphological lemmatization, comprehension
+evidence, sound coverage, or linguistic certification: every row remains
+**Pending independent human review**. Native CI checks a byte-for-byte
+source-derived report so later changes to the approved V2 material cannot
+silently invalidate the inventory. The separate core Journey 1 lessons and
+Sound Lab are beyond this guided-only first-use audit.
+
 ## Editorial and continuity gaps
 
 1. **Lexical first-use review:** check every Polish word, inflected form and complete English gloss at first exposure in all 16 steps, especially nouns/actions in request, shopping and location recordings. The current dependency graph covers only named constructions.

@@ -1,5 +1,33 @@
 # V3 execution ledger — GitHub is durable continuity
 
+## V3-08D — reproducible Journey 1 word-form first-use inventory (2026-11-10)
+
+**Implementation:** `v3/ios/scripts/audit-guided-lexicon.mjs` inventories all
+68 existing Guided Foundations reference occurrences, 55 unique original
+recording identities, and **74 distinct case-folded NFC written surface forms**
+across 16 ordered groups. [Full review-ready 68-row inventory](JOURNEY1_FIRST_USE.md)
+lists source ID, exact original Polish/English utterance, grammar focus, audio
+reference and newly seen written forms. **All rows remain Pending independent
+native/linguistic review; this is not lemmatization, grammar or sound certification.**
+No source phrases, translations, recordings or progress state were changed.
+
+**CI source-drift gate:** Following V2 asset preparation, the native macOS
+workflow now checks report equality against the canonical generated catalog
+and runs five Node tests, including Polish diacritic/inflection handling,
+duplicate original recordings, invalid original text/meaning/audio/status
+and an exact checked-in report comparison. V2/Neon/Render/family and all
+production settings remain untouched. Prior V3-08C
+[Actions #42811630855](https://github.com/AndrewDionne/LearnPolish/actions/runs/42811630855)
+**SUCCESS** (Simulator build and native XCTest); V3-08D exact-head CI is
+pending at this commit's creation.
+
+**Next:** independent first-use forms and inflection explanations, followed
+by a source-ID-preserving coherent Journey 1 path; the guided and main-course
+tracks are still separate. PR #169 stays draft; no owner Xcode test requested.
+
+---
+
+
 ## V3-08C — source-derived prerequisite links and Journey 1 continuity (2026-11-10)
 
 Native Guided Practice offers an optional, collapsed **Earlier learning to revisit** section when a declared prerequisite was introduced in an earlier recorded source group with source examples not yet saved as Learn attempts. Source IDs/order are unchanged; no lesson lock, fabricated mastery, new text/audio, gamification or account requirement. Two new XCTest cases check real concept predecessors and partially practised dependencies.
