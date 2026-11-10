@@ -2,6 +2,8 @@
 
 ## V3-08G — white-square branded iPhone app icon (2026-11-10)
 
+**CI correction:** Initial V3-08G run [#42914468893](https://github.com/AndrewDionne/LearnPolish/actions/runs/42914468893) failed during macOS icon preparation: a 24-bit AppKit bitmap allocation returned nil. The renderer now uses a four-byte aligned Core Graphics bitmap with the fourth byte explicitly unused, exported via ImageIO to an opaque PNG. This is a build-time fix, not a source-image change. Exact-head CI revalidation is required.
+
 **Implementation:** Locked the owner-approved Path to Polish geometric navy
 P, horizontal path and mint endpoint on a **full white square**, no pre-rounded
 corners or transparency. The source vector is versioned at
