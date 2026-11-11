@@ -10,7 +10,7 @@ struct NativeHomeActivity: Identifiable {
     let at: Date
 }
 
-enum NativeHomeSnapshot {
+@MainActor enum NativeHomeSnapshot {
     static func recent(learner: LocalLearningStore,
                        limit: Int = 3) -> [NativeHomeActivity] {
         guard limit > 0, let journal = learner.profile.practiceJournal else { return [] }
