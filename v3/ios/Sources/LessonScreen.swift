@@ -132,7 +132,15 @@ struct LessonScreen: View {
                     }
                     .buttonStyle(.bordered)
                 }
-                if let following = learner.coreJourney?.next(after: lesson.id), dueItemIDs == nil {
+                if dueItemIDs == nil,
+                   let following = learner.unifiedJourney?.next(after: .lesson(lesson.id)) {
+                    NavigationLink(value: following.route) {
+                        Label("Next: \(following.title)", systemImage: "arrow.right")
+                    }
+                    .buttonStyle(.bordered)
+                } else if dueItemIDs == nil,
+                          learner.unifiedJourney?.node(for: .lesson(lesson.id)) == nil,
+                          let following = learner.coreJourney?.next(after: lesson.id) {
                     NavigationLink {
                         if following.microDialogues?.isEmpty == false {
                             NativeDialoguePracticeScreen(lesson: following)

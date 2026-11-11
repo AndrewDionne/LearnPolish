@@ -1,5 +1,20 @@
 # V3 execution ledger — GitHub is durable continuity
 
+## V3-UX03A — one source-validated Journey 1 replaces parallel guided / core Continue (2026-11-11)
+
+**Prior gate:** Native UX-02B fix `7d3f357` verified **SUCCESS**, exact-head [CI #43009611219](https://github.com/AndrewDionne/LearnPolish/actions/runs/43009611219). The wrong-answer objective-zero bug is covered by the rebuilt test suite.
+
+**Implementation:** New `NativeUnifiedJourney` materializes **8 navigation chapters / 35 original activities** from the authenticated inventories of 16 guided source-recorded groups and 19 Core Journey 1 legacy lessons. Every named ID is exact, mandatory and unique as an activity; each activity references only original source item IDs. Source-authoritative guided requires/introduces prerequisites must remain an ordered subset. Preserve original lesson/word IDs and recordings, including repeats across guided and core (original IDs reused, never reauthored). The five original sound contrast lessons are intentionally moved before a long first core conversation, an instructional change from the V2 *pilot* ordering; all 19 original Core Journey 1 lessons still appear once. The two Journey 2 placements and other supplements are excluded from Journey 1.
+
+**One route in SwiftUI:** Home "Continue your journey" now uses the **first activity without all genuine saved source attempts**, not the most recently opened core lesson. Library presents one Journey 1 browser with 8 smaller chapters, real per-chapter attempted counts and Matching accuracy only when objective source answer evidence exists. Additional Journey 2 and optional Extras remain separate. Practice shows the same recommended next step; session-end Next links cross guided groups, sound lessons, vocabulary, reading and core conversations using the same Practice navigation stack. The entire path is browseable, without hard locks or attempts/XP on Skip. Existing source IDs mean early exposure can count when an original source phrase is revisited later; no separate duplicate XP identity is introduced.
+
+**Integrity and tests:** Journey construction rejects source ID drift, missing chapters/steps, duplicate guided/core activity IDs and forward *named-concept* prerequisites. Six new native regression cases cover all 35 entries and 8 chapter sizes, original 55-reference provenance reuse, original vs extra identities, guided-to-sound/core navigation, "Skip is not mastery" across relaunch, legacy guided source recall handoff to sounds, and honest objective matching metrics. One existing Home progression test updated from the old parallel Core Journey route to the new intentional sound-first waypoint. Exact-head Xcode Simulator and XCTest CI required; draft PR #169.
+
+**Not yet linguistically certified:** Author-defined concept prerequisites do NOT prove complete Polish lexical, inflection, pronunciation and comprehension progression. Current first-use 74 surface forms cover only guided content; core first-use audit, manual bilingual review and deliberate repeated mixed-mode exercises across the entire source path remain UX-03B. Physical microphone/headphone testing, unverified syllable-colour ratings and team/Expedition work are separate gates. Do not claim production release or proficiency certification. No change to original V2 recordings, Neon/Render, family tester identities or existing private learner data.
+
+---
+
+
 ## V3-UX02B — guided foundations use Speak introduction + genuine matching recap (2026-11-11)
 
 **Scope:** Following UX-02A exact-head CI PASS [#43000969910](https://github.com/AndrewDionne/LearnPolish/actions/runs/43000969910), converted the original 16 source-verified guided first words / basic vocabulary / grammar groups away from reveal-and-self-rate cards. Each guide introduces all original recorded phrases via Speak: authentic MP3, original Polish and English meaning, original grammar cue/focus, local microphone recording/replay, optional consent-gated Azure/Whisper experimental assessment. Only a real usable recorded take can commit a source-original `.speak` attempt. Playback alone, Skip, navigation or revealing English earns no credit.

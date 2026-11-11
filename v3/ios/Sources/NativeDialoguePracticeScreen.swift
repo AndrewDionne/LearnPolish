@@ -35,6 +35,12 @@ struct NativeDialoguePracticeScreen: View {
                     selectedAnswer = nil
                 }
                 .buttonStyle(.borderedProminent)
+                if let following = learner.unifiedJourney?.next(after: .lesson(lesson.id)) {
+                    NavigationLink(value: following.route) {
+                        Label("Next: \(following.title)", systemImage: "arrow.right")
+                    }
+                    .buttonStyle(.bordered)
+                }
                 Spacer()
             } else if let scene {
                 HStack {

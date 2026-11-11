@@ -71,10 +71,8 @@ struct GuidedPracticeScreen: View {
             records: learner.profile.records)
     }
 
-    private var following: GuidedFoundationStep? {
-        guard let i = learner.guidedFoundations.firstIndex(where: { $0.id == step.id }),
-              learner.guidedFoundations.indices.contains(i + 1) else { return nil }
-        return learner.guidedFoundations[i + 1]
+    private var following: NativeUnifiedJourneyNode? {
+        learner.unifiedJourney?.next(after: .guided(step.id))
     }
 
     var body: some View {
@@ -85,9 +83,7 @@ struct GuidedPracticeScreen: View {
                     "End of activity", systemImage: "checkmark.circle",
                     description: Text("\(learner.guidedPractisedCount(step)) of \(step.items.count) original phrases practised. Unanswered recall checks remain available."))
                 if let following {
-                    NavigationLink {
-                        GuidedPracticeScreen(step: following)
-                    } label: {
+                    NavigationLink(value: following.route) {
                         Label("Next: \(following.title)", systemImage: "arrow.right")
                             .frame(maxWidth: .infinity)
                     }

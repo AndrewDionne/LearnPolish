@@ -109,6 +109,12 @@ struct HomeScreen: View {
 
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Continue your journey").font(.headline)
+                        if learner.unifiedJourneyStepsTotal > 0 {
+                            ProgressView(value: Double(learner.unifiedJourneyStepsCompleted),
+                                         total: Double(learner.unifiedJourneyStepsTotal))
+                            Text("\(learner.unifiedJourneyStepsCompleted) of \(learner.unifiedJourneyStepsTotal) Journey 1 activities practised")
+                                .font(.footnote).foregroundStyle(.secondary)
+                        }
                         if let route = learner.homeLearningRoute {
                             switch route {
                             case .guided(let step):
@@ -227,16 +233,28 @@ struct LibraryScreen: View {
             if let error = learner.catalogError {
                 Section { Text(error).foregroundStyle(.red) }
             }
-            Section("Start here") {
+            Section("Your learning journey") {
                 NavigationLink {
-                    GuidedFoundationsScreen()
+                    NativeUnifiedJourneyOverviewScreen()
                 } label: {
-                    Label("First words and basic grammar",
-                          systemImage: "text.book.closed")
+                    VStack(alignment: .leading, spacing: 6) {
+                        Label("Journey 1 · First words to conversations",
+                              systemImage: "point.topleft.down.curvedto.point.bottomright.up")
+                            .font(.headline)
+                        Text("\(learner.unifiedJourneyStepsCompleted) of \(learner.unifiedJourneyStepsTotal) original activities practised")
+                            .font(.subheadline).foregroundStyle(.secondary)
+                        ProgressView(value: Double(learner.unifiedJourneyStepsCompleted),
+                                     total: Double(max(learner.unifiedJourneyStepsTotal, 1)))
+                    }
+                    .padding(.vertical, 6)
                 }
             }
-            Section("Learning journeys") {
-                ForEach(journeys) { journey in
+            Section("Further journeys") {
+                ForEach(journeys.filter { journey in
+                    journey.lessons.allSatisfy {
+                        learner.coreJourney?.placements[$0.id]?.journey != 1
+                    }
+                }) { journey in
                     if query.isEmpty ||
                         journey.title.localizedCaseInsensitiveContains(query) ||
                         journey.lessons.contains(where: matches) {
@@ -391,6 +409,20 @@ struct ReviewScreen: View {
         List {
             if let error = learner.catalogError {
                 Section { Text(error).foregroundStyle(.red) }
+            }
+            if let journey = learner.unifiedJourney, let core = learner.coreJourney,
+               let pending = journey.nextUnpractised(
+                guided: learner.guidedFoundations, core: core,
+                records: learner.profile.records) {
+                Section("Continue Journey 1") {
+                    NavigationLink(value: pending.route) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(pending.title).font(.headline)
+                            Text("\(learner.unifiedJourneyStepsCompleted) of \(learner.unifiedJourneyStepsTotal) activities practised")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                }
             }
             Section("Your active learning sets") {
                 if learner.activeGuidedSteps.isEmpty && learner.activePracticeLessons.isEmpty {

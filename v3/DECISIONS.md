@@ -92,3 +92,27 @@ are not converted into objective matching accuracy. No XP for Play/Skip/
 reveal or mere navigation. True Polish syllable score remains separately
 uncertified. See [UX_LEARNING_ARCHITECTURE.md](UX_LEARNING_ARCHITECTURE.md)
 and the V3 execution ledger for native XCTest gates.
+
+### UX-03A — one source-validated Journey 1 navigation path (2026-11-11)
+
+Replace parallel Guided Continue and Core Continue with one 35-activity,
+8-chapter **Journey 1** after the owner's iPhone UX review: first words,
+five original sound contrasts, practical vocabulary, beginner sentences,
+recorded early listening, everyday situations, and practical conversations.
+Exactly 16 original guided groups and 19 original Core Journey 1 lessons
+remain; their V2 media, word/lesson identities and user attempt ledger are
+never duplicated. Moving sounds before the lengthy first original greeting
+source lesson intentionally changes the old *pilot* ordering, not original
+recordings or approved Polish. Each activity can be opened in Library but
+**runs in Practice**. Home offers the first not-practised source entry,
+not the last opened lesson; no hard locks, required percentage or XP for
+Skip. Chapters report real attempted activity progress and objective
+matching only where actual answers exist. One next-route works through
+the guided/core boundaries. User's history remains in its existing local
+profile and the 55 shared source IDs are reused, not cloned.
+
+Only author-declared concept prerequisites are currently verified; this
+is navigation/identity coherence, **not independent human certification**
+of all first-use vocabulary, letter sounds or grammar. UX-03B must extend
+the current guided-only first-use ledger to all 19 core lessons and
+address every verified gap using authorized original teaching content.

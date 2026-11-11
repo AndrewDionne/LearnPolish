@@ -244,7 +244,7 @@ import XCTest
         XCTAssertEqual(resumed.id, "simple-replies")
     }
 
-    func testHomeUsesOriginalLearnRecordsToTransitionFromGuidedToCore() throws {
+    func testHomeUsesOriginalLearnRecordsButRequiresSoundPracticeBeforeCoreConversation() throws {
         let folder = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: folder) }
@@ -260,9 +260,9 @@ import XCTest
         XCTAssertEqual(uniqueReferences.count, 55)
         XCTAssertNil(learner.nextGuidedStep)
         guard case .core(let lesson)? = learner.homeLearningRoute else {
-            return XCTFail("After source-backed practice, offer the existing V2 core course")
+            return XCTFail("After guided practice, the source-based course must offer sound exercises")
         }
-        XCTAssertEqual(lesson.id, "Conversation_1")
+        XCTAssertEqual(lesson.id, "contrast_l_lstroked")
         let reopened = LocalLearningStore(storageURL: folder.appendingPathComponent("profile.json"))
         guard case .core(let persistent)? = reopened.homeLearningRoute else {
             return XCTFail("Transition must persist without a login")

@@ -90,6 +90,7 @@ struct LocalProgressBackup: Identifiable {
     @Published private(set) var sourceExposure: NativeSourceExposure?
     @Published private(set) var touristCatalog: TouristCatalog?
     @Published private(set) var coreJourney: CoreJourney?
+    @Published private(set) var unifiedJourney: NativeUnifiedJourney?
     @Published private(set) var regions: [PolandRegion] = []
     @Published private(set) var catalogError: String?
     @Published private(set) var saveError: String?
@@ -121,6 +122,7 @@ struct LocalProgressBackup: Identifiable {
             let journey = try CoreJourney(lessons: source, bundle: bundle)
             let sourceRegions = try PolandRegionCatalog.load(bundle: bundle)
             let guided = try GuidedFoundationPath.load(lessons: source, bundle: bundle)
+            let unified = try NativeUnifiedJourney(guided: guided, core: journey)
             let sourceSounds = try NativeSoundStudio.load(lessons: source, bundle: bundle)
             let sourceIntroductions = try NativeSourceExposure.load(lessons: source, bundle: bundle)
             let tourists = try TouristCatalog.load(lessons: source, bundle: bundle)
@@ -131,6 +133,7 @@ struct LocalProgressBackup: Identifiable {
                 lessons: source, regions: sourceRegions)
             lessons = source
             coreJourney = journey
+            unifiedJourney = unified
             regions = sourceRegions
             guidedFoundations = guided
             soundStudio = sourceSounds
@@ -264,13 +267,34 @@ struct LocalProgressBackup: Identifiable {
         })
     }
 
-    /// One primary entry: existing first words and grammar before the source
-    /// V2 core course. Library access remains unrestricted. Both routes use
-    /// the same original Learn records so familiar words are not re-awarded.
+    /// A single source-validated Journey 1 recommendation, not two competing
+    /// "Continue" pathways. Browsing a later step never bypasses unfinished
+    /// source items or fabricates mastery. Open steps are not hard-locked.
     var homeLearningRoute: NativeHomeLearningRoute? {
-        if let guided = nextGuidedStep { return .guided(guided) }
-        if let lesson = nextLesson { return .core(lesson) }
-        return nil
+        guard let journey = unifiedJourney, let core = coreJourney,
+              let next = journey.nextUnpractised(
+                guided: guidedFoundations, core: core,
+                records: profile.records) else { return nil }
+        switch next.route {
+        case .guided(let id):
+            return guidedFoundations.first(where: { $0.id == id }).map {
+                .guided($0)
+            }
+        case .lesson(let id):
+            return course.first(where: { $0.id == id }).map { .core($0) }
+        case .soundLab, .scenarios:
+            return nil
+        }
+    }
+
+    var unifiedJourneyStepsCompleted: Int {
+        guard let journey = unifiedJourney, let core = coreJourney else { return 0 }
+        return journey.completedSteps(guided: guidedFoundations, core: core,
+                                      records: profile.records)
+    }
+
+    var unifiedJourneyStepsTotal: Int {
+        unifiedJourney?.nodes.count ?? 0
     }
 
     func guidedPractisedCount(_ step: GuidedFoundationStep) -> Int {
