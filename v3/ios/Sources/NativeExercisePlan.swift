@@ -27,6 +27,83 @@ enum NativeExercisePlan {
         return results
     }
 
+    /// A first-contact phrase must be introduced before it can be tested.
+    /// Historical Learn attempts count as prior exposure (not as a new
+    /// objective quiz score); this preserves earlier local learner progress.
+    static func introduced(_ item: LessonItem,
+                           records: [String: PracticeRecord]) -> Bool {
+        (records["speak:" + item.id]?.attempts ?? 0) > 0 ||
+        (records["learn:" + item.id]?.attempts ?? 0) > 0
+    }
+
+    /// Runtime matching is stricter than the authored text-order audit:
+    /// every distractor must have been *actually practised*, not merely
+    /// viewed or passed over using Skip. The correct phrase must already
+    /// have had an introductory attempt too.
+    static func readyChoices(for lesson: Lesson, itemIndex: Int,
+                             records: [String: PracticeRecord]) -> [String] {
+        guard lesson.kind == "vocabulary",
+              lesson.items.indices.contains(itemIndex),
+              introduced(lesson.items[itemIndex], records: records)
+        else { return [] }
+        let target = lesson.items[itemIndex].english
+        var seen = Set([target])
+        let earlier = lesson.items.prefix(itemIndex).compactMap { item -> String? in
+            guard introduced(item, records: records),
+                  seen.insert(item.english).inserted else { return nil }
+            return item.english
+        }
+        guard earlier.count >= 2 else { return [] }
+        let offset = itemIndex % earlier.count
+        let rotated = Array(earlier[offset...]) + Array(earlier[..<offset])
+        var results = Array(rotated.prefix(2))
+        results.insert(target, at: itemIndex % 3)
+        return results
+    }
+
+    /// Scheduled recall can reuse *any* previously practised original
+    /// source meaning (including a later source index), but must not expose
+    /// an unintroduced card as a distractor. With fewer than two distinct
+    /// practised alternatives, the UI falls back to a self-rated flip card
+    /// rather than fabricating a graded answer.
+    static func reviewChoices(for lesson: Lesson, itemIndex: Int,
+                              records: [String: PracticeRecord]) -> [String] {
+        guard lesson.items.indices.contains(itemIndex),
+              introduced(lesson.items[itemIndex], records: records)
+        else { return [] }
+        let target = lesson.items[itemIndex].english
+        var seen = Set([target])
+        let known = lesson.items.compactMap { item -> String? in
+            guard introduced(item, records: records),
+                  seen.insert(item.english).inserted else { return nil }
+            return item.english
+        }
+        guard known.count >= 2 else { return [] }
+        let offset = itemIndex % known.count
+        let rotated = Array(known[offset...]) + Array(known[..<offset])
+        var result = Array(rotated.prefix(2))
+        result.insert(target, at: itemIndex % 3)
+        return result
+    }
+
+    /// What the learner actually sees. The source cadence expresses where
+    /// matching can occur, but never bypasses the first-contact requirement.
+    static func mode(for lesson: Lesson, sourceIndex: Int,
+                     records: [String: PracticeRecord]) -> PracticeMode {
+        let proposed = mode(for: lesson, sourceIndex: sourceIndex)
+        guard proposed == .learn else { return proposed }
+        return readyChoices(for: lesson, itemIndex: sourceIndex,
+                            records: records).count == 3 ? .learn : .speak
+    }
+
+    static func mode(for lesson: Lesson, item: LessonItem,
+                     records: [String: PracticeRecord]) -> PracticeMode {
+        guard let sourceIndex = lesson.items.firstIndex(where: { $0.id == item.id }) else {
+            return lesson.kind == "reading" ? .read : .speak
+        }
+        return mode(for: lesson, sourceIndex: sourceIndex, records: records)
+    }
+
     static func mode(for lesson: Lesson, sourceIndex: Int) -> PracticeMode {
         guard lesson.items.indices.contains(sourceIndex) else { return .learn }
         if lesson.kind == "reading" { return .read }

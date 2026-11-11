@@ -1,5 +1,20 @@
 # V3 execution ledger — GitHub is durable continuity
 
+## V3-UX03C1 — demonstrated exposure before first matching (2026-11-11)
+
+**Problem:** UX-03B fixed static later-card source option leaks, but merely placing options earlier in a lesson did not prove a learner had heard or practised them, particularly with Skip and multi-lesson resume. In addition, the static Learn cadence could put a first-time original phrase directly into an objective question without giving its meaning.
+
+**Implemented:** `NativeExercisePlan.introduced` checks existing keyed `speak:<original-item-id>` or historical `learn:<original-item-id>` attempts, not navigation or revealing English. `readyChoices` uses the exact target source gloss and two **distinct earlier original source meanings with actual prior attempts**. `mode(for:records:)` opens an unintroduced phrase in Speak even at a scheduled Learn position. On `Mark practised`, the first successful recorded Speak attempt commits atomically, then immediately transitions to objective Learn **on the same original item** only if the earlier meanings now qualify. The ordinary Next/Skip action never credits practice or bypasses a record-based matching gate; earlier unpractised words remain available without a new hard lock. Individual lesson cursors and original XP/attempt IDs are untouched.
+
+**Scheduled review fallback:** `NativeExercisePlan.reviewChoices` uses only previously practised source-item English alternatives, including already learned later source entries (appropriate for recall). With fewer than two distinct known meanings, the existing Learn review shows a clearly labelled **self-rated flip card**, not fictitious 3-choice accuracy. Cross-lesson daily review still relies on the existing due scheduler and retains self-rated semantics. Multiple new native XCTest cases validate first contact, skipped earlier cards, genuine record-backed same-card reinforcement, optional legacy self-rated exposure without fake objective evidence, scheduled-review distractor safety, per-lesson restart cursor and genuine XP events.
+
+**Proof:** Exact-head source, Simulator and native XCTest CI required. Prior UX-03B [run #43021754424](https://github.com/AndrewDionne/LearnPolish/actions/runs/43021754424) fully PASS. No V2 media, Neon/Render family data, identities or grammar/curriculum text rewritten.
+
+**Still outstanding:** Author-level Polish morphology/phonology and dialogue question prerequisites, deeper source-backed retrieval variation across sections, speech calibration and actual hardware-headphone/microphone acceptance. A record proves an attempted activity, **not correct pronunciation or lexical comprehension**.
+
+---
+
+
 ## V3-UX03B — full original-source first-use audit and earlier-only Learn answers (2026-11-11)
 
 **Scope:** Source integrity across the complete 8-chapter, 35-activity Journey 1, not just the prior 16 guided groups. The single authored ordering is now a checked-in, status-labelled **`v3/content/journey1-unified-v1.json`** manifest. `prepare-assets.mjs` verifies all 16 exact guided IDs + 19 exact core Journey 1 IDs and produces a native bundle copy; `NativeUnifiedJourney` loads that same manifest at launch instead of maintaining a drifting second handwritten Swift copy. V2 core pilot metadata remains untouched.

@@ -138,3 +138,25 @@ spaced-review exercises retain their own flow. No new source IDs, attempts,
 XP, cloud accounts, or backend connections. Seeing an earlier card does not
 prove its mastery; independent human-first-use/inflection/acoustic signoff
 and deliberate repeated retrieval remain separate release gates.
+
+### UX-03C1 — record-backed introduction-before-match (2026-11-11)
+
+A first-contact original Polish phrase **must never** open directly as an
+objective Learn test. The source-cadence `NativeExercisePlan.mode` is only
+a proposed revisit; runtime `mode(for:records:)` requires a saved
+`speak:<item>` or legacy `learn:<item>` attempt for the target and
+at least two distinct *earlier* source items with genuine saved practice
+records. Polish/English and original MP3 references remain exact. A
+successful usable-recording **Mark practised** can immediately transition
+the same item to a graded source-only Learn question. Skip, Play, Return
+and Show Meaning give no practice event or XP. No forced locks or 80-percent
+thresholds. Previously credited legacy self-rated Learn attempts may
+signal earlier exposure but are never turned into objective correctness.
+
+Scheduled source Learn reviews can draw distractors from any previously
+practised original same-lesson items, never future unpractised entries.
+If only 0/1 alternatives are eligible, use an explicitly **self-rated**
+reveal instead of manufacturing options or a matching score. Existing
+Daily Review scheduler and historical XP are unchanged. Neither a prior
+attempt nor the full automatic first-use report certifies human lexical,
+phonetic or syllable mastery. Physical headset acceptance remains open.

@@ -186,21 +186,24 @@ struct LessonScreen: View {
                     items: available, progress: learner.profile.records, mode: .learn)
             }
             mode = dueItemIDs == nil
-                ? NativeExercisePlan.mode(for: lesson, item: item) : .learn
+                ? NativeExercisePlan.mode(for: lesson, item: item,
+                                         records: learner.profile.records) : .learn
             showingSourceIntroduction = dueItemIDs == nil && sourceIntroduction != nil
             remember()
         }
         .onDisappear { audio.discard() }
         .onChange(of: index) { _, _ in
             mode = dueItemIDs == nil
-                ? NativeExercisePlan.mode(for: lesson, item: item) : .learn
+                ? NativeExercisePlan.mode(for: lesson, item: item,
+                                         records: learner.profile.records) : .learn
             resetCard()
             remember()
         }
         .onChange(of: batch) { _, _ in
             index = 0
             mode = dueItemIDs == nil
-                ? NativeExercisePlan.mode(for: lesson, item: item) : .learn
+                ? NativeExercisePlan.mode(for: lesson, item: item,
+                                         records: learner.profile.records) : .learn
             finished = false
             resetCard()
             remember()
@@ -215,16 +218,25 @@ struct LessonScreen: View {
             if item.audio != nil { referenceControls }
             let sourceIndex = lesson.items.firstIndex(where: { $0.id == item.id }) ?? index
             let choices = dueItemIDs == nil
-                ? NativeExercisePlan.choices(for: lesson, itemIndex: sourceIndex)
-                : NativePracticeRules.choices(
-                    for: lesson, item: item, itemIndex: sourceIndex)
+                ? NativeExercisePlan.readyChoices(
+                    for: lesson, itemIndex: sourceIndex,
+                    records: learner.profile.records)
+                : NativeExercisePlan.reviewChoices(
+                    for: lesson, itemIndex: sourceIndex,
+                    records: learner.profile.records)
             if studyingFlashCard || choices.count < 3 {
                 Label("Flip-card study · ungraded", systemImage: "rectangle.on.rectangle")
                     .font(.subheadline).foregroundStyle(.secondary)
                 if revealed {
                     Text(item.english).font(.title3)
-                    Text("Seeing the answer does not count as a correct response.")
-                        .font(.footnote).foregroundStyle(.secondary)
+                    if dueItemIDs != nil {
+                        Text("Self-rated review · not a graded matching question")
+                            .font(.footnote).foregroundStyle(.secondary)
+                        ratingControls(for: .learn)
+                    } else {
+                        Text("Seeing the answer does not count as a correct response.")
+                            .font(.footnote).foregroundStyle(.secondary)
+                    }
                 } else {
                     Button("Flip to English") {
                         revealed = true
@@ -420,7 +432,7 @@ struct LessonScreen: View {
                 Button("Mark practised") {
                     NativePracticeSubmission.commit(
                         store: learner, item: item, mode: .speak, understood: nil) {
-                            advance()
+                            finishSpeakOrReinforce()
                         }
                 }
                 .buttonStyle(.bordered)
@@ -474,6 +486,23 @@ struct LessonScreen: View {
             store: learner, item: item, mode: .learn, understood: success) {
                 advance()
             }
+    }
+
+    /// A recorded first encounter earns only Speak practice. When the same
+    /// phrase now has two already practised original English alternatives,
+    /// immediately reinforce it with an objective Learn question. A Skip/Next
+    /// tap still advances without awarding an attempt.
+    private func finishSpeakOrReinforce() {
+        guard dueItemIDs == nil,
+              NativeExercisePlan.mode(for: lesson, item: item,
+                                      records: learner.profile.records) == .learn
+        else {
+            advance()
+            return
+        }
+        mode = .learn
+        resetCard()
+        remember()
     }
 
     private func advance() {
