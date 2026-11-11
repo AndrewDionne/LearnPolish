@@ -169,9 +169,10 @@ struct NativePracticeJournal: Codable {
             if event.outcome == .understood { record.completed += 1 }
             if event.evidence != nil {
                 record.objectiveAttempts = (record.objectiveAttempts ?? 0) + 1
-                if event.outcome == .understood {
-                    record.objectiveCorrect = (record.objectiveCorrect ?? 0) + 1
-                }
+                // Preserve measured wrong answers as zero, including on
+                // authorized journal replay / future linked-device merge.
+                record.objectiveCorrect = (record.objectiveCorrect ?? 0) +
+                    (event.outcome == .understood ? 1 : 0)
             }
             if event.mode == .learn {
                 if event.outcome == .understood {

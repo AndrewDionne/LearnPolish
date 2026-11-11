@@ -498,9 +498,10 @@ struct LocalProgressBackup: Identifiable {
         if understood == true { record.completed += 1 }
         if evidence != nil {
             record.objectiveAttempts = (record.objectiveAttempts ?? 0) + 1
-            if understood == true {
-                record.objectiveCorrect = (record.objectiveCorrect ?? 0) + 1
-            }
+            // A real incorrect answer is a measured zero, NOT missing
+            // evidence; nil is reserved for pre-objective legacy records.
+            record.objectiveCorrect = (record.objectiveCorrect ?? 0) +
+                (understood == true ? 1 : 0)
         }
         if mode == .learn, let understood {
             if understood {
