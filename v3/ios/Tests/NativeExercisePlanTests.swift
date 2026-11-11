@@ -13,14 +13,17 @@ import XCTest
         let lesson = try XCTUnwrap(learner.lessons.first(where: { $0.id == "Conversation_1" }))
         XCTAssertEqual(lesson.items[0].polish, "Dzień dobry")
         XCTAssertEqual(NativeExercisePlan.mode(for: lesson, sourceIndex: 0), .speak)
-        XCTAssertEqual(NativeExercisePlan.mode(for: lesson, sourceIndex: 1), .learn)
+        XCTAssertEqual(NativeExercisePlan.mode(for: lesson, sourceIndex: 1), .speak)
         XCTAssertEqual(NativeExercisePlan.mode(for: lesson, sourceIndex: 2), .speak)
-        let item = lesson.items[1]
-        let choices = NativePracticeRules.choices(for: lesson, item: item, itemIndex: 1)
+        XCTAssertEqual(NativeExercisePlan.mode(for: lesson, sourceIndex: 4), .learn)
+        XCTAssertTrue(NativeExercisePlan.choices(for: lesson, itemIndex: 1).isEmpty)
+        let item = lesson.items[4]
+        let choices = NativeExercisePlan.choices(for: lesson, itemIndex: 4)
         XCTAssertEqual(choices.count, 3)
         XCTAssertEqual(choices.filter { $0 == item.english }.count, 1)
-        for choice in choices {
-            XCTAssertTrue(lesson.items.contains { $0.english == choice })
+        for choice in choices where choice != item.english {
+            XCTAssertTrue(lesson.items.prefix(4).contains { $0.english == choice },
+                          "Quiz choices must never leak a later card")
         }
     }
 
@@ -32,14 +35,17 @@ import XCTest
         XCTAssertEqual(learner.expedition.totalXP, 0)
         XCTAssertEqual(NativeExercisePlan.nextUnattemptedIndex(
             items: lesson.items, lesson: lesson, records: learner.profile.records), 0)
-        XCTAssertTrue(learner.recordAttempt(item: lesson.items[0],
-                                          mode: .speak, understood: nil))
-        XCTAssertTrue(learner.recordAttempt(item: lesson.items[1],
+        for index in 0..<4 {
+            XCTAssertEqual(NativeExercisePlan.mode(for: lesson, sourceIndex: index), .speak)
+            XCTAssertTrue(learner.recordAttempt(item: lesson.items[index],
+                                                mode: .speak, understood: nil))
+        }
+        XCTAssertTrue(learner.recordAttempt(item: lesson.items[4],
                                           mode: .learn, understood: true, evidence: .matching))
         XCTAssertEqual(NativeExercisePlan.nextUnattemptedIndex(
-            items: lesson.items, lesson: lesson, records: learner.profile.records), 2)
-        XCTAssertEqual(learner.record(for: lesson.items[1], mode: .learn).objectiveAttempts, 1)
-        XCTAssertEqual(learner.record(for: lesson.items[1], mode: .learn).objectiveCorrect, 1)
+            items: lesson.items, lesson: lesson, records: learner.profile.records), 5)
+        XCTAssertEqual(learner.record(for: lesson.items[4], mode: .learn).objectiveAttempts, 1)
+        XCTAssertEqual(learner.record(for: lesson.items[4], mode: .learn).objectiveCorrect, 1)
         XCTAssertNil(learner.record(for: lesson.items[0], mode: .speak).objectiveAttempts)
     }
 

@@ -1,5 +1,20 @@
 # V3 execution ledger — GitHub is durable continuity
 
+## V3-UX03B — full original-source first-use audit and earlier-only Learn answers (2026-11-11)
+
+**Scope:** Source integrity across the complete 8-chapter, 35-activity Journey 1, not just the prior 16 guided groups. The single authored ordering is now a checked-in, status-labelled **`v3/content/journey1-unified-v1.json`** manifest. `prepare-assets.mjs` verifies all 16 exact guided IDs + 19 exact core Journey 1 IDs and produces a native bundle copy; `NativeUnifiedJourney` loads that same manifest at launch instead of maintaining a drifting second handwritten Swift copy. V2 core pilot metadata remains untouched.
+
+**Source inventory:** New reproducible `audit-unified-first-use.mjs` checks all original Polish text, English meanings and source MP3 identities at every position; `v3/JOURNEY1_UNIFIED_FIRST_USE.md` retains an item-by-item Pending audit plus chapter/lesson totals and matching-option review. Across 35 original activities there are **381 source occurrences**, **313 unique source item IDs**, **344 distinct NFC Polish-case-folded written forms at first encounter**, and **328 first non-sound-exposure written forms**. Crucially, the 26 sound-contrast examples are *not* automatically credited as lexical teaching. These are surface-word statistics, not lemmas, semantic coverage, correct inflection, syllables, speaker quality, or human-certified prerequisites.
+
+**Concrete sequencing defect caught and corrected:** The prior UX-02A source-only `NativePracticeRules.choices` looked across the entire source lesson for 3-option Learn distractors. Auditing the entire Journey 1 found **68 candidate early-question cards** that could disclose English translations from later cards. `NativeExercisePlan.choices` now constructs exact original-English choices **only from prior items within that same source lesson**. An item at index 1 has fewer than two earlier meanings and remains an original Speak introduction; index 4 can use two earlier taught meanings and an exact correct source gloss. No invented Polish, no manufactured distractors and no silent conversion of self-rated data to objective accuracy. Due/scheduled review remains separate. New native and Node tests assert that all introductory source matching options are earlier, source provenance is unchanged, and report drift fails CI. After remediation, the source-derived audit reports **zero potential future-card distractor cases under the static rule**. It does not assume that a learner never skips or that seeing a prior word proves comprehension.
+
+**CI:** Source preparation checks the single unified manifest before Swift launch; GitHub Actions compares the new **full 381-row first-use report** byte-for-byte to the original compiled V2 text and runs mutation/provenance/future-option Node regression tests, then iPhone Simulator compilation and full native XCTest suite. Exact-head status pending after commit. PR #169 remains draft; original source recordings, Neon/Render, CloudKit and tester accounts unchanged.
+
+**Outstanding UX-03C:** Independent Polish/English semantic, inflection and sound-first review for every first-seen form, explicit spaced review/variation and no-tested-before-taught validations across the full course, dialogue comprehension editorial quality, calibrated syllable pronunciation and original headset-route device testing. This report is an actionable human review queue, **not a certificate of zero learning gaps**.
+
+---
+
+
 ## V3-UX03A — one source-validated Journey 1 replaces parallel guided / core Continue (2026-11-11)
 
 **Prior gate:** Native UX-02B fix `7d3f357` verified **SUCCESS**, exact-head [CI #43009611219](https://github.com/AndrewDionne/LearnPolish/actions/runs/43009611219). The wrong-answer objective-zero bug is covered by the rebuilt test suite.

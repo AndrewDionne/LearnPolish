@@ -54,6 +54,30 @@ if (coreSource.schemaVersion !== 1 || coreSource.editorialStatus !== 'source-map
     coreSource.placements.some(x => !manifest.lessons.some(lesson => lesson.id === x.lessonId))) {
   throw new Error('V2 core-journey manifest does not match native lesson inventory');
 }
+const unifiedSource = JSON.parse(fs.readFileSync(path.join(repo, 'v3/content/journey1-unified-v1.json'), 'utf8'));
+const unifiedEntries = unifiedSource.chapters?.flatMap(chapter => chapter.activities ?? []) ?? [];
+const sourceCoreIds = new Set(coreSource.placements.filter(x => x.journey === 1).map(x => 'l:' + x.lessonId));
+const sourceGuidedIds = new Set([
+  'simple-replies', 'politeness', 'greetings', 'street-words',
+  'transport-words', 'everyday-replies', 'grammar:requests',
+  'grammar:where', 'grammar:permission', 'grammar:prices',
+  'grammar:yes-no-questions', 'grammar:negative', 'grammar:one-two',
+  'food-requests', 'shopping-questions', 'location-questions'
+].map(x => 'g:' + x));
+if (unifiedSource.schemaVersion !== 1 ||
+    unifiedSource.editorialStatus !== 'source-mapped_unified_navigation_not_independently_linguistic_reviewed' ||
+    unifiedSource.chapters?.length !== 8 || unifiedEntries.length !== 35 ||
+    new Set(unifiedEntries).size !== 35 ||
+    sourceCoreIds.size !== 19 || sourceGuidedIds.size !== 16 ||
+    !unifiedEntries.every(ref => sourceCoreIds.has(ref) || sourceGuidedIds.has(ref)) ||
+    ![...sourceCoreIds, ...sourceGuidedIds].every(ref => unifiedEntries.includes(ref)) ||
+    unifiedSource.chapters.some(c => !c.id || !c.title || !c.description ||
+      !c.activities?.length)) {
+  throw new Error('Unified Journey 1 source no longer matches original guided and core inventories');
+}
+fs.writeFileSync(path.join(dst, 'unified-journey.json'),
+  JSON.stringify(unifiedSource, null, 2) + '\n');
+
 const regionsSource = JSON.parse(fs.readFileSync(path.join(repo, 'v2/frontend/src/expedition/regions.json'), 'utf8'));
 if (!Array.isArray(regionsSource) || regionsSource.length !== 16 ||
     new Set(regionsSource.map(x => x.id)).size !== 16 ||

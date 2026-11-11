@@ -213,9 +213,11 @@ struct LessonScreen: View {
                 .font(.largeTitle.weight(.semibold))
                 .textSelection(.enabled)
             if item.audio != nil { referenceControls }
-            let choices = NativePracticeRules.choices(
-                for: lesson, item: item,
-                itemIndex: lesson.items.firstIndex(where: { $0.id == item.id }) ?? index)
+            let sourceIndex = lesson.items.firstIndex(where: { $0.id == item.id }) ?? index
+            let choices = dueItemIDs == nil
+                ? NativeExercisePlan.choices(for: lesson, itemIndex: sourceIndex)
+                : NativePracticeRules.choices(
+                    for: lesson, item: item, itemIndex: sourceIndex)
             if studyingFlashCard || choices.count < 3 {
                 Label("Flip-card study · ungraded", systemImage: "rectangle.on.rectangle")
                     .font(.subheadline).foregroundStyle(.secondary)

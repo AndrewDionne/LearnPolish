@@ -33,6 +33,10 @@ jobs:
         run: |
           node v3/ios/scripts/audit-guided-lexicon.mjs --check
           node --test v3/ios/scripts/audit-guided-lexicon.test.mjs
+      - name: Verify unified Journey 1 first-use and matching-option sequence
+        run: |
+          node v3/ios/scripts/audit-unified-first-use.mjs --check
+          node --test v3/ios/scripts/audit-unified-first-use.test.mjs
       - name: Verify original alphabet and sound-audio source integrity
         run: node --test v3/ios/scripts/prepare-sounds.test.mjs
       - name: Verify source-first reading and listening preparation

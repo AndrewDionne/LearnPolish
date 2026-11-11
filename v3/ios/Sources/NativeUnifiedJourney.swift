@@ -35,6 +35,19 @@ struct NativeUnifiedJourneyProgress {
     var complete: Bool { required > 0 && practised == required }
 }
 
+private struct NativeUnifiedJourneySource: Decodable {
+    struct Chapter: Decodable {
+        let id: String
+        let title: String
+        let description: String
+        let activities: [String]
+    }
+    let schemaVersion: Int
+    let editorialStatus: String
+    let notes: String
+    let chapters: [Chapter]
+}
+
 /// Each source item contributes its ORIGINAL keyed attempt (learn/speak/read
 /// or listen), not a new independent grade when repeated in another chapter.
 struct NativeUnifiedJourney {
@@ -45,45 +58,24 @@ struct NativeUnifiedJourney {
     /// Explicit, reviewable source IDs; a small unit can be opened in
     /// Practice without a hard lock. The chapter-level sequence supplies a
     /// single recommended "next" across guided, sounds and conversations.
-    private static let plan: [(String, String, String, [String])] = [
-        ("first-words", "First words",
-         "Yes and no, politeness, introductions",
-         ["g:simple-replies", "g:politeness", "g:greetings"]),
-        ("polish-sounds", "Polish sounds",
-         "Hear and practise the original sound contrasts",
-         ["l:contrast_l_lstroked", "l:contrast_c_cz_cie",
-          "l:contrast_s_sz_sie", "l:contrast_z_zh_zi",
-          "l:contrast_krzy_przy"]),
-        ("basic-vocabulary", "Everyday vocabulary",
-         "Places, transport, replies and original first conversation",
-         ["g:street-words", "g:transport-words", "g:everyday-replies",
-          "l:Conversation_1", "l:numbers_1-20"]),
-        ("first-sentences", "First sentences and grammar",
-         "Polite requests, location, permission, prices and negation",
-         ["g:grammar:requests", "g:grammar:where",
-          "g:grammar:permission", "g:grammar:prices",
-          "g:grammar:yes-no-questions", "g:grammar:negative",
-          "g:grammar:one-two"]),
-        ("put-it-together", "Understand and respond",
-         "Original short exchanges, food and shopping",
-         ["l:Basic_01R", "g:food-requests",
-          "g:shopping-questions", "g:location-questions"]),
-        ("everyday-one", "Everyday Polish · 1",
-         "Numbers, places, shopping and ordering",
-         ["l:Numbers_20-100", "l:Road_Terminology",
-          "l:Conversation_-_shopping", "l:Conversation_-_restaurant"]),
-        ("everyday-two", "Everyday Polish · 2",
-         "Food, getting around, transit and health",
-         ["l:Food_and_Dinning", "l:Getting_Around_1",
-          "l:Transit_1", "l:Emergencies_and_Health"]),
-        ("real-conversations", "Practical conversations",
-         "Original tram and museum interactions",
-         ["l:On_the_tram_talking_to_another_passenger",
-          "l:Asking_the_tram_driver_for_directions",
-          "l:Museum_buying_tickets_and_basic_info"])
-    ]
 
-    init(guided: [GuidedFoundationStep], core: CoreJourney) throws {
+    init(guided: [GuidedFoundationStep], core: CoreJourney,
+         bundle: Bundle = .main) throws {
+        guard let url = bundle.url(forResource: "unified-journey",
+                                   withExtension: "json",
+                                   subdirectory: "generated") else {
+            throw CatalogLoadError.invalid("Missing reviewed unified journey source")
+        }
+        let source = try JSONDecoder().decode(
+            NativeUnifiedJourneySource.self, from: Data(contentsOf: url))
+        guard source.schemaVersion == 1,
+              source.editorialStatus ==
+                "source-mapped_unified_navigation_not_independently_linguistic_reviewed",
+              source.chapters.count == 8,
+              Set(source.chapters.map(\.id)).count == 8,
+              source.chapters.flatMap(\.activities).count == 35 else {
+            throw CatalogLoadError.invalid("Unified Journey 1 authored source drift")
+        }
         let byGuided = Dictionary(uniqueKeysWithValues: guided.map { ($0.id, $0) })
         let byCourse = Dictionary(uniqueKeysWithValues: core.ordered.map { ($0.id, $0) })
         let expectedCore = Set(core.ordered.filter {
@@ -94,7 +86,15 @@ struct NativeUnifiedJourney {
         var seenSourceItems = Set<String>()
         var introducedConcepts = Set<String>()
         var authored: [NativeUnifiedJourneyChapter] = []
-        for (id, title, description, entries) in Self.plan {
+        for chapter in source.chapters {
+            let id = chapter.id
+            let title = chapter.title
+            let description = chapter.description
+            let entries = chapter.activities
+            guard !title.isEmpty, !description.isEmpty, !entries.isEmpty,
+                  Set(entries).count == entries.count else {
+                throw CatalogLoadError.invalid("Duplicate or blank unified activity")
+            }
             var nodes: [NativeUnifiedJourneyNode] = []
             for reference in entries {
                 let key = String(reference.dropFirst(2))

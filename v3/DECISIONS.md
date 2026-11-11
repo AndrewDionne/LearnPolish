@@ -116,3 +116,25 @@ is navigation/identity coherence, **not independent human certification**
 of all first-use vocabulary, letter sounds or grammar. UX-03B must extend
 the current guided-only first-use ledger to all 19 core lessons and
 address every verified gap using authorized original teaching content.
+
+### UX-03B — single authored V3 Journey 1 source manifest, first-use gate (2026-11-11)
+
+The source-backed 8-chapter, 35-activity native course order MUST come from
+`v3/content/journey1-unified-v1.json`, not a divergent manually-maintained
+Swift tuple. Native source preparation validates the same 16 original guided
+and 19 original core IDs and the app loads that exact generated JSON. The
+full original-item written-form ledger in `v3/JOURNEY1_UNIFIED_FIRST_USE.md`
+is generated from V2 and checked byte-for-byte by CI, with every human
+linguistic/audio review status PENDING. Sound exemplar exposure is not
+automatically an independent word-meaning introduction.
+
+An introductory **Learn** three-choice match must NEVER use an English
+translation taken from a later source card in the same lesson. Initially
+the source-wide audit found 68 candidate premature-card quiz cases. The
+new `NativeExercisePlan.choices` uses the exact original English gloss
+and two distinct earlier original source-card glosses. Without two earlier
+meanings, continue with Speak, not a fabricated distractor. Scheduled
+spaced-review exercises retain their own flow. No new source IDs, attempts,
+XP, cloud accounts, or backend connections. Seeing an earlier card does not
+prove its mastery; independent human-first-use/inflection/acoustic signoff
+and deliberate repeated retrieval remain separate release gates.
