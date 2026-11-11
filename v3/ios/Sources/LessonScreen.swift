@@ -14,6 +14,8 @@ struct LessonScreen: View {
     @State private var batch = 0
     @State private var mode: PracticeMode = .learn
     @State private var revealed = false
+    @State private var studyingFlashCard = false
+    @State private var flashMeaningSeen = false
     @State private var selectedOption: String?
     @State private var playbackRate: Float = 1
     @State private var guideVisible = false
@@ -57,13 +59,13 @@ struct LessonScreen: View {
                 }
                 ProgressView(value: Double(index + 1), total: Double(currentItems.count))
 
-                Picker("Practice", selection: $mode) {
-                    ForEach(dueItemIDs == nil ? lesson.availableModes : [.learn]) { option in
-                        Text(option.label).tag(option)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .padding(.vertical, 6)
+                Label(mode == .speak ? "Speak · hear, understand and practise" :
+                      mode == .learn ? "Learn · match the English meaning" :
+                      "Read · understand the passage",
+                      systemImage: mode.symbol)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .padding(.vertical, 6)
 
                 if dueItemIDs == nil && sections.count > 1 {
                     Picker("Numbers practice", selection: $batch) {
@@ -132,7 +134,11 @@ struct LessonScreen: View {
                 }
                 if let following = learner.coreJourney?.next(after: lesson.id), dueItemIDs == nil {
                     NavigationLink {
-                        LessonScreen(lesson: following, resumeAtNextUnseen: true)
+                        if following.microDialogues?.isEmpty == false {
+                            NativeDialoguePracticeScreen(lesson: following)
+                        } else {
+                            LessonScreen(lesson: following, resumeAtNextUnseen: true)
+                        }
                     } label: {
                         Label("Next lesson", systemImage: "arrow.right")
                     }
@@ -145,20 +151,9 @@ struct LessonScreen: View {
         .navigationTitle(lesson.title)
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
-            if dueItemIDs != nil {
-                mode = .learn
-            } else if resumeAtNextUnseen {
-                mode = lesson.kind == "reading" ? .read : .learn
-            } else if let preferredMode, lesson.availableModes.contains(preferredMode) {
-                mode = preferredMode
-            } else if let cursor = learner.practiceCursor(for: lesson.id),
-                      lesson.availableModes.contains(cursor.mode) {
-                mode = cursor.mode
-            } else {
-                mode = lesson.availableModes.first ?? .learn
-            }
-            // Continue must start at the next unattempted original source item;
-            // an exploratory saved position must not override it.
+            // Scheduled due-review cards remain Learn. Regular source-backed
+            // journeys choose a response type automatically for each item.
+            mode = .learn
             let resumeID = startItemID ??
                 (resumeAtNextUnseen ? nil : learner.practiceCursor(for: lesson.id)?.itemID)
             if dueItemIDs == nil {
@@ -175,26 +170,29 @@ struct LessonScreen: View {
             if !resumeAtNextUnseen, let resumeID,
                let position = available.firstIndex(where: { $0.id == resumeID }) {
                 index = position
+            } else if dueItemIDs == nil {
+                index = NativeExercisePlan.nextUnattemptedIndex(
+                    items: available, lesson: lesson, records: learner.profile.records)
             } else {
-                index = NativePracticeRules.nextUnseenIndex(items: available,
-                                                            progress: learner.profile.records,
-                                                            mode: mode)
+                index = NativePracticeRules.nextUnseenIndex(
+                    items: available, progress: learner.profile.records, mode: .learn)
             }
+            mode = dueItemIDs == nil
+                ? NativeExercisePlan.mode(for: lesson, item: item) : .learn
             showingSourceIntroduction = dueItemIDs == nil && sourceIntroduction != nil
             remember()
         }
         .onDisappear { audio.discard() }
-        .onChange(of: index) { _, _ in resetCard(); remember() }
-        .onChange(of: mode) { _, _ in
-            showingSourceIntroduction = dueItemIDs == nil && sourceIntroduction != nil
-            batch = 0
-            index = 0
-            finished = false
+        .onChange(of: index) { _, _ in
+            mode = dueItemIDs == nil
+                ? NativeExercisePlan.mode(for: lesson, item: item) : .learn
             resetCard()
             remember()
         }
         .onChange(of: batch) { _, _ in
             index = 0
+            mode = dueItemIDs == nil
+                ? NativeExercisePlan.mode(for: lesson, item: item) : .learn
             finished = false
             resetCard()
             remember()
@@ -202,25 +200,69 @@ struct LessonScreen: View {
     }
 
     private var learnCard: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: 18) {
             Text(item.polish)
                 .font(.largeTitle.weight(.semibold))
                 .textSelection(.enabled)
-            if let path = item.audio, !path.isEmpty {
-                referenceControls
-            }
-            if revealed {
-                Text(item.english)
-                    .font(.title3)
-                HStack(spacing: 12) {
-                    Button("Needs practice") { rate(false) }
+            if item.audio != nil { referenceControls }
+            let choices = NativePracticeRules.choices(
+                for: lesson, item: item,
+                itemIndex: lesson.items.firstIndex(where: { $0.id == item.id }) ?? index)
+            if studyingFlashCard || choices.count < 3 {
+                Label("Flip-card study · ungraded", systemImage: "rectangle.on.rectangle")
+                    .font(.subheadline).foregroundStyle(.secondary)
+                if revealed {
+                    Text(item.english).font(.title3)
+                    Text("Seeing the answer does not count as a correct response.")
+                        .font(.footnote).foregroundStyle(.secondary)
+                } else {
+                    Button("Flip to English") {
+                        revealed = true
+                        flashMeaningSeen = true
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+                if choices.count >= 3 && !flashMeaningSeen {
+                    Button("Back to matching") { studyingFlashCard = false }
                         .buttonStyle(.bordered)
-                    Button("Got it") { rate(true) }
-                        .buttonStyle(.borderedProminent)
                 }
             } else {
-                Button("Show meaning") { revealed = true }
-                    .buttonStyle(.borderedProminent)
+                Text("Choose the English meaning")
+                    .font(.headline)
+                ForEach(choices, id: \.self) { choice in
+                    Button {
+                        guard selectedOption == nil, !flashMeaningSeen else { return }
+                        NativePracticeSubmission.commit(
+                            store: learner, item: item, mode: .learn,
+                            understood: choice == item.english, evidence: .matching) {
+                                selectedOption = choice
+                            }
+                    } label: {
+                        HStack {
+                            Text(choice).multilineTextAlignment(.leading)
+                            Spacer()
+                            if selectedOption == choice {
+                                Image(systemName: choice == item.english
+                                      ? "checkmark.circle.fill" : "xmark.circle.fill")
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(selectedOption != nil)
+                }
+                if let selectedOption {
+                    Label(selectedOption == item.english ? "Correct" : "Needs practice",
+                          systemImage: selectedOption == item.english
+                          ? "checkmark.circle" : "arrow.clockwise")
+                    Text("Meaning: " + item.english).font(.title3)
+                } else {
+                    Button("Study as a flip card instead") {
+                        studyingFlashCard = true
+                    }
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                }
             }
         }
     }
@@ -319,6 +361,9 @@ struct LessonScreen: View {
         VStack(alignment: .leading, spacing: 20) {
             NativeSpeechWord(polish: item.polish, feedback: speechFeedback)
                 .font(.largeTitle.weight(.semibold))
+            Text(item.english)
+                .font(.title3)
+                .foregroundStyle(.secondary)
             if item.audio != nil { referenceControls }
             if let pronunciation = item.pronunciation, !pronunciation.isEmpty {
                 Toggle("Pronunciation guide", isOn: $guideVisible)
@@ -440,6 +485,8 @@ struct LessonScreen: View {
         speechFeedback = nil
         revealed = false
         selectedOption = nil
+        studyingFlashCard = false
+        flashMeaningSeen = false
         guideVisible = false
         audio.discard()
     }

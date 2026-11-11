@@ -35,6 +35,9 @@ struct LocalProgressArchive: Codable {
                   !$0.key.isEmpty && $0.value.attempts >= 0 &&
                   $0.value.completed >= 0 &&
                   $0.value.completed <= $0.value.attempts &&
+                  (0...$0.value.attempts).contains($0.value.objectiveAttempts ?? 0) &&
+                  (0...($0.value.objectiveAttempts ?? 0)).contains($0.value.objectiveCorrect ?? 0) &&
+                  ($0.value.objectiveCorrect ?? 0) <= $0.value.completed &&
                   (0...7).contains($0.value.reviewLevel)
               }) else {
             throw LocalProgressArchiveError.invalid

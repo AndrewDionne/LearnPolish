@@ -1,5 +1,20 @@
 # V3 execution ledger — GitHub is durable continuity
 
+## V3-UX02A — integrated Speak, Learn matching, and authentic dialogue Listen (2026-11-11)
+
+**Product change:** The old per-card four-way mode selector is removed from the ordinary LessonScreen. The source-backed practice plan picks a deterministic early mixed sequence: first original greeting (*Dzień dobry*) and sound contrasts use Speak (original recorded Polish, English meaning, local record/replay and optional consented speech feedback), while selected subsequent vocabulary items use Learn with exactly three original same-lesson English translations and a source-grounded correct answer. An optional flip card is visibly ungraded and revealing its meaning makes that card ineligible for scored matching. Review entry points keep separate explicit source-backed semantics.
+
+**True Listen:** The exact three pre-existing authored micro-dialogues compiled by V2 are now projected into Swift and validated against their original source item IDs and audio. Opening those reading sets in Practice shows speakers/turn playback and actual authored contextual questions; a submitted answer records under the original source item with `.listen`, not a fabricated phrase or synthesized voice. Reading lessons without such authored exchanges remain reading, not mislabelled dialogue comprehension. Turn-by-turn playback is real, but contiguous full-conversation playback is a follow-up.
+
+**Evidence and honest scoring:** New optional `NativePracticeEvent.Evidence` tags distinguish objective `.matching` and `.dialogue` responses from historical user self-rating (nil). The append-only journal, projection, backward-compatible `PracticeRecord` optional objective counters, archive validation and recall collection show genuinely measured **Matching accuracy** only if a matching answer exists; otherwise **Self-rated recall** remains distinctly labelled. No graded points merely for listening, revealing a translation or navigating. Real provider pronunciation remains optional/experimental and not fabricated.
+
+**Verification:** New native tests cover Speak-first/alternating matching plan, original translation distractors, true authored dialogue inventory, ungraded navigation, objective-vs-self rated score distinction, journal reconstruction and restart. Exact-head macOS Simulator/XCTest CI required before asking for physical Xcode rebuild; draft PR #169. No changes to V2 source recordings, production backend, CloudKit, guardian gates or existing testers.
+
+**Still open UX-02B and UX-03:** Adapt 16 guided foundation steps to the new exercise model, introduce continuous original conversation playback, expand human-reviewed genuine dialogues, and replace provisional cadence with an editorial prerequisite-checked mixed exercise sequence across all source Journeys. Do not claim all modes or bilingual/acoustic evaluation complete.
+
+---
+
+
 ## V3-UX01 — first owner iPhone review and Home / Library / Practice restructure (2026-11-11)
 
 **Owner direction:** Screenshots show a duplicated Home and Library flat lesson list, while learning activities are entered outside Practice and the separate four-way Learn/Listen/Read/Speak selector does not fit the approved pedagogy. The new target is recorded in [UX_LEARNING_ARCHITECTURE.md](UX_LEARNING_ARCHITECTURE.md).

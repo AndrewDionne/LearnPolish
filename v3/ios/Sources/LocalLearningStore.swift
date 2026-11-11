@@ -9,6 +9,10 @@ enum NativeHomeLearningRoute {
 struct PracticeRecord: Codable {
     var attempts: Int = 0
     var completed: Int = 0
+    // Optional for old on-device profiles. nil = no verified objective quiz
+    // evidence; legacy "Got it" remains a self-assessment, not quiz accuracy.
+    var objectiveAttempts: Int?
+    var objectiveCorrect: Int?
     var reviewLevel: Int = 0
     var lastAttempt: Date?
     var nextReview: Date?
@@ -437,7 +441,12 @@ struct LocalProgressBackup: Identifiable {
     /// The existing aggregate review and daily XP logic remains authoritative
     /// for this device until safe cross-device reconciliation is certified.
     @discardableResult
-    func recordAttempt(item: LessonItem, mode: PracticeMode, understood: Bool?) -> Bool {
+    func recordAttempt(item: LessonItem, mode: PracticeMode, understood: Bool?,
+                       evidence: NativePracticeEvent.Evidence? = nil) -> Bool {
+        guard evidence == nil ||
+                 ((evidence == .matching && mode == .learn ||
+                   evidence == .dialogue && mode == .listen) && understood != nil)
+        else { return false }
         guard canSave, let owner = lessons.first(where: { lesson in
             lesson.items.contains(where: { $0.id == item.id })
         }), owner.availableModes.contains(mode),
@@ -467,7 +476,8 @@ struct LocalProgressBackup: Identifiable {
         let entry = NativePracticeEvent(id: UUID(), actorID: actorID,
             itemID: item.id, mode: mode, at: now, outcome: outcome,
             regionID: (next.expedition ?? LocalExpedition()).selectedRegion,
-            actorSequence: max(actorCount, lastPosition) + 1)
+            actorSequence: max(actorCount, lastPosition) + 1,
+            evidence: evidence)
         do {
             try journal.append(entry)
         } catch {
@@ -480,6 +490,12 @@ struct LocalProgressBackup: Identifiable {
         record.attempts += 1
         record.lastAttempt = now
         if understood == true { record.completed += 1 }
+        if evidence != nil {
+            record.objectiveAttempts = (record.objectiveAttempts ?? 0) + 1
+            if understood == true {
+                record.objectiveCorrect = (record.objectiveCorrect ?? 0) + 1
+            }
+        }
         if mode == .learn, let understood {
             if understood {
                 record.reviewLevel = min(record.reviewLevel + 1, 7)

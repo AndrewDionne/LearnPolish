@@ -62,3 +62,18 @@ Record and implementation are proposed on a draft PR branch. Passing static vali
 ## Owner refinement, 2026-11-11: activity-centric learning
 
 The old per-card Learn/Listen/Read/Speak picker is an interim migration design and is superseded by the approved objective to curate a single sequence with distinct Speak (original audio + meaning + speaking feedback), Learn (vocabulary recognition/retrieval, optional flip card) and Listen (real dialogue comprehension). Home is a personal and optional team progress dashboard, not a course list; Library is browse-only and organized into small source-backed journeys plus Extras; Practice owns all started, paused and resumed activities. Only genuine results may appear as scores, and pronunciation grading requires independent acoustic/provider acceptance. See [UX_LEARNING_ARCHITECTURE.md](UX_LEARNING_ARCHITECTURE.md) for the current implementation phases and release gates.
+
+### UX-02A exercise evidence contract — 11 November 2026
+
+Legacy `learn` record `completed/attempts` may mean self-rated recall;
+**never call it objective accuracy**. New multiple-choice matching is always
+source-option based and tagged `NativePracticeEvent.Evidence.matching`, while
+source-audited contextual dialogue answers are tagged `.dialogue` and logged
+under the original last source item with mode `.listen`. Optional evidence
+tags and optional counters preserve old `LocalLearner` JSON files, imports and
+full journal projection. Ungraded flashcards, Replay/Play and Skip award no
+attempts or XP. Original MP3s and optional consenting pronunciation service
+are unchanged. The ordinary card mode picker is removed; a source-derived
+deterministic Speak/Match sequence is provisional pending the curriculum
+dependency audit. Only existing 3 V2-authored micro-dialogues are genuine
+Listen tasks at this stage. Guided foundation groups await UX-02B migration.

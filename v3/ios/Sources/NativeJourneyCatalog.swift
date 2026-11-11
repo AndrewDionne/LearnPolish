@@ -16,6 +16,13 @@ struct NativeJourneySnapshot {
     let totalLessons: Int
     let recallCorrect: Int
     let recallAttempts: Int
+    let objectiveCorrect: Int
+    let objectiveAttempts: Int
+
+    var objectivePercentage: Int? {
+        guard objectiveAttempts > 0 else { return nil }
+        return Int((100.0 * Double(objectiveCorrect) / Double(objectiveAttempts)).rounded())
+    }
 
     var recallPercentage: Int? {
         guard recallAttempts > 0 else { return nil }
@@ -72,6 +79,8 @@ enum NativeJourneyCatalog {
         var practised = 0
         var correct = 0
         var total = 0
+        var objectiveCorrect = 0
+        var objectiveAttempts = 0
         for lesson in collection.lessons {
             let actualCounts = lesson.items.map { item in
                 PracticeMode.allCases.reduce(0) {
@@ -86,6 +95,8 @@ enum NativeJourneyCatalog {
                 if let record = records["learn:" + item.id] {
                     correct += record.completed
                     total += record.attempts
+                    objectiveCorrect += record.objectiveCorrect ?? 0
+                    objectiveAttempts += record.objectiveAttempts ?? 0
                 }
             }
         }
@@ -93,6 +104,8 @@ enum NativeJourneyCatalog {
                                      practisedLessons: practised,
                                      totalLessons: collection.lessons.count,
                                      recallCorrect: correct,
-                                     recallAttempts: total)
+                                     recallAttempts: total,
+                                     objectiveCorrect: objectiveCorrect,
+                                     objectiveAttempts: objectiveAttempts)
     }
 }

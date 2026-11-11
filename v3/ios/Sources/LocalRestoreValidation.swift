@@ -64,6 +64,9 @@ enum LocalRestoreValidation {
                                       item.referenceReview != "practice_only"),
                   record.attempts >= 0, record.attempts <= 100_000,
                   (0...record.attempts).contains(record.completed),
+                  (0...record.attempts).contains(record.objectiveAttempts ?? 0),
+                  (0...(record.objectiveAttempts ?? 0)).contains(record.objectiveCorrect ?? 0),
+                  (record.objectiveCorrect ?? 0) <= record.completed,
                   (0...7).contains(record.reviewLevel),
                   record.lastAttempt?.timeIntervalSince1970.isFinite ?? true,
                   record.nextReview?.timeIntervalSince1970.isFinite ?? true else {
@@ -188,6 +191,8 @@ enum LocalRestoreValidation {
                           guard let saved = profile.records[key] else { return false }
                           return computed.attempts == saved.attempts &&
                                  computed.completed == saved.completed &&
+                                 (computed.objectiveAttempts ?? 0) == (saved.objectiveAttempts ?? 0) &&
+                                 (computed.objectiveCorrect ?? 0) == (saved.objectiveCorrect ?? 0) &&
                                  computed.reviewLevel == saved.reviewLevel &&
                                  computed.lastAttempt == saved.lastAttempt &&
                                  computed.nextReview == saved.nextReview

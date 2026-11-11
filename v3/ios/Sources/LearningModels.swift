@@ -46,6 +46,20 @@ struct SoundGroup: Decodable, Identifiable {
     let itemIds: [String]
 }
 
+/// Exact V2-authored recorded exchanges. No TTS, translation, or generated
+/// dialogue is allowed in this native projection.
+struct NativeDialogueTurn: Decodable {
+    let itemId: String
+    let speaker: String
+}
+
+struct NativeMicroDialogue: Decodable, Identifiable {
+    let id: String
+    let title: String
+    let turns: [NativeDialogueTurn]
+    let comprehension: Comprehension
+}
+
 struct Lesson: Decodable, Identifiable {
     let schemaVersion: Int
     let id: String
@@ -59,6 +73,7 @@ struct Lesson: Decodable, Identifiable {
     let intro: String?
     let soundGroups: [SoundGroup]?
     let needsReview: Bool?
+    let microDialogues: [NativeMicroDialogue]?
 
     var hasAudio: Bool { items.contains { $0.audio != nil } }
 
@@ -122,6 +137,31 @@ enum CatalogLoader {
             guard lesson.schemaVersion == 1, !lesson.items.isEmpty,
                   identities.insert(lesson.id).inserted else {
                 throw CatalogLoadError.invalid("Duplicate or empty lesson")
+            }
+            if let dialogues = lesson.microDialogues {
+                guard lesson.kind == "reading",
+                      Set(dialogues.map(\.id)).count == dialogues.count,
+                      (1...4).contains(dialogues.count) else {
+                    throw CatalogLoadError.invalid("Invalid source dialogue set: " + lesson.id)
+                }
+                let byItem = Dictionary(uniqueKeysWithValues: lesson.items.map { ($0.id, $0) })
+                for dialogue in dialogues {
+                    let q = dialogue.comprehension
+                    guard dialogue.turns.count >= 2, dialogue.turns.count <= 4,
+                          q.options.count == 3, (0..<3).contains(q.correctIndex),
+                          Set(q.options).count == 3, !q.prompt.isEmpty,
+                          !q.feedback.isEmpty else {
+                        throw CatalogLoadError.invalid("Invalid dialogue question: " + dialogue.id)
+                    }
+                    for (i, turn) in dialogue.turns.enumerated() {
+                        guard turn.speaker == (i % 2 == 0 ? "A" : "B"),
+                              let original = byItem[turn.itemId],
+                              original.audio != nil,
+                              original.referenceReview != "practice_only" else {
+                            throw CatalogLoadError.invalid("Invalid dialogue original: " + dialogue.id)
+                        }
+                    }
+                }
             }
             for item in lesson.items {
                 guard !item.polish.isEmpty, !item.english.isEmpty,

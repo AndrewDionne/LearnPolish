@@ -174,9 +174,12 @@ enum NativePracticeSubmission {
     @discardableResult
     static func commit(store: LocalLearningStore,
                        item: LessonItem, mode: PracticeMode,
-                       understood: Bool?, onSaved: () -> Void) -> Bool {
+                       understood: Bool?,
+                       evidence: NativePracticeEvent.Evidence? = nil,
+                       onSaved: () -> Void) -> Bool {
         guard store.recordAttempt(item: item, mode: mode,
-                                  understood: understood) else { return false }
+                                  understood: understood,
+                                  evidence: evidence) else { return false }
         onSaved()
         return true
     }

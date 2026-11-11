@@ -40,7 +40,11 @@ struct PracticeDestinationScreen: View {
         switch route {
         case .lesson(let id):
             if let lesson = learner.lessons.first(where: { $0.id == id }) {
-                LessonScreen(lesson: lesson)
+                if lesson.microDialogues?.isEmpty == false {
+                    NativeDialoguePracticeScreen(lesson: lesson)
+                } else {
+                    LessonScreen(lesson: lesson)
+                }
             } else {
                 ContentUnavailableView("Lesson unavailable", systemImage: "exclamationmark.triangle")
             }
@@ -250,7 +254,9 @@ struct LibraryScreen: View {
                                 HStack {
                                     Text("\(progress.startedLessons) started")
                                     Spacer()
-                                    Text(progress.recallPercentage.map {
+                                    Text(progress.objectivePercentage.map {
+                                        "Matching accuracy \($0)%"
+                                    } ?? progress.recallPercentage.map {
                                         "Self-rated recall \($0)%"
                                     } ?? "Recall not assessed")
                                 }
@@ -298,7 +304,9 @@ struct JourneyCollectionScreen: View {
                     collection, records: learner.profile.records)
                 LabeledContent("Lessons practised",
                                value: "\(progress.practisedLessons) / \(progress.totalLessons)")
-                if let score = progress.recallPercentage {
+                if let score = progress.objectivePercentage {
+                    LabeledContent("Matching accuracy", value: "\(score)%")
+                } else if let score = progress.recallPercentage {
                     LabeledContent("Self-rated recall", value: "\(score)%")
                 } else {
                     Text("Recall not assessed yet")

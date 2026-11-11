@@ -8,6 +8,13 @@ struct NativePracticeEvent: Codable, Identifiable, Equatable {
         case needsPractice
         case recorded
     }
+    /// Evidence lets a merged, complete attempt journal reconstruct measured
+    /// matching/dialogue answers separately from older self-rated recall.
+    /// nil is a valid historical V3 attempt and must never be reclassified.
+    enum Evidence: String, Codable {
+        case matching
+        case dialogue
+    }
 
     let id: UUID
     let actorID: UUID
@@ -23,10 +30,11 @@ struct NativePracticeEvent: Codable, Identifiable, Equatable {
     // those attempts remain readable but cannot claim precise same-second
     // ordering that was never recorded.
     let actorSequence: Int?
+    let evidence: Evidence?
 
     init(id: UUID, actorID: UUID, itemID: String, mode: PracticeMode,
          at: Date, outcome: Outcome, regionID: String? = nil,
-         actorSequence: Int? = nil) {
+         actorSequence: Int? = nil, evidence: Evidence? = nil) {
         self.id = id
         self.actorID = actorID
         self.itemID = itemID
@@ -35,6 +43,7 @@ struct NativePracticeEvent: Codable, Identifiable, Equatable {
         self.outcome = outcome
         self.regionID = regionID
         self.actorSequence = actorSequence
+        self.evidence = evidence
     }
 }
 
@@ -100,7 +109,13 @@ struct NativePracticeJournal: Codable {
                   lesson.availableModes.contains(event.mode),
                   (event.mode != .listen ||
                     (item.audio != nil && item.referenceReview != "practice_only")),
-                  (event.mode == .speak) == (event.outcome == .recorded) else {
+                  (event.mode == .speak) == (event.outcome == .recorded),
+                  (event.evidence == nil ||
+                   (event.evidence == .matching && event.mode == .learn) ||
+                   (event.evidence == .dialogue && event.mode == .listen &&
+                    lesson.microDialogues?.contains(where: {
+                        $0.turns.last?.itemId == event.itemID
+                    }) == true)) else {
                 throw NativePracticeJournalError.invalidSource
             }
         }
@@ -152,6 +167,12 @@ struct NativePracticeJournal: Codable {
             record.attempts += 1
             record.lastAttempt = event.at
             if event.outcome == .understood { record.completed += 1 }
+            if event.evidence != nil {
+                record.objectiveAttempts = (record.objectiveAttempts ?? 0) + 1
+                if event.outcome == .understood {
+                    record.objectiveCorrect = (record.objectiveCorrect ?? 0) + 1
+                }
+            }
             if event.mode == .learn {
                 if event.outcome == .understood {
                     record.reviewLevel = min(record.reviewLevel + 1, 7)
