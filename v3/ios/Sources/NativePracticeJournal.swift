@@ -87,15 +87,15 @@ struct NativePracticeJournal: Codable {
                   event.itemID.count > 0, event.itemID.count <= 180,
                   event.at.isFiniteDate,
                   event.at >= startedAt.addingTimeInterval(-1),
-                  event.actorSequence.map { (1...Self.maximumEvents).contains($0) } ?? true,
-                  event.actorSequence.map { position in
+                  event.actorSequence.map({ (1...Self.maximumEvents).contains($0) }) ?? true,
+                  event.actorSequence.map({ position in
                       actorPositions.insert(event.actorID.uuidString + ":" +
                                             String(position)).inserted
-                  } ?? true,
-                  event.regionID.map { !$0.isEmpty && $0.count <= 60 } ?? true,
-                  event.regionID.map { region in
+                  }) ?? true,
+                  event.regionID.map({ !$0.isEmpty && $0.count <= 60 }) ?? true,
+                  event.regionID.map({ region in
                       permittedRegions?.contains(region) ?? true
-                  } ?? true,
+                  }) ?? true,
                   let (lesson, item) = byItem[event.itemID],
                   lesson.availableModes.contains(event.mode),
                   (event.mode != .listen ||

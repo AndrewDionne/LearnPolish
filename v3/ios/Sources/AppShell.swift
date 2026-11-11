@@ -29,6 +29,16 @@ struct HomeScreen: View {
                     .font(.largeTitle.bold())
                 Text("Learn real Polish, one lesson at a time.")
                     .foregroundStyle(.secondary)
+                #if DEBUG
+                NavigationLink {
+                    NativeAudioChannelProbeScreen()
+                } label: {
+                    Label("Audio check · test headphones", systemImage: "headphones")
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .buttonStyle(.bordered)
+                .accessibilityIdentifier("debug.audio.channel-check")
+                #endif
 
                 if let message = learner.catalogError {
                     ContentUnavailableView("Lessons unavailable", systemImage: "exclamationmark.triangle",
@@ -99,14 +109,6 @@ struct HomeScreen: View {
                               systemImage: "waveform")
                     }
                     .font(.headline)
-                    #if DEBUG
-                    NavigationLink {
-                        NativeAudioChannelProbeScreen()
-                    } label: {
-                        Label("Audio check (developer build)", systemImage: "headphones")
-                    }
-                    .font(.footnote)
-                    #endif
                     NavigationLink {
                         TouristUnitsScreen()
                     } label: {

@@ -56,12 +56,16 @@ enum NativeAudioProbeTone {
 @MainActor final class NativeAudioChannelProbeModel: ObservableObject {
     @Published var route = "Select a tone to inspect the iPhone's active output."
     @Published var failure: String?
+    @Published var selectedTest = "No tone played yet"
+    @Published var result = "Select Left, Right or Both and note what you hear."
     private let engine = NativeAudioEngine()
     private let url = FileManager.default.temporaryDirectory
         .appendingPathComponent("ptp-audio-probe-\(UUID().uuidString).wav")
 
     func play(_ channel: NativeAudioProbeChannel) {
         do {
+            selectedTest = channel.rawValue
+            result = "Preparing \(channel.rawValue)…"
             try NativeAudioProbeTone.wav(channel).write(to: url, options: .atomic)
             failure = nil
             engine.play(url, rate: 1) { [weak self] success in
@@ -73,8 +77,12 @@ enum NativeAudioProbeTone {
                     + "Hardware channels: \(session.outputNumberOfChannels)\n"
                     + "Session: \(session.category.rawValue)"
                 self.failure = success ? nil : "The diagnostic tone could not play."
+                self.result = success
+                    ? "Playback started. Which earphone did you hear?"
+                    : "Audio engine reported playback failure. Check Xcode's [PTP audio] log."
             }
         } catch {
+            result = "Could not create the test WAV."
             failure = "Unable to prepare the offline diagnostic tone."
         }
     }
@@ -111,6 +119,10 @@ struct NativeAudioChannelProbeScreen: View {
             }
             Button("Stop") { probe.stop() }
                 .buttonStyle(.bordered)
+            Text("Selected: \(probe.selectedTest)")
+                .font(.subheadline.bold())
+            Text(probe.result)
+                .font(.footnote)
             Text(probe.route)
                 .font(.footnote.monospaced())
                 .textSelection(.enabled)

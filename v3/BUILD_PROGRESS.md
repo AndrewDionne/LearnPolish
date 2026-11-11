@@ -1,5 +1,36 @@
 # V3 execution ledger — GitHub is durable continuity
 
+## V3-09D — triage of owner Xcode warnings versus right-ear audio (2026-11-11)
+
+**Owner Xcode screenshot:** PathToPolish builds, but Xcode Issues navigator shows an
+outdated Bluetooth option, four Swift trailing-closure style warnings in the
+practice journal, an orientation warning and a project recommended-settings
+prompt. These are warnings, **not app runtime or audio-route errors**. They
+cannot identify the cause of the headphone-only audio complaint.
+
+**Fix:** The capture-only `playAndRecord` Bluetooth HFP option now uses
+the supported `.allowBluetoothHFP` name; the four journal `map` guard
+expressions use parenthesized closure arguments. Functional behavior of
+audio, practice, scoring and consent is unchanged. The orientation and
+recommended-settings advisories are deliberately left for separate UI /
+build-setting review rather than blindly changing device behavior.
+
+**Better physical diagnosis:** In DEBUG builds, Home now exposes
+**Audio check · test headphones** prominently at the top of the page, rather
+than burying it among curriculum links. The diagnostic reports the selected
+tone and whether the actual playback engine started successfully, as well
+as the audio port type, channel count and category. On failure, the DEBUG
+Xcode console also records a concise error. No audio-source files changed.
+These data distinguish an app playback failure from right-only routing; do
+not infer the root cause from the Xcode warning list alone.
+
+**Gate:** Exact-commit simulator and XCTest must pass before installing an
+updated build. Owner must then test Left, Right and Both and report the
+actual ears plus displayed route. PR #169 stays draft.
+
+---
+
+
 ## V3-09C — isolated on-device channel probe following source MP3 analysis (2026-11-11)
 
 **Hard result from [V3-09B Actions #42923919256](https://github.com/AndrewDionne/LearnPolish/actions/runs/42923919256):** CI **SUCCESS**. The read-only AVFoundation source check found 455 available original MP3s and decoded 84 representative files (including first-guided examples): **84/84 mono, 0 stereo, 0 decoding failures**. These clips have NO source right-only stereo channel to fix by rewriting MP3s. Owner independently found normal two-ear playback in other iPhone apps, and the iPhone's Mono Audio accessibility switch did not change the one-ear behavior in Path to Polish. Therefore source stereo downmix/transcoding is **not justified** until real output routing is measured.

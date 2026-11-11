@@ -23,7 +23,7 @@ enum NativeAudioSessionSetup {
                 try session.setCategory(.playback, mode: .default)
             case .recording:
                 try session.setCategory(.playAndRecord, mode: .default,
-                                        options: [.defaultToSpeaker, .allowBluetooth])
+                                        options: [.defaultToSpeaker, .allowBluetoothHFP])
             }
             selectedMode = mode
         }
@@ -84,6 +84,9 @@ final class NativeAudioEngine {
                 #endif
                 success = true
             } catch {
+                #if DEBUG
+                print("[PTP audio] playback failed: \(error.localizedDescription)")
+                #endif
                 success = false
             }
             DispatchQueue.main.async { finishedPreparing(success) }
