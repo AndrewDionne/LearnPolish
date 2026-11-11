@@ -65,10 +65,10 @@ test("source text, English, MP3, and unified route tampering fail closed",()=>{
   }
   const moved=clone(x);
   moved.unified.chapters[0].activities[0]="l:unapproved-source";
-  assert.throws(()=>audit(moved),/activity drift/);
+  assert.throws(()=>audit(moved),/Unified path source identity drift/);
   const repeated=clone(x);
   repeated.unified.chapters[0].activities[1]=repeated.unified.chapters[0].activities[0];
-  assert.throws(()=>audit(repeated),/activity drift/);
+  assert.throws(()=>audit(repeated),/Unified path source identity drift/);
 });
 test("checked-in full report is a source-derived pending-review projection",()=>{
   const report=renderUnifiedFirstUseMarkdown(auditCurrentUnifiedAssets(repo));
