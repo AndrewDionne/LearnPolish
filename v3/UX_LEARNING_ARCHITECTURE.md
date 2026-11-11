@@ -24,6 +24,26 @@ The course should choose when to assign each exercise. Learners should not have 
 
 **Progress:** detailed individual results, local backups/restores and optional family/account settings, not the primary starting point for learning.
 
+## UX-04A — tab-purpose and pronunciation display tranche (2026-11-11)
+
+**Owner direction:** Pause further first-use curriculum refinements until Home/Library/Practice/Expedition/Progress fulfil their UI roles and a **one-word multicolour segment hint + one real overall score** is visible after genuine pronunciation assessment; then perform a holistic physical iPhone review.
+
+**Home:** Actual local practice-journal events (up to three recent source Polish words, practice mode and timestamp); personal XP earned today from persisted XP events; local attempts recorded today (a dash when no journal is yet available), reviews due and independently paused sets. One Continue in Practice action remains. Optional family tile stays private when disconnected; after voluntary verified adult connection, Home performs a read-only fetch of the first connected group's **server-authoritative weekly XP, member count and unlocked regions**, with pull-to-refresh and no fallback to invented/local XP. No implicit login, audio upload or group score inference from tapping a card.
+
+**Library:** Browsing and search only. The single Journey 1 browser opens eight small chapters; searching chapter titles, descriptions or existing source lesson titles finds the matching chapters. Choosing a learning activity always opens **Practice**; Extras remain browsable rather than starting lessons in Library.
+
+**Practice:** Sole home of recording, matching, listening, paused sets, scheduled review and optional six-card reinforcement. Local work cursors remain distinct; tab switching does not award XP or delete the paused set. Existing explicit original source language-learning modes remain.
+
+**Expedition:** Keep the already functional 16-region original map, personal local XP and voluntary region selection. Do not pollute it with unsourced attractions, synthetic XP or backend family totals.
+
+**Progress:** Main screen is now **real personal results** (Journey 1 per-chapter progress, real objective matching accuracy only when answered, original studied item counts, practice attempts, reviews, local XP/regions), not a long file-management form. Existing backup/export/restore/linked-device combine/account controls are preserved **one level deeper** in the Data and account screen with the same preview/confirmation/privacy gates. Family/group authority remains optional and separate from local XP.
+
+**Pronunciation UI:** A validated source-bound `azure-whisper-blend-v1` response is presented as **the original Polish word with coloured source segment text + ONE experimental overall /100 score directly underneath**, with the owner's slight visual space between segments. Colours are qualitative Whisper transcript-proxy hints (green/orange/red/neutral), never independently calibrated acoustic per-syllable scores. The duplicate numeric score below the input controls is removed. Plain unscored Polish, inconclusive responses, source mismatches or disconnected apps cannot render colours or an estimated percentage. After recording while disconnected, a **clearly optional Enable pronunciation checking** link goes to the existing adult-only verified family connection; offline record and replay are unaffected. When connected, separate per-take Azure + Groq affirmative approvals remain OFF by default. Private audio/transcript/provider response histories are not saved or auto-uploaded.
+
+**Verification:** New tests for exact-segment result versus nil/inconclusive/foreign-word/invalid score, actual source journal Home activity, no XP/recorded activity from opening a cursor, valid account-optional tab transitions, restart persistence and previously verified source and speech transport gates. Exact-head GitHub iPhone Simulator compilation and XCTest still required; original right-earphone/choppy-audio, microphone, live-provider and real per-syllable calibration remain **physical acceptance**, not CI-certified.
+
+---
+
 ## Delivery and acceptance
 
 **UX-01 — current tranche:** real Home dashboard; Library source-mapped collections; route starts to Practice; independent per-set local resume, honest progress/recall and tests. No source or service rewrites.

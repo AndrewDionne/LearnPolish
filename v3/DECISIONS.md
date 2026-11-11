@@ -186,3 +186,32 @@ glosses in an optional ungraded preparatory disclosure for lines with no
 recorded source exposure; the comprehension question is still assessed
 only on a submitted answer. This does not claim entire phrase/syllable
 comprehension or physical headset playback certification.
+
+### UX-04A — UI navigation / optional real pronunciation result (2026-11-11)
+
+Pause further substantive Polish curriculum refinements for a focused owner
+holistic iPhone review after Home/Library/Practice/Expedition/Progress tabs
+fulfil their separate roles. Home activity and today-local XP are actually
+stored source events, not duplicate Library tiles or invented team scores.
+A connected adult sees only read-only server-provided weekly team XP,
+member count and unlocked regions from the selected first connected group;
+without a verified connection no team totals are shown or estimated.
+Refresh never transmits new personal learning events.
+Library browses original chapters and Extras; launching lessons switches to
+Practice. Practice keeps individually paused sets, due review, authentic
+Speak, Learn and Listen. Expedition remains the genuine 16-region XP map.
+Progress starts with real chapter/attempt/matching/XP metrics; private backup,
+restore, merge and optional family controls move into a nested Data and
+account screen, retaining all prior permissions and confirmation gates.
+
+The visible Speak result combines exactly **one original, source-bound Polish
+word**, small spaces between genuine source pronunciation segments, coloured
+transcript-proxy hints and **one experimental Azure+Whisper blended overall
+score**, only when the private service returns a valid response after explicit
+per-take Azure AND Groq consents. Green/orange/red are NOT independent
+acoustic syllable percentages. No connection, rejected, or inconclusive
+response gets a fabricated display. Offline recording/replay still works
+without sign-in; optional adult verified connection is discoverable directly
+from Speak without mandating authentication on launch. Main vs guided Speak
+must use the same presentation. Keep PR #169 draft until owner physical
+headphone/recording/provider/UI review, not simply green simulator CI.

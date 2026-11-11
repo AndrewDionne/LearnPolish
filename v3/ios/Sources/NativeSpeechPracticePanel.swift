@@ -18,7 +18,8 @@ struct NativeSpeechPracticePanel: View {
 
     var body: some View {
         Group {
-            if speech.isConnected && audio.usableRecording && !audio.isRecording {
+            if audio.usableRecording && !audio.isRecording {
+                if speech.isConnected {
                 VStack(alignment: .leading, spacing: 12) {
                     Toggle("Send this take to Azure Speech", isOn: $allowAzure)
                     Toggle("Send this take to Groq Whisper", isOn: $allowGroq)
@@ -39,12 +40,7 @@ struct NativeSpeechPracticePanel: View {
                     }
 
                     if let feedback {
-                        switch feedback {
-                        case .blend(let score, _):
-                            Text("\(score)/100")
-                                .font(.title3.monospacedDigit())
-                                .accessibilityLabel("Experimental pronunciation estimate \(score) out of 100")
-                        case .inconclusive(let reason):
+                        if case .inconclusive(let reason) = feedback {
                             Text(reason)
                                 .font(.footnote).foregroundStyle(.secondary)
                         }
@@ -57,6 +53,16 @@ struct NativeSpeechPracticePanel: View {
                     clearForNewTake()
                 }
                 .onDisappear { clearForNewTake() }
+                } else {
+                    NavigationLink {
+                        NativeFamilyAccountScreen()
+                    } label: {
+                        Label("Enable pronunciation checking", systemImage: "waveform")
+                    }
+                    .font(.subheadline)
+                    Text("Optional adult account connection required. Recording and replay work offline; no score is generated without a real assessment.")
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
             }
         }
     }

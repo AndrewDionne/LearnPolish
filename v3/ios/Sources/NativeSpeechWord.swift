@@ -1,34 +1,64 @@
 import SwiftUI
 
-/// Replaces the single existing Polish prompt when the optional exact-source
-/// blend response exists. No second word, coloured boxes, syllable numbers,
-/// diagnostic legend or fictitious syllable percentages.
+/// A single source-matched, consented provider result. The overall blended
+/// number is experimental; colour is the Whisper transcript-alignment hint,
+/// NOT a made-up acoustic percentage for any individual syllable.
+struct NativePronunciationPresentation {
+    let score: Int
+    let segments: [NativeColourPart]
+
+    init?(polish: String, feedback: NativeSpeechFeedback?) {
+        guard case .blend(let score, let segments) = feedback,
+              (0...100).contains(score),
+              !segments.isEmpty,
+              segments.map(\.polish).joined() == polish
+        else { return nil }
+        self.score = score
+        self.segments = segments
+    }
+}
+
+/// One original Polish prompt. When a genuinely validated blended assessment
+/// arrives, the original segments become coloured text with a thin gap and the
+/// one overall score appears directly underneath. No coloured boxes, legend,
+/// per-syllable invented scores, duplicated word, or fake no-login estimate.
 struct NativeSpeechWord: View {
     let polish: String
     let feedback: NativeSpeechFeedback?
 
+    private var result: NativePronunciationPresentation? {
+        NativePronunciationPresentation(polish: polish, feedback: feedback)
+    }
+
     var body: some View {
-        formatted
-            .accessibilityLabel(polish)
-            .textSelection(.enabled)
+        VStack(alignment: .leading, spacing: 7) {
+            formatted
+                .accessibilityLabel(polish)
+                .textSelection(.enabled)
+            if let result {
+                Text("\(result.score)/100")
+                    .font(.title3.monospacedDigit().weight(.semibold))
+                    .foregroundStyle(.primary)
+                    .accessibilityLabel(
+                        "Experimental overall pronunciation estimate \(result.score) out of 100")
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var formatted: Text {
-        guard case .blend(_, let parts) = feedback,
-              parts.map(\.polish).joined() == polish else {
-            return Text(polish)
-        }
+        guard let result else { return Text(polish) }
         var word = Text("")
-        for (index, part) in parts.enumerated() {
+        for (index, segment) in result.segments.enumerated() {
             let tint: Color
-            switch part.hint {
+            switch segment.hint {
             case .close: tint = .green
             case .review: tint = .orange
             case .focus: tint = .red
             case .uncertain: tint = .secondary
             }
             if index > 0 { word = word + Text("\u{2009}") }
-            word = word + Text(part.polish).foregroundColor(tint)
+            word = word + Text(segment.polish).foregroundColor(tint)
         }
         return word
     }

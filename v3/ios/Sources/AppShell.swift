@@ -66,6 +66,8 @@ struct HomeScreen: View {
     @EnvironmentObject private var learner: LocalLearningStore
     @EnvironmentObject private var family: NativeFamilySession
     @EnvironmentObject private var navigation: LearningNavigation
+    @State private var teamSummary: NativeFamilySummary?
+    @State private var teamLoading = false
 
     private var latestActivity: Date? {
         learner.profile.records.values.compactMap(\.lastAttempt).max()
@@ -95,16 +97,17 @@ struct HomeScreen: View {
                                            description: Text(message))
                 } else {
                     HStack(spacing: 12) {
-                        homeMetric("\(learner.expedition.totalXP)", "Personal XP",
-                                   icon: "star")
-                        homeMetric("\(learner.attempts)", "Practice attempts",
-                                   icon: "checkmark.circle")
+                        homeMetric("\(NativeHomeSnapshot.todayXP(learner: learner))",
+                                   "Today's XP", icon: "star")
+                        homeMetric(NativeHomeSnapshot.todayAttempts(learner: learner)
+                                   .map(String.init) ?? "—",
+                                   "Today's attempts", icon: "checkmark.circle")
                     }
                     HStack(spacing: 12) {
                         homeMetric("\(learner.dueReviews.count)", "Reviews due",
                                    icon: "arrow.clockwise")
                         homeMetric("\(learner.activeGuidedSteps.count + learner.activePracticeLessons.count)",
-                                   "Started sets", icon: "bookmark")
+                                   "Open sets", icon: "bookmark")
                     }
 
                     VStack(alignment: .leading, spacing: 12) {
@@ -148,29 +151,67 @@ struct HomeScreen: View {
                     .background(.quaternary.opacity(0.4),
                                 in: RoundedRectangle(cornerRadius: 18))
 
-                    HStack {
-                        VStack(alignment: .leading, spacing: 5) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
                             Text("Recent activity").font(.headline)
+                            Spacer()
+                            Button("Open Practice") { navigation.showPractice() }
+                        }
+                        let recent = NativeHomeSnapshot.recent(learner: learner)
+                        if recent.isEmpty {
                             if let latestActivity {
-                                Text("Last practice · " + latestActivity.formatted(
+                                Text("Last saved practice · " + latestActivity.formatted(
                                     date: .abbreviated, time: .shortened))
                                     .font(.subheadline).foregroundStyle(.secondary)
                             } else {
-                                Text("Your first practice will appear here.")
+                                Text("Completed activities will appear here.")
                                     .font(.subheadline).foregroundStyle(.secondary)
                             }
+                        } else {
+                            ForEach(recent) { event in
+                                HStack(spacing: 10) {
+                                    Image(systemName: event.mode.symbol)
+                                        .foregroundStyle(.indigo)
+                                        .frame(width: 24)
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text(event.polish).font(.subheadline.weight(.medium))
+                                        Text(event.mode.label + " · " + event.at.formatted(
+                                            date: .abbreviated, time: .shortened))
+                                            .font(.caption).foregroundStyle(.secondary)
+                                    }
+                                    Spacer()
+                                }
+                            }
                         }
-                        Spacer()
-                        Button("Practice") { navigation.showPractice() }
                     }
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(.quaternary.opacity(0.25),
+                                in: RoundedRectangle(cornerRadius: 16))
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Family progress").font(.headline)
                         if family.isConnected {
-                            Text("\(family.groups.count) connected family group(s)")
-                                .foregroundStyle(.secondary)
-                            Text("Family scores are provided by your connected group, not estimated from local XP.")
-                                .font(.footnote).foregroundStyle(.secondary)
+                            if let teamSummary {
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text(teamSummary.group.name)
+                                            .font(.subheadline.weight(.medium))
+                                        Text("This week's team XP")
+                                            .font(.caption).foregroundStyle(.secondary)
+                                    }
+                                    Spacer()
+                                    Text("\(teamSummary.totals.weekly_xp)")
+                                        .font(.title2.monospacedDigit().weight(.semibold))
+                                }
+                                Text("\(teamSummary.members.count) members · \(teamSummary.totals.regions_unlocked) regions unlocked")
+                                    .font(.footnote).foregroundStyle(.secondary)
+                            } else if teamLoading {
+                                ProgressView("Loading connected group totals…")
+                            } else {
+                                Text("Group totals unavailable · open Family to refresh")
+                                    .font(.footnote).foregroundStyle(.secondary)
+                            }
                         } else {
                             Text("Not connected · your learning stays private")
                                 .foregroundStyle(.secondary)
@@ -196,6 +237,33 @@ struct HomeScreen: View {
         }
         .navigationTitle("Home")
         .navigationBarTitleDisplayMode(.inline)
+        .task(id: family.connectedAt) {
+            await loadTeamSummary()
+        }
+        .refreshable {
+            await loadTeamSummary()
+        }
+    }
+
+    private func loadTeamSummary() async {
+        teamSummary = nil
+        guard family.isConnected, let group = family.groups.first else {
+            teamLoading = false
+            return
+        }
+        teamLoading = true
+        do {
+            // Read-only server-authoritative group values ONLY after voluntary
+            // adult login; never substitute the unshared local XP balance.
+            let result = try await family.loadSummary(for: group)
+            guard !Task.isCancelled, family.isConnected,
+                  family.groups.contains(group) else { return }
+            teamSummary = result
+        } catch {
+            // No fake fallback score and no private error detail in Home.
+            teamSummary = nil
+        }
+        teamLoading = false
     }
 
     private func homeMetric(_ value: String, _ label: String,
@@ -233,8 +301,9 @@ struct LibraryScreen: View {
             if let error = learner.catalogError {
                 Section { Text(error).foregroundStyle(.red) }
             }
-            Section("Your learning journey") {
-                NavigationLink {
+            if query.isEmpty || "Journey 1 · First words to conversations".localizedCaseInsensitiveContains(query) {
+                Section("Your learning journey") {
+                    NavigationLink {
                     NativeUnifiedJourneyOverviewScreen()
                 } label: {
                     VStack(alignment: .leading, spacing: 6) {
@@ -247,6 +316,31 @@ struct LibraryScreen: View {
                                      total: Double(max(learner.unifiedJourneyStepsTotal, 1)))
                     }
                     .padding(.vertical, 6)
+                }
+            }
+            }
+            if !query.isEmpty, let journey = learner.unifiedJourney {
+                let matches = journey.chapters.filter {
+                    $0.title.localizedCaseInsensitiveContains(query) ||
+                    $0.description.localizedCaseInsensitiveContains(query) ||
+                    $0.nodes.contains(where: {
+                        $0.title.localizedCaseInsensitiveContains(query)
+                    })
+                }
+                if !matches.isEmpty {
+                    Section("Journey 1 matches") {
+                        ForEach(matches) { chapter in
+                            NavigationLink {
+                                NativeUnifiedJourneyChapterScreen(chapter: chapter)
+                            } label: {
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(chapter.title).font(.headline)
+                                    Text("\(chapter.nodes.count) activities")
+                                        .font(.caption).foregroundStyle(.secondary)
+                                }
+                            }
+                        }
+                    }
                 }
             }
             Section("Further journeys") {
@@ -514,7 +608,73 @@ struct ReviewScreen: View {
     }
 }
 
+/// Personal learning results live here. Account/storage administration is
+/// accessible one level deeper; it must never displace the actual progress UI.
 struct ProgressScreen: View {
+    @EnvironmentObject private var learner: LocalLearningStore
+
+    var body: some View {
+        List {
+            Section("Learning") {
+                LabeledContent("Journey 1 activities practised",
+                               value: "\(learner.unifiedJourneyStepsCompleted) / \(learner.unifiedJourneyStepsTotal)")
+                ProgressView(value: Double(learner.unifiedJourneyStepsCompleted),
+                             total: Double(max(learner.unifiedJourneyStepsTotal, 1)))
+                LabeledContent("Unique original items studied",
+                               value: String(learner.completedItems))
+                LabeledContent("Practice attempts", value: String(learner.attempts))
+                LabeledContent("Scheduled reviews", value: String(learner.dueReviews.count))
+            }
+            if let journey = learner.unifiedJourney, let core = learner.coreJourney {
+                Section("Journey 1 chapters") {
+                    ForEach(journey.chapters) { chapter in
+                        let state = journey.progress(
+                            chapter, guided: learner.guidedFoundations,
+                            core: core, records: learner.profile.records)
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack {
+                                Text(chapter.title).font(.subheadline.weight(.semibold))
+                                Spacer()
+                                Text("\(state.practised) / \(chapter.nodes.count)")
+                                    .font(.caption.monospacedDigit())
+                                    .foregroundStyle(.secondary)
+                            }
+                            ProgressView(value: Double(state.practised),
+                                         total: Double(max(chapter.nodes.count, 1)))
+                            if let score = journey.matchingAccuracy(
+                                for: chapter, records: learner.profile.records) {
+                                Text("Matching accuracy \(score)%")
+                                    .font(.caption).foregroundStyle(.secondary)
+                            } else {
+                                Text("No graded matching answers yet")
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+            }
+            Section("Personal expedition") {
+                LabeledContent("Effort XP", value: String(learner.expedition.totalXP))
+                LabeledContent("Regions unlocked",
+                               value: "\(learner.expedition.unlocked.count) / 16")
+                Text("Personal XP is distinct from optional server-authoritative family scores.")
+                    .font(.footnote).foregroundStyle(.secondary)
+            }
+            Section("Data and account") {
+                NavigationLink {
+                    NativeDataAndAccountScreen()
+                } label: {
+                    Label("Storage, backup and family connection",
+                          systemImage: "person.crop.circle")
+                }
+            }
+        }
+        .navigationTitle("Progress")
+    }
+}
+
+struct NativeDataAndAccountScreen: View {
     @EnvironmentObject private var learner: LocalLearningStore
     @State private var showExporter = false
     @State private var exportDocument: LocalProgressArchiveDocument?
@@ -615,7 +775,7 @@ struct ProgressScreen: View {
                     .font(.footnote).foregroundStyle(.secondary)
             }
         }
-        .navigationTitle("My progress")
+        .navigationTitle("Data and account")
         .fileExporter(isPresented: $showExporter, document: exportDocument,
                       contentType: .json, defaultFilename: "PathToPolish-Progress") { result in
             switch result {

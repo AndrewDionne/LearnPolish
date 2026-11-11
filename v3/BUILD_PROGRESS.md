@@ -1,5 +1,20 @@
 # V3 execution ledger — GitHub is durable continuity
 
+## V3-UX04A — tab-purpose UI audit and source-validated multicolour pronunciation presentation (2026-11-11)
+
+**Owner priority change:** Defer curriculum UX-03C2B to close the five navigation-tab roles and the multi-colour word/overall-score UI, then run another holistic real-device review. Latest predecessor UX-03C2A exact-head [CI #43035796414](https://github.com/AndrewDionne/LearnPolish/actions/runs/43035796414) PASS.
+
+**Actual UI modifications:** The Home dashboard shows today-local XP from real saved XP events, today-local practice attempts from the source practice journal, the last three actual original Polish activity phrases/modes/timestamps, due count, active session count and one Continue action. When the adult voluntarily connects an existing verified family account, Home loads the first connected group's **actual server-reported weekly XP, member count and unlocked-region total** read-only; errors show no invented fallback and pull-to-refresh is available. No unauthenticated network call or automatic XP share. Journal-less users see no made-up event. Library remains a browser; Journey 1 is directly searchable by its eight chapter/source-lesson names, and launching any source activity switches to Practice. The Practice tab retains multiple paused sets, due and optional reinforcement. Expedition's real local region map is retained. Progress now opens as personal chapter progress + objective (only genuine answered) matching accuracy + local XP/reviews rather than immediate backup controls; all sensitive data-management/import/erase and optional family settings are preserved in a nested Data and account screen, not deleted.
+
+**Actual scoring UX:** The validated combined Azure+Whisper feedback result still requires voluntary existing adult family login and separately checked per-take dual-provider consent. Once the private server returns exact source-bound `NativeSpeechFeedback.blend`, a single `NativeSpeechWord` now displays the one original Polish word with thin-spaced coloured transcript-proxy segments and **one /100 experimental overall blended score adjacent beneath it**. A new pure presentation model refuses nil, inconclusive, mismatched words or invalid numeric data. The duplicate score previously repeated in `NativeSpeechPracticePanel` is removed. Without a connected service, record/replay remains usable and the Speak flow offers a labelled optional connection path; no fake offline score, forced onboarding, saved microphone audio or unsupported per-syllable percentage.
+
+**Gates:** Native tests cover legitimate journal-derived home activity/XP, tab transitions between library and Practice preserving paused routes, restart history, source-exact pronunciation segment colour composition, and absence of phantom numeric or colour results. Source media, review/journal, 381-row curriculum/phrase contracts and original Neon/Render identities untouched. Exact-head CI/Simulator and owner physical review still required. Note: Green CI does **NOT** certify acoustic accuracy nor fix the owner's right-earphone channel issue.
+
+**Outstanding:** Live optional consented scoring exercise and colour review on actual iPhone, right-earphone/recording quality diagnostics, holistic five-tab owner review, then curriculum pronunciation accuracy + human first-use/grammar certification. Keep PR #169 draft and do not mark V3 production-ready.
+
+---
+
+
 ## V3-UX03C2A — source-backed reinforcement and first-contact dialogue preparation (2026-11-11)
 
 **Prior verified gate:** UX-03C1 exact-head [Actions #43032450991](https://github.com/AndrewDionne/LearnPolish/actions/runs/43032450991) **SUCCESS** (original media/source audit, Simulator compilation and native XCTest).
