@@ -29,6 +29,8 @@ struct LocalPracticeCursor: Codable {
 struct LocalGuidedCursor: Codable {
     let itemID: String
     let lastOpened: Date
+    // Optional so existing saved positions and exported JSON remain decodable.
+    let phase: GuidedExercisePhase?
 }
 
 struct LocalLearner: Codable {
@@ -258,9 +260,7 @@ struct LocalProgressBackup: Identifiable {
             return step
         }
         return guidedFoundations.first(where: { step in
-            step.items.contains { item in
-                (profile.records["learn:" + item.id]?.attempts ?? 0) == 0
-            }
+            !GuidedExercisePlan.isComplete(step: step, records: profile.records)
         })
     }
 
@@ -274,7 +274,7 @@ struct LocalProgressBackup: Identifiable {
     }
 
     func guidedPractisedCount(_ step: GuidedFoundationStep) -> Int {
-        step.items.filter { (profile.records["learn:" + $0.id]?.attempts ?? 0) > 0 }.count
+        step.items.filter { GuidedExercisePlan.introduced($0, records: profile.records) }.count
     }
 
     func sourceItem(for reference: GuidedRecordedItem) -> LessonItem? {
@@ -284,14 +284,16 @@ struct LocalProgressBackup: Identifiable {
     /// The cursor belongs to the main sequential journey, not temporary
     /// excursions to earlier prerequisites or future lessons in the Library.
     /// Unlike an attempt, navigating never awards XP or proves comprehension.
-    func rememberGuidedPosition(stepID: String, itemID: String) {
+    func rememberGuidedPosition(stepID: String, itemID: String,
+                                phase: GuidedExercisePhase = .introduce) {
         guard let step = guidedFoundations.first(where: { $0.id == stepID }),
               step.items.contains(where: { $0.id == itemID }), canSave else { return }
         var next = profile
         // Every independently opened foundation set has its own resume point,
         // while the sequential Continue cursor is left untouched by excursions.
         var cursors = next.guidedCursors ?? [:]
-        cursors[stepID] = LocalGuidedCursor(itemID: itemID, lastOpened: Date())
+        cursors[stepID] = LocalGuidedCursor(itemID: itemID, lastOpened: Date(),
+                                           phase: phase)
         next.guidedCursors = cursors
         if next.guidedStepID == nil || next.guidedStepID == stepID {
             next.guidedStepID = stepID
@@ -319,6 +321,10 @@ struct LocalProgressBackup: Identifiable {
     func guidedResumeItemID(for stepID: String) -> String? {
         profile.guidedCursors?[stepID]?.itemID ??
             (profile.guidedStepID == stepID ? profile.guidedItemID : nil)
+    }
+
+    func guidedResumePhase(for stepID: String) -> GuidedExercisePhase {
+        profile.guidedCursors?[stepID]?.phase ?? .introduce
     }
 
     /// Reaching the end advances the *navigation cursor* only. It does not
@@ -349,7 +355,7 @@ struct LocalProgressBackup: Identifiable {
 
     func firstUnpractisedGuidedIndex(_ step: GuidedFoundationStep) -> Int? {
         step.items.firstIndex {
-            (profile.records["learn:" + $0.id]?.attempts ?? 0) == 0
+            !GuidedExercisePlan.introduced($0, records: profile.records)
         }
     }
     var nextLesson: Lesson? {

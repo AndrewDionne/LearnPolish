@@ -77,3 +77,18 @@ are unchanged. The ordinary card mode picker is removed; a source-derived
 deterministic Speak/Match sequence is provisional pending the curriculum
 dependency audit. Only existing 3 V2-authored micro-dialogues are genuine
 Listen tasks at this stage. Guided foundation groups await UX-02B migration.
+
+### UX-02B — source-backed guided exercise phase contract (2026-11-11)
+
+Keep **all 16 original guided foundation groups** and original item IDs,
+Polish text, English meaning, grammar cues, and recorded MP3s. Teaching begins
+with recorded Speak practice for each original phrase; once a group contains
+at least three distinct *original same-group* meanings, give a true 3-choice
+matching recap (objectively tagged `Evidence.matching` on original source
+item IDs). The first two-word Tak/Nie group must **not** invent a third
+choice. Progress is a persistent independent optional phase/index cursor per
+guided group; legacy V3 `learn` self-ratings remain prior participation but
+are not converted into objective matching accuracy. No XP for Play/Skip/
+reveal or mere navigation. True Polish syllable score remains separately
+uncertified. See [UX_LEARNING_ARCHITECTURE.md](UX_LEARNING_ARCHITECTURE.md)
+and the V3 execution ledger for native XCTest gates.

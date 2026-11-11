@@ -59,7 +59,7 @@ enum GuidedFoundationPath {
                                       records: [String: PracticeRecord]) -> [GuidedFoundationStep] {
         prerequisiteSteps(for: step, in: path).filter { earlier in
             earlier.items.contains { source in
-                (records["learn:" + source.id]?.attempts ?? 0) == 0
+                !GuidedExercisePlan.introduced(source, records: records)
             }
         }
     }

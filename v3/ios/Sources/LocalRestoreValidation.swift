@@ -43,6 +43,18 @@ enum LocalRestoreValidation {
                 throw LocalProgressArchiveError.invalid
             }
         }
+        if let cursors = profile.guidedCursors {
+            guard cursors.count <= guided.count else {
+                throw LocalProgressArchiveError.invalid
+            }
+            for (stepID, cursor) in cursors {
+                guard let step = knownSteps[stepID],
+                      step.items.contains(where: { $0.id == cursor.itemID }),
+                      cursor.lastOpened.timeIntervalSince1970.isFinite else {
+                    throw LocalProgressArchiveError.invalid
+                }
+            }
+        }
         if let id = profile.guidedStepID {
             guard let step = knownSteps[id],
                   profile.guidedItemID == nil ||

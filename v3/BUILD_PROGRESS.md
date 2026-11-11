@@ -1,5 +1,20 @@
 # V3 execution ledger — GitHub is durable continuity
 
+## V3-UX02B — guided foundations use Speak introduction + genuine matching recap (2026-11-11)
+
+**Scope:** Following UX-02A exact-head CI PASS [#43000969910](https://github.com/AndrewDionne/LearnPolish/actions/runs/43000969910), converted the original 16 source-verified guided first words / basic vocabulary / grammar groups away from reveal-and-self-rate cards. Each guide introduces all original recorded phrases via Speak: authentic MP3, original Polish and English meaning, original grammar cue/focus, local microphone recording/replay, optional consent-gated Azure/Whisper experimental assessment. Only a real usable recorded take can commit a source-original `.speak` attempt. Playback alone, Skip, navigation or revealing English earns no credit.
+
+**Recall:** After introduction, source groups with three distinct English translations gain a second Learn pass with exactly 3 original same-group source glosses. No invented Polish or synthetic distractors; the two-word *Tak/Nie* opening group remains Speak-only until valid additional prior vocabulary exists. Objective answers are committed under original `learn:<item-id>` with `Evidence.matching`, tracked separately from legacy learner self-ratings. The existing guided order, grammar examples and named source refs are unchanged; 68 occurrences still reference 55 unique original recorded items.
+
+**Resume and compatibility:** Optional `GuidedExercisePhase` in the existing per-step local cursor preserves independent introduction vs recap positions across app relaunch; older saved local progress decodes with an introduction default. Previously self-rated Learn evidence still counts as historical participation but cannot be reported as an objective test. Guided counts, prerequisite review hints, and Home's next-step suggestion now recognize real Speak attempts and pending objective matching. Local restore checks step ID, item ID and finite cursor date. Earlier 16-step navigation skip behavior is retained without awarding attempts/XP.
+
+**Regression:** New native source tests cover all 16 × 68 original references and available recordable modes, two-item fallback with zero invented distractors, exact same-step three-option matching, recorded objective evidence and legacy nonobjective data, and independent persisted recap cursor. Exact-head Simulator and XCTest CI required. PR #169 stays draft. Source recordings and V2/Neon/Render/family identities unchanged.
+
+**Remaining:** source-reviewed connected dialogue playback; a fully authored mixed, prerequisite-checked Journey 1 rather than provisional source order; real-device headphone routing validation; calibrated per-syllable pronunciation feedback, optional team and Expedition UX. These are separate gates, not claims of completion.
+
+---
+
+
 ## V3-UX02A — integrated Speak, Learn matching, and authentic dialogue Listen (2026-11-11)
 
 **Product change:** The old per-card four-way mode selector is removed from the ordinary LessonScreen. The source-backed practice plan picks a deterministic early mixed sequence: first original greeting (*Dzień dobry*) and sound contrasts use Speak (original recorded Polish, English meaning, local record/replay and optional consented speech feedback), while selected subsequent vocabulary items use Learn with exactly three original same-lesson English translations and a source-grounded correct answer. An optional flip card is visibly ungraded and revealing its meaning makes that card ineligible for scored matching. Review entry points keep separate explicit source-backed semantics.

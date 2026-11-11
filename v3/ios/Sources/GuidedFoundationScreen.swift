@@ -41,20 +41,29 @@ struct GuidedFoundationsScreen: View {
     }
 }
 
-/// A learner hears and understands the real full source before trying recall.
-/// A reveal, audio play or skip never issues XP or records a completed attempt.
+/// First encounter is always Speak: hear the SOURCE recording, see its
+/// existing English gloss, record/replay locally, then mark genuine practice.
+/// If a group has three distinct original meanings, a second recap pass
+/// requires an actual 3-choice Polish-to-English response. Neither audio
+/// playback, a reveal, nor Skip can fabricate attempts or scores.
 struct GuidedPracticeScreen: View {
     let step: GuidedFoundationStep
 
     @EnvironmentObject private var learner: LocalLearningStore
     @StateObject private var audio = NativeAudio()
     @State private var itemIndex = 0
-    @State private var tryingRecall = false
-    @State private var revealed = false
+    @State private var phase: GuidedExercisePhase = .introduce
+    @State private var selectedOption: String?
+    @State private var feedback: NativeSpeechFeedback?
+    @State private var guideVisible = false
     @State private var finished = false
     @State private var speed: Float = 1
 
     private var current: GuidedRecordedItem { step.items[itemIndex] }
+    private var source: LessonItem? { learner.sourceItem(for: current) }
+    private var choices: [String] {
+        GuidedExercisePlan.choices(for: step, index: itemIndex)
+    }
 
     private var earlierPractice: [GuidedFoundationStep] {
         GuidedFoundationPath.prerequisitesToReview(
@@ -63,17 +72,18 @@ struct GuidedPracticeScreen: View {
     }
 
     private var following: GuidedFoundationStep? {
-        guard let position = learner.guidedFoundations.firstIndex(where: { $0.id == step.id }),
-              learner.guidedFoundations.indices.contains(position + 1) else { return nil }
-        return learner.guidedFoundations[position + 1]
+        guard let i = learner.guidedFoundations.firstIndex(where: { $0.id == step.id }),
+              learner.guidedFoundations.indices.contains(i + 1) else { return nil }
+        return learner.guidedFoundations[i + 1]
     }
 
     var body: some View {
         VStack(spacing: 14) {
             if finished {
                 Spacer()
-                ContentUnavailableView("End of activity", systemImage: "checkmark.circle",
-                                       description: Text("\(learner.guidedPractisedCount(step)) of \(step.items.count) phrases practised. Unpractised phrases remain available."))
+                ContentUnavailableView(
+                    "End of activity", systemImage: "checkmark.circle",
+                    description: Text("\(learner.guidedPractisedCount(step)) of \(step.items.count) original phrases practised. Unanswered recall checks remain available."))
                 if let following {
                     NavigationLink {
                         GuidedPracticeScreen(step: following)
@@ -83,16 +93,19 @@ struct GuidedPracticeScreen: View {
                     }
                     .buttonStyle(.borderedProminent)
                 }
-                if let missed = learner.firstUnpractisedGuidedIndex(step) {
-                    Button("Revisit unpractised") {
-                        itemIndex = missed
+                if let remaining = GuidedExercisePlan.nextPhase(
+                    step: step, records: learner.profile.records) {
+                    Button("Revisit unfinished practice") {
+                        phase = remaining.0
+                        itemIndex = remaining.1
                         finished = false
                         resetPresentation()
                         rememberPosition()
                     }
                     .buttonStyle(.bordered)
                 }
-                Button("Practice again") {
+                Button("Practise again") {
+                    phase = .introduce
                     itemIndex = 0
                     finished = false
                     resetPresentation()
@@ -101,24 +114,29 @@ struct GuidedPracticeScreen: View {
                 .buttonStyle(.bordered)
                 if let error = learner.saveError {
                     Label(error, systemImage: "exclamationmark.triangle")
-                        .font(.footnote)
-                        .foregroundStyle(.red)
+                        .font(.footnote).foregroundStyle(.red)
                 }
                 Spacer()
             } else {
                 HStack {
-                    Text(step.stage)
-                        .foregroundStyle(.secondary)
+                    Text(step.stage).foregroundStyle(.secondary)
                     Spacer()
                     Text("\(itemIndex + 1) / \(step.items.count)")
-                        .monospacedDigit()
-                        .foregroundStyle(.secondary)
+                        .monospacedDigit().foregroundStyle(.secondary)
                 }
                 .font(.footnote)
-                ProgressView(value: Double(itemIndex + 1), total: Double(step.items.count))
+                ProgressView(value: Double(itemIndex + 1),
+                             total: Double(step.items.count))
+                Label(phase == .introduce
+                      ? "Speak · hear, understand, practise"
+                      : "Learn · match the English meaning",
+                      systemImage: phase == .introduce ? "mic" : "rectangle.on.rectangle")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: 18) {
                         if !earlierPractice.isEmpty {
                             DisclosureGroup("Earlier learning to revisit (\(earlierPractice.count))") {
                                 ForEach(earlierPractice) { earlier in
@@ -130,25 +148,29 @@ struct GuidedPracticeScreen: View {
                                     .padding(.vertical, 4)
                                 }
                             }
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                            .font(.subheadline).foregroundStyle(.secondary)
                         }
                         if step.isGrammar {
                             Text(step.cue ?? "")
-                                .font(.headline)
-                                .foregroundStyle(.indigo)
+                                .font(.headline).foregroundStyle(.indigo)
                             Text(step.explanation ?? "")
-                                .font(.body)
-                                .foregroundStyle(.secondary)
+                                .font(.body).foregroundStyle(.secondary)
                         }
 
-                        VStack(alignment: .leading, spacing: 14) {
-                            focusedPolish(current)
-                                .font(.largeTitle.weight(.semibold))
-                                .textSelection(.enabled)
-                            if !tryingRecall || revealed {
-                                Text(current.english)
-                                    .font(.title3)
+                        VStack(alignment: .leading, spacing: 12) {
+                            if phase == .introduce {
+                                if feedback == nil {
+                                    focusedPolish(current)
+                                        .font(.largeTitle.weight(.semibold))
+                                } else {
+                                    NativeSpeechWord(polish: current.polish, feedback: feedback)
+                                        .font(.largeTitle.weight(.semibold))
+                                }
+                                Text(current.english).font(.title3)
+                                    .foregroundStyle(.secondary)
+                            } else {
+                                focusedPolish(current)
+                                    .font(.largeTitle.weight(.semibold))
                             }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -156,54 +178,39 @@ struct GuidedPracticeScreen: View {
                         .background(.quaternary.opacity(0.35),
                                     in: RoundedRectangle(cornerRadius: 16))
 
-                        HStack {
-                            Button {
-                                if let item = learner.sourceItem(for: current) {
-                                    audio.playReference(item, rate: speed)
+                        if let source {
+                            HStack {
+                                Button {
+                                    audio.playReference(source, rate: speed)
+                                } label: {
+                                    Label("Hear Polish", systemImage: "play.circle.fill")
                                 }
-                            } label: {
-                                Label("Hear Polish", systemImage: "play.circle.fill")
+                                .buttonStyle(.bordered)
+                                Picker("Speed", selection: $speed) {
+                                    Text("0.75×").tag(Float(0.75))
+                                    Text("1×").tag(Float(1))
+                                }
+                                .pickerStyle(.segmented)
+                                .frame(maxWidth: 145)
                             }
-                            .buttonStyle(.bordered)
-                            Picker("Speed", selection: $speed) {
-                                Text("0.75×").tag(Float(0.75))
-                                Text("1×").tag(Float(1))
-                            }
-                            .pickerStyle(.segmented)
-                            .frame(maxWidth: 145)
                         }
 
-                        if !tryingRecall {
-                            Button("Practice this phrase") {
-                                tryingRecall = true
-                                revealed = false
-                            }
-                            .buttonStyle(.borderedProminent)
-                        } else if !revealed {
-                            Button("Show meaning") { revealed = true }
-                                .buttonStyle(.borderedProminent)
+                        if phase == .introduce {
+                            speakControls
                         } else {
-                            HStack(spacing: 12) {
-                                Button("Needs practice") { submit(false) }
-                                    .buttonStyle(.bordered)
-                                Button("Got it") { submit(true) }
-                                    .buttonStyle(.borderedProminent)
-                            }
+                            recapControls
                         }
 
                         if let message = audio.message {
                             Label(message, systemImage: "info.circle")
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
+                                .font(.footnote).foregroundStyle(.secondary)
                         }
                         if let error = learner.saveError {
                             Label(error, systemImage: "exclamationmark.triangle")
-                                .font(.footnote)
-                                .foregroundStyle(.red)
+                                .font(.footnote).foregroundStyle(.red)
                         }
                     }
-                    .padding(.vertical, 20)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, 18)
                 }
 
                 HStack {
@@ -214,13 +221,11 @@ struct GuidedPracticeScreen: View {
                     }
                     .disabled(itemIndex == 0)
                     Spacer()
-                    Button {
+                    Button("Skip") {
                         advance()
-                    } label: {
-                        Text("Skip")
                     }
                     .buttonStyle(.bordered)
-                    .accessibilityHint("Move on without recording a response or earning XP")
+                    .accessibilityHint("No attempt or XP is awarded for skipping")
                 }
                 .padding(.bottom, 8)
             }
@@ -229,17 +234,126 @@ struct GuidedPracticeScreen: View {
         .navigationTitle(step.title)
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
-            if let savedID = learner.guidedResumeItemID(for: step.id),
-               let index = step.items.firstIndex(where: { $0.id == savedID }) {
-                itemIndex = index
+            if let pending = GuidedExercisePlan.nextPhase(
+                step: step, records: learner.profile.records) {
+                phase = pending.0
+                itemIndex = pending.1
+                if learner.guidedResumePhase(for: step.id) == phase,
+                   let id = learner.guidedResumeItemID(for: step.id),
+                   let i = step.items.firstIndex(where: { $0.id == id }) {
+                    itemIndex = i
+                }
+            } else {
+                finished = true
             }
-            rememberPosition()
+            if !finished { rememberPosition() }
         }
         .onChange(of: itemIndex) { _, _ in
             resetPresentation()
             rememberPosition()
         }
+        .onChange(of: phase) { _, _ in
+            resetPresentation()
+            rememberPosition()
+        }
         .onDisappear { audio.discard() }
+    }
+
+    private var speakControls: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            if let pronunciation = source?.pronunciation, !pronunciation.isEmpty {
+                Toggle("Pronunciation guide", isOn: $guideVisible)
+                if guideVisible {
+                    Text(pronunciation).font(.title3).foregroundStyle(.secondary)
+                }
+            }
+            HStack(spacing: 12) {
+                if audio.isRecording {
+                    Button {
+                        audio.stopRecording()
+                    } label: {
+                        Label("Stop", systemImage: "stop.fill")
+                    }
+                    .buttonStyle(.borderedProminent).tint(.red)
+                } else {
+                    Button {
+                        audio.requestRecord()
+                    } label: {
+                        Label(audio.hasRecording ? "Record again" : "Record", systemImage: "mic")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(audio.isStarting)
+                }
+                if audio.hasRecording && !audio.isRecording {
+                    Button {
+                        audio.playRecording()
+                    } label: {
+                        Label("Replay", systemImage: "play.fill")
+                    }
+                    .buttonStyle(.bordered)
+                }
+            }
+            if audio.isStarting {
+                ProgressView("Preparing microphone…")
+            } else if audio.isRecording {
+                Text("Recording… up to 10 seconds")
+                    .foregroundStyle(.secondary)
+            }
+            if let source, audio.hasRecording && !audio.isRecording {
+                NativeSpeechPracticePanel(item: source, audio: audio, feedback: $feedback)
+                    .id(source.id)
+                Button("Mark practised") {
+                    NativePracticeSubmission.commit(
+                        store: learner, item: source, mode: .speak,
+                        understood: nil) {
+                            advance()
+                        }
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(!audio.usableRecording)
+            }
+        }
+    }
+
+    private var recapControls: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Choose the English meaning")
+                .font(.headline)
+            ForEach(choices, id: \.self) { option in
+                Button {
+                    guard selectedOption == nil, let source else { return }
+                    NativePracticeSubmission.commit(
+                        store: learner, item: source, mode: .learn,
+                        understood: option == current.english,
+                        evidence: .matching) {
+                            selectedOption = option
+                        }
+                } label: {
+                    HStack {
+                        Text(option).multilineTextAlignment(.leading)
+                        Spacer()
+                        if selectedOption == option {
+                            Image(systemName: option == current.english
+                                  ? "checkmark.circle.fill" : "xmark.circle.fill")
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .buttonStyle(.bordered)
+                .disabled(selectedOption != nil)
+            }
+            if let selectedOption {
+                Label(selectedOption == current.english ? "Correct" : "Needs practice",
+                      systemImage: selectedOption == current.english
+                      ? "checkmark.circle" : "arrow.clockwise")
+                Text("Meaning: " + current.english)
+                    .foregroundStyle(.secondary)
+                Button(itemIndex + 1 < step.items.count ? "Next word" : "Finish recap") {
+                    advance()
+                }
+                .buttonStyle(.borderedProminent)
+            }
+        }
     }
 
     private func focusedPolish(_ item: GuidedRecordedItem) -> Text {
@@ -247,35 +361,35 @@ struct GuidedPracticeScreen: View {
             return Text(item.polish)
         }
         return Text(String(item.polish[..<range.lowerBound]))
-          + Text(focus).bold().foregroundColor(.indigo)
-          + Text(String(item.polish[range.upperBound...]))
-    }
-
-    private func submit(_ remembered: Bool) {
-        guard let original = learner.sourceItem(for: current) else { return }
-        NativePracticeSubmission.commit(
-            store: learner, item: original, mode: .learn, understood: remembered) {
-                advance()
-            }
+            + Text(focus).bold().foregroundColor(.indigo)
+            + Text(String(item.polish[range.upperBound...]))
     }
 
     private func advance() {
-        if itemIndex + 1 < step.items.count {
-            itemIndex += 1
-        } else if learner.finishedGuidedStep(step.id) {
+        guard itemIndex + 1 < step.items.count else {
+            if phase == .introduce && GuidedExercisePlan.hasRecap(step) {
+                phase = .recap
+                itemIndex = 0
+                return
+            }
+            guard learner.finishedGuidedStep(step.id) else { return }
             audio.discard()
             finished = true
+            return
         }
+        itemIndex += 1
     }
 
     private func resetPresentation() {
         audio.discard()
-        tryingRecall = false
-        revealed = false
+        feedback = nil
+        selectedOption = nil
+        guideVisible = false
     }
 
     private func rememberPosition() {
         guard !finished else { return }
-        learner.rememberGuidedPosition(stepID: step.id, itemID: current.id)
+        learner.rememberGuidedPosition(stepID: step.id,
+                                       itemID: current.id, phase: phase)
     }
 }
