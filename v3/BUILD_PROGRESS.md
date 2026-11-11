@@ -8,8 +8,17 @@ practice journal, an orientation warning and a project recommended-settings
 prompt. These are warnings, **not app runtime or audio-route errors**. They
 cannot identify the cause of the headphone-only audio complaint.
 
-**Fix:** The capture-only `playAndRecord` Bluetooth HFP option now uses
-the supported `.allowBluetoothHFP` name; the four journal `map` guard
+**Compatibility correction:** Xcode 16.4 / bundled older iOS SDK in GitHub Actions
+does not define the newly documented `.allowBluetoothHFP` spelling:
+[run #42930241986](https://github.com/AndrewDionne/LearnPolish/actions/runs/42930241986)
+failed at compile time. Revert **only** that spelling to the previous
+`.allowBluetooth` to preserve known-good HFP recording support on the
+installed toolchain. The *deprecation warning* is not an audio defect and
+remains tracked until CI and the owner are on a compatible Apple SDK.
+No native routing or consent behavior changes.
+
+**Original intended fix:** The capture-only `playAndRecord` Bluetooth HFP option now uses
+the newer `.allowBluetoothHFP` name (later reverted for Xcode 16.4 SDK compatibility); the four journal `map` guard
 expressions use parenthesized closure arguments. Functional behavior of
 audio, practice, scoring and consent is unchanged. The orientation and
 recommended-settings advisories are deliberately left for separate UI /

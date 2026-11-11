@@ -23,7 +23,7 @@ enum NativeAudioSessionSetup {
                 try session.setCategory(.playback, mode: .default)
             case .recording:
                 try session.setCategory(.playAndRecord, mode: .default,
-                                        options: [.defaultToSpeaker, .allowBluetoothHFP])
+                                        options: [.defaultToSpeaker, .allowBluetooth])
             }
             selectedMode = mode
         }
