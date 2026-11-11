@@ -57,6 +57,26 @@ struct NativeDialoguePracticeScreen: View {
                     VStack(alignment: .leading, spacing: 17) {
                         Text("Hear the speakers in order, then answer what happened.")
                             .foregroundStyle(.secondary)
+                        if !NativeDialoguePreparation.unpractisedTurnIDs(
+                            scene: scene, records: learner.profile.records).isEmpty {
+                            DisclosureGroup("New dialogue? Study its original lines") {
+                                Text("Optional preparation · no answer or XP is recorded")
+                                    .font(.footnote).foregroundStyle(.secondary)
+                                ForEach(scene.turns, id: \.itemId) { turn in
+                                    if let item = original(turn.itemId) {
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text("Speaker \(turn.speaker) · \(item.polish)")
+                                                .font(.subheadline.weight(.semibold))
+                                            Text(item.english)
+                                                .font(.subheadline)
+                                                .foregroundStyle(.secondary)
+                                        }
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .padding(.vertical, 3)
+                                    }
+                                }
+                            }
+                        }
                         ForEach(Array(scene.turns.enumerated()), id: \.offset) { entry in
                             let index = entry.offset
                             let turn = entry.element

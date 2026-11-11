@@ -128,8 +128,24 @@ enum NativeExercisePlan {
     static func nextUnattemptedIndex(items: [LessonItem], lesson: Lesson,
                                       records: [String: PracticeRecord]) -> Int {
         items.firstIndex { item in
+            if lesson.kind == "vocabulary" {
+                // Find first genuinely unintroduced original word. A planned
+                // Learn position never hides a previously saved Speak attempt.
+                return !introduced(item, records: records)
+            }
             let mode = mode(for: lesson, item: item)
             return (records[mode.rawValue + ":" + item.id]?.attempts ?? 0) == 0
+        } ?? 0
+    }
+
+    static func firstUnvisitedBatch(for lesson: Lesson,
+                                    records: [String: PracticeRecord]) -> Int {
+        let sections = NativePracticeRules.sections(for: lesson, mode: .learn)
+        guard sections.count > 1 else { return 0 }
+        return sections.firstIndex { section in
+            section.items.contains { item in
+                !introduced(item, records: records)
+            }
         } ?? 0
     }
 }

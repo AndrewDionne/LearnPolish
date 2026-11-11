@@ -160,3 +160,29 @@ reveal instead of manufacturing options or a matching score. Existing
 Daily Review scheduler and historical XP are unchanged. Neither a prior
 attempt nor the full automatic first-use report certifies human lexical,
 phonetic or syllable mastery. Physical headset acceptance remains open.
+
+### UX-03C2A — optional source-backed interleaved reinforcement (2026-11-11)
+
+Practice may offer a short optional cross-chapter reinforcement set using
+no more than six **original, previously practised** recorded vocabulary
+items from completed earlier Journey 1 chapters. Do not reissue identity,
+Polish text, English meaning or audio; do not expose unintroduced later-
+chapter words, sound contrast-only examples, flagged `practice_only` media,
+or English distractors without saved source practice. Objective answers
+are actual `learn:<original item>`+`Evidence.matching` events in the
+existing atomic offline review/XP journal and enter the original review
+schedule. Playback, Skip and preparation never count. Reinforcement does
+NOT fabricate new due dates or override Daily Review and does not replace
+human linguistic mastery/certification.
+
+Original vocabulary **practised counts** cannot regress when Speak makes
+a word newly eligible for an additional Learn recap; count the original
+source Speak-or-Learn attempt once. For Numbers 1–20, preserve the 1–10 /
+11–20 sections, using actual recorded exposure to decide which subsection
+should resume.
+
+Existing authentic dialogue activities may show exact original lines/
+glosses in an optional ungraded preparatory disclosure for lines with no
+recorded source exposure; the comprehension question is still assessed
+only on a submitted answer. This does not claim entire phrase/syllable
+comprehension or physical headset playback certification.

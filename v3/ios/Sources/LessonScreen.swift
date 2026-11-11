@@ -165,8 +165,8 @@ struct LessonScreen: View {
             let resumeID = startItemID ??
                 (resumeAtNextUnseen ? nil : learner.practiceCursor(for: lesson.id)?.itemID)
             if dueItemIDs == nil {
-                batch = NativePracticeRules.firstUnvisitedBatch(for: lesson,
-                                                               progress: learner.profile.records)
+                batch = NativeExercisePlan.firstUnvisitedBatch(
+                    for: lesson, records: learner.profile.records)
                 if let resumeID,
                    let section = sections.firstIndex(where: { section in
                        section.items.contains(where: { $0.id == resumeID })

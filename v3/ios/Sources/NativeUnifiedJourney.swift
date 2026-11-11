@@ -192,6 +192,12 @@ struct NativeUnifiedJourney {
                     }.count, required: lastIDs.count)
             }
             let scored = lesson.items.filter { item in
+                if lesson.kind == "vocabulary" {
+                    // A real original Speak OR Learn attempt is practice.
+                    // Becoming eligible for a second recall mode must not
+                    // retroactively erase a previously saved introduction.
+                    return NativeExercisePlan.introduced(item, records: records)
+                }
                 let mode = NativeExercisePlan.mode(for: lesson, item: item)
                 return (records[mode.rawValue + ":" + item.id]?.attempts ?? 0) > 0
             }.count

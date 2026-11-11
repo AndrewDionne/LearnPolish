@@ -1,5 +1,22 @@
 # V3 execution ledger — GitHub is durable continuity
 
+## V3-UX03C2A — source-backed reinforcement and first-contact dialogue preparation (2026-11-11)
+
+**Prior verified gate:** UX-03C1 exact-head [Actions #43032450991](https://github.com/AndrewDionne/LearnPolish/actions/runs/43032450991) **SUCCESS** (original media/source audit, Simulator compilation and native XCTest).
+
+**Cross-chapter source retrieval:** Added `NativeJourneyReinforcementQueue` and `NativeJourneyReinforcementScreen`, accessible as a small optional **Reinforce earlier learning** activity in Practice only after actual source-backed progress through earlier Journey 1 chapters. Every eligible word is an exact original, genuinely attempted *vocabulary* `LessonItem` (audio present and not `practice_only`). A bounded 6-card deterministic queue deduplicates source IDs across guided/core repeats, prioritizes items lacking an objective match, objectively missed items, then older Learn timestamps; it never includes unattempted later-chapter source IDs or words seen only by Browse/Skip. Three answer choices are original English meanings that the learner has already practised in earlier chapters. Answer submission is the same atomic `.learn`+`Evidence.matching` source item used elsewhere, feeding the existing 1/3/7/14/30/60/90-day scheduler; Skip/Play earns no XP. This optional, user-initiated interleaving is NOT a replacement for calendar-scheduled Daily Review and no invented due times or fake scores are recorded.
+
+**Progress and numbers regression:** Unified Journey 1's **practised** metric now counts a saved original vocabulary Speak OR Learn attempt, rather than the old static mode. This prevents progress going backwards when a learner has legitimately introduced a word through Speak and it later becomes eligible for objective Learn. The original Numbers 1–20's **1–10 and 11–20 sections remain unchanged**, but first-unvisited section and first-unattempted item selection use actual source exposure, preventing recorded first-ten Speak words from repeatedly restarting the 1–10 section. None of this changes a learner's local record schema or previous attempts.
+
+**Connected-dialogue preparation:** `NativeDialoguePreparation` identifies source-authored scene turns with no saved Speak/Learn/Read/Listen practice, and the native dialogue screen offers an optional, ungraded disclosure of those exact original Polish/English lines. The learner can hear their unmodified MP3s through the existing turn controls and later answer the original contextual question; optional preparatory reading earns no attempt, XP or fabricated proficiency. The system cannot yet prove full contextual understanding or certify that pressing Play meant listening to a complete clip.
+
+**Tests and gates:** New native XCTest suites cover source fidelity, bounded/deterministic cross-chapter retrieval, actual-previous-chapter eligibility, unintroduced future content exclusion, atomic matching evidence/scheduled review and persistence after app restart, monotonic course progress, number subsections, original dialogue preparation without fake assessment and unchanged exact source identities. Exact-head GitHub Simulator and XCTest validation required before physical Xcode review. PR #169 remains draft. Original V2 recordings, private Neon/Render, tester identities and optional provider speech permissions unchanged.
+
+**Still open UX-03C2B:** Independent bilingual/inflection/phoneme review of all 381 source occurrences, approved author-level connected dialogue comprehension and seamless audio playback, more thoughtful periodic variation once calibrated, and physical right-earphone / microphone testing. This tranche improves reinforcement, not full curriculum certification.
+
+---
+
+
 ## V3-UX03C1 — demonstrated exposure before first matching (2026-11-11)
 
 **Problem:** UX-03B fixed static later-card source option leaks, but merely placing options earlier in a lesson did not prove a learner had heard or practised them, particularly with Skip and multi-lesson resume. In addition, the static Learn cadence could put a first-time original phrase directly into an objective question without giving its meaning.

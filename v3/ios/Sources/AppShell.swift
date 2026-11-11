@@ -395,6 +395,15 @@ private struct DueReviewGroup: Identifiable {
 struct ReviewScreen: View {
     @EnvironmentObject private var learner: LocalLearningStore
 
+    private var reinforcement: [NativeJourneyReinforcementCard] {
+        guard let journey = learner.unifiedJourney,
+              let core = learner.coreJourney else { return [] }
+        return NativeJourneyReinforcementQueue.snapshot(
+            journey: journey, guided: learner.guidedFoundations,
+            core: core, lessons: learner.lessons,
+            records: learner.profile.records)
+    }
+
     private var dueGroups: [DueReviewGroup] {
         learner.lessons.filter { $0.kind != "reading" }.compactMap { lesson in
             let due = lesson.items.filter { item in
@@ -419,6 +428,21 @@ struct ReviewScreen: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(pending.title).font(.headline)
                             Text("\(learner.unifiedJourneyStepsCompleted) of \(learner.unifiedJourneyStepsTotal) activities practised")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            }
+            if !reinforcement.isEmpty {
+                Section("Reinforce earlier learning") {
+                    NavigationLink {
+                        NativeJourneyReinforcementScreen(cards: reinforcement)
+                    } label: {
+                        VStack(alignment: .leading, spacing: 5) {
+                            Label("Review \(reinforcement.count) familiar words",
+                                  systemImage: "arrow.triangle.2.circlepath")
+                                .font(.headline)
+                            Text("Original recordings and meanings from previous chapters · optional")
                                 .font(.caption).foregroundStyle(.secondary)
                         }
                     }
