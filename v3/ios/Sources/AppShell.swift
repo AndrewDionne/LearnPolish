@@ -2,32 +2,77 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct AppShell: View {
+    @StateObject private var navigation = LearningNavigation()
+
     var body: some View {
-        TabView {
+        TabView(selection: $navigation.tab) {
             NavigationStack { HomeScreen() }
                 .tabItem { Label("Home", systemImage: "house") }
+                .tag(LearningTab.home)
             NavigationStack { LibraryScreen() }
                 .tabItem { Label("Library", systemImage: "books.vertical") }
-            NavigationStack { ReviewScreen() }
-                .tabItem { Label("Practice", systemImage: "rectangle.stack") }
+                .tag(LearningTab.library)
+            NavigationStack(path: $navigation.practicePath) {
+                ReviewScreen()
+                    .navigationDestination(for: PracticeRoute.self) { route in
+                        PracticeDestinationScreen(route: route)
+                    }
+            }
+            .tabItem { Label("Practice", systemImage: "rectangle.stack") }
+            .tag(LearningTab.practice)
             NavigationStack { PolandExpeditionView() }
                 .tabItem { Label("Expedition", systemImage: "map") }
+                .tag(LearningTab.expedition)
             NavigationStack { ProgressScreen() }
                 .tabItem { Label("Progress", systemImage: "chart.bar") }
+                .tag(LearningTab.progress)
         }
+        .environmentObject(navigation)
         .tint(.indigo)
+    }
+}
+
+struct PracticeDestinationScreen: View {
+    let route: PracticeRoute
+    @EnvironmentObject private var learner: LocalLearningStore
+
+    var body: some View {
+        switch route {
+        case .lesson(let id):
+            if let lesson = learner.lessons.first(where: { $0.id == id }) {
+                LessonScreen(lesson: lesson)
+            } else {
+                ContentUnavailableView("Lesson unavailable", systemImage: "exclamationmark.triangle")
+            }
+        case .guided(let id):
+            if let step = learner.guidedFoundations.first(where: { $0.id == id }) {
+                GuidedPracticeScreen(step: step)
+            } else {
+                ContentUnavailableView("Lesson unavailable", systemImage: "exclamationmark.triangle")
+            }
+        case .soundLab:
+            SoundStudioScreen()
+        case .scenarios:
+            TouristUnitsScreen()
+        }
     }
 }
 
 struct HomeScreen: View {
     @EnvironmentObject private var learner: LocalLearningStore
+    @EnvironmentObject private var family: NativeFamilySession
+    @EnvironmentObject private var navigation: LearningNavigation
+
+    private var latestActivity: Date? {
+        learner.profile.records.values.compactMap(\.lastAttempt).max()
+    }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 Text("Path to Polish")
                     .font(.largeTitle.bold())
-                Text("Learn real Polish, one lesson at a time.")
+                Text("Your learning today")
                     .foregroundStyle(.secondary)
                 #if DEBUG
                 NavigationLink {
@@ -41,112 +86,100 @@ struct HomeScreen: View {
                 #endif
 
                 if let message = learner.catalogError {
-                    ContentUnavailableView("Lessons unavailable", systemImage: "exclamationmark.triangle",
+                    ContentUnavailableView("Lessons unavailable",
+                                           systemImage: "exclamationmark.triangle",
                                            description: Text(message))
                 } else {
-                    if let route = learner.homeLearningRoute {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Continue learning")
-                                .font(.headline)
+                    HStack(spacing: 12) {
+                        homeMetric("\(learner.expedition.totalXP)", "Personal XP",
+                                   icon: "star")
+                        homeMetric("\(learner.completedItems)", "Items practised",
+                                   icon: "checkmark.circle")
+                    }
+                    HStack(spacing: 12) {
+                        homeMetric("\(learner.dueReviews.count)", "Reviews due",
+                                   icon: "arrow.clockwise")
+                        homeMetric("\(learner.activeGuidedSteps.count + learner.activePracticeLessons.count)",
+                                   "Started sets", icon: "bookmark")
+                    }
+
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Continue your journey").font(.headline)
+                        if let route = learner.homeLearningRoute {
                             switch route {
-                            case .guided(let guided):
-                                Text(guided.title)
-                                    .font(.title2.weight(.semibold))
-                                Text(guided.stage)
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
+                            case .guided(let step):
+                                Text(step.title).font(.title2.weight(.semibold))
+                                Text(step.stage).foregroundStyle(.secondary)
+                                Button {
+                                    navigation.openPractice(.guided(step.id))
+                                } label: {
+                                    Label("Continue in Practice", systemImage: "arrow.right")
+                                        .frame(maxWidth: .infinity)
+                                }
+                                .buttonStyle(.borderedProminent)
                             case .core(let lesson):
-                                Text(lesson.title)
-                                    .font(.title2.weight(.semibold))
-                                if let description = lesson.description {
-                                    Text(description).foregroundStyle(.secondary)
+                                Text(lesson.title).font(.title2.weight(.semibold))
+                                Text("Your next original course lesson").foregroundStyle(.secondary)
+                                Button {
+                                    navigation.openPractice(.lesson(lesson.id))
+                                } label: {
+                                    Label("Continue in Practice", systemImage: "arrow.right")
+                                        .frame(maxWidth: .infinity)
                                 }
+                                .buttonStyle(.borderedProminent)
                             }
-                            NavigationLink {
-                                switch route {
-                                case .guided(let guided):
-                                    GuidedPracticeScreen(step: guided)
-                                case .core(let lesson):
-                                    LessonScreen(lesson: lesson, resumeAtNextUnseen: true)
-                                }
-                            } label: {
-                                Label("Continue", systemImage: "arrow.right")
-                                    .frame(maxWidth: .infinity)
-                            }
-                            .buttonStyle(.borderedProminent)
-                        }
-                        .padding(18)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(.quaternary.opacity(0.4),
-                                    in: RoundedRectangle(cornerRadius: 18))
-                    }
-
-                    if !learner.dueReviews.isEmpty {
-                        NavigationLink {
-                            NativeDailyReviewSessionScreen(cards:
-                                NativeDailyReviewQueue.snapshot(
-                                    lessons: learner.lessons,
-                                    records: learner.profile.records, now: Date()))
-                        } label: {
-                            Label("Review \(min(learner.dueReviews.count, NativeDailyReviewQueue.batchLimit)) due",
-                                  systemImage: "rectangle.stack")
-                        }
-                        .font(.headline)
-                    }
-
-                    NavigationLink {
-                        GuidedFoundationsScreen()
-                    } label: {
-                        Label("First words, grammar and sentences",
-                              systemImage: "text.book.closed")
-                    }
-                    .font(.headline)
-
-                    NavigationLink {
-                        SoundStudioScreen()
-                    } label: {
-                        Label("Polish alphabet and sound practice",
-                              systemImage: "waveform")
-                    }
-                    .font(.headline)
-                    NavigationLink {
-                        TouristUnitsScreen()
-                    } label: {
-                        Label("Everyday Polish scenarios",
-                              systemImage: "figure.walk")
-                    }
-                    .font(.headline)
-
-                    if let scenario = learner.nextTouristUnit {
-                        HStack {
-                            Text("Next scenario")
-                                .font(.subheadline)
+                        } else {
+                            Text("Open Practice to begin a lesson.")
                                 .foregroundStyle(.secondary)
-                            Spacer()
-                            NavigationLink(scenario.title) {
-                                TouristUnitScreen(unit: scenario)
+                        }
+                    }
+                    .padding(18)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(.quaternary.opacity(0.4),
+                                in: RoundedRectangle(cornerRadius: 18))
+
+                    HStack {
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text("Recent activity").font(.headline)
+                            if let latestActivity {
+                                Text("Last practice · " + latestActivity.formatted(
+                                    date: .abbreviated, time: .shortened))
+                                    .font(.subheadline).foregroundStyle(.secondary)
+                            } else {
+                                Text("Your first practice will appear here.")
+                                    .font(.subheadline).foregroundStyle(.secondary)
                             }
-                            .font(.subheadline.weight(.medium))
                         }
+                        Spacer()
+                        Button("Practice") { navigation.showPractice() }
                     }
 
-
-                    Text("Your path")
-                        .font(.headline)
-                    ForEach(learner.course) { lesson in
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Family progress").font(.headline)
+                        if family.isConnected {
+                            Text("\(family.groups.count) connected family group(s)")
+                                .foregroundStyle(.secondary)
+                            Text("Family scores are provided by your connected group, not estimated from local XP.")
+                                .font(.footnote).foregroundStyle(.secondary)
+                        } else {
+                            Text("Not connected · your learning stays private")
+                                .foregroundStyle(.secondary)
+                        }
                         NavigationLink {
-                            LessonScreen(lesson: lesson)
+                            NativeFamilyAccountScreen()
                         } label: {
-                            LessonRow(lesson: lesson)
+                            Label(family.isConnected ? "View team progress" : "Optional family connection",
+                                  systemImage: "person.2")
                         }
-                        .buttonStyle(.plain)
-                        Divider()
                     }
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(.quaternary.opacity(0.25),
+                                in: RoundedRectangle(cornerRadius: 16))
                 }
                 if let error = learner.saveError {
                     Label(error, systemImage: "exclamationmark.triangle")
-                        .font(.footnote)
-                        .foregroundStyle(.red)
+                        .font(.footnote).foregroundStyle(.red)
                 }
             }
             .padding()
@@ -154,67 +187,145 @@ struct HomeScreen: View {
         .navigationTitle("Home")
         .navigationBarTitleDisplayMode(.inline)
     }
+
+    private func homeMetric(_ value: String, _ label: String,
+                            icon: String) -> some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Image(systemName: icon).foregroundStyle(.indigo)
+            Text(value).font(.title2.bold()).monospacedDigit()
+            Text(label).font(.caption).foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(15)
+        .background(.quaternary.opacity(0.25),
+                    in: RoundedRectangle(cornerRadius: 14))
+    }
 }
 
 struct LibraryScreen: View {
     @EnvironmentObject private var learner: LocalLearningStore
+    @EnvironmentObject private var navigation: LearningNavigation
     @State private var query = ""
 
-    private func matching(_ entries: [Lesson]) -> [Lesson] {
-        guard !query.isEmpty else { return entries }
-        return entries.filter {
-            $0.title.localizedCaseInsensitiveContains(query) ||
-            ($0.description?.localizedCaseInsensitiveContains(query) ?? false)
-        }
+    private var journeys: [NativeJourneyCollection] {
+        NativeJourneyCatalog.collections(
+            course: learner.course,
+            placements: learner.coreJourney?.placements ?? [:])
+    }
+
+    private func matches(_ lesson: Lesson) -> Bool {
+        query.isEmpty || lesson.title.localizedCaseInsensitiveContains(query) ||
+            (lesson.description?.localizedCaseInsensitiveContains(query) ?? false)
     }
 
     var body: some View {
         List {
-            Section("Foundations") {
+            if let error = learner.catalogError {
+                Section { Text(error).foregroundStyle(.red) }
+            }
+            Section("Start here") {
                 NavigationLink {
                     GuidedFoundationsScreen()
                 } label: {
-                    Label("First words and basic grammar", systemImage: "text.book.closed")
-                }
-                NavigationLink {
-                    SoundStudioScreen()
-                } label: {
-                    Label("Alphabet and Sound Lab", systemImage: "waveform")
-                }
-                NavigationLink {
-                    TouristUnitsScreen()
-                } label: {
-                    Label("Everyday scenarios", systemImage: "figure.walk")
+                    Label("First words and basic grammar",
+                          systemImage: "text.book.closed")
                 }
             }
-            if learner.catalogError != nil {
-                Text(learner.catalogError ?? "").foregroundStyle(.red)
-            }
-            if !matching(learner.course).isEmpty {
-                Section("Your path") {
-                    ForEach(matching(learner.course)) { lesson in
+            Section("Learning journeys") {
+                ForEach(journeys) { journey in
+                    if query.isEmpty ||
+                        journey.title.localizedCaseInsensitiveContains(query) ||
+                        journey.lessons.contains(where: matches) {
                         NavigationLink {
-                            LessonScreen(lesson: lesson)
+                            JourneyCollectionScreen(collection: journey)
                         } label: {
-                            LessonRow(lesson: lesson)
+                            let progress = NativeJourneyCatalog.snapshot(
+                                journey, records: learner.profile.records)
+                            VStack(alignment: .leading, spacing: 7) {
+                                Text(journey.title).font(.headline)
+                                Text("\(journey.lessons.count) lessons · \(progress.practisedLessons) practised")
+                                    .font(.subheadline).foregroundStyle(.secondary)
+                                ProgressView(value: Double(progress.practisedLessons),
+                                             total: Double(max(1, progress.totalLessons)))
+                                HStack {
+                                    Text("\(progress.startedLessons) started")
+                                    Spacer()
+                                    Text(progress.recallPercentage.map {
+                                        "Recall accuracy \($0)%"
+                                    } ?? "Recall not assessed")
+                                }
+                                .font(.caption).foregroundStyle(.secondary)
+                            }
+                            .padding(.vertical, 4)
                         }
                     }
                 }
             }
-            if !matching(learner.explore).isEmpty {
-                Section("Explore more") {
-                    ForEach(matching(learner.explore)) { lesson in
-                        NavigationLink {
-                            LessonScreen(lesson: lesson)
-                        } label: {
-                            LessonRow(lesson: lesson)
-                        }
+            Section("Extras") {
+                Button {
+                    navigation.openPractice(.soundLab)
+                } label: {
+                    Label("Alphabet and Sound Lab", systemImage: "waveform")
+                }
+                Button {
+                    navigation.openPractice(.scenarios)
+                } label: {
+                    Label("Everyday scenarios", systemImage: "figure.walk")
+                }
+                ForEach(learner.explore.filter(matches)) { lesson in
+                    Button {
+                        navigation.openPractice(.lesson(lesson.id))
+                    } label: {
+                        LessonRow(lesson: lesson)
                     }
                 }
             }
         }
-        .searchable(text: $query, prompt: "Find a lesson")
+        .searchable(text: $query, prompt: "Find a journey or lesson")
         .navigationTitle("Library")
+    }
+}
+
+struct JourneyCollectionScreen: View {
+    let collection: NativeJourneyCollection
+    @EnvironmentObject private var learner: LocalLearningStore
+    @EnvironmentObject private var navigation: LearningNavigation
+
+    var body: some View {
+        List {
+            Section {
+                let progress = NativeJourneyCatalog.snapshot(
+                    collection, records: learner.profile.records)
+                LabeledContent("Lessons practised",
+                               value: "\(progress.practisedLessons) / \(progress.totalLessons)")
+                if let score = progress.recallPercentage {
+                    LabeledContent("Recall accuracy", value: "\(score)%")
+                } else {
+                    Text("Recall not assessed yet")
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Section("Lessons") {
+                ForEach(collection.lessons) { lesson in
+                    Button {
+                        navigation.openPractice(.lesson(lesson.id))
+                    } label: {
+                        VStack(alignment: .leading, spacing: 4) {
+                            LessonRow(lesson: lesson)
+                            let count = lesson.items.filter { item in
+                                PracticeMode.allCases.contains { mode in
+                                    (learner.profile.records[mode.rawValue + ":" + item.id]?.attempts ?? 0) > 0
+                                }
+                            }.count
+                            Text("\(count) / \(lesson.items.count) items practised")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .navigationTitle(collection.title)
     }
 }
 
@@ -270,10 +381,39 @@ struct ReviewScreen: View {
 
     var body: some View {
         List {
-            if dueGroups.isEmpty {
-                ContentUnavailableView("Nothing due yet", systemImage: "checkmark.circle",
-                                       description: Text("Practise a lesson to start your review schedule."))
-            } else {
+            if let error = learner.catalogError {
+                Section { Text(error).foregroundStyle(.red) }
+            }
+            Section("Your active learning sets") {
+                if learner.activeGuidedSteps.isEmpty && learner.activePracticeLessons.isEmpty {
+                    Text("Choose a lesson in Library to begin. You can pause and return to several sets.")
+                        .foregroundStyle(.secondary)
+                }
+                ForEach(learner.activeGuidedSteps) { step in
+                    NavigationLink(value: PracticeRoute.guided(step.id)) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(step.title).font(.headline)
+                            Text("\(learner.guidedPractisedCount(step)) of \(step.items.count) phrases practised")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                ForEach(learner.activePracticeLessons) { lesson in
+                    NavigationLink(value: PracticeRoute.lesson(lesson.id)) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(lesson.title).font(.headline)
+                            let tried = lesson.items.filter { item in
+                                PracticeMode.allCases.contains { mode in
+                                    (learner.profile.records[mode.rawValue + ":" + item.id]?.attempts ?? 0) > 0
+                                }
+                            }.count
+                            Text("\(tried) of \(lesson.items.count) items practised")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            }
+            if !dueGroups.isEmpty {
                 Section {
                     NavigationLink {
                         NativeDailyReviewSessionScreen(cards:
@@ -285,11 +425,9 @@ struct ReviewScreen: View {
                               systemImage: "rectangle.stack.fill")
                     }
                 }
-                Section("Scheduled review by lesson") {
+                Section("Scheduled review") {
                     ForEach(dueGroups) { group in
                         NavigationLink {
-                            // Frozen list: failed items remain due later but never trap
-                            // the learner in an endless same-session review loop.
                             LessonScreen(lesson: group.lesson, preferredMode: .learn,
                                          dueItemIDs: group.items.map(\.id))
                         } label: {
@@ -300,6 +438,11 @@ struct ReviewScreen: View {
                             }
                         }
                     }
+                }
+            } else {
+                Section {
+                    Text("Nothing due yet. New reviews appear after real learning attempts.")
+                        .foregroundStyle(.secondary)
                 }
             }
         }

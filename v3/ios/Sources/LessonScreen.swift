@@ -151,18 +151,16 @@ struct LessonScreen: View {
                 mode = lesson.kind == "reading" ? .read : .learn
             } else if let preferredMode, lesson.availableModes.contains(preferredMode) {
                 mode = preferredMode
-            } else if learner.profile.lastLessonID == lesson.id,
-                      let recentMode = learner.profile.lastMode,
-                      lesson.availableModes.contains(recentMode) {
-                mode = recentMode
+            } else if let cursor = learner.practiceCursor(for: lesson.id),
+                      lesson.availableModes.contains(cursor.mode) {
+                mode = cursor.mode
             } else {
                 mode = lesson.availableModes.first ?? .learn
             }
             // Continue must start at the next unattempted original source item;
             // an exploratory saved position must not override it.
-            let resumeID = startItemID ?? (resumeAtNextUnseen ? nil :
-                (learner.profile.lastLessonID == lesson.id
-                 ? learner.profile.lastItemID : nil))
+            let resumeID = startItemID ??
+                (resumeAtNextUnseen ? nil : learner.practiceCursor(for: lesson.id)?.itemID)
             if dueItemIDs == nil {
                 batch = NativePracticeRules.firstUnvisitedBatch(for: lesson,
                                                                progress: learner.profile.records)
@@ -433,7 +431,8 @@ struct LessonScreen: View {
     }
 
     private func remember() {
-        guard !finished else { return }
+        // Scheduled reviews should never overwrite a paused learning set.
+        guard !finished, dueItemIDs == nil else { return }
         learner.rememberPosition(lesson: lesson, item: item, mode: mode)
     }
 

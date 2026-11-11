@@ -272,4 +272,84 @@ import XCTest
                        "The same recorded source is reused, not copied as a new lesson ID")
     }
 
+
+    func testIndependentLessonCursorsPersistWithoutAwardingXP() throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let path = folder.appendingPathComponent("learner.json")
+        let learner = LocalLearningStore(storageURL: path)
+        let first = learner.course[0], second = learner.course[1]
+        let firstItem = first.items[0], secondItem = second.items.last!
+        let firstMode = first.availableModes[0], secondMode = second.availableModes[0]
+        learner.rememberPosition(lesson: first, item: firstItem, mode: firstMode)
+        learner.rememberPosition(lesson: second, item: secondItem, mode: secondMode)
+        XCTAssertEqual(learner.practiceCursor(for: first.id)?.itemID, firstItem.id)
+        XCTAssertEqual(learner.practiceCursor(for: second.id)?.itemID, secondItem.id)
+        XCTAssertEqual(learner.attempts, 0)
+        XCTAssertEqual(learner.expedition.totalXP, 0)
+        let restored = LocalLearningStore(storageURL: path)
+        XCTAssertEqual(restored.practiceCursor(for: first.id)?.itemID, firstItem.id)
+        XCTAssertEqual(restored.practiceCursor(for: second.id)?.itemID, secondItem.id)
+        XCTAssertEqual(Set(restored.activePracticeLessons.map(\.id)),
+                       Set([first.id, second.id]))
+        XCTAssertEqual(restored.attempts, 0)
+    }
+
+    func testIndependentGuidedCursorsKeepSequentialContinue() throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let path = folder.appendingPathComponent("learner.json")
+        let learner = LocalLearningStore(storageURL: path)
+        let first = learner.guidedFoundations[0], other = learner.guidedFoundations[4]
+        learner.rememberGuidedPosition(stepID: first.id, itemID: first.items.last!.id)
+        learner.rememberGuidedPosition(stepID: other.id, itemID: other.items.last!.id)
+        XCTAssertEqual(learner.nextGuidedStep?.id, first.id)
+        XCTAssertEqual(learner.guidedResumeItemID(for: other.id), other.items.last?.id)
+        XCTAssertEqual(learner.activeGuidedSteps.count, 2)
+        let restored = LocalLearningStore(storageURL: path)
+        XCTAssertEqual(restored.nextGuidedStep?.id, first.id)
+        XCTAssertEqual(restored.guidedResumeItemID(for: first.id), first.items.last?.id)
+        XCTAssertEqual(restored.guidedResumeItemID(for: other.id), other.items.last?.id)
+        XCTAssertEqual(restored.attempts, 0)
+    }
+
+    func testSmallJourneyGroupsPreserveSourceOrderAndOnlyMeasuredRecall() throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let learner = LocalLearningStore(storageURL: folder.appendingPathComponent("learner.json"))
+        let groups = NativeJourneyCatalog.collections(
+            course: learner.course, placements: learner.coreJourney?.placements ?? [:])
+        XCTAssertFalse(groups.isEmpty)
+        XCTAssertTrue(groups.allSatisfy { (1...4).contains($0.lessons.count) })
+        XCTAssertEqual(groups.flatMap { $0.lessons.map(\.id) }, learner.course.map(\.id))
+        let first = try XCTUnwrap(groups.first)
+        let fresh = NativeJourneyCatalog.snapshot(first, records: [:])
+        XCTAssertNil(fresh.recallPercentage)
+        XCTAssertEqual(fresh.practisedLessons, 0)
+        let sourceID = first.lessons[0].items[0].id
+        var attempt = PracticeRecord()
+        attempt.attempts = 3
+        attempt.completed = 2
+        let snapshot = NativeJourneyCatalog.snapshot(
+            first, records: ["learn:" + sourceID: attempt])
+        XCTAssertEqual(snapshot.startedLessons, 1)
+        XCTAssertEqual(snapshot.recallAttempts, 3)
+        XCTAssertEqual(snapshot.recallCorrect, 2)
+        XCTAssertEqual(snapshot.recallPercentage, 67)
+    }
+
+    func testLibraryLaunchMovesToPracticeWithoutDiscardingOtherPositions() {
+        let navigation = LearningNavigation()
+        XCTAssertEqual(navigation.tab, .home)
+        navigation.openPractice(.lesson("Conversation_1"))
+        XCTAssertEqual(navigation.tab, .practice)
+        XCTAssertEqual(navigation.practicePath, [.lesson("Conversation_1")])
+        navigation.tab = .library
+        navigation.openPractice(.guided("simple-replies"))
+        XCTAssertEqual(navigation.tab, .practice)
+        XCTAssertEqual(navigation.practicePath, [.guided("simple-replies")])
+        navigation.showPractice()
+        XCTAssertEqual(navigation.practicePath, [.guided("simple-replies")])
+    }
+
 }

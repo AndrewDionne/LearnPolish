@@ -14,6 +14,19 @@ struct PracticeRecord: Codable {
     var nextReview: Date?
 }
 
+/// A lesson-specific resume cursor. An attempt, not navigation, is the only
+/// evidence of learning; this cursor is not itself a score or completion.
+struct LocalPracticeCursor: Codable {
+    let itemID: String
+    let mode: PracticeMode
+    let lastOpened: Date
+}
+
+struct LocalGuidedCursor: Codable {
+    let itemID: String
+    let lastOpened: Date
+}
+
 struct LocalLearner: Codable {
     // A device-local record identifier, never a login or API credential.
     var localID = UUID()
@@ -32,6 +45,10 @@ struct LocalLearner: Codable {
     var lastLessonID: String?
     var lastItemID: String?
     var lastMode: PracticeMode?
+    // Optional for older device-local JSON and exported history:
+    // multiple sets can now be paused without overwriting one another.
+    var practiceCursors: [String: LocalPracticeCursor]?
+    var guidedCursors: [String: LocalGuidedCursor]?
     var records: [String: PracticeRecord] = [:]
     // Optional for backward-compatible loading of V3 profiles created before XP.
     var expedition: LocalExpedition?
@@ -265,13 +282,17 @@ struct LocalProgressBackup: Identifiable {
     /// Unlike an attempt, navigating never awards XP or proves comprehension.
     func rememberGuidedPosition(stepID: String, itemID: String) {
         guard let step = guidedFoundations.first(where: { $0.id == stepID }),
-              step.items.contains(where: { $0.id == itemID }),
-              profile.guidedStepID == nil || profile.guidedStepID == stepID,
-              profile.guidedStepID != stepID || profile.guidedItemID != itemID,
-              canSave else { return }
+              step.items.contains(where: { $0.id == itemID }), canSave else { return }
         var next = profile
-        next.guidedStepID = stepID
-        next.guidedItemID = itemID
+        // Every independently opened foundation set has its own resume point,
+        // while the sequential Continue cursor is left untouched by excursions.
+        var cursors = next.guidedCursors ?? [:]
+        cursors[stepID] = LocalGuidedCursor(itemID: itemID, lastOpened: Date())
+        next.guidedCursors = cursors
+        if next.guidedStepID == nil || next.guidedStepID == stepID {
+            next.guidedStepID = stepID
+            next.guidedItemID = itemID
+        }
         do {
             try persist(next)
             profile = next
@@ -279,6 +300,21 @@ struct LocalProgressBackup: Identifiable {
         } catch {
             saveError = "Guided lesson position could not be saved. Check available storage."
         }
+    }
+
+    var activeGuidedSteps: [GuidedFoundationStep] {
+        let cursors = profile.guidedCursors ?? [:]
+        return guidedFoundations.filter {
+            cursors[$0.id] != nil || $0.id == profile.guidedStepID
+        }.sorted {
+            (cursors[$0.id]?.lastOpened ?? .distantPast) >
+            (cursors[$1.id]?.lastOpened ?? .distantPast)
+        }
+    }
+
+    func guidedResumeItemID(for stepID: String) -> String? {
+        profile.guidedCursors?[stepID]?.itemID ??
+            (profile.guidedStepID == stepID ? profile.guidedItemID : nil)
     }
 
     /// Reaching the end advances the *navigation cursor* only. It does not
@@ -353,16 +389,47 @@ struct LocalProgressBackup: Identifiable {
     }
 
     func rememberPosition(lesson: Lesson, item: LessonItem, mode: PracticeMode) {
-        guard profile.lastLessonID != lesson.id ||
-              profile.lastItemID != item.id ||
-              profile.lastMode != mode else { return }
-        profile.lastLessonID = lesson.id
+        guard lesson.items.contains(where: { $0.id == item.id }),
+              lesson.availableModes.contains(mode), canSave else { return }
+        var next = profile
+        next.lastLessonID = lesson.id
         if coreJourney?.placements[lesson.id] != nil {
-            profile.lastCoreLessonID = lesson.id
+            next.lastCoreLessonID = lesson.id
         }
-        profile.lastItemID = item.id
-        profile.lastMode = mode
-        save()
+        next.lastItemID = item.id
+        next.lastMode = mode
+        var cursors = next.practiceCursors ?? [:]
+        cursors[lesson.id] = LocalPracticeCursor(itemID: item.id,
+                                                 mode: mode, lastOpened: Date())
+        next.practiceCursors = cursors
+        do {
+            try persist(next)
+            profile = next
+            saveError = nil
+        } catch {
+            saveError = "Lesson position could not be saved. Check device storage."
+        }
+    }
+
+    func practiceCursor(for lessonID: String) -> LocalPracticeCursor? {
+        if let cursor = profile.practiceCursors?[lessonID] {
+            return cursor
+        }
+        // Pre-upgrade local profiles have only the single legacy cursor.
+        if profile.lastLessonID == lessonID,
+           let id = profile.lastItemID, let mode = profile.lastMode {
+            return LocalPracticeCursor(itemID: id, mode: mode,
+                                       lastOpened: profile.firstOpened)
+        }
+        return nil
+    }
+
+    var activePracticeLessons: [Lesson] {
+        lessons.filter { practiceCursor(for: $0.id) != nil }
+            .sorted {
+                (practiceCursor(for: $0.id)?.lastOpened ?? .distantPast) >
+                (practiceCursor(for: $1.id)?.lastOpened ?? .distantPast)
+            }
     }
 
     /// nil = ungraded Speak attempt; never claims pronunciation success.

@@ -4,6 +4,7 @@ import SwiftUI
 /// Each activity writes progress against the ORIGINAL source item ID.
 struct GuidedFoundationsScreen: View {
     @EnvironmentObject private var learner: LocalLearningStore
+    @EnvironmentObject private var navigation: LearningNavigation
 
     private let stages = [
         "First words",
@@ -16,8 +17,8 @@ struct GuidedFoundationsScreen: View {
             ForEach(stages, id: \.self) { stage in
                 Section(stage) {
                     ForEach(learner.guidedFoundations.filter { $0.stage == stage }) { step in
-                        NavigationLink {
-                            GuidedPracticeScreen(step: step)
+                        Button {
+                            navigation.openPractice(.guided(step.id))
                         } label: {
                             HStack(spacing: 12) {
                                 Image(systemName: step.isGrammar ? "textformat.abc" : "character.book.closed")
@@ -228,8 +229,7 @@ struct GuidedPracticeScreen: View {
         .navigationTitle(step.title)
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
-            if learner.profile.guidedStepID == step.id,
-               let savedID = learner.profile.guidedItemID,
+            if let savedID = learner.guidedResumeItemID(for: step.id),
                let index = step.items.firstIndex(where: { $0.id == savedID }) {
                 itemIndex = index
             }

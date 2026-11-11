@@ -1,5 +1,18 @@
 # V3 execution ledger — GitHub is durable continuity
 
+## V3-UX01 — first owner iPhone review and Home / Library / Practice restructure (2026-11-11)
+
+**Owner direction:** Screenshots show a duplicated Home and Library flat lesson list, while learning activities are entered outside Practice and the separate four-way Learn/Listen/Read/Speak selector does not fit the approved pedagogy. The new target is recorded in [UX_LEARNING_ARCHITECTURE.md](UX_LEARNING_ARCHITECTURE.md).
+
+**Implemented tranche:** Home displays actual XP, items practised, due reviews, active sets, last practice, a single Continue-to-Practice action, and optional family connection status (not fake team XP). Library groups exact original CoreJourney placements into short collections of at most four lessons and displays real started/practised counts plus observed Learn recall accuracy only after a real answer; optional content is grouped under Extras. A shared tab coordinator starts selected Library lessons, guided lessons, Sound Lab and scenario collection inside Practice. Practice lists multiple independently resumable started sets plus scheduled reviews. New optional per-lesson and per-guided-step saved cursors are backward compatible with older local profiles; persistence is atomic and does not issue XP. Scheduled reviews do not hijack paused lesson positions. Expedition source map/XP unchanged.
+
+**Regression:** Four new native tests for two concurrently paused source lessons and restart, guided-step excursions, source-order/exact-ID grouped collections and nonfabricated scores, and Library-to-Practice navigation. Exact-commit CI pending.
+
+**Not completed in this tranche:** Three distinct authored Learn/Speak/Listen exercise designs (including genuine multiple-choice Learn, connected audio-comprehension Listen and verified multi-colour pronunciation scoring), a truly merged linear Journey 1, real connected team score snapshot on Home, Polish names optional content and Expedition geography enrichments. These are explicitly staged UX-02..UX-04; no invented Polish, media or fake assessment. PR #169 draft; keep V2 and hosted tester identities untouched.
+
+---
+
+
 ## V3-09D — triage of owner Xcode warnings versus right-ear audio (2026-11-11)
 
 **Owner Xcode screenshot:** PathToPolish builds, but Xcode Issues navigator shows an

@@ -57,3 +57,8 @@ Existing `v2/frontend`, `v2/server`, `docs/sets`, `docs/static`, `ptp_v2` Neon s
 ## Status of this tranche
 
 Record and implementation are proposed on a draft PR branch. Passing static validations does not prove SwiftUI Xcode compilation; report precisely which checks have and have not run.
+
+
+## Owner refinement, 2026-11-11: activity-centric learning
+
+The old per-card Learn/Listen/Read/Speak picker is an interim migration design and is superseded by the approved objective to curate a single sequence with distinct Speak (original audio + meaning + speaking feedback), Learn (vocabulary recognition/retrieval, optional flip card) and Listen (real dialogue comprehension). Home is a personal and optional team progress dashboard, not a course list; Library is browse-only and organized into small source-backed journeys plus Extras; Practice owns all started, paused and resumed activities. Only genuine results may appear as scores, and pronunciation grading requires independent acoustic/provider acceptance. See [UX_LEARNING_ARCHITECTURE.md](UX_LEARNING_ARCHITECTURE.md) for the current implementation phases and release gates.
