@@ -16,7 +16,7 @@ The course should choose when to assign each exercise. Learners should not have 
 
 **Home:** real local attempts, XP, due reviews, recent activity, started sessions, one Continue in Practice action, and optional team/family status. Never present an invented team score; group totals are server-authoritative and require voluntary authenticated connection.
 
-**Library:** browser for concise source-derived learning journeys, each up to four existing lessons, with number of lessons, started/practised counts, measured recall accuracy only when real Learn answers exist. Keep Sound Lab, scenarios, Polish names and other appropriate material clearly labelled Extras. Selecting a lesson switches to Practice.
+**Library:** browser for concise source-derived learning journeys, each up to four existing lessons, with number of lessons, started/practised counts, self-rated recall (the current legacy Got it / Needs practice evidence), clearly labelled; objective matching accuracy only after Learn quizzes are implemented. Keep Sound Lab, scenarios, Polish names and other appropriate material clearly labelled Extras. Selecting a lesson switches to Practice.
 
 **Practice:** owns all active exercises, multiple individually paused/resumed lessons and foundations groups, and due reviews. No credit for navigation, Play or Skip. Separate persisted cursors must survive force-quit and rereading Library.
 

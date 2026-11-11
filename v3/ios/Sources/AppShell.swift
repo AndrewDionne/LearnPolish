@@ -93,7 +93,7 @@ struct HomeScreen: View {
                     HStack(spacing: 12) {
                         homeMetric("\(learner.expedition.totalXP)", "Personal XP",
                                    icon: "star")
-                        homeMetric("\(learner.completedItems)", "Items practised",
+                        homeMetric("\(learner.attempts)", "Practice attempts",
                                    icon: "checkmark.circle")
                     }
                     HStack(spacing: 12) {
@@ -251,7 +251,7 @@ struct LibraryScreen: View {
                                     Text("\(progress.startedLessons) started")
                                     Spacer()
                                     Text(progress.recallPercentage.map {
-                                        "Recall accuracy \($0)%"
+                                        "Self-rated recall \($0)%"
                                     } ?? "Recall not assessed")
                                 }
                                 .font(.caption).foregroundStyle(.secondary)
@@ -299,7 +299,7 @@ struct JourneyCollectionScreen: View {
                 LabeledContent("Lessons practised",
                                value: "\(progress.practisedLessons) / \(progress.totalLessons)")
                 if let score = progress.recallPercentage {
-                    LabeledContent("Recall accuracy", value: "\(score)%")
+                    LabeledContent("Self-rated recall", value: "\(score)%")
                 } else {
                     Text("Recall not assessed yet")
                         .foregroundStyle(.secondary)
