@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: v3-native-${{ github.ref }}
+  group: v3-ondevice-speech-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
