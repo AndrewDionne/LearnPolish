@@ -1,99 +1,78 @@
 import SwiftUI
 
-/// Added to BOTH native Speak entry points. No service or check button is
-/// shown without an optional connected, verified server session.
-/// Consent is per take, initially OFF, and reset on re-recording/navigation.
+/// Pronunciation review is a core part of both native Speak flows. A finished
+/// microphone take is automatically evaluated on the iPhone, with no account,
+/// private service, provider permissions or cloud audio upload.
 struct NativeSpeechPracticePanel: View {
     let item: LessonItem
     @ObservedObject var audio: NativeAudio
     @Binding var feedback: NativeSpeechFeedback?
-    @EnvironmentObject private var speech: NativeSpeechSession
+    @EnvironmentObject private var reviewer: NativeOnDevicePronunciation
 
-    @State private var allowAzure = false
-    @State private var allowGroq = false
     @State private var busy = false
-    @State private var submittedGeneration: UUID?
+    @State private var attemptedGeneration: UUID?
     @State private var message: String?
     @State private var request: Task<Void, Never>?
 
     var body: some View {
-        Group {
-            if audio.usableRecording && !audio.isRecording {
-                if speech.isConnected {
-                VStack(alignment: .leading, spacing: 12) {
-                    Toggle("Send this take to Azure Speech", isOn: $allowAzure)
-                    Toggle("Send this take to Groq Whisper", isOn: $allowGroq)
-                    Text("Only this recording is sent, after you approve both providers. No audio, transcript or score is saved to your account.")
-                        .font(.footnote).foregroundStyle(.secondary)
-
-                    if submittedGeneration == nil {
-                        Button {
-                            checkPronunciation()
-                        } label: {
-                            Label(busy ? "Checking pronunciation…" : "Check my pronunciation",
-                                  systemImage: "waveform")
-                        }
+        VStack(alignment: .leading, spacing: 8) {
+            if audio.hasRecording && !audio.isRecording {
+                if busy {
+                    ProgressView("Reviewing your Polish pronunciation…")
+                    Text("The first review installs a Polish model on this iPhone if needed. After the initial download, analysis runs offline.")
+                        .font(.caption).foregroundStyle(.secondary)
+                } else if let message {
+                    Text(message).font(.footnote).foregroundStyle(.secondary)
+                    Button("Try pronunciation review again") { reviewRecording() }
                         .buttonStyle(.bordered)
-                        .disabled(!allowAzure || !allowGroq || busy)
-                    } else if busy {
-                        ProgressView("Checking pronunciation…")
+                        .disabled(!audio.usableRecording)
+                } else if let feedback {
+                    switch feedback {
+                    case .onDeviceRecognition:
+                        Text("Colour indicates how the original word matched local Polish speech recognition. The overall /100 is a recognition estimate, not calibrated syllable sound accuracy.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    case .inconclusive(let reason):
+                        Text(reason).font(.footnote).foregroundStyle(.secondary)
+                        Button("Try review again") { reviewRecording() }
+                            .buttonStyle(.bordered)
+                    case .blend:
+                        EmptyView()
                     }
-
-                    if let feedback {
-                        if case .inconclusive(let reason) = feedback {
-                            Text(reason)
-                                .font(.footnote).foregroundStyle(.secondary)
-                        }
-                    }
-                    if let message {
-                        Text(message).font(.footnote).foregroundStyle(.secondary)
-                    }
-                }
-                .onChange(of: audio.takeGeneration) { _, _ in
-                    clearForNewTake()
-                }
-                .onDisappear { clearForNewTake() }
-                } else {
-                    NavigationLink {
-                        NativeFamilyAccountScreen()
-                    } label: {
-                        Label("Enable pronunciation checking", systemImage: "waveform")
-                    }
-                    .font(.subheadline)
-                    Text("Optional adult account connection required. Recording and replay work offline; no score is generated without a real assessment.")
-                        .font(.footnote).foregroundStyle(.secondary)
                 }
             }
         }
+        .onAppear {
+            if audio.usableRecording { reviewRecording() }
+        }
+        .onChange(of: audio.usableRecording) { _, ready in
+            if ready { reviewRecording() }
+        }
+        .onChange(of: audio.takeGeneration) { _, _ in
+            clear()
+            if audio.usableRecording { reviewRecording() }
+        }
+        .onDisappear { clear() }
     }
 
-    private func checkPronunciation() {
-        guard !busy, submittedGeneration == nil, allowAzure && allowGroq,
-              speech.isConnected, let url = audio.recordingURL else { return }
+    private func reviewRecording() {
+        guard !busy, audio.usableRecording,
+              let file = audio.recordingURL else { return }
         let generation = audio.takeGeneration
-        let azure = allowAzure
-        let groq = allowGroq
-        submittedGeneration = generation
+        guard attemptedGeneration != generation || message != nil ||
+              feedback != nil else { return }
+        attemptedGeneration = generation
         busy = true
         feedback = nil
         message = nil
         request = Task { @MainActor in
             do {
-                // No serialized microphone buffer leaves the app until the
-                // user pressed Check with both consents. Conversion is local.
-                let wav = try await Task.detached(priority: .userInitiated) {
-                    try PronunciationWave.make(fromRecording: url)
-                }.value
-                guard !Task.isCancelled && audio.takeGeneration == generation else { return }
-                let result = try await speech.assess(item: item, wav: wav,
-                                                     approveAzure: azure,
-                                                     approveGroq: groq)
-                guard !Task.isCancelled && audio.takeGeneration == generation else { return }
+                let result = try await reviewer.assess(item: item, recording: file)
+                guard !Task.isCancelled, audio.takeGeneration == generation else { return }
                 feedback = result
             } catch {
-                guard !Task.isCancelled && audio.takeGeneration == generation else { return }
+                guard !Task.isCancelled, audio.takeGeneration == generation else { return }
                 message = (error as? LocalizedError)?.errorDescription ??
-                    NativeSpeechError.unavailable.errorDescription
+                    "Polish recognition was unavailable for this take."
             }
             if audio.takeGeneration == generation {
                 busy = false
@@ -102,13 +81,11 @@ struct NativeSpeechPracticePanel: View {
         }
     }
 
-    private func clearForNewTake() {
+    private func clear() {
         request?.cancel()
         request = nil
         busy = false
-        allowAzure = false
-        allowGroq = false
-        submittedGeneration = nil
+        attemptedGeneration = nil
         feedback = nil
         message = nil
     }
