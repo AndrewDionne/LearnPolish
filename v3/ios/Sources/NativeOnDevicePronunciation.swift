@@ -138,8 +138,10 @@ enum NativePronunciationTextAlignment {
         }
 
         let difference = distance[expected.count][heard.count]
-        let score = Int((100.0 * max(0.0, 1.0 -
-            Double(difference) / Double(max(expected.count, heard.count)))).rounded())
+        let maximumLength = Double(Swift.max(expected.count, heard.count))
+        let errorRatio = Double(difference) / maximumLength
+        let similarity = Swift.max(0.0, 1.0 - errorRatio)
+        let score = Int((similarity * 100.0).rounded())
         let parts: [NativeColourPart] = segments.enumerated().map { index, text in
             let weight = correct[index] + errors[index]
             let hint: NativeColourPart.Hint
