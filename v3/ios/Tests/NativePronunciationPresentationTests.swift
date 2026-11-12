@@ -32,6 +32,20 @@ import XCTest
             ])))
     }
 
+    func testLocalFeedbackUsesOneOriginalWordAndOneRecognitionScore() {
+        let result = NativePronunciationPresentation(
+            polish: "Dzień dobry",
+            feedback: .onDeviceRecognition(score: 78, parts: [
+                NativeColourPart(polish: "Dzień", hint: .close),
+                NativeColourPart(polish: " ", hint: .uncertain),
+                NativeColourPart(polish: "do", hint: .review),
+                NativeColourPart(polish: "bry", hint: .focus)
+            ]))
+        XCTAssertEqual(result?.score, 78)
+        XCTAssertEqual(result?.onDevice, true)
+        XCTAssertEqual(result?.segments.map(\.polish).joined(), "Dzień dobry")
+    }
+
     func testRealZeroAndHundredRemainDistinctFromMissingProviderEvidence() {
         let token = [NativeColourPart(polish: "Tak", hint: .review)]
         XCTAssertEqual(NativePronunciationPresentation(
