@@ -6,6 +6,7 @@ struct PathToPolishApp: App {
     // In-memory only. No implicit login or remote connection at first launch.
     @StateObject private var speech = NativeSpeechSession()
     @StateObject private var family = NativeFamilySession()
+    @StateObject private var onDevicePronunciation = NativeOnDevicePronunciation()
 
     var body: some Scene {
         WindowGroup {
@@ -13,6 +14,7 @@ struct PathToPolishApp: App {
                 .environmentObject(learner)
                 .environmentObject(speech)
                 .environmentObject(family)
+                .environmentObject(onDevicePronunciation)
         }
     }
 }
