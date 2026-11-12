@@ -1,3 +1,15 @@
+## V3-UX04B — core on-device Polish speech review, Family login removed (2026-11-12)
+
+**Owner iPhone finding:** The Speak entry point opened an optional Family login page with a private service URL, adult affirmation and password. This is unacceptable because pronunciation review is a core part of the program. The approved replacement has no service/account dependency.
+
+**Implemented in V3 native branch:** A shared, MIT-licensed **WhisperKit Core ML multilingual base model** handles Polish speech-to-text on-device. The first assessment may download the public model weights automatically; subsequent inference works locally. Both guided and core Speak cards automatically assess a completed, audio-quality-checked microphone take. They show **the single original Polish text with source-locked green/orange/red/neutral segment colours and one /100 recognition agreement estimate**. User can record, replay, retry or continue; no Family login, private service URL, Azure/Groq consent form, provider credentials or remote audio upload. Failed model setup shows a real retry message rather than fabricated scores. The old login screen was deleted and Home/Progress no longer link to it. Legacy Neon/Render/family storage remains untouched.
+
+**Measurement boundary:** Colour is mapped from actual *local Polish recognition transcript edit alignment* to original authored segments (or only whole source words where authored segments are missing); numeric score is overall normalized text agreement. This is NOT independently calibrated acoustic syllable scoring, and no phoneme percentages are invented. No transcript/assessment is persisted or sent off-device. The only network operation is an initial, non-account public model download if weights are not cached.
+
+**Tests / gates:** New native tests cover real exact Polish transcript recognition, misrecognition, blank results, Polish diacritics and source-preserving fallback. GitHub Mac Simulator + Swift Package resolution and real iPhone first model download, Airplane Mode second take, playback/recording quality and acoustic validity must be checked. Green Simulator tests are not equivalent to physical validation. Keep draft PR #169 open and defer curriculum work until this physical review.
+
+---
+
 # V3 execution ledger — GitHub is durable continuity
 
 ## V3-UX04A — tab-purpose UI audit and source-validated multicolour pronunciation presentation (2026-11-11)
