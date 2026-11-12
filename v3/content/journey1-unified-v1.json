@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 1,
+  "editorialStatus": "source-mapped_unified_navigation_not_independently_linguistic_reviewed",
+  "notes": "One source-backed native Journey 1 sequence; no claim of full word, inflection or phonetic prerequisite closure. Do not manufacture Polish text, lesson IDs, recordings or grades. Existing V2 CoreJourney pilot stays unchanged.",
+  "chapters": [
+    {
+      "id": "first-words",
+      "title": "First words",
+      "description": "Yes and no, politeness, introductions",
+      "activities": [
+        "g:simple-replies",
+        "g:politeness",
+        "g:greetings"
+      ]
+    },
+    {
+      "id": "polish-sounds",
+      "title": "Polish sounds",
+      "description": "Hear and practise the original sound contrasts",
+      "activities": [
+        "l:contrast_l_lstroked",
+        "l:contrast_c_cz_cie",
+        "l:contrast_s_sz_sie",
+        "l:contrast_z_zh_zi",
+        "l:contrast_krzy_przy"
+      ]
+    },
+    {
+      "id": "basic-vocabulary",
+      "title": "Everyday vocabulary",
+      "description": "Places, transport, replies and original first conversation",
+      "activities": [
+        "g:street-words",
+        "g:transport-words",
+        "g:everyday-replies",
+        "l:Conversation_1",
+        "l:numbers_1-20"
+      ]
+    },
+    {
+      "id": "first-sentences",
+      "title": "First sentences and grammar",
+      "description": "Polite requests, location, permission, prices and negation",
+      "activities": [
+        "g:grammar:requests",
+        "g:grammar:where",
+        "g:grammar:permission",
+        "g:grammar:prices",
+        "g:grammar:yes-no-questions",
+        "g:grammar:negative",
+        "g:grammar:one-two"
+      ]
+    },
+    {
+      "id": "put-it-together",
+      "title": "Understand and respond",
+      "description": "Original short exchanges, food and shopping",
+      "activities": [
+        "l:Basic_01R",
+        "g:food-requests",
+        "g:shopping-questions",
+        "g:location-questions"
+      ]
+    },
+    {
+      "id": "everyday-one",
+      "title": "Everyday Polish · 1",
+      "description": "Numbers, places, shopping and ordering",
+      "activities": [
+        "l:Numbers_20-100",
+        "l:Road_Terminology",
+        "l:Conversation_-_shopping",
+        "l:Conversation_-_restaurant"
+      ]
+    },
+    {
+      "id": "everyday-two",
+      "title": "Everyday Polish · 2",
+      "description": "Food, getting around, transit and health",
+      "activities": [
+        "l:Food_and_Dinning",
+        "l:Getting_Around_1",
+        "l:Transit_1",
+        "l:Emergencies_and_Health"
+      ]
+    },
+    {
+      "id": "real-conversations",
+      "title": "Practical conversations",
+      "description": "Original tram and museum interactions",
+      "activities": [
+        "l:On_the_tram_talking_to_another_passenger",
+        "l:Asking_the_tram_driver_for_directions",
+        "l:Museum_buying_tickets_and_basic_info"
+      ]
+    }
+  ]
+}
