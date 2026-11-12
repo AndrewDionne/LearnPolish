@@ -45,7 +45,8 @@ struct NativeColourPart: Equatable {
     let hint: Hint
 }
 enum NativeSpeechFeedback: Equatable {
-    case blend(score: Int, parts: [NativeColourPart])
+    case blend(score: Int, parts: [NativeColourPart]) // Retain legacy decoder parity.
+    case onDeviceRecognition(score: Int, parts: [NativeColourPart])
     case inconclusive(String)
 }
 
