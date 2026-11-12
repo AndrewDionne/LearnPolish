@@ -215,3 +215,8 @@ without sign-in; optional adult verified connection is discoverable directly
 from Speak without mandating authentication on launch. Main vs guided Speak
 must use the same presentation. Keep PR #169 draft until owner physical
 headphone/recording/provider/UI review, not simply green simulator CI.
+
+
+## Owner override — 2026-11-12: pronunciation is first-class without an account
+
+Supersedes the V3 requirement to connect an adult private family account and separately opt into Azure/Groq as the user-facing route to basic pronunciation review. Every Speak exercise should play existing original Polish audio, record/replay on the iPhone, and automatically produce **source-grounded multicolour recognized-transcript feedback and one overall text-match estimate** from the real on-device multilingual speech recognizer. No Family form, service URL, user credentials, new accounts, remote speech providers or uploading personal recordings. A first model install can use public model hosting; subsequent inferences are offline. Transcript agreement is a useful first native review but is *not* independently proven phonetic/syllable acoustic grading. Genuine acoustic accuracy calibration remains separately outstanding. Preserve the old backend/family accounts; remove sign-in screens from the current native learning flow.
