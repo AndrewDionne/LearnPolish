@@ -64,10 +64,7 @@ struct PracticeDestinationScreen: View {
 
 struct HomeScreen: View {
     @EnvironmentObject private var learner: LocalLearningStore
-    @EnvironmentObject private var family: NativeFamilySession
     @EnvironmentObject private var navigation: LearningNavigation
-    @State private var teamSummary: NativeFamilySummary?
-    @State private var teamLoading = false
 
     private var latestActivity: Date? {
         learner.profile.records.values.compactMap(\.lastAttempt).max()
@@ -189,44 +186,6 @@ struct HomeScreen: View {
                     .background(.quaternary.opacity(0.25),
                                 in: RoundedRectangle(cornerRadius: 16))
 
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Family progress").font(.headline)
-                        if family.isConnected {
-                            if let teamSummary {
-                                HStack {
-                                    VStack(alignment: .leading, spacing: 3) {
-                                        Text(teamSummary.group.name)
-                                            .font(.subheadline.weight(.medium))
-                                        Text("This week's team XP")
-                                            .font(.caption).foregroundStyle(.secondary)
-                                    }
-                                    Spacer()
-                                    Text("\(teamSummary.totals.weekly_xp)")
-                                        .font(.title2.monospacedDigit().weight(.semibold))
-                                }
-                                Text("\(teamSummary.members.count) members · \(teamSummary.totals.regions_unlocked) regions unlocked")
-                                    .font(.footnote).foregroundStyle(.secondary)
-                            } else if teamLoading {
-                                ProgressView("Loading connected group totals…")
-                            } else {
-                                Text("Group totals unavailable · open Family to refresh")
-                                    .font(.footnote).foregroundStyle(.secondary)
-                            }
-                        } else {
-                            Text("Not connected · your learning stays private")
-                                .foregroundStyle(.secondary)
-                        }
-                        NavigationLink {
-                            NativeFamilyAccountScreen()
-                        } label: {
-                            Label(family.isConnected ? "View team progress" : "Optional family connection",
-                                  systemImage: "person.2")
-                        }
-                    }
-                    .padding(16)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(.quaternary.opacity(0.25),
-                                in: RoundedRectangle(cornerRadius: 16))
                 }
                 if let error = learner.saveError {
                     Label(error, systemImage: "exclamationmark.triangle")
@@ -237,33 +196,6 @@ struct HomeScreen: View {
         }
         .navigationTitle("Home")
         .navigationBarTitleDisplayMode(.inline)
-        .task(id: family.connectedAt) {
-            await loadTeamSummary()
-        }
-        .refreshable {
-            await loadTeamSummary()
-        }
-    }
-
-    private func loadTeamSummary() async {
-        teamSummary = nil
-        guard family.isConnected, let group = family.groups.first else {
-            teamLoading = false
-            return
-        }
-        teamLoading = true
-        do {
-            // Read-only server-authoritative group values ONLY after voluntary
-            // adult login; never substitute the unshared local XP balance.
-            let result = try await family.loadSummary(for: group)
-            guard !Task.isCancelled, family.isConnected,
-                  family.groups.contains(group) else { return }
-            teamSummary = result
-        } catch {
-            // No fake fallback score and no private error detail in Home.
-            teamSummary = nil
-        }
-        teamLoading = false
     }
 
     private func homeMetric(_ value: String, _ label: String,
@@ -661,11 +593,11 @@ struct ProgressScreen: View {
                 Text("Personal XP is distinct from optional server-authoritative family scores.")
                     .font(.footnote).foregroundStyle(.secondary)
             }
-            Section("Data and account") {
+            Section("Data and backups") {
                 NavigationLink {
                     NativeDataAndAccountScreen()
                 } label: {
-                    Label("Storage, backup and family connection",
+                    Label("Storage and local backups",
                           systemImage: "person.crop.circle")
                 }
             }
@@ -765,17 +697,8 @@ struct NativeDataAndAccountScreen: View {
                     Text(storageMessage).font(.footnote).foregroundStyle(.secondary)
                 }
             }
-            Section("Optional family") {
-                NavigationLink {
-                    NativeFamilyAccountScreen()
-                } label: {
-                    Label("Family connection and weekly scores", systemImage: "person.2")
-                }
-                Text("An account is not needed to learn. Family connection is voluntary; personal progress stays on this iPhone.")
-                    .font(.footnote).foregroundStyle(.secondary)
-            }
         }
-        .navigationTitle("Data and account")
+        .navigationTitle("Data and backups")
         .fileExporter(isPresented: $showExporter, document: exportDocument,
                       contentType: .json, defaultFilename: "PathToPolish-Progress") { result in
             switch result {
