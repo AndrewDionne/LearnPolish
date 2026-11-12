@@ -1,27 +1,32 @@
 import SwiftUI
 
-/// A single source-matched, consented provider result. The overall blended
-/// number is experimental; colour is the Whisper transcript-alignment hint,
-/// NOT a made-up acoustic percentage for any individual syllable.
+/// Shows genuine source-bound feedback. An on-device /100 number estimates
+/// speech-to-text agreement, never calibrated acoustic syllable performance.
 struct NativePronunciationPresentation {
     let score: Int
     let segments: [NativeColourPart]
+    let onDevice: Bool
 
     init?(polish: String, feedback: NativeSpeechFeedback?) {
-        guard case .blend(let score, let segments) = feedback,
-              (0...100).contains(score),
-              !segments.isEmpty,
-              segments.map(\.polish).joined() == polish
-        else { return nil }
+        let score: Int
+        let segments: [NativeColourPart]
+        let local: Bool
+        switch feedback {
+        case .blend(let value, let parts):
+            score = value; segments = parts; local = false
+        case .onDeviceRecognition(let value, let parts):
+            score = value; segments = parts; local = true
+        default:
+            return nil
+        }
+        guard (0...100).contains(score), !segments.isEmpty,
+              segments.map(\.polish).joined() == polish else { return nil }
         self.score = score
         self.segments = segments
+        self.onDevice = local
     }
 }
 
-/// One original Polish prompt. When a genuinely validated blended assessment
-/// arrives, the original segments become coloured text with a thin gap and the
-/// one overall score appears directly underneath. No coloured boxes, legend,
-/// per-syllable invented scores, duplicated word, or fake no-login estimate.
 struct NativeSpeechWord: View {
     let polish: String
     let feedback: NativeSpeechFeedback?
@@ -39,8 +44,9 @@ struct NativeSpeechWord: View {
                 Text("\(result.score)/100")
                     .font(.title3.monospacedDigit().weight(.semibold))
                     .foregroundStyle(.primary)
-                    .accessibilityLabel(
-                        "Experimental overall pronunciation estimate \(result.score) out of 100")
+                    .accessibilityLabel(result.onDevice
+                        ? "On-device Polish speech recognition match \(result.score) out of 100"
+                        : "Experimental overall pronunciation estimate \(result.score) out of 100")
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
