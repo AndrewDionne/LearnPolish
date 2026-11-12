@@ -11,6 +11,7 @@ struct NativePronunciationPresentation {
         let score: Int
         let segments: [NativeColourPart]
         let local: Bool
+        guard let feedback else { return nil }
         switch feedback {
         case .blend(let value, let parts):
             score = value; segments = parts; local = false
