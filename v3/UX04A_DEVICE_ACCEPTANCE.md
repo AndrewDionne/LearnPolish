@@ -1,3 +1,22 @@
+# UX-04B device review: first-class native pronunciation, no login
+
+**This section supersedes prior UX-04A instructions to connect a verified adult family account for pronunciation.** The native Speak lesson now owns reference playback, record, replay and automatic local Polish recognition feedback directly.
+
+## Phone acceptance steps
+
+- [ ] Open the five tabs; none leads to the prior Family URL/email/password form as a prerequisite for learning.
+- [ ] Choose an original source-backed Speak card, play the Polish MP3 and see the existing English meaning.
+- [ ] Record and stop. On first use the app may download the multilingual Polish model over Wi-Fi, automatically, with no account. Inspect errors and retry if model installation is unavailable.
+- [ ] With a recognized take, the **original word text** changes colour by source segment and one /100 **recognition-agreement estimate** appears directly beneath it. Missing recognition must not create a score.
+- [ ] Record a deliberately different utterance and confirm coloured segments and score respond to the changed *recognized transcript*.
+- [ ] After first model install, switch to Airplane Mode and complete another scored take. There should be no speech network request or sign-in.
+- [ ] Repeat across both guided and original core Speak; new takes and navigation must clear stale feedback.
+- [ ] Test speaker/headphones, two lesson resumes, Home activity and Progress totals, as well as playback latency. Record any existing right-channel issue separately.
+
+**Important:** It is a real, entirely on-device speech-to-text match system, not yet validated acoustic Polish phoneme/true syllable scoring. This remains an iPhone beta acceptance gate, not certified accuracy.
+
+---
+
 # V3 UX-04A — iPhone UI/UX and pronunciation acceptance
 
 **Owner priority (2026-11-11):** Validate all five navigation-tab responsibilities and the source-matched coloured-word + single overall-score experience **before** another curriculum tranche. This is an owner/device acceptance guide, not proof that a physical test has happened.
