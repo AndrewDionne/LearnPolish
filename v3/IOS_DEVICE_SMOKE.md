@@ -1,5 +1,7 @@
 # V3 iPhone acceptance — first device build
 
+**2026-11-12 UX-04B priority:** The Family login has been removed from the V3 learning UI. Every Speak card now automatically runs **on-device Polish speech recognition** after a usable recording. A one-time public model download may be necessary; later scoring runs offline and does not require a private service, account, provider permission or audio upload. The coloured source portions and /100 number report **recognized-transcript agreement**, NOT calibrated syllable sound quality. See [current dedicated review](UX04A_DEVICE_ACCEPTANCE.md) for the owner-approved physical test. Historical checklist lines below remain for local playback/navigation parity where still applicable.
+
 **Status:** first physical test is recommended as soon as the exact-head native
 Simulator CI is green. The app is functional and local-first; this is a
 **functional beta / discovery test**, not a release candidate or editorial
@@ -59,8 +61,12 @@ family entitlements to get this offline test working.
   primary Continue stays on the original current lesson; repeat after force-quit
 - [ ] In Library, open original course lesson and Listen / Learn / Read as
   available; verify correct original phrase, translation and sound
-- [ ] Speak: request microphone permission only on deliberate record,
-  record/replay **locally**, check no fabricated Azure/Whisper score
+- [ ] Speak: request microphone permission only on deliberate record;
+  record/replay **locally**, then automatically review with the on-device
+  multilingual Polish model. On the first try Wi-Fi may be needed to
+  download model weights. After that, turn on Airplane Mode and confirm
+  genuine coloured-source transcript review and one /100 match score.
+  Never display a made-up score if recognition is unavailable.
 - [ ] Complete a short source lesson; force-quit, relaunch, check local
   progress and daily review remained intact and accurate
 - [ ] Open Practice, review a due word, confirm correct/incorrect feedback
@@ -85,7 +91,7 @@ Do **not** send secrets or family tester activation files.
   now supplies one Continue route, but the historical catalog has overlaps;
   original Learn records prevent copying identities or treating repetition
   as new source content. This is not a claim of certified prerequisite closure.
-- Real acoustic syllable-scoring calibration, privacy/guardian approvals
+- Independent real acoustic syllable-scoring calibration and device-model quality tests; the current word-colour response is an on-device recognition-alignment proxy, privacy/guardian approvals
 - Private CloudKit entitlement, manual service acceptance, two-device
   concurrency or automatic sync; hosted family sign-in/leaderboard smoke
 - Multi-device performance, battery, crash and store-distribution validation
