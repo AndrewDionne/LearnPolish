@@ -36,8 +36,8 @@ import WhisperKit
         }
         let engine = try await readyModel()
         try Task.checkCancellation()
-        let options = DecodingOptions(language: "pl", detectLanguage: false,
-                                      temperatureFallbackCount: 0)
+        let options = DecodingOptions(language: "pl", temperatureFallbackCount: 0,
+                                      detectLanguage: false)
         let result = try await engine.transcribe(audioPath: recording.path,
                                                  decodeOptions: options)
         try Task.checkCancellation()
