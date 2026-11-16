@@ -6,7 +6,6 @@ umask 077
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 cd "$ROOT"
 export DEVELOPER_DIR="/Applications/Xcode.app/Contents/Developer"
-DEVICE="$@"
 if [[ $# -ne 1 || ! "$1" =~ ^[0-9A-Fa-f]{8}-[0-9A-Fa-f-]+$ ]]; then
   echo "Usage: bash v3/ios/scripts/Install-PathToPolish-Verified.command <physical-iPhone-UDID>" >&2
   xcrun devicectl list devices || true
@@ -17,7 +16,7 @@ for tool in xcodegen python3; do
   command -v "$tool" >/dev/null 2>&1 || { echo "Missing $tool" >&2; exit 2; }
 done
 if [[ ! -d "$DEVELOPER_DIR" ]]; then echo "Install full Xcode." >&2; exit 2; fi
-if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
+if [[ -n "$(git status --porcelain --untracked-files=all)" ]]; then
   echo "Tracked source is modified. Commit changes before a traceable physical build." >&2
   exit 2
 fi
@@ -41,8 +40,11 @@ r=matches[0]
 props=r.get("hardwareProperties") or {}
 name=str((r.get("deviceProperties") or {}).get("name",""))
 model=str(props.get("productType",""))
-if not (model.startswith("iPhone") or "iPhone" in name):
-    sys.exit("Refusing a non-iPhone destination.")
+if model:
+    if not model.startswith("iPhone"):
+        sys.exit("Refusing the selected non-iPhone hardware.")
+elif "iPhone" not in name:
+    sys.exit("Selected device is not identified as an iPhone.")
 PY
 echo "Building Path to Polish commit $SHA for physical iPhone $DEVICE"
 (cd v3/ios && xcodegen generate --spec project.yml)
