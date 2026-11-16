@@ -1,0 +1,60 @@
+name: V3 native iPhone build
+on:
+  pull_request:
+    paths:
+      - "v3/**"
+      - ".github/workflows/v3-ios.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: v3-ondevice-speech-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  native-build:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Compile source-locked curriculum and audit bundled MP3s
+        run: node v3/ios/scripts/prepare-assets.mjs
+      - name: Diagnose original Polish MP3 left-right channel balance
+        run: swift v3/ios/scripts/audit-reference-channels.swift v3/ios/Resources/generated/audio
+      - name: Verify square branded iPhone icon and Xcode asset registration
+        run: node --test v3/ios/scripts/verify-app-icon.test.mjs
+      - name: Verify native guided foundations and source-drift rejection
+        run: node --test v3/ios/scripts/prepare-guided.test.mjs
+      - name: Verify source-backed Journey 1 lexical first-use report
+        run: |
+          node v3/ios/scripts/audit-guided-lexicon.mjs --check
+          node --test v3/ios/scripts/audit-guided-lexicon.test.mjs
+      - name: Verify unified Journey 1 first-use and matching-option sequence
+        run: |
+          node v3/ios/scripts/audit-unified-first-use.mjs --check
+          node --test v3/ios/scripts/audit-unified-first-use.test.mjs
+      - name: Verify original alphabet and sound-audio source integrity
+        run: node --test v3/ios/scripts/prepare-sounds.test.mjs
+      - name: Verify source-first reading and listening preparation
+        run: node --test v3/ios/scripts/prepare-exposure.test.mjs
+      - name: Verify tourist scenarios and original audio identities
+        run: node --test v3/ios/scripts/prepare-tourist.test.mjs
+      - name: Generate project
+        working-directory: v3/ios
+        run: xcodegen generate --spec project.yml
+      - name: Build iPhone Simulator app
+        run: |
+          xcodebuild -project v3/ios/PathToPolish.xcodeproj -scheme PathToPolish \
+            -configuration Debug -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
+      - name: Run native curriculum and local persistence XCTest suite
+        run: |
+          SIM_ID="$(xcrun simctl list devices available -j | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>{const j=JSON.parse(s);const d=Object.values(j.devices).flat().find(x=>x.isAvailable && x.name.startsWith("iPhone")); if(d)process.stdout.write(d.udid);})')"
+          test -n "$SIM_ID" || { echo "No available iPhone simulator" >&2; exit 1; }
+          xcodebuild -project v3/ios/PathToPolish.xcodeproj -scheme PathToPolish \
+            -configuration Debug -destination "platform=iOS Simulator,id=$SIM_ID" \
+            CODE_SIGNING_ALLOWED=NO test

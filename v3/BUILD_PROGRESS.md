@@ -1,0 +1,481 @@
+## V3-UX04B — core on-device Polish speech review, Family login removed (2026-11-12)
+
+**Owner iPhone finding:** The Speak entry point opened an optional Family login page with a private service URL, adult affirmation and password. This is unacceptable because pronunciation review is a core part of the program. The approved replacement has no service/account dependency.
+
+**Implemented in V3 native branch:** A shared, MIT-licensed **WhisperKit Core ML multilingual base model** handles Polish speech-to-text on-device. The first assessment may download the public model weights automatically; subsequent inference works locally. Both guided and core Speak cards automatically assess a completed, audio-quality-checked microphone take. They show **the single original Polish text with source-locked green/orange/red/neutral segment colours and one /100 recognition agreement estimate**. User can record, replay, retry or continue; no Family login, private service URL, Azure/Groq consent form, provider credentials or remote audio upload. Failed model setup shows a real retry message rather than fabricated scores. The old login screen was deleted and Home/Progress no longer link to it. Legacy Neon/Render/family storage remains untouched.
+
+**Measurement boundary:** Colour is mapped from actual *local Polish recognition transcript edit alignment* to original authored segments (or only whole source words where authored segments are missing); numeric score is overall normalized text agreement. This is NOT independently calibrated acoustic syllable scoring, and no phoneme percentages are invented. No transcript/assessment is persisted or sent off-device. The only network operation is an initial, non-account public model download if weights are not cached.
+
+**Tests / gates:** New native tests cover real exact Polish transcript recognition, misrecognition, blank results, Polish diacritics and source-preserving fallback. GitHub Mac Simulator + Swift Package resolution and real iPhone first model download, Airplane Mode second take, playback/recording quality and acoustic validity must be checked. Green Simulator tests are not equivalent to physical validation. Keep draft PR #169 open and defer curriculum work until this physical review.
+
+---
+
+# V3 execution ledger — GitHub is durable continuity
+
+## V3-UX04A — tab-purpose UI audit and source-validated multicolour pronunciation presentation (2026-11-11)
+
+**Owner priority change:** Defer curriculum UX-03C2B to close the five navigation-tab roles and the multi-colour word/overall-score UI, then run another holistic real-device review. Latest predecessor UX-03C2A exact-head [CI #43035796414](https://github.com/AndrewDionne/LearnPolish/actions/runs/43035796414) PASS.
+
+**Actual UI modifications:** The Home dashboard shows today-local XP from real saved XP events, today-local practice attempts from the source practice journal, the last three actual original Polish activity phrases/modes/timestamps, due count, active session count and one Continue action. When the adult voluntarily connects an existing verified family account, Home loads the first connected group's **actual server-reported weekly XP, member count and unlocked-region total** read-only; errors show no invented fallback and pull-to-refresh is available. No unauthenticated network call or automatic XP share. Journal-less users see no made-up event. Library remains a browser; Journey 1 is directly searchable by its eight chapter/source-lesson names, and launching any source activity switches to Practice. The Practice tab retains multiple paused sets, due and optional reinforcement. Expedition's real local region map is retained. Progress now opens as personal chapter progress + objective (only genuine answered) matching accuracy + local XP/reviews rather than immediate backup controls; all sensitive data-management/import/erase and optional family settings are preserved in a nested Data and account screen, not deleted.
+
+**Actual scoring UX:** The validated combined Azure+Whisper feedback result still requires voluntary existing adult family login and separately checked per-take dual-provider consent. Once the private server returns exact source-bound `NativeSpeechFeedback.blend`, a single `NativeSpeechWord` now displays the one original Polish word with thin-spaced coloured transcript-proxy segments and **one /100 experimental overall blended score adjacent beneath it**. A new pure presentation model refuses nil, inconclusive, mismatched words or invalid numeric data. The duplicate score previously repeated in `NativeSpeechPracticePanel` is removed. Without a connected service, record/replay remains usable and the Speak flow offers a labelled optional connection path; no fake offline score, forced onboarding, saved microphone audio or unsupported per-syllable percentage.
+
+**Gates (verified 2026-11-11):** Native tests cover genuine journal-derived Home activity/XP, Library-to-Practice navigation with paused routes, restart history, exact-source pronunciation segment colours and absence of phantom scoring. **Implementation head `b3cb989dfd105db3b58e2cb7e694fd629e6f05b1` passed source/media checks, iPhone Simulator compilation and native XCTest in [Actions #43044266104](https://github.com/AndrewDionne/LearnPolish/actions/runs/43044266104).** See the dedicated [five-tab and scored-speech owner-device checklist](UX04A_DEVICE_ACCEPTANCE.md). Full physical review and live adult consented provider scoring are **NOT YET VERIFIED**. Original media, review/journal, 381-row source contracts and Neon/Render identities unchanged. Passing CI does **NOT** certify acoustic scoring or resolve the right-earphone issue.
+
+**Outstanding:** Live optional consented scoring exercise and colour review on actual iPhone, right-earphone/recording quality diagnostics, holistic five-tab owner review, then curriculum pronunciation accuracy + human first-use/grammar certification. Keep PR #169 draft and do not mark V3 production-ready.
+
+---
+
+
+## V3-UX03C2A — source-backed reinforcement and first-contact dialogue preparation (2026-11-11)
+
+**Prior verified gate:** UX-03C1 exact-head [Actions #43032450991](https://github.com/AndrewDionne/LearnPolish/actions/runs/43032450991) **SUCCESS** (original media/source audit, Simulator compilation and native XCTest).
+
+**Cross-chapter source retrieval:** Added `NativeJourneyReinforcementQueue` and `NativeJourneyReinforcementScreen`, accessible as a small optional **Reinforce earlier learning** activity in Practice only after actual source-backed progress through earlier Journey 1 chapters. Every eligible word is an exact original, genuinely attempted *vocabulary* `LessonItem` (audio present and not `practice_only`). A bounded 6-card deterministic queue deduplicates source IDs across guided/core repeats, prioritizes items lacking an objective match, objectively missed items, then older Learn timestamps; it never includes unattempted later-chapter source IDs or words seen only by Browse/Skip. Three answer choices are original English meanings that the learner has already practised in earlier chapters. Answer submission is the same atomic `.learn`+`Evidence.matching` source item used elsewhere, feeding the existing 1/3/7/14/30/60/90-day scheduler; Skip/Play earns no XP. This optional, user-initiated interleaving is NOT a replacement for calendar-scheduled Daily Review and no invented due times or fake scores are recorded.
+
+**Progress and numbers regression:** Unified Journey 1's **practised** metric now counts a saved original vocabulary Speak OR Learn attempt, rather than the old static mode. This prevents progress going backwards when a learner has legitimately introduced a word through Speak and it later becomes eligible for objective Learn. The original Numbers 1–20's **1–10 and 11–20 sections remain unchanged**, but first-unvisited section and first-unattempted item selection use actual source exposure, preventing recorded first-ten Speak words from repeatedly restarting the 1–10 section. None of this changes a learner's local record schema or previous attempts.
+
+**Connected-dialogue preparation:** `NativeDialoguePreparation` identifies source-authored scene turns with no saved Speak/Learn/Read/Listen practice, and the native dialogue screen offers an optional, ungraded disclosure of those exact original Polish/English lines. The learner can hear their unmodified MP3s through the existing turn controls and later answer the original contextual question; optional preparatory reading earns no attempt, XP or fabricated proficiency. The system cannot yet prove full contextual understanding or certify that pressing Play meant listening to a complete clip.
+
+**Tests and gates:** New native XCTest suites cover source fidelity, bounded/deterministic cross-chapter retrieval, actual-previous-chapter eligibility, unintroduced future content exclusion, atomic matching evidence/scheduled review and persistence after app restart, monotonic course progress, number subsections, original dialogue preparation without fake assessment and unchanged exact source identities. Exact-head GitHub Simulator and XCTest validation required before physical Xcode review. PR #169 remains draft. Original V2 recordings, private Neon/Render, tester identities and optional provider speech permissions unchanged.
+
+**Still open UX-03C2B:** Independent bilingual/inflection/phoneme review of all 381 source occurrences, approved author-level connected dialogue comprehension and seamless audio playback, more thoughtful periodic variation once calibrated, and physical right-earphone / microphone testing. This tranche improves reinforcement, not full curriculum certification.
+
+---
+
+
+## V3-UX03C1 — demonstrated exposure before first matching (2026-11-11)
+
+**Problem:** UX-03B fixed static later-card source option leaks, but merely placing options earlier in a lesson did not prove a learner had heard or practised them, particularly with Skip and multi-lesson resume. In addition, the static Learn cadence could put a first-time original phrase directly into an objective question without giving its meaning.
+
+**Implemented:** `NativeExercisePlan.introduced` checks existing keyed `speak:<original-item-id>` or historical `learn:<original-item-id>` attempts, not navigation or revealing English. `readyChoices` uses the exact target source gloss and two **distinct earlier original source meanings with actual prior attempts**. `mode(for:records:)` opens an unintroduced phrase in Speak even at a scheduled Learn position. On `Mark practised`, the first successful recorded Speak attempt commits atomically, then immediately transitions to objective Learn **on the same original item** only if the earlier meanings now qualify. The ordinary Next/Skip action never credits practice or bypasses a record-based matching gate; earlier unpractised words remain available without a new hard lock. Individual lesson cursors and original XP/attempt IDs are untouched.
+
+**Scheduled review fallback:** `NativeExercisePlan.reviewChoices` uses only previously practised source-item English alternatives, including already learned later source entries (appropriate for recall). With fewer than two distinct known meanings, the existing Learn review shows a clearly labelled **self-rated flip card**, not fictitious 3-choice accuracy. Cross-lesson daily review still relies on the existing due scheduler and retains self-rated semantics. Multiple new native XCTest cases validate first contact, skipped earlier cards, genuine record-backed same-card reinforcement, optional legacy self-rated exposure without fake objective evidence, scheduled-review distractor safety, per-lesson restart cursor and genuine XP events.
+
+**Proof:** Exact-head source, Simulator and native XCTest CI required. Prior UX-03B [run #43021754424](https://github.com/AndrewDionne/LearnPolish/actions/runs/43021754424) fully PASS. No V2 media, Neon/Render family data, identities or grammar/curriculum text rewritten.
+
+**Still outstanding:** Author-level Polish morphology/phonology and dialogue question prerequisites, deeper source-backed retrieval variation across sections, speech calibration and actual hardware-headphone/microphone acceptance. A record proves an attempted activity, **not correct pronunciation or lexical comprehension**.
+
+---
+
+
+## V3-UX03B — full original-source first-use audit and earlier-only Learn answers (2026-11-11)
+
+**Scope:** Source integrity across the complete 8-chapter, 35-activity Journey 1, not just the prior 16 guided groups. The single authored ordering is now a checked-in, status-labelled **`v3/content/journey1-unified-v1.json`** manifest. `prepare-assets.mjs` verifies all 16 exact guided IDs + 19 exact core Journey 1 IDs and produces a native bundle copy; `NativeUnifiedJourney` loads that same manifest at launch instead of maintaining a drifting second handwritten Swift copy. V2 core pilot metadata remains untouched.
+
+**Source inventory:** New reproducible `audit-unified-first-use.mjs` checks all original Polish text, English meanings and source MP3 identities at every position; `v3/JOURNEY1_UNIFIED_FIRST_USE.md` retains an item-by-item Pending audit plus chapter/lesson totals and matching-option review. Across 35 original activities there are **381 source occurrences**, **313 unique source item IDs**, **344 distinct NFC Polish-case-folded written forms at first encounter**, and **328 first non-sound-exposure written forms**. Crucially, the 26 sound-contrast examples are *not* automatically credited as lexical teaching. These are surface-word statistics, not lemmas, semantic coverage, correct inflection, syllables, speaker quality, or human-certified prerequisites.
+
+**Concrete sequencing defect caught and corrected:** The prior UX-02A source-only `NativePracticeRules.choices` looked across the entire source lesson for 3-option Learn distractors. Auditing the entire Journey 1 found **68 candidate early-question cards** that could disclose English translations from later cards. `NativeExercisePlan.choices` now constructs exact original-English choices **only from prior items within that same source lesson**. An item at index 1 has fewer than two earlier meanings and remains an original Speak introduction; index 4 can use two earlier taught meanings and an exact correct source gloss. No invented Polish, no manufactured distractors and no silent conversion of self-rated data to objective accuracy. Due/scheduled review remains separate. New native and Node tests assert that all introductory source matching options are earlier, source provenance is unchanged, and report drift fails CI. After remediation, the source-derived audit reports **zero potential future-card distractor cases under the static rule**. It does not assume that a learner never skips or that seeing a prior word proves comprehension.
+
+**CI:** Source preparation checks the single unified manifest before Swift launch; GitHub Actions compares the new **full 381-row first-use report** byte-for-byte to the original compiled V2 text and runs mutation/provenance/future-option Node regression tests, then iPhone Simulator compilation and full native XCTest suite. Exact-head status pending after commit. PR #169 remains draft; original source recordings, Neon/Render, CloudKit and tester accounts unchanged.
+
+**Outstanding UX-03C:** Independent Polish/English semantic, inflection and sound-first review for every first-seen form, explicit spaced review/variation and no-tested-before-taught validations across the full course, dialogue comprehension editorial quality, calibrated syllable pronunciation and original headset-route device testing. This report is an actionable human review queue, **not a certificate of zero learning gaps**.
+
+---
+
+
+## V3-UX03A — one source-validated Journey 1 replaces parallel guided / core Continue (2026-11-11)
+
+**Prior gate:** Native UX-02B fix `7d3f357` verified **SUCCESS**, exact-head [CI #43009611219](https://github.com/AndrewDionne/LearnPolish/actions/runs/43009611219). The wrong-answer objective-zero bug is covered by the rebuilt test suite.
+
+**Implementation:** New `NativeUnifiedJourney` materializes **8 navigation chapters / 35 original activities** from the authenticated inventories of 16 guided source-recorded groups and 19 Core Journey 1 legacy lessons. Every named ID is exact, mandatory and unique as an activity; each activity references only original source item IDs. Source-authoritative guided requires/introduces prerequisites must remain an ordered subset. Preserve original lesson/word IDs and recordings, including repeats across guided and core (original IDs reused, never reauthored). The five original sound contrast lessons are intentionally moved before a long first core conversation, an instructional change from the V2 *pilot* ordering; all 19 original Core Journey 1 lessons still appear once. The two Journey 2 placements and other supplements are excluded from Journey 1.
+
+**One route in SwiftUI:** Home "Continue your journey" now uses the **first activity without all genuine saved source attempts**, not the most recently opened core lesson. Library presents one Journey 1 browser with 8 smaller chapters, real per-chapter attempted counts and Matching accuracy only when objective source answer evidence exists. Additional Journey 2 and optional Extras remain separate. Practice shows the same recommended next step; session-end Next links cross guided groups, sound lessons, vocabulary, reading and core conversations using the same Practice navigation stack. The entire path is browseable, without hard locks or attempts/XP on Skip. Existing source IDs mean early exposure can count when an original source phrase is revisited later; no separate duplicate XP identity is introduced.
+
+**Integrity and tests:** Journey construction rejects source ID drift, missing chapters/steps, duplicate guided/core activity IDs and forward *named-concept* prerequisites. Six new native regression cases cover all 35 entries and 8 chapter sizes, original 55-reference provenance reuse, original vs extra identities, guided-to-sound/core navigation, "Skip is not mastery" across relaunch, legacy guided source recall handoff to sounds, and honest objective matching metrics. One existing Home progression test updated from the old parallel Core Journey route to the new intentional sound-first waypoint. Exact-head Xcode Simulator and XCTest CI required; draft PR #169.
+
+**Not yet linguistically certified:** Author-defined concept prerequisites do NOT prove complete Polish lexical, inflection, pronunciation and comprehension progression. Current first-use 74 surface forms cover only guided content; core first-use audit, manual bilingual review and deliberate repeated mixed-mode exercises across the entire source path remain UX-03B. Physical microphone/headphone testing, unverified syllable-colour ratings and team/Expedition work are separate gates. Do not claim production release or proficiency certification. No change to original V2 recordings, Neon/Render, family tester identities or existing private learner data.
+
+---
+
+
+## V3-UX02B — guided foundations use Speak introduction + genuine matching recap (2026-11-11)
+
+**Scope:** Following UX-02A exact-head CI PASS [#43000969910](https://github.com/AndrewDionne/LearnPolish/actions/runs/43000969910), converted the original 16 source-verified guided first words / basic vocabulary / grammar groups away from reveal-and-self-rate cards. Each guide introduces all original recorded phrases via Speak: authentic MP3, original Polish and English meaning, original grammar cue/focus, local microphone recording/replay, optional consent-gated Azure/Whisper experimental assessment. Only a real usable recorded take can commit a source-original `.speak` attempt. Playback alone, Skip, navigation or revealing English earns no credit.
+
+**Recall:** After introduction, source groups with three distinct English translations gain a second Learn pass with exactly 3 original same-group source glosses. No invented Polish or synthetic distractors; the two-word *Tak/Nie* opening group remains Speak-only until valid additional prior vocabulary exists. Objective answers are committed under original `learn:<item-id>` with `Evidence.matching`, tracked separately from legacy learner self-ratings. The existing guided order, grammar examples and named source refs are unchanged; 68 occurrences still reference 55 unique original recorded items.
+
+**Resume and compatibility:** Optional `GuidedExercisePhase` in the existing per-step local cursor preserves independent introduction vs recap positions across app relaunch; older saved local progress decodes with an introduction default. Previously self-rated Learn evidence still counts as historical participation but cannot be reported as an objective test. Guided counts, prerequisite review hints, and Home's next-step suggestion now recognize real Speak attempts and pending objective matching. Local restore checks step ID, item ID and finite cursor date. Earlier 16-step navigation skip behavior is retained without awarding attempts/XP.
+
+**CI correction (same tranche):** Initial [#43008281306](https://github.com/AndrewDionne/LearnPolish/actions/runs/43008281306) compiled the iPhone Simulator and executed 208 XCTest cases, but 1 test caught a legitimate mismatch: when a learner answers a new objective matching question incorrectly, the record held `objectiveAttempts=1` with `objectiveCorrect=nil`, rather than the measured explicit zero. This is a model/UX ambiguity, not a source error. Corrected both atomic persistence and deterministic journal replay to store explicit `objectiveCorrect=0` for real wrong answers; nil continues to mean *no objective assessment at all* on historical records. The new exact-head CI must pass before the physical test build.
+
+**Regression:** New native source tests cover all 16 × 68 original references and available recordable modes, two-item fallback with zero invented distractors, exact same-step three-option matching, recorded objective evidence and legacy nonobjective data, and independent persisted recap cursor. Exact-head Simulator and XCTest CI required. PR #169 stays draft. Source recordings and V2/Neon/Render/family identities unchanged.
+
+**Remaining:** source-reviewed connected dialogue playback; a fully authored mixed, prerequisite-checked Journey 1 rather than provisional source order; real-device headphone routing validation; calibrated per-syllable pronunciation feedback, optional team and Expedition UX. These are separate gates, not claims of completion.
+
+---
+
+
+## V3-UX02A — integrated Speak, Learn matching, and authentic dialogue Listen (2026-11-11)
+
+**Product change:** The old per-card four-way mode selector is removed from the ordinary LessonScreen. The source-backed practice plan picks a deterministic early mixed sequence: first original greeting (*Dzień dobry*) and sound contrasts use Speak (original recorded Polish, English meaning, local record/replay and optional consented speech feedback), while selected subsequent vocabulary items use Learn with exactly three original same-lesson English translations and a source-grounded correct answer. An optional flip card is visibly ungraded and revealing its meaning makes that card ineligible for scored matching. Review entry points keep separate explicit source-backed semantics.
+
+**True Listen:** The exact three pre-existing authored micro-dialogues compiled by V2 are now projected into Swift and validated against their original source item IDs and audio. Opening those reading sets in Practice shows speakers/turn playback and actual authored contextual questions; a submitted answer records under the original source item with `.listen`, not a fabricated phrase or synthesized voice. Reading lessons without such authored exchanges remain reading, not mislabelled dialogue comprehension. Turn-by-turn playback is real, but contiguous full-conversation playback is a follow-up.
+
+**Evidence and honest scoring:** New optional `NativePracticeEvent.Evidence` tags distinguish objective `.matching` and `.dialogue` responses from historical user self-rating (nil). The append-only journal, projection, backward-compatible `PracticeRecord` optional objective counters, archive validation and recall collection show genuinely measured **Matching accuracy** only if a matching answer exists; otherwise **Self-rated recall** remains distinctly labelled. No graded points merely for listening, revealing a translation or navigating. Real provider pronunciation remains optional/experimental and not fabricated.
+
+**Verification:** New native tests cover Speak-first/alternating matching plan, original translation distractors, true authored dialogue inventory, ungraded navigation, objective-vs-self rated score distinction, journal reconstruction and restart. Exact-head macOS Simulator/XCTest CI required before asking for physical Xcode rebuild; draft PR #169. No changes to V2 source recordings, production backend, CloudKit, guardian gates or existing testers.
+
+**Still open UX-02B and UX-03:** Adapt 16 guided foundation steps to the new exercise model, introduce continuous original conversation playback, expand human-reviewed genuine dialogues, and replace provisional cadence with an editorial prerequisite-checked mixed exercise sequence across all source Journeys. Do not claim all modes or bilingual/acoustic evaluation complete.
+
+---
+
+
+## V3-UX01 — first owner iPhone review and Home / Library / Practice restructure (2026-11-11)
+
+**Owner direction:** Screenshots show a duplicated Home and Library flat lesson list, while learning activities are entered outside Practice and the separate four-way Learn/Listen/Read/Speak selector does not fit the approved pedagogy. The new target is recorded in [UX_LEARNING_ARCHITECTURE.md](UX_LEARNING_ARCHITECTURE.md).
+
+**Implemented tranche:** Home displays actual XP, items practised, due reviews, active sets, last practice, a single Continue-to-Practice action, and optional family connection status (not fake team XP). Library groups exact original CoreJourney placements into short collections of at most four lessons and displays real started/practised counts plus clearly labelled self-rated Learn recall only after a genuine learner rating (not objective quiz accuracy); optional content is grouped under Extras. A shared tab coordinator starts selected Library lessons, guided lessons, Sound Lab and scenario collection inside Practice. Practice lists multiple independently resumable started sets plus scheduled reviews. New optional per-lesson and per-guided-step saved cursors are backward compatible with older local profiles; persistence is atomic and does not issue XP. Scheduled reviews do not hijack paused lesson positions. Expedition source map/XP unchanged.
+
+**Regression:** Four new native tests for two concurrently paused source lessons and restart, guided-step excursions, source-order/exact-ID grouped collections and nonfabricated scores, and Library-to-Practice navigation. Exact-commit CI pending.
+
+**Not completed in this tranche:** Three distinct authored Learn/Speak/Listen exercise designs (including genuine multiple-choice Learn, connected audio-comprehension Listen and verified multi-colour pronunciation scoring), a truly merged linear Journey 1, real connected team score snapshot on Home, Polish names optional content and Expedition geography enrichments. These are explicitly staged UX-02..UX-04; no invented Polish, media or fake assessment. PR #169 draft; keep V2 and hosted tester identities untouched.
+
+---
+
+
+## V3-09D — triage of owner Xcode warnings versus right-ear audio (2026-11-11)
+
+**Owner Xcode screenshot:** PathToPolish builds, but Xcode Issues navigator shows an
+outdated Bluetooth option, four Swift trailing-closure style warnings in the
+practice journal, an orientation warning and a project recommended-settings
+prompt. These are warnings, **not app runtime or audio-route errors**. They
+cannot identify the cause of the headphone-only audio complaint.
+
+**Compatibility correction:** Xcode 16.4 / bundled older iOS SDK in GitHub Actions
+does not define the newly documented `.allowBluetoothHFP` spelling:
+[run #42930241986](https://github.com/AndrewDionne/LearnPolish/actions/runs/42930241986)
+failed at compile time. Revert **only** that spelling to the previous
+`.allowBluetooth` to preserve known-good HFP recording support on the
+installed toolchain. The *deprecation warning* is not an audio defect and
+remains tracked until CI and the owner are on a compatible Apple SDK.
+No native routing or consent behavior changes.
+
+**Original intended fix:** The capture-only `playAndRecord` Bluetooth HFP option now uses
+the newer `.allowBluetoothHFP` name (later reverted for Xcode 16.4 SDK compatibility); the four journal `map` guard
+expressions use parenthesized closure arguments. Functional behavior of
+audio, practice, scoring and consent is unchanged. The orientation and
+recommended-settings advisories are deliberately left for separate UI /
+build-setting review rather than blindly changing device behavior.
+
+**Better physical diagnosis:** In DEBUG builds, Home now exposes
+**Audio check · test headphones** prominently at the top of the page, rather
+than burying it among curriculum links. The diagnostic reports the selected
+tone and whether the actual playback engine started successfully, as well
+as the audio port type, channel count and category. On failure, the DEBUG
+Xcode console also records a concise error. No audio-source files changed.
+These data distinguish an app playback failure from right-only routing; do
+not infer the root cause from the Xcode warning list alone.
+
+**Gate:** Exact-commit simulator and XCTest must pass before installing an
+updated build. Owner must then test Left, Right and Both and report the
+actual ears plus displayed route. PR #169 stays draft.
+
+---
+
+
+## V3-09C — isolated on-device channel probe following source MP3 analysis (2026-11-11)
+
+**Hard result from [V3-09B Actions #42923919256](https://github.com/AndrewDionne/LearnPolish/actions/runs/42923919256):** CI **SUCCESS**. The read-only AVFoundation source check found 455 available original MP3s and decoded 84 representative files (including first-guided examples): **84/84 mono, 0 stereo, 0 decoding failures**. These clips have NO source right-only stereo channel to fix by rewriting MP3s. Owner independently found normal two-ear playback in other iPhone apps, and the iPhone's Mono Audio accessibility switch did not change the one-ear behavior in Path to Polish. Therefore source stereo downmix/transcoding is **not justified** until real output routing is measured.
+
+**Native diagnostic:** A `#if DEBUG` only Home → **Audio check (developer build)** view now sends generated stereo PCM with known Left-only, Right-only and identical Both signals through the **same serialized NativeAudioEngine as lesson recordings**. It shows only the active `AVAudioSession` output **port type**, channel count and category—no device or person names, network, recording or server. The normal playback debug console logs original `AVAudioPlayer.numberOfChannels`, centred `pan = 0`, route type and active output channels. Three pure PCM XCTest cases assert left/right isolation and identical dual-channel test data. Production interface is unchanged; no original MP3, phonetic score, learner data or server altered.
+
+**Owner retest:** Disable iPhone **Mono Audio** (temporarily, to make left/right probes meaningful). In new DEBUG Xcode build open Home → Audio check. Play Left only, Right only and Both using the same earphones. Return to a Polish lesson and listen once. Report which ear(s) respond per probe plus the visible output route/active channel count (and Xcode `[PTP audio]` line if convenient). If Both is right-only, investigate actual output routing; if Both bilateral but original words right-only, inspect AVAudioPlayer mono→stereo mapping; if left/right probes are reversed or merged, investigate the selected audio output port. Hold any resampling or category changes until this direct evidence.
+
+**Verification gate:** Exact-head simulator compilation and XCTest must pass for this DEBUG diagnostic before a phone retest. PR #169 stays draft; GitHub is durable continuity.
+
+---
+
+
+## V3-09B — device headphone right-channel report: source-channel investigation (2026-11-11)
+
+**Owner hardware observation:** With the native audio thread fix installed, the Polish reference sounds appear to come from the **right earphone only**. This is a separate defect from the previous main-thread AVAudioSession warning. The current native AVAudioPlayer uses the normal centred stereo pan (no assignment to .pan), and playback requests the .playback output category; neither by itself explains a deliberately right-panned voice. Source MP3 channel content, phone Accessibility audio balance and Bluetooth output routing have not yet been independently isolated.
+
+**Read-only automated audit:** `v3/ios/scripts/audit-reference-channels.swift` now decodes a bounded representative sample of original-source MP3 assets on the macOS GitHub runner, including the first guided recordings. It reports original channel counts, left/right sample RMS and >12 dB imbalance outliers. No source MP3 is modified, no new recordings or generated audio are introduced, and no new production setting changes. This is diagnostic evidence, not a completed phone-audio fix.
+
+**Owner quick check:** On the physical iPhone with the same earphones, verify other media plays in both ears, centre **Settings → Accessibility → Audio & Visual → Balance** and temporarily enable **Mono Audio**; compare the same Path to Polish clip. This identifies a hardware/output setting versus original stereo imbalance without permanently changing the app. Do not claim a code/audio repair until the decoded source audit and owner playback observation agree.
+
+**Next:** If original MP3s are right-channel-only, prepare a *derived*, opt-in/native-only dual-mono playback copy or downmix with a regression gate while preserving the V2 originals and source IDs. If they are mono or balanced, investigate device output routing before adding unnecessary conversions. PR #169 remains draft.
+
+---
+
+
+## V3-09A — first physical iPhone finding: nonblocking audio hardware (2026-11-11)
+
+**Owner hardware evidence:** First V3 iPhone install succeeded, but original reference
+audio was not smooth. Xcode Main Thread Performance Checker showed
+`AVAudioSession.setCategory`, `setActive(true)` and
+`AVAudioPlayer.prepareToPlay` running synchronously from
+`LessonScreen.referenceControls` on Thread 1, with repeated hang-risk warnings.
+
+**Correction:** Original source-only MP3 identity and 0.75×/1× controls are
+unchanged. All audio-session configuration, playback preparation/start,
+recording setup/stop, and background teardown now run on one dedicated
+serial queue across screen controllers (AVAudioSession is process-global).
+Reference playback uses `playback` category without microphone activation;
+recording requests `playAndRecord` only after explicit microphone consent.
+The engine caches the configured mode and never waits for the audio system on
+the SwiftUI main thread. A playback generation rejects stale callbacks,
+and a take generation prevents old permission, recording or quality callbacks
+from resurrecting deleted sound. Source-recorded 10-second capture stops on
+the audio queue, independent of delegate run loop. A published
+`isStarting` state prevents rapid-tap duplicate microphone setup and gives
+visible progress while the hardware prepares; each screen's take file has
+its own private UUID. No automatic upload, scoring change, network
+requirement, or V2/server modification.
+
+**Regression:** Three native XCTest cases cover playback preparation
+and main-thread callbacks, recording-activation failure, and deliberately
+blocked hardware initialization that must never block the button handler.
+Physical retest: rapid Play/0.75×/1×, lesson switches, start/stop/replay,
+10-second auto-stop, iOS output routes and no Thread-1 audio warnings.
+[Device checklist](IOS_DEVICE_SMOKE.md) updated. This is a functional
+correction, not proof of acoustic/speaker quality until owner replay.
+
+**CI:** Previous branded app head
+[run #42914827203](https://github.com/AndrewDionne/LearnPolish/actions/runs/42914827203)
+was in XCTest at prior observation; exact V3-09A CI must pass before
+retesting. PR #169 remains draft and GitHub is source of truth.
+
+---
+
+
+## V3-08G — white-square branded iPhone app icon (2026-11-10)
+
+**CI correction:** Initial V3-08G run [#42914468893](https://github.com/AndrewDionne/LearnPolish/actions/runs/42914468893) failed during macOS icon preparation: a 24-bit AppKit bitmap allocation returned nil. The renderer now uses a four-byte aligned Core Graphics bitmap with the fourth byte explicitly unused, exported via ImageIO to an opaque PNG. This is a build-time fix, not a source-image change. Exact-head CI revalidation is required.
+
+**Implementation:** Locked the owner-approved Path to Polish geometric navy
+P, horizontal path and mint endpoint on a **full white square**, no pre-rounded
+corners or transparency. The source vector is versioned at
+`v3/ios/Brand/AppIcon.svg`; a dependency-free macOS Swift/AppKit renderer
+creates an **opaque 1024×1024 RGB PNG** during the existing source/media
+preparation. The single-size iOS asset catalog is named `AppIcon` and
+XcodeGen now explicitly registers it. The generated PNG is ignored in Git
+to avoid a second mutable copy of the branding. CI asserts PNG IHDR,
+asset catalog, source vector and Xcode setting before compiling the Simulator.
+
+**First owner device gate:** The phone icon is now part of the
+[isolated iPhone functional-beta checklist](IOS_DEVICE_SMOKE.md). The real
+iPhone still must show actual native rounding and correct brand visibility;
+a CI compile is not a physical phone witness. No legacy/V2 original audio,
+course source ID, account, service, cloud entitlement or production setting
+is changed. Previous V3-08F [CI #42822803571](https://github.com/AndrewDionne/LearnPolish/actions/runs/42822803571)
+**SUCCESS** including iPhone Simulator and XCTest; V3-08G exact-head
+verification pending at commit creation. PR #169 remains draft.
+
+---
+
+
+## V3-08F — one Home Continue path and iPhone device acceptance handoff (2026-11-10)
+
+**Implementation:** Native Home now has a **single** prominent Continue entry
+using existing guided vocabulary/grammar progress, then the original core
+course when every existing guided reference has at least one actual saved
+Learn attempt. Browsing Library and optional sound/scenario activities remains
+unrestricted. Original source item IDs and shared Learn/XP/review records are
+not duplicated. Core "resume next unseen" ignores stale item position after
+a voluntary Library visit, without replacing V2 course IDs or inventing any
+unapproved dependency. Two native XCTest cases cover anonymous first-run,
+all-skipped progression, 55 source-backed original-record attempts and restart
+without a login.
+
+**Device gate:** [first Xcode/iPhone acceptance checklist](IOS_DEVICE_SMOKE.md)
+provides an isolated Git worktree launch and exact offline/voice/review/restart
+observations. An initial physical functional-beta test is now recommended
+after exact-head Simulator CI, **before** full curricular editorial/cloud
+release completion. No credentials, Apple cloud entitlements or backend
+changes. Prior V3-08E [CI #42820424132](https://github.com/AndrewDionne/LearnPolish/actions/runs/42820424132)
+**SUCCESS** — original audio/source checks, Simulator build, XCTest. The
+new V3-08F exact-head CI is pending at commit creation; PR #169 stays draft.
+
+---
+
+
+## V3-08E — guided lesson cursor integrity and unpractised completion feedback (2026-11-10)
+
+**Implementation:** Revisiting earlier prerequisites or exploring future foundation groups no longer overwrites the active guided Continue cursor. A guided item/step cursor is now persisted atomically **before** in-memory mutation; failed writes leave the original cursor intact and surface the existing storage error. Completing a group is navigation-only: it does not mark skipped phrases as learned or issue XP. The final screen reports the actual **N of M phrases practised** rather than claiming saved practice when all items were skipped, and offers **Revisit unpractised** to jump to the first original source phrase without manufacturing completion state. Voluntary free exploration and source-item identity are preserved.
+
+**Regression:** Four new XCTest cases for backward/forward excursions and persisted resume across restart; skipping the full 16-group sequence without learning leaves all 68 items unpractised and returns to the first step rather than declaring proficiency; blocked-write storage preserves previous bytes and cursors; partial source practice finds the next unattempted phrase. Existing graded practice and XP remain the sole completion evidence.
+
+**Verification:** Prior V3-08D [Actions #42815951980](https://github.com/AndrewDionne/LearnPolish/actions/runs/42815951980) **SUCCESS** (lexical audit, Simulator build and native XCTest). V3-08E exact-head GitHub CI pending at commit creation; no physical device or linguistic certification is inferred. Draft PR #169 remains open. V2 source/audio, Neon/Render, family testers, optional CloudKit and speech scoring unchanged.
+
+---
+
+
+## V3-08D — reproducible Journey 1 word-form first-use inventory (2026-11-10)
+
+**Implementation:** `v3/ios/scripts/audit-guided-lexicon.mjs` inventories all
+68 existing Guided Foundations reference occurrences, 55 unique original
+recording identities, and **74 distinct case-folded NFC written surface forms**
+across 16 ordered groups. [Full review-ready 68-row inventory](JOURNEY1_FIRST_USE.md)
+lists source ID, exact original Polish/English utterance, grammar focus, audio
+reference and newly seen written forms. **All rows remain Pending independent
+native/linguistic review; this is not lemmatization, grammar or sound certification.**
+No source phrases, translations, recordings or progress state were changed.
+
+**CI source-drift gate:** Following V2 asset preparation, the native macOS
+workflow now checks report equality against the canonical generated catalog
+and runs five Node tests, including Polish diacritic/inflection handling,
+duplicate original recordings, invalid original text/meaning/audio/status
+and an exact checked-in report comparison. V2/Neon/Render/family and all
+production settings remain untouched. Prior V3-08C
+[Actions #42811630855](https://github.com/AndrewDionne/LearnPolish/actions/runs/42811630855)
+**SUCCESS** (Simulator build and native XCTest); V3-08D exact-head CI is
+pending at this commit's creation.
+
+**Next:** independent first-use forms and inflection explanations, followed
+by a source-ID-preserving coherent Journey 1 path; the guided and main-course
+tracks are still separate. PR #169 stays draft; no owner Xcode test requested.
+
+---
+
+
+## V3-08C — source-derived prerequisite links and Journey 1 continuity (2026-11-10)
+
+Native Guided Practice offers an optional, collapsed **Earlier learning to revisit** section when a declared prerequisite was introduced in an earlier recorded source group with source examples not yet saved as Learn attempts. Source IDs/order are unchanged; no lesson lock, fabricated mastery, new text/audio, gamification or account requirement. Two new XCTest cases check real concept predecessors and partially practised dependencies.
+
+Curriculum audit: [Journey 1 continuity audit](JOURNEY1_AUDIT.md). The 16 guided steps, 68 original audio references and seven grammar introductions are not a complete lexical/phonetic certification. Core Journey 1's 19 lessons remain a separate native progress path awaiting independent editorial integration.
+
+**Verification:** Previous V3-08B [Actions #42809006255](https://github.com/AndrewDionne/LearnPolish/actions/runs/42809006255) has a passed iPhone Simulator build; its XCTest step was in progress at this observation. V3-08C exact-head CI pending. PR #169 remains draft; physical device and real speech/cloud/guardian acceptance are still open. Production V2, Neon, Render and four tester identities unchanged.
+
+---
+
+
+## V3-08B — single offline daily review across lessons (2026-11-10)
+
+**Implementation:** Adds a compact **Daily review** entry on Home (only when items are due) and a primary **Review up to 20 due** action in Practice. `NativeDailyReviewQueue.snapshot` selects a bounded batch of actual V2 Learn cards across different lessons, oldest due first with deterministic source-order ties. The queue freezes on entry: an incorrect answer remains due in the normal 1/3/7/14/30/60/90-day schedule but never loops inside the same short session. Review displays original Polish, approved audio at 0.75×/1× where present, then meaning and Got it/Needs practice; Skip is non-awarding. Every graded answer uses the V3-08A atomic persist-before-advance boundary. Existing by-lesson review remains available.
+
+**Regression:** Four `NativeDailyReviewQueueTests` validate oldest-first cross-lesson selection, stable 20-card cap, exclusion of unseen/future/reading-only entries and frozen snapshots after progress updates, plus real persisted wrong-answer due and next-day successful recall. No fabricated words, XP, automatic account, new backend or speech scoring.
+
+**Verification:** V3-08A [Actions #42804252300](https://github.com/AndrewDionne/LearnPolish/actions/runs/42804252300) **SUCCESS**: original-source/media checks, iPhone Simulator build and XCTest. V3-08B exact-head CI **pending** at creation; no claim of full validation until run completes. Keep V3 PR #169 draft; the owner explicitly deferred physical Xcode testing until full app surface.
+
+---
+
+
+## V3-08A — answer submission and lesson navigation durability (2026-11-10)
+
+**Implementation:** Across Learn, Listen, Read, Speak and Guided Foundations, a submitted answer now advances or locks in a selected choice **only after** `LocalLearningStore.recordAttempt` returns success. `NativePracticeSubmission.commit` is the single persist-before-UI boundary. Failed storage writes leave the same card and choices available for retry and show the existing storage error; deliberate Next/Skip remains non-awarding navigation. Both native multiple-choice modes defer their selected-answer state until after a successful write. No scoring, content, account, audio, Neon or Render changes.
+
+**Regression coverage:** `NativePracticeSubmissionTests` exercises all four native practice modes with blocked storage (no callback, no journal/XP/review, original bytes preserved), plus accepted answers verified from reloaded disk **inside** the navigation callback. Guided Foundations shares the exact same submission method.
+
+**Verification:** Prior V3-07E [Actions #42802763331](https://github.com/AndrewDionne/LearnPolish/actions/runs/42802763331) completed **SUCCESS**, iPhone Simulator compiled and XCTest phase passed. New V3-08A source awaits its own exact-head GitHub iPhone Simulator CI result. V3 remains a draft PR; owner phone testing is intentionally deferred. Live CloudKit, guardian-safe family features, real speech calibration and bilingual curriculum review are still separate unverified release gates.
+
+---
+
+
+**2026-11-08. Owner direction: continue developing the full native application; defer owner Xcode install/physical testing until substantially feature-complete.** Automated macOS Xcode builds and iPhone Simulator tests remain required on every tranche. The native PR stays draft until release gates are satisfied.
+
+## V3-07D — manual private-CloudKit recovery, conflict preflight and no-network consent guard (2026-11-10)
+
+**Exact verified code head:** `a8fe33b816f4ab760697e8ced3a9f03364506d2f`. [Actions #42798542713](https://github.com/AndrewDionne/LearnPolish/actions/runs/42798542713) **SUCCESS** — full iPhone Simulator **BUILD SUCCEEDED**, **171 native XCTest passed, 0 failed**, original V2 lesson/media and JS source-integrity suites passed. Prior [CI #42797370802](https://github.com/AndrewDionne/LearnPolish/actions/runs/42797370802) verified 168 native tests at the preceding implementation head.
+
+- `NativeCloudSyncPlanner.swift` introduces a **read-only original-source-verified preflight** for explicitly invoked remote journal writes: initial creation only when no previous server revision, no-op for identical history, upload only when every remote event is already in local journal, and **refuse/review** if another device contains unseen events. Duplicate UUIDs with conflicting payloads, stale/missing formerly seen server records, foreign learner identities, a retained tombstone, incomplete historical journals and unrecorded regions fail closed; no XP or profile mutation.
+- `NativeCloudKitPrivateTransport.readManually` now enforces the separately persisted, explicit private-cloud opt-in gate and bound learner identity before reading records; an observed remote tombstone is **persisted locally** as a terminal deletion before any attempted future upload. Manual upload reuses the planner and does not needlessly rewrite an identical record. The private pending-delete recovery path can still inspect an existing server tombstone to complete interrupted deletion acknowledgement. CloudKit server change-tag CAS remains the final network race boundary.
+- `NativePrivateCloudGate.requireActiveLocalLearner` is a **zero-network preflight** before even calling `CKContainer.accountStatus` / `userRecordID`. Opt-out, paused-account, pending-delete, remotely-deleted, wrong-learner and missing-epoch conditions are refused synchronously. A later account and generation check is still mandatory at the network boundary.
+- `NativeCloudSyncPlannerTests.swift`: 12 tests for two divergent simulated-device histories, original-source validation, duplicate upload no-op, remote-ahead review, stale/missing server, tombstone, identity, legacy, unknown source and conflicting UUIDs. Three new `NativePrivateCloudGateTests.swift` verify local refusal before any Apple account lookup.
+- **Strict limit:** These are source-bound unit tests plus Swift/SDK compilation, **not live CloudKit service acceptance**. The running native app still has **no iCloud entitlement, automatic startup path, CloudKit Settings UI, enabled background synchronization or Apple account prompt**. Real signed two-device races, conditional revision and persisted deletion on Apple's service, quota/offline/kill/retry, large-journal chunking, guardian-authorized cloud usage and physical app acceptance remain unverified. Keep PR #169 draft and production V2/Neon/Render/four tester identities unchanged.
+
+---
+
+## V3-07C — real CloudKit private-record transport, manually invoked and not yet activated (2026-11-09)
+
+**Exact verified implementation code head:** `791e3ae7af044b8e503baaa1efff89b9a13154b8`. [Actions #42691929108](https://github.com/AndrewDionne/LearnPolish/actions/runs/42691929108) **SUCCESS** — native iPhone Simulator **BUILD SUCCEEDED**, **156 XCTest passed, 0 failures**, original V2 media/source integrity and Node tests passed.
+
+- Previous code at `9d56b2a014b46e145e5bb4538f3ab616339af1e1` [CI #42683775128](https://github.com/AndrewDionne/LearnPolish/actions/runs/42683775128) was fully green: 144 native XCTest passed, establishing safe offline account-pause/remote-delete-policy persistence across restarts.
+- `NativePrivateCloudGate.observeVerifiedServerRevision` tracks server-verified, monotonic revisions and refuses unrelated scopes or unverified generations.
+- New `NativeCloudKitPrivateTransport.swift` compiles against Apple's real CloudKit SDK. It uses the **private** database, verifies the active iCloud account only on explicitly invoked operations, stores a bounded original-source-valid `NativePracticeJournal` in a stable record, and uses CloudKit's `ifServerRecordUnchanged` **server change-tag compare-and-swap**. On a race it refuses to overwrite the newer record rather than silently retrying. Existing remote attempts not present on the device must be manually merged first.
+- Remote erase retains an authenticated generation-bound **tombstone in the same record** rather than deleting the record/zone, and the pending deletion remains locked by `NativePrivateCloudGateStore` until CloudKit returns a verified server acknowledgement. Source-constrained payload contains **no family account, microphone audio, speech-provider transcript, or client-computed XP**; v1 payload max 450 KB and rejects oversized journals rather than truncating.
+- New `NativeCloudKitPrivateTransportTests.swift` adds **12** native tests: source-bound encoded round-trip, epoch and original region integrity, refusal of legacy/unsupported/forged history, retained tombstone semantics, future schema rejection, size limit, generation check, privacy fields, and stale remote candidate constraints.
+- **Important release boundary:** This transport is **not referenced from first launch or the SwiftUI Progress screen** and **no CloudKit entitlement or container provisioning was added**. GitHub simulator compilation is NOT a real CloudKit account, network, concurrent private record, signed device, or deletion witness. Do not claim production iCloud sync is enabled. CKSyncEngine/push/background sync, conflict user experience, large journal chunking, quota handling and multi-device live service verification remain open. Existing opt-in private-family pilot, anonymous offline app, V2/Neon/Render and 4 family tester identities are untouched.
+- **Next:** signed account/entitlement provisioning and isolated CloudKit functional tests, two-device stale CAS/tombstone recovery, user-visible sync review/enable controls ONLY after the signed tests pass, independent guardian-authorized child features and real speech/editorial/hardware acceptance. Keep PR #169 draft.
+
+---
+
+## V3-06B — immutable practice journal and offline merge candidate (2026-11-09)
+
+**Exact implementation code head:** `78173bacf33821ca629ae0dea4d9704e14265536`. **Native CI [#42608744715](https://github.com/AndrewDionne/LearnPolish/actions/runs/42608744715) PASS:** original source/audio checks and Node guard tests, iPhone Simulator **BUILD SUCCEEDED**, **78 XCTest passed, 0 failed**.
+
+- `v3/ios/Sources/NativePracticeJournal.swift` adds a bounded, source-verified, immutable UUID-per-attempt journal containing only actor-local anonymous UUID, original lesson:item ID, mode, timestamp and an understood/needs-practice/recorded outcome. It carries no audio, transcript, remote score, identity token or family XP. Source mode, restricted Listen items, invalid outcomes, duplicate UUIDs, journal version and event cap are checked before considering remote application.
+- `LocalLearner.practiceJournal` is an optional Codable field so older saved profiles load unchanged. A journal started **after** old progress marks `hasLegacyHistory=true`; no invented events or unearned XP are synthesized for old aggregates, including old XP-only records. Legacy histories are **ineligible** for automatic candidate merge.
+- The central `recordAttempt` now commits one real event, the existing PracticeRecord review update and the original device-local daily-deduplicated XP **together in one atomic file replacement before publishing the profile**. Failed writes publish no attempt, review or XP. Tourist practice cannot advance its completion counter if the underlying attempt fails to persist.
+- A **pure offline candidate merge**, not invoked by UI/cloud, is deterministic/idempotent by event UUID; identical repeated events deduplicate, same-ID payload conflicts hard-fail, different anonymous epochs or incomplete legacy histories reject, and original V2 source IDs/modes must validate. The projected review reducer matches current 1/3/7/14/30/60/90-day spacing on complete journals only. **It does not apply merged history or award merged XP.**
+- `NativePracticeJournalTests.swift`: 10 additional native tests cover live event journal/XP parity, restart/export, legacy aggregates, two-device commutative/idempotent merger, foreign epoch rejection, conflicting UUID, bad source/outcome, local reset/ID rotation, bad storage atomicity, and legacy XP-only case.
+- **CloudKit still OFF**: no entitlements or account prompt, no sync writes or network calls. Formal merge-to-profile and cross-timezone XP reducers, explicit owner linking/restore UX, cloud tombstones and Apple signed two-device tests remain open. V2/family account services unchanged.
+
+**Next:** build an authenticated or user-confirmed safe archive import/restore with rigorous source/identity validation and an automatic pre-restore backup; then a tested pure XP reconciliation policy before opt-in CloudKit. No owner Xcode install until full application acceptance; PR #169 remains draft.
+
+---
+
+## V3-06A — local privacy export/reset and CloudKit-safe groundwork (2026-11-09)
+
+**Exact native code head:** `5aa02c5162f765935c0604982140e3db1fbd6155`. **CI [#42598104496](https://github.com/AndrewDionne/LearnPolish/actions/runs/42598104496) PASS:** original source-locked curriculum/media validation, iPhone Simulator **BUILD SUCCEEDED**, **68 native XCTest passed, 0 failures**. The earlier V3-05B mislabelled UTC-day fixture was corrected; family-source XP now rejects out-of-scale values.
+
+- `LocalProgressArchive.swift` introduces an explicit user-exported, versioned, bounded JSON document for the **local learning profile only** (course positions, review, anonymous local ID, tourist history and personal XP). It includes no family session, account credentials, provider scores/transcripts, cloud identifier or microphone recording. User chooses the export destination with the native document exporter; exported JSON is not encrypted, and UI warns to keep it private.
+- `LocalLearningStore.swift` has a separately confirmed **local-only erase**, which writes a new profile with a fresh anonymous local ID atomically **before** publishing it. On an unreadable saved profile or storage failure, reset refuses and leaves the original file untouched. The lesson/audio bundle is not deleted, and the operation does not touch family-server contributions or any previously exported copy.
+- The Progress screen exposes the export and erase actions; new native `LocalProgressArchiveTests.swift` cover source-bound archive decode, sensitive-field exclusion, unchanged source file after export, restart after reset, corrupted-file preservation, atomic-write failure and forward schema rejection.
+- `v3/CLOUDKIT_SYNC_DESIGN.md` locks the **user-opt-in private iCloud** design and exact conflict/identity/migration acceptance. CloudKit is **not enabled**: current LocalLearner aggregates cannot be safely merged across devices, and automatic whole-file upload could lose reviews/double-award daily XP. No Apple/iCloud account prompt on app launch, no entitlements, and no CloudKit network calls. Future event-journal migration and two-device tests precede signed-device iCloud activation.
+
+**Outstanding:** import/restore of owner-exported JSON, bounded per-attempt journal for safe cross-device conflict resolution, production CloudKit account/entitlement and multi-device testing, guardian-authorized connected use for minors, provider speech calibration, complete curriculum/editorial certification and integrated physical iPhone acceptance. Maintain draft PR #169; do not modify main or V2/Neon/Render.
+
+---
+
+## V3-05B adult pilot privacy boundary — implemented, simulator regression verification in progress (2026-11-09)
+
+- The prior native V3-05A integrated run [#42491145355](https://github.com/AndrewDionne/LearnPolish/actions/runs/42491145355) compiled, with **60/61 native XCTest passing**. Its sole failure came from a test timestamp labelled prior UTC day that was actually midnight on the same UTC day. The UTC-day fixture is corrected.
+- Source-backed V3 now contains 32 recorded alphabet examples, 13 combinations, 5 sound lessons / 25 ear questions, six Read dialogues / 51 lines, seven source-first Listen sets, and eight original tourist scenarios / 22 mode stages. These are native functional screens, not separate toy apps.
+- Optional verified V2 family login, 16-region server-only group expedition and weekly leaderboard, same-UTC-day opt-in source-item activity sharing, and original Azure+Whisper source-bound assessment transport are on the draft branch. Private V2 provider deployment remains **disabled** and live calibration/physical tests are not claimed.
+- **V3-05B gate:** all connected features are an **explicitly acknowledged, in-memory adult-only pilot** (18+ using their own account). Without acknowledgement there is no optional family authentication request or speech connection. Offline language study is available to everyone. This is **only self-attestation**, not verified guardian authority, and does not authorize children to use connected features.
+- The server's existing pilot signup and identity endpoints do not expose a verified guardian relationship or per-purpose child consent. Child family participation and remote voice uploads remain **blocked** until server-authoritative guardian grants, revoke/delete controls and acceptance tests are approved. See [v3/FAMILY_PRIVACY_GATE.md](FAMILY_PRIVACY_GATE.md).
+- **Exact-head CI:** [#42589284869](https://github.com/AndrewDionne/LearnPolish/actions/runs/42589284869) iPhone Simulator **BUILD SUCCEEDED**; new expanded XCTest checks are not yet certified at this note's creation.
+
+**Owner instructions remain:** keep PR #169 draft, V2/Neon/Render and the four tester records unchanged, defer owner Xcode phone build until the complete functional surface.
+
+---
+
+## V3-03a guided Foundations / first grammar — implemented and simulator-certified (2026-11-08)
+
+**Commit head:** `b51f243cb0fb864d4395c275e3c61b35b8709792`  
+**CI:** [V3 native iPhone run #42472992095](https://github.com/AndrewDionne/LearnPolish/actions/runs/42472992095) — generated source/audio assets, project, iOS Simulator **BUILD SUCCEEDED** and **TEST SUCCEEDED**. **5 Node source-compiler tests + 17 native XCTest tests passed, zero failures.**
+
+- `v3/ios/scripts/prepare-guided.mjs` projects four existing V2 C-13 source files into `guided-foundations.json`. **16 prerequisite-ordered activities, 68 original full-recording references, 7 source-authored grammar introductions**. Original lesson:item IDs, phrases, translations, audio and existing source status are preserved. Reused items are deliberate, not duplicate progress identities.
+- Build gate rejects altered original Polish/English/audio, restricted source recordings, invalid focus spans, missing/extra groups, wrong editorial status, missing prerequisites and out-of-sequence concept introductions. No newly synthesized Polish or manufactured recordings.
+- Native `GuidedFoundationsScreen` shows First words → Basic vocabulary → First sentences / basic grammar with source-validated groups. `GuidedPracticeScreen` plays existing audio at 1×/0.75×, introduces original meaning and source-author explanations before recall, and optionally emphasizes the existing authored text focus. Skip/reveal/play never earn XP; only a real self-rated attempt writes the original Learn progress, spaced review and daily-deduplicated personal XP.
+- Separate guided activity cursor persists across restart, without changing original Core Continue or Library exploration; last-item advancement moves to the next actual source step. No sign-in or network access.
+- **Certification boundary:** structural prerequisite closure does not prove the full language program is complete; the original V2 human review and recordings remain source-only, not independently native-speaker certified. This migration does not cover separate reading/listening first-exposure, alphabet teaching, sound lessons or applied tourist roleplay. Remote Speak remains offline-only record/replay in V3.
+
+**Owner decision unchanged:** no user Xcode install/physical testing until complete feature integration. Keep PR draft, preserve Neon and family identities.
+
+---
+
+## Implemented on draft PR #169
+
+- Native SwiftUI iPhone app, first-run account-free home/library/practice/progress; optional accounts and iCloud do not block offline study.
+- Generated genuine 26-lesson / 482-item V2 library with 455 original MP3s and 481 total source-backed audio references. Preserve source IDs, reference blockers and draft grouping qualifications.
+- Exact source-authored V2 core journey order: **21 core placements**, plus 5 exploratory entries. No fabricated Journey 3 or native approval of editorial drafts.
+- Library browsing no longer replaces selected core course Continue. Home explicitly resumes first unvisited source item; optional two original Numbers 1–10/11–20 sections use strict source and audio checks.
+- V2 Learn, Read, Listen and local Speak practice foundation. Listen excludes source-blocked speech recordings, uses original authored comprehension checks where supplied and V2 choice ordering otherwise; Read does not invent assessments for lines without authored questions.
+- Original V2 1/3/7/14/30/60/90-day 24h spaced review; frozen due-item session, optional repeat and no forced pass threshold. Local records remain anonymous and written atomically.
+- Native AVFoundation 0.75x/1x reference audio and quality-gated local microphone capture/replay. Optional authenticated Azure+Whisper adapter is source-bound and double-consented, but the hosted scoring feature stays **OFF** pending acoustic/provider acceptance; no invented syllable accuracy.
+- Local original V2 effort XP ledger, same once-per-mode/item/local-calendar-day deduplication and personal map taper; original 16 V2 region outlines drive distinct native personal and family maps. Family XP stays server-authoritative and does not backfill or overwrite local records.
+- Native source and asset XcodeGen project, GitHub macOS iOS Simulator CI, regression tests for journey/source geometry/selection/XP/persistence.
+
+## Still substantially incomplete (do not call full app)
+
+1. **Guided teaching inside Journey 1:** native guided 16-step foundations, recorded alphabet, sound lab, source-first Read/Listen and eight tourist scenarios are implemented. **Still missing**: complete independent linguistic/prerequisite audit, content authoring for unsupported gaps and real bilingual editorial sign-off. Content remains editor-review gated.
+2. **Speak production:** optional private API contract, WAV conversion, double per-take consent and in-place segmented-colour overall estimate are coded. **Still missing**: real authorized provider deployment, acoustic validation, calibrated/blind rating study, reliable latency and independent guardian policy; never claim syllable-level acoustic certification.
+3. **Family:** optional verified connection, adult-pilot acknowledgement, original server leaderboard/map and explicit source-only family XP submission implemented. **Still missing**: authoritative guardian relationship/consent and minor-safe backend; existing 4 tester accounts preserved. No mandatory sign-in.
+4. **iCloud:** independent feasibility spike for private progress sync, optional sharing, Apple entitlements, collision/merge semantics and offline return. Do not automatically switch backend.
+5. **Complete content and editorial QA:** missing fundamentals, conversational practice, reading/listening instruction, rights-cleared audio/native acoustic validation. Migration itself does not certify missing content.
+6. **App completeness:** settings, offline assets management, account/privacy/export/delete, complete course and content authoring, robust navigation and review session flows, polish/performance/accessibility and application icon/release packaging.
+7. **Physical acceptance and release:** not yet requested from owner; no physical Xcode install/phone testing until full functional surface and automated parity are ready.
+
+## Next recommended implementation tranches
+
+- V3-03b: native recorded alphabet and Sound Lab, source-first Read/Listen preteaching and tourist application checkpoints, all source-locked and independently tested.
+- V3-04: pronunciation transport/response contract, consent and offline fallback; server-once/no secret in app; calibrate against verified real recordings separately.
+- V3-05: family connection and XP reconciler; native map family view, privacy, profile controls.
+- V3-06: iCloud optional sync/sharing spike; remaining UI/authoring/gap closure and full end-to-end acceptance.
+
+## Security, merge and device policy
+
+Never repurpose original family provisioning, rotate secrets, reset Neon, or modify Render production during a native UI tranche. No app signing credentials in GitHub. A passing simulator compile is not evidence of hardware microphone/voice quality or production readiness. Keep PR #169 **draft** and V2 release issue #2 open. The owner explicitly elected to **defer their own Xcode build** until V3 is complete; do not make every partial native tranche a new physical test request.
