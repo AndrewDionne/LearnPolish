@@ -26,6 +26,8 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.pathtopolish.learning
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         GENERATE_INFOPLIST_FILE: YES
+        APP_GIT_COMMIT: "UNSTAMPED"
+        INFOPLIST_KEY_AppGitCommit: "$(APP_GIT_COMMIT)"
         INFOPLIST_KEY_NSMicrophoneUsageDescription: "Record and review Polish speech privately on this iPhone."
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         SWIFT_EMIT_LOC_STRINGS: YES

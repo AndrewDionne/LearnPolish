@@ -63,6 +63,7 @@ struct PracticeDestinationScreen: View {
 }
 
 struct HomeScreen: View {
+    @State private var showingBuildInformation = false
     @EnvironmentObject private var learner: LocalLearningStore
     @EnvironmentObject private var navigation: LearningNavigation
 
@@ -196,6 +197,47 @@ struct HomeScreen: View {
         }
         .navigationTitle("Home")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    showingBuildInformation = true
+                } label: {
+                    Label("About", systemImage: "info.circle")
+                }
+                .accessibilityIdentifier("about.installed-build")
+            }
+        }
+        .sheet(isPresented: $showingBuildInformation) {
+            NavigationStack {
+                Form {
+                    Section("Installed build · this iPhone") {
+                        LabeledContent("Git commit") {
+                            Text((Bundle.main.object(
+                                forInfoDictionaryKey: "AppGitCommit"
+                            ) as? String).flatMap { $0.isEmpty ? nil : $0 }
+                                 ?? "UNSTAMPED")
+                                .font(.caption.monospaced())
+                                .textSelection(.enabled)
+                        }
+                        LabeledContent("Build version") {
+                            Text((Bundle.main.object(
+                                forInfoDictionaryKey: "CFBundleVersion"
+                            ) as? String) ?? "Unavailable")
+                                .font(.caption.monospaced())
+                        }
+                        Text("This reports the installed executable, not GitHub's main branch or CI status. UNSTAMPED builds are not eligible for physical acceptance.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .navigationTitle("About Path to Polish")
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Done") { showingBuildInformation = false }
+                    }
+                }
+            }
+        }
     }
 
     private func homeMetric(_ value: String, _ label: String,
