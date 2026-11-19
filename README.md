@@ -2,6 +2,22 @@
 
 **Path to Polish V2 is the canonical application.** Its source is in [`v2/frontend/`](v2/frontend/), on the existing GitHub `main` branch. There is no separate V2 branch or repository to merge.
 
+## Development verification cadence
+
+Read [AGENTS.md](AGENTS.md) and
+[chat ai workflow.md](chat%20ai%20workflow.md) from current `main`.
+Build one coherent user capability through committed and pushed checkpoints,
+using relevant existing frontend, family-backend and benchmark checks for
+feedback. Freeze the complete cumulative candidate for integration.
+
+The installed [V2 checks](.github/workflows/v2-ci.yml) run frontend,
+private-family-backend, family-connected-browser and benchmark-harness
+validation on relevant PR updates and `main` pushes. Batch related work with
+those triggers in mind. Run `./publish.sh` for the broad local V2 check/build
+at the integration boundary. Follow current deployment and hosted/physical
+acceptance evidence independently. Use named RepoSnapshot capability selectors
+when the current baseline provides their workflow and suite definitions.
+
 ## Local development (macOS/Linux)
 
 Install Node.js 22 or newer, then from the repository root:
